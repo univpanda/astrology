@@ -354,19 +354,120 @@ var Yogas = (function () {
     return found;
   }
 
-  var DETECTORS = [parivartana, neechaBhanga, vipareeta];
+  var KENDRAS = [1, 4, 7, 10];
+  var TRIKONAS = [1, 5, 9];
+  var DIGNIFIED = ['Mooltrikona', 'Own sign', 'Exalted'];
+  // "in its Exalted" does not read; these are the phrases the sentences want.
+  var SEAT_PHRASE = {
+    Mooltrikona: 'moolatrikona', 'Own sign': 'own sign', Exalted: 'exaltation sign'
+  };
 
-  /** Every yoga this module knows how to look for, in one pass. */
-  function detect(chart) {
+  /**
+   * Lakshmi yoga.
+   *
+   * BPHS, verses 27-28: "If the 9th lord is in an angle identical with his
+   * Moola-Trikona sign or own sign or exaltation sign while the ascendant lord is
+   * endowed with strength, Lakshmi yoga occurs."
+   *
+   * Santhanam's wording is "an angle", and taken literally that excludes the
+   * trines. It is not how the yoga is generally read: the common form allows a
+   * kendra or a trikona, and charts are routinely called Lakshmi yoga with the
+   * 9th lord exalted in the 5th. Both are honoured here - the yoga is reported
+   * for either, and the finding says which of the two it rests on, so the wider
+   * reading never quietly passes itself off as the text's own.
+   *
+   * "Endowed with strength" is measured rather than guessed: the lagna lord must
+   * meet the Shadbala minimum Parashara sets for it, which differs by graha. That
+   * is the same reading the Shadbala tab prints, from the same computation.
+   *
+   * Venus is Lakshmi's karaka and some formulations add its strength to the
+   * conditions. Parashara does not, so it is reported alongside when it happens
+   * to be dignified rather than required.
+   *
+   * The lagna lord and the 9th lord are always different grahas, the two signs
+   * being eight apart, so there is no same-graha case to handle.
+   */
+  function lakshmi(chart, strengths) {
+    var positions = {};
+    chart.planets.forEach(function (p) { positions[p.name] = p; });
+    var lagna = Astro.signOf(chart.ascendant.longitude);
+
+    var ninthSign = (lagna + 8) % 12;
+    var ninthLord = Astro.SIGN_LORDS[ninthSign];
+    var lagnaLord = Astro.SIGN_LORDS[lagna];
+    var placed = positions[ninthLord];
+    if (!placed) return [];
+
+    var inKendra = KENDRAS.indexOf(placed.house) >= 0;
+    var inTrikona = TRIKONAS.indexOf(placed.house) >= 0;
+    if (!inKendra && !inTrikona) return [];
+
+    var dignity = Astro.dignityOf(ninthLord, placed.sign, placed.longitude % 30);
+    if (DIGNIFIED.indexOf(dignity) < 0) return [];
+
+    // Without a strength reading there is nothing to test the second half
+    // against, and reporting on half the conditions is worse than silence.
+    var lord = strengths && strengths[lagnaLord];
+    if (!lord || !lord.strong) return [];
+
+    var house = ordinal(placed.house);
+    var seat = inKendra
+      ? 'an angle, which is how Parashara words it'
+      : 'a trine, which the wider reading allows and the text does not say';
+
+    var reasons = [
+      ninthLord + ' rules the 9th and stands in ' + Astro.SIGNS[placed.sign] + ', its ' +
+        SEAT_PHRASE[dignity] + ', in the ' + house + ' - ' + seat,
+      lagnaLord + ', the lagna lord, carries ' + lord.rupas.toFixed(2) + ' rupas against the ' +
+        lord.required + ' Parashara asks of it, so it is strong'
+    ];
+
+    // Venus is the karaka of Lakshmi; noted when dignified, never required.
+    var venus = positions.Venus;
+    if (venus && ninthLord !== 'Venus') {
+      var venusDignity = Astro.dignityOf('Venus', venus.sign, venus.longitude % 30);
+      if (DIGNIFIED.indexOf(venusDignity) >= 0) {
+        reasons.push('Venus, the karaka of Lakshmi, is itself in its ' +
+          SEAT_PHRASE[venusDignity] + ' in the ' + ordinal(venus.house) +
+          ', which some formulations add to the conditions and Parashara does not');
+      }
+    }
+
+    return [{
+      yoga: 'Lakshmi Yoga',
+      kind: inKendra ? 'angle' : 'trine',
+      subject: 'Lakshmi Yoga',
+      condition: 'lakshmi',
+      title: 'Lakshmi yoga',
+      family: 'Lakshmi yoga',
+      grahas: [ninthLord, lagnaLord],
+      houses: [9, placed.house],
+      reasons: reasons,
+      summary: ninthLord + ', lord of the 9th, is in the ' + house + ' in its ' +
+        SEAT_PHRASE[dignity] + ', and the lagna lord ' + lagnaLord + ' is strong by Shadbala.'
+    }];
+  }
+
+  var DETECTORS = [parivartana, neechaBhanga, vipareeta, lakshmi];
+
+  /**
+   * Every yoga this module knows how to look for, in one pass.
+   *
+   * `strengths` is the Shadbala reading, keyed by graha. Only Lakshmi yoga needs
+   * it, and it is passed to every detector rather than special-cased so the next
+   * one that needs strength does not have to change this signature again.
+   */
+  function detect(chart, strengths) {
     var all = [];
     DETECTORS.forEach(function (detector) {
-      detector(chart).forEach(function (finding) { all.push(finding); });
+      detector(chart, strengths).forEach(function (finding) { all.push(finding); });
     });
     return all;
   }
 
   return { detect: detect, parivartana: parivartana, neechaBhanga: neechaBhanga,
-    vipareeta: vipareeta, VIPAREETA_NAMES: VIPAREETA_NAMES,
+    vipareeta: vipareeta, lakshmi: lakshmi, VIPAREETA_NAMES: VIPAREETA_NAMES,
+    KENDRAS: KENDRAS,
     // Exposed so a test can notice a detector being added without being wired
     // into the test that checks detect() gathers from all of them.
     DETECTOR_COUNT: DETECTORS.length,

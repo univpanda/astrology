@@ -922,14 +922,26 @@
    * a total nobody can take apart is a total nobody can disagree with. Ranking
    * is by how far each graha clears its own minimum, since the minimums differ.
    */
+  /*
+   * Computed once per chart and kept. Lakshmi yoga turns on the lagna lord being
+   * strong, which is the same reading the Shadbala tab prints; computing it twice
+   * would let the two drift apart over a rounding change.
+   */
+  function strengthsFor(state) {
+    if (!state.shadbala) {
+      state.shadbala = Shadbala.compute(state.chart, {
+        latitude: state.place.lat,
+        longitude: state.place.lon,
+        tzOffsetMinutes: state.offset
+      });
+    }
+    return state.shadbala;
+  }
+
   function renderShadbala(state) {
     var tbody = document.querySelector('#shadbala-table tbody');
     tbody.innerHTML = '';
-    var result = Shadbala.compute(state.chart, {
-      latitude: state.place.lat,
-      longitude: state.place.lon,
-      tzOffsetMinutes: state.offset
-    });
+    var result = strengthsFor(state);
 
     /*
      * Listed in the same order as the graha tables rather than strongest first.
@@ -1103,15 +1115,15 @@
     var note = document.getElementById('yoga-note');
     list.innerHTML = '';
 
-    var found = Yogas.detect(state.chart);
+    var found = Yogas.detect(state.chart, strengthsFor(state).grahas);
     if (!found.length) {
       note.textContent = 'No yoga among those this page looks for is present in this chart. ' +
-        'Parivartana, neecha bhanga and vipareeta raja yoga are checked so far; ' +
+        'Parivartana, neecha bhanga, vipareeta raja and Lakshmi yoga are checked so far; ' +
         'the Lesson tab explains each.';
       return;
     }
-    note.textContent = 'Parivartana, neecha bhanga and vipareeta raja yoga are checked so far; ' +
-      'more will follow. The Lesson tab explains what each one means.';
+    note.textContent = 'Parivartana, neecha bhanga, vipareeta raja and Lakshmi yoga are checked ' +
+      'so far; more will follow. The Lesson tab explains what each one means.';
 
     found.forEach(function (finding) {
       var card = el('div', 'yoga-finding');

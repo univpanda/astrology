@@ -46,6 +46,10 @@ var citiesSrc = fs.readFileSync(path.join(root, 'data/cities.js'), 'utf8');
 global.window = {};
 new Function('window', citiesSrc)(global.window);
 var Geo = require('../js/geo.js');
+// Loaded so the yoga note can be checked against the real detector count rather
+// than against a sentence somebody remembered to update.
+global.Astro = Astro;
+var Yogas = require('../js/yogas.js');
 var Charts = new Function('document', 'Astro',
   fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8') + '\nreturn Charts;')(document, Astro);
 
@@ -510,8 +514,24 @@ ok('a grouped passage does not repeat its own subject heading',
    /var meta = grouped \? \[\] : \[passage\.topic, passage\.subject\]/.test(appSrc));
 ok('a chart with no yoga makes no request for one',
    /if \(!found\.length\) \{[\s\S]{0,260}return;/.test(appSrc));
-ok('the page says which yogas it looks for',
-   /Parivartana, neecha bhanga and vipareeta raja yoga are checked so far/.test(appSrc));
+/*
+ * The note lists what is checked, so it has to be kept in step with the module.
+ * This counts the detectors rather than trusting the sentence, since a detector
+ * added without updating the note is exactly the drift worth catching.
+ */
+ok('the page says which yogas it looks for, and the list is current', (function () {
+  var flat = appSrc.replace(/'\s*\+\s*'/g, '');
+  var named = ['Parivartana', 'neecha bhanga', 'vipareeta raja', 'Lakshmi'];
+  return named.every(function (n) { return flat.indexOf(n) >= 0; }) &&
+    /Parivartana, neecha bhanga, vipareeta raja and Lakshmi yoga are checked/.test(flat) &&
+    named.length === Yogas.DETECTOR_COUNT;
+})(), Yogas.DETECTOR_COUNT + ' detectors');
+ok('and the yoga check is handed the strengths it needs',
+   /Yogas\.detect\(state\.chart, strengthsFor\(state\)\.grahas\)/.test(appSrc) &&
+   /function strengthsFor/.test(appSrc));
+ok('shadbala is computed once per chart, so the tab and the yoga agree',
+   /if \(!state\.shadbala\)/.test(appSrc) &&
+   (appSrc.match(/Shadbala\.compute\(/g) || []).length === 1);
 ok('a yoga resting on several conditions names the ones that applied',
    /finding\.reasons && finding\.reasons\.length/.test(appSrc) && /yoga-reasons/.test(appSrc));
 

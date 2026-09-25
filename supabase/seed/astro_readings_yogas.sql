@@ -136,3 +136,48 @@ on conflict (topic, subject, condition) do update set
   note = excluded.note,
   sort_order = excluded.sort_order,
   updated_at = now();
+
+-- Lakshmi yoga. Parashara's wording and the common reading differ on one word,
+-- and the difference is not small: "angle" excludes the trines, which is where
+-- the yoga is most often claimed. Both are set out rather than one being quietly
+-- presented as the text.
+
+insert into astro_readings (topic, subject, condition, heading, points, note, sort_order) values
+('yoga', 'Lakshmi Yoga', 'general',
+ 'Lakshmi yoga - fortune that holds',
+ array[
+   'Two conditions together. The lord of the 9th stands in its own sign, its moolatrikona or its exaltation sign, and the lord of the lagna is strong.',
+   'The 9th is bhagya: fortune, dharma, the father, the guru, what arrives unearned. Its lord dignified means that source is in good order rather than borrowed or obstructed.',
+   'The lagna lord being strong is the other half, and it is the half most often skipped. Fortune that arrives at a weak self is not kept. Parashara asks for both because either alone is a different yoga, or none.',
+   'Named for Lakshmi, and read as wealth that stays rather than wealth that passes through - standing, reputation and means together, not a windfall.',
+   'Venus is Lakshmi''s karaka, and some formulations add Venus''s own strength to the conditions. Parashara does not, so a dignified Venus is worth noting beside the yoga rather than counting as part of it.'
+ ],
+ 'Where the 9th lord must stand is the one point the sources disagree on; see below.', 40),
+
+('yoga', 'Lakshmi Yoga', 'angle',
+ 'Where the 9th lord must stand',
+ array[
+   'Santhanam''s translation of Parashara reads: "If the 9th lord is in an angle identical with his Moola-Trikona sign or own sign or exaltation sign while the ascendant lord is endowed with strength, Lakshmi yoga occurs."',
+   'Taken literally, "an angle" is a kendra: the 1st, 4th, 7th or 10th. On that reading a 9th lord exalted in the 5th does not form the yoga, however strong the chart looks.',
+   'The common reading allows a kendra or a trikona, so the 1st, 4th, 5th, 7th, 9th and 10th. Charts are routinely called Lakshmi yoga with the 9th lord exalted in the 5th, and that is the form most readers will have met.',
+   'The wider reading makes the yoga several times commoner, which is reason to know which one is being used rather than reason to prefer either.',
+   'This page reports the yoga on either, and says in each finding whether it rests on an angle, which is the text''s own wording, or on a trine, which is the wider reading.'
+ ],
+ 'The strength of the lagna lord is not in dispute; only the house of the 9th lord is.', 41),
+
+('yoga', 'Lakshmi Yoga', 'strength',
+ 'What "endowed with strength" is taken to mean',
+ array[
+   'Parashara asks that the lagna lord be strong without saying by what measure, and a yoga whose second condition is a matter of opinion is not really testable.',
+   'Here it means Shadbala: the lagna lord must reach the minimum Parashara sets for it in the Shadbala chapter, which differs by graha - 5 rupas for the Sun, Mars and Saturn, 5.5 for Venus, 6 for the Moon, 6.5 for Jupiter and 7 for Mercury.',
+   'That is the same reading the Shadbala tab prints, from the same computation, so the yoga and the strength table can never contradict each other.',
+   'It also means the yoga can fail on a chart that looks favourable. A dignified 9th lord with a lagna lord short of its minimum is not Lakshmi yoga, and saying so is the point of having a measure at all.'
+ ],
+ null, 42)
+
+on conflict (topic, subject, condition) do update set
+  heading = excluded.heading,
+  points = excluded.points,
+  note = excluded.note,
+  sort_order = excluded.sort_order,
+  updated_at = now();

@@ -1048,14 +1048,16 @@ ok('ordinals read correctly', Yogas.ordinal(1) === '1st' && Yogas.ordinal(2) ===
   // Every detector the module has must be named here. The count assertion is
   // what makes adding one without listing it a failing test rather than a
   // quietly incomplete check.
-  var detectors = [Yogas.parivartana, Yogas.neechaBhanga, Yogas.vipareeta];
+  var detectors = [Yogas.parivartana, Yogas.neechaBhanga, Yogas.vipareeta, Yogas.lakshmi];
   ok('every detector is covered by this test', detectors.length === Yogas.DETECTOR_COUNT,
      detectors.length + ' named, ' + Yogas.DETECTOR_COUNT + ' in the module');
 
   var chart = A.chart({ jdUT: 2446146.7256944445, latitude: 23.5158, longitude: 87.308 });
-  var direct = detectors.reduce(function (n, fn) { return n + fn(chart).length; }, 0);
+  var strengths = Shadbala.compute(chart,
+    { latitude: 23.5158, longitude: 87.308, tzOffsetMinutes: 330 }).grahas;
+  var direct = detectors.reduce(function (n, fn) { return n + fn(chart, strengths).length; }, 0);
   ok('detect gathers from every detector',
-     Yogas.detect(chart).length === direct && direct > 0,
+     Yogas.detect(chart, strengths).length === direct && direct > 0,
      direct + ' findings');
 })();
 
@@ -1499,6 +1501,95 @@ console.log('\nRetrogression detection over 2024');
   var expect = { mercury: [50, 80], venus: [0, 45], mars: [0, 80], jupiter: [70, 135], saturn: [120, 150] }[body];
   ok(body + ' retrograde days in 2024 plausible', retroDays >= expect[0] && retroDays <= expect[1], retroDays + ' days');
 });
+
+console.log('\nLakshmi yoga');
+/*
+ * BPHS verses 27-28: "If the 9th lord is in an angle identical with his
+ * Moola-Trikona sign or own sign or exaltation sign while the ascendant lord is
+ * endowed with strength, Lakshmi yoga occurs."
+ *
+ * Taken literally that is kendras only, and the yoga is commonly read to allow
+ * the trines as well. Both are accepted; the finding records which, so the wider
+ * reading cannot pass itself off as the text's own.
+ */
+(function () {
+  var lagna = 2;                                    // Gemini
+  var body = function (name, sign, deg) {
+    return { name: name, sign: sign, longitude: sign * 30 + deg,
+             house: ((sign - lagna) % 12 + 12) % 12 + 1 };
+  };
+  // 9th lord Saturn exalted in Libra in the 5th, Venus in its moolatrikona beside it.
+  var base = function (extra) {
+    return { ascendant: { longitude: lagna * 30 + 10 },
+      planets: [body('Saturn', 6, 20), body('Venus', 6, 8), body('Sun', 9, 5),
+                body('Moon', 0, 5), body('Mars', 1, 5), body('Mercury', extra === undefined ? 10 : extra, 5),
+                body('Jupiter', 3, 5)] };
+  };
+  var strongMercury = { Mercury: { strong: true, rupas: 7.4, required: 7 } };
+
+  var found = Yogas.lakshmi(base(), strongMercury);
+  ok('the 9th lord exalted in a trine with a strong lagna lord is Lakshmi yoga',
+     found.length === 1 && found[0].yoga === 'Lakshmi Yoga', found.length + ' found');
+  ok('and the finding says it rests on the wider reading, not the text\'s wording',
+     found[0].kind === 'trine' &&
+     /a trine, which the wider reading allows and the text does not say/.test(found[0].reasons[0]));
+  ok('it names both grahas the yoga turns on',
+     found[0].grahas.join(',') === 'Saturn,Mercury' && found[0].houses.join(',') === '9,5');
+
+  /*
+   * Venus is Lakshmi's karaka and some formulations add its strength. Parashara
+   * does not, so it is reported when it happens to be dignified and never required.
+   */
+  ok('a dignified Venus is mentioned but is not a condition',
+     found[0].reasons.length === 3 && /karaka of Lakshmi/.test(found[0].reasons[2]) &&
+     Yogas.lakshmi({ ascendant: { longitude: lagna * 30 + 10 },
+       planets: [{ name: 'Saturn', sign: 6, longitude: 6 * 30 + 20, house: 5 },
+                 { name: 'Venus', sign: 3, longitude: 3 * 30 + 5, house: 2 }] },
+       strongMercury).length === 1);
+
+  // The strength half is not optional.
+  ok('a weak lagna lord blocks it',
+     Yogas.lakshmi(base(), { Mercury: { strong: false, rupas: 4, required: 7 } }).length === 0);
+  ok('and so does having no strength reading at all',
+     Yogas.lakshmi(base(), null).length === 0 && Yogas.lakshmi(base(), {}).length === 0);
+
+  // The dignity half likewise: Saturn moved out of Libra keeps the house but loses the sign.
+  ok('an undignified 9th lord blocks it, even in the right house', (function () {
+    var c = base();
+    c.planets[0] = body('Saturn', 4, 20);          // Leo, the 3rd, neither dignified nor angular
+    return Yogas.lakshmi(c, strongMercury).length === 0;
+  })());
+  ok('and a dignified 9th lord in neither angle nor trine blocks it', (function () {
+    var c = base();
+    c.planets[0] = body('Saturn', 9, 20);          // Capricorn, own sign, but the 8th
+    return Yogas.lakshmi(c, strongMercury).length === 0;
+  })());
+
+  /*
+   * Parashara's own wording, the case the text actually describes. From an Aries
+   * lagna the 9th is Sagittarius, so Jupiter rules it, and Jupiter exalted in
+   * Cancer lands in the 4th: an angle, and no trine about it.
+   */
+  ok('the angular case is reported as resting on the text\'s own wording', (function () {
+    var asc = 0;                                    // Aries; the 9th is Sagittarius
+    var h = function (sign) { return ((sign - asc) % 12 + 12) % 12 + 1; };
+    var c = { ascendant: { longitude: asc * 30 + 10 }, planets: [
+      { name: 'Jupiter', sign: 3, longitude: 3 * 30 + 5, house: h(3) },      // Cancer, exalted, 4th
+      { name: 'Mars', sign: 0, longitude: 20, house: h(0) },
+      { name: 'Venus', sign: 8, longitude: 8 * 30 + 5, house: h(8) }] };
+    var f = Yogas.lakshmi(c, { Mars: { strong: true, rupas: 5.6, required: 5 } });
+    return f.length === 1 && f[0].kind === 'angle' && f[0].houses.join(',') === '9,4' &&
+      /an angle, which is how Parashara words it/.test(f[0].reasons[0]);
+  })());
+
+  // The two lords can never be the same graha, the signs being eight apart.
+  ok('the lagna lord and the 9th lord are always different grahas', (function () {
+    for (var sign = 0; sign < 12; sign++) {
+      if (A.SIGN_LORDS[sign] === A.SIGN_LORDS[(sign + 8) % 12]) return false;
+    }
+    return true;
+  })());
+})();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
