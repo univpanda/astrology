@@ -854,12 +854,12 @@ td.dig-shatru { color: var(--ink-faint); }
 td.dig-adhishatru { color: var(--retro); }
 td.dig-debilitated { color: var(--retro); font-weight: 600; }
 
-/* Each graha in Shodasavarga spans two rows, its sign above its dignity. The rule
+/* Each graha in Vargas spans two rows, its sign above its dignity. The rule
    belongs under the pair rather than between its halves, so the sign row drops
    its own, and the name sits centred against both. */
-#shodasavarga-table th[rowspan] { vertical-align: middle; }
-#shodasavarga-table tr.varga-signs td { border-bottom: none; padding-bottom: 0; }
-#shodasavarga-table tr.varga-dignities td { padding-top: 0.15rem; }
+#vargas-table th[rowspan] { vertical-align: middle; }
+#vargas-table tr.varga-signs td { border-bottom: none; padding-bottom: 0; }
+#vargas-table tr.varga-dignities td { padding-top: 0.15rem; }
 /* Sign numbers rather than names: sixteen columns of "Sagittarius" do not fit,
    and the chart above already labels its boxes this way. Tabular figures so the
    columns line up whatever the digits. */
@@ -870,11 +870,21 @@ td.varga-sign {
   font-variant-numeric: tabular-nums;
 }
 /* Sixteen columns is a lot of table; let it breathe less than the others. */
-#shodasavarga-table th, #shodasavarga-table td { padding-left: 0.45rem; padding-right: 0.45rem; }
-#shodasavarga-table td.dig { font-size: 0.86rem; }
+#vargas-table th, #vargas-table td { padding-left: 0.45rem; padding-right: 0.45rem; }
+#vargas-table td.dig { font-size: 0.86rem; }
+/* The scheme picker sits above its table, labelled inline: it changes what the
+   table is, not merely how it looks, so it reads as part of the panel. */
+.varga-scheme-row { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.9rem; }
+.varga-scheme-row label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+}
+.varga-scheme-row select { width: auto; min-width: 15rem; }
 /* The vimsopaka share sits under its division, lighter than the heading so the
    column still reads as D9 first and "worth 3" second. */
-#shodasavarga-table th .varga-weight {
+#vargas-table th .varga-weight {
   display: block;
   font-weight: 400;
   font-size: 0.8rem;

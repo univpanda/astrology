@@ -862,48 +862,71 @@ var Astro = (function () {
   }
 
   /*
-   * The ten vargas Parashara groups as the Dasavarga, in his order, and the full
-   * sixteen of the Shodasavarga. The sixteen are simply every varga the module
-   * defines, so the list is derived rather than retyped and cannot fall out of
-   * step with VARGAS.
+   * The four groupings Parashara scores vimsopaka over, chapter 7, verses 17-25.
+   * Each shares out twenty points, which is what the name means, and each does it
+   * differently: the same division is worth 5 in one scheme and 4 in another.
+   * Quoting one figure without its scheme is the usual reason a vimsopaka total
+   * will not reconcile, so the schemes are kept whole rather than as loose tables.
+   *
+   *   17-19  "The ShadVargas (six divisions) consist of Rashi, Hora, decanate,
+   *          Navamsha, Dvadashamsa and Trimsamsa. The full strength, for each of
+   *          the divisions respectively are 6, 2, 4, 5, 2 and 1 ... Adding the
+   *          Sapthamamsa to the Shad Vargas, we get Sapta Varga, the Vimsopaka
+   *          strength for which is: 5, 2, 3, 2 1/2, 4 1/2, 2 and 1."
+   *   20     "Add Dashamsa, Shodashamsa and Shastiamsa ... to get the scheme of
+   *          Dasha Varga (10 divisions) The Vimsopaka strength in this context is
+   *          3 for Rashi, 5 for Shashtiamsa and for the other 8 divisions, 1 1/2
+   *          each."
+   *   21-25  "When the 16 divisions ... are considered together, the Vimsopaka
+   *          score goes thus: Hora 1 Trimsamsa 1, decanate 1. Shodashamsa 2,
+   *          Navamsha 3, Rashi 3 1/2, Shashtiamsa 4, and the rest of the nine
+   *          divisions each a half."
+   *
+   * The sixteen are every varga the module defines, so that one is derived rather
+   * than retyped and cannot fall out of step with VARGAS.
    */
-  var DASAVARGA = [1, 2, 3, 7, 9, 10, 12, 16, 30, 60];
-  var SHODASAVARGA = VARGAS.map(function (v) { return v.division; });
+  var VARGA_SCHEMES = {
+    shadvarga: {
+      key: 'shadvarga', label: 'Shadvarga', count: 6, source: 'verses 17-19',
+      divisions: [1, 2, 3, 9, 12, 30],
+      weights: { 1: 6, 2: 2, 3: 4, 9: 5, 12: 2, 30: 1 }
+    },
+    saptavarga: {
+      key: 'saptavarga', label: 'Saptavarga', count: 7, source: 'verses 17-19',
+      divisions: [1, 2, 3, 7, 9, 12, 30],
+      weights: { 1: 5, 2: 2, 3: 3, 7: 2.5, 9: 4.5, 12: 2, 30: 1 }
+    },
+    dasavarga: {
+      key: 'dasavarga', label: 'Dasavarga', count: 10, source: 'verse 20',
+      divisions: [1, 2, 3, 7, 9, 10, 12, 16, 30, 60],
+      weights: { 1: 3, 2: 1.5, 3: 1.5, 7: 1.5, 9: 1.5, 10: 1.5, 12: 1.5, 16: 1.5, 30: 1.5, 60: 5 }
+    },
+    shodasavarga: {
+      key: 'shodasavarga', label: 'Shodasavarga', count: 16, source: 'verses 21-25',
+      divisions: VARGAS.map(function (v) { return v.division; }),
+      weights: { 1: 3.5, 2: 1, 3: 1, 4: 0.5, 7: 0.5, 9: 3, 10: 0.5, 12: 0.5, 16: 2,
+                 20: 0.5, 24: 0.5, 27: 0.5, 30: 1, 40: 0.5, 45: 0.5, 60: 4 }
+    }
+  };
+
+  var VARGA_SCHEME_ORDER = ['shadvarga', 'saptavarga', 'dasavarga', 'shodasavarga'];
+
+  // Kept as names because they are read on their own often enough to deserve one.
+  var DASAVARGA = VARGA_SCHEMES.dasavarga.divisions;
+  var SHODASAVARGA = VARGA_SCHEMES.shodasavarga.divisions;
+  var VIMSOPAKA_DASAVARGA = VARGA_SCHEMES.dasavarga.weights;
+  var VIMSOPAKA_SHODASAVARGA = VARGA_SCHEMES.shodasavarga.weights;
 
   /*
-   * Vimsopaka weights: how the twenty points are shared out. Both schemes are
-   * here because they disagree about the same division, and the disagreement
-   * catches people out - Shashtiamsa is worth 5 across the ten and 4 across the
-   * sixteen, Rashi 3 and then 3.5.
-   *
-   * Chapter 7, verse 20, for the ten: "3 for Rashi, 5 for Shashtiamsa and for the
-   * other 8 divisions, 1 1/2 each."
-   *
-   * Verses 21-25, for the sixteen: "Hora 1, Trimsamsa 1, decanate 1, Shodashamsa
-   * 2, Navamsha 3, Rashi 3 1/2, Shashtiamsa 4, and the rest of the nine divisions
-   * each a half."
-   *
-   * Each totals twenty exactly, which is what the name means and what a test
-   * holds them to.
-   */
-  var VIMSOPAKA_DASAVARGA = {
-    1: 3, 2: 1.5, 3: 1.5, 7: 1.5, 9: 1.5, 10: 1.5, 12: 1.5, 16: 1.5, 30: 1.5, 60: 5
-  };
-  var VIMSOPAKA_SHODASAVARGA = {
-    1: 3.5, 2: 1, 3: 1, 4: 0.5, 7: 0.5, 9: 3, 10: 0.5, 12: 0.5, 16: 2,
-    20: 0.5, 24: 0.5, 27: 0.5, 30: 1, 40: 0.5, 45: 0.5, 60: 4
-  };
-
-  /*
-   * Same passage, verse 16: "As for Trimsamsa effects the Sun is akin to Mars and
+   * Chapter 7, verse 16: "As for Trimsamsa effects the Sun is akin to Mars and
    * the Moon is akin to Venus. The effects applicable to Rashi will apply to
    * Trimsamsa."
    *
-   * Trimsamsa is the other division with a hole in it. Only the five taras rule
-   * one, so Cancer and Leo never appear and neither luminary could otherwise
-   * stand in a trimsamsa of its own. The stand-in settles ownership only;
-   * exaltation, debilitation and friendship stay the real graha's, which is as
-   * far as the text goes.
+   * Trimsamsa is the division with a hole in it. Only the five taras rule one, so
+   * Cancer and Leo never appear and neither luminary could otherwise stand in a
+   * trimsamsa of its own. The stand-in settles ownership only; exaltation,
+   * debilitation and friendship stay the real graha's, which is as far as the
+   * text goes.
    */
   var TRIMSAMSA_PROXY = { Sun: 'Mars', Moon: 'Venus' };
 
@@ -1244,6 +1267,8 @@ var Astro = (function () {
     vargaDignity: vargaDignity,
     DASAVARGA: DASAVARGA,
     SHODASAVARGA: SHODASAVARGA,
+    VARGA_SCHEMES: VARGA_SCHEMES,
+    VARGA_SCHEME_ORDER: VARGA_SCHEME_ORDER,
     VIMSOPAKA_DASAVARGA: VIMSOPAKA_DASAVARGA,
     VIMSOPAKA_SHODASAVARGA: VIMSOPAKA_SHODASAVARGA,
     VARGA_DIGNITY_SHORT: VARGA_DIGNITY_SHORT,

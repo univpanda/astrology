@@ -366,7 +366,7 @@ function stripHtml(label) {
     return (strip.match(/role="tab"/g) || []).length === 6;
   })());
   ok('the table strip is a real tablist',
-     ['table-a', 'table-b', 'shadbala', 'shodasavarga', 'yogas', 'aspects'].every(function (n) {
+     ['table-a', 'table-b', 'shadbala', 'vargas', 'yogas', 'aspects'].every(function (n) {
     return new RegExp('id="tab-' + n + '"[\\s\\S]{0,140}aria-controls="panel-' + n + '"').test(html) &&
            new RegExp('id="panel-' + n + '"[^>]*aria-labelledby="tab-' + n + '"').test(html);
   }));
@@ -376,7 +376,7 @@ function stripHtml(label) {
   ok('one tab implementation still serves every strip',
      (appSrc.match(/function setupTabs/g) || []).length === 1 &&
      (appSrc.match(/setupTabs\(/g) || []).length === 3 &&
-     /setupTabs\(\['table-a', 'table-b', 'shadbala', 'shodasavarga', 'yogas', 'aspects'\]/.test(appSrc));
+     /setupTabs\(\['table-a', 'table-b', 'shadbala', 'vargas', 'yogas', 'aspects'\]/.test(appSrc));
   ok('there are two chart slots, each with two selects', ['a', 'b'].every(function (slot) {
     return new RegExp('id="ref-' + slot + '"').test(html) &&
            new RegExp('id="varga-' + slot + '"').test(html) &&
@@ -661,17 +661,17 @@ ok('the page carries a key for both flags', (function () {
     /measured against D9 whichever division is on screen/.test(flat);
 })());
 
-console.log('\nShodasavarga panel');
+console.log('\nVargas panel');
 /*
  * The headings are built in code now, from the same list the cells come from, so
  * the markup carries an empty row rather than sixteen divisions typed a second
  * time. This checks the builder walks the engine's list in order.
  */
-ok('the columns are built from the engine\'s own list of sixteen, in order', (function () {
-  var head = html.slice(html.indexOf('id="shodasavarga-table"'));
+ok('the columns are built from whichever scheme is chosen, in its own order', (function () {
+  var head = html.slice(html.indexOf('id="vargas-table"'));
   head = head.slice(0, head.indexOf('</thead>'));
   return !/<th scope="col">D\d+<\/th>/.test(head) &&
-    /Astro\.SHODASAVARGA\.forEach\(function \(division\) \{/.test(appSrc) &&
+    /scheme\.divisions\.forEach\(function \(division\) \{/.test(appSrc) &&
     /el\('th', null, 'D' \+ division\)/.test(appSrc);
 })());
 
@@ -681,6 +681,79 @@ ok('the columns are built from the engine\'s own list of sixteen, in order', (fu
  * ten and 4 across the sixteen - which is where a total that will not reconcile
  * usually comes from, so both are held here.
  */
+/*
+ * Four schemes, each sharing out twenty points and each doing it differently.
+ * Verses 17-19 give the six and the seven, verse 20 the ten, verses 21-25 the
+ * sixteen. "Vimsopaka" means of twenty, so a typo in any one weight is a failure.
+ */
+ok('all four schemes total twenty exactly', (function () {
+  return Astro.VARGA_SCHEME_ORDER.every(function (k) {
+    var sch = Astro.VARGA_SCHEMES[k];
+    var total = sch.divisions.reduce(function (t, d) { return t + sch.weights[d]; }, 0);
+    return total === 20;
+  });
+})(), Astro.VARGA_SCHEME_ORDER.map(function (k) {
+  var sch = Astro.VARGA_SCHEMES[k];
+  return sch.label + ' ' + sch.divisions.reduce(function (t, d) { return t + sch.weights[d]; }, 0);
+}).join(', '));
+
+ok('each scheme carries exactly as many divisions as its name claims', (function () {
+  var named = { shadvarga: 6, saptavarga: 7, dasavarga: 10, shodasavarga: 16 };
+  return Astro.VARGA_SCHEME_ORDER.every(function (k) {
+    var sch = Astro.VARGA_SCHEMES[k];
+    return sch.divisions.length === named[k] && sch.count === named[k] &&
+      Object.keys(sch.weights).length === named[k];
+  });
+})());
+
+ok('every division has a weight and every weight a division', (function () {
+  return Astro.VARGA_SCHEME_ORDER.every(function (k) {
+    var sch = Astro.VARGA_SCHEMES[k];
+    return sch.divisions.every(function (d) { return sch.weights[d] !== undefined; }) &&
+      Object.keys(sch.weights).every(function (d) { return sch.divisions.indexOf(+d) >= 0; });
+  });
+})());
+
+// Each scheme is the one before it plus more, which is how Parashara builds them.
+ok('the schemes nest: six inside seven inside ten inside sixteen', (function () {
+  var order = Astro.VARGA_SCHEME_ORDER;
+  return order.every(function (k, i) {
+    if (i === 0) return true;
+    var inner = Astro.VARGA_SCHEMES[order[i - 1]].divisions;
+    var outer = Astro.VARGA_SCHEMES[k].divisions;
+    return inner.every(function (d) { return outer.indexOf(d) >= 0; });
+  });
+})());
+
+ok('the seven are the same seven Shadbala scores saptavargaja over',
+   Astro.VARGA_SCHEMES.saptavarga.divisions.join(',') === '1,2,3,7,9,12,30');
+
+ok('the figures are Parashara\'s own, scheme by scheme', (function () {
+  var S = Astro.VARGA_SCHEMES;
+  return S.shadvarga.weights[1] === 6 && S.shadvarga.weights[3] === 4 &&
+      S.shadvarga.weights[9] === 5 && S.shadvarga.weights[30] === 1 &&
+    S.saptavarga.weights[1] === 5 && S.saptavarga.weights[7] === 2.5 &&
+      S.saptavarga.weights[9] === 4.5 &&
+    S.dasavarga.weights[1] === 3 && S.dasavarga.weights[60] === 5 &&
+    S.shodasavarga.weights[1] === 3.5 && S.shodasavarga.weights[60] === 4;
+})());
+
+// The same division priced four different ways is the whole reason to name the scheme.
+ok('Rashi is priced differently in every one of the four', (function () {
+  var seen = Astro.VARGA_SCHEME_ORDER.map(function (k) {
+    return Astro.VARGA_SCHEMES[k].weights[1];
+  });
+  return seen.join(',') === '6,5,3,3.5' && new Set(seen).size === 4;
+})());
+
+ok('the picker offers all four, widest last and chosen', (function () {
+  return /Astro\.VARGA_SCHEME_ORDER\.forEach\(function \(key\) \{/.test(appSrc) &&
+    /if \(key === 'shodasavarga'\) opt\.selected = true;/.test(appSrc) &&
+    /id="varga-scheme"/.test(html);
+})());
+ok('and changing it redraws the table',
+   /schemeSelect\.addEventListener\('change', function \(\) \{\s*\n\s*if \(lastChart\) renderVargas\(lastChart\);/.test(appSrc));
+
 ok('both vimsopaka schemes total twenty exactly', (function () {
   var sum = function (m) {
     return Object.keys(m).reduce(function (t, k) { return t + m[k]; }, 0);
@@ -704,30 +777,36 @@ ok('Shashtiamsa is the division the two schemes most disagree on',
    Astro.VIMSOPAKA_DASAVARGA[60] === 5 && Astro.VIMSOPAKA_SHODASAVARGA[60] === 4);
 ok('halves are written as halves, not decimals',
    /function vimsopakaFigure/.test(appSrc) && /'\\u00bd'/.test(appSrc));
-ok('the heading says what the figure is, and what it would be across the ten',
-   /Worth ' \+ weight \+ ' of the twenty vimsopaka points across the sixteen/.test(appSrc) &&
-   /' across the ten\.'/.test(appSrc));
-ok('and the note gives the distribution in words', (function () {
-  var flat = appSrc.replace(/'\s*\+\s*'/g, '');
-  return /D1 3\\u00bd, D60 4, D9 3, D16 2/.test(flat) &&
-    /D60 is 5 there/.test(flat);
-})());
+ok('the heading says its figure here and in every other scheme that carries it',
+   /Worth ' \+ weight \+ ' of the twenty in the ' \+ scheme\.label/.test(appSrc) &&
+   /' across the ' \+ other\.label\.toLowerCase\(\)/.test(appSrc));
+/*
+ * The note has to describe whichever scheme is showing, so the shares are built
+ * from that scheme rather than written into the prose, where they would be wrong
+ * for the other three the moment the select moved.
+ */
+ok('and the note builds its distribution from the chosen scheme',
+   /var shares = scheme\.divisions\.map\(function \(d\) \{/.test(appSrc) &&
+   /vimsopakaFigure\(scheme\.weights\[d\]\)/.test(appSrc) &&
+   /share of the twenty in this scheme/.test(appSrc.replace(/'\s*\+\s*'/g, '')));
+ok('and names the other schemes rather than one fixed pair',
+   /Astro\.VARGA_SCHEME_ORDER\.filter\(function \(k\) \{ return k !== scheme\.key; \}\)/.test(appSrc));
 
 ok('it renders whenever a chart does',
-   /renderShadbala\(state\);\s*\n\s*renderShodasavarga\(state\);/.test(appSrc));
+   /renderShadbala\(state\);\s*\n\s*renderVargas\(state\);/.test(appSrc));
 ok('it reads the division list from the engine rather than repeating it',
    (function () {
      var code = appSrc.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
-     return /Astro\.SHODASAVARGA\.map\(function \(division\)/.test(code) &&
+     return /scheme\.divisions\.map\(function \(division\)/.test(code) &&
        !/\[1, 2, 3, 4, 7, 9, 10, 12, 16, 20, 24, 27, 30, 40, 45, 60\]/.test(code);
    })());
 ok('and the sixteen are derived from VARGAS rather than retyped beside it', (function () {
   var astroSrc = fs.readFileSync(path.join(root, 'js/astro.js'), 'utf8');
-  return /var SHODASAVARGA = VARGAS\.map\(function \(v\) \{ return v\.division; \}\);/.test(astroSrc) &&
+  return /divisions: VARGAS\.map\(function \(v\) \{ return v\.division; \}\)/.test(astroSrc) &&
     Astro.SHODASAVARGA.join(' ') === '1 2 3 4 7 9 10 12 16 20 24 27 30 40 45 60';
 })());
 ok('grahas keep the order of the tables beside it',
-   /state\.chart\.planets\.forEach\(function \(planet\) \{[\s\S]{0,400}shodasavarga-note/.test(appSrc) ||
+   /state\.chart\.planets\.forEach\(function \(planet\) \{[\s\S]{0,400}vargas-note/.test(appSrc) ||
    /\/\/ Listed as in the graha tables/.test(appSrc));
 ok('a graha with no reading anywhere is dropped, not shown as a row of dashes',
    /if \(cells\.every\(function \(c\) \{ return !c; \}\)\) return;/.test(appSrc));
@@ -817,15 +896,15 @@ ok('each graha takes two rows, its name spanning both',
 ok('the spanning name is a row-group header, not a plain cell',
    /th\.setAttribute\('scope', 'rowgroup'\)/.test(appSrc));
 ok('the sign row and the dignity row read one and the same varga position',
-   /var detail = d \? shodasavargaDetail\(d, Astro\.SHODASAVARGA\[i\], planet\.name\) : null;/.test(appSrc));
+   /var detail = d \? vargasDetail\(d, scheme\.divisions\[i\], planet\.name\) : null;/.test(appSrc));
 ok('both halves of a pair carry the same hover',
    /if \(detail\) \{ sign\.title = detail; dignity\.title = detail; \}/.test(appSrc));
 ok('and a graha with no reading still contributes no rows at all',
    /if \(cells\.every\(function \(c\) \{ return !c; \}\)\) return;/.test(appSrc));
 ok('the rule sits under the pair rather than between its halves', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-  return /#shodasavarga-table tr\.varga-signs td \{[^}]*border-bottom: none/.test(css) &&
-    /#shodasavarga-table th\[rowspan\] \{[^}]*vertical-align: middle/.test(css) &&
+  return /#vargas-table tr\.varga-signs td \{[^}]*border-bottom: none/.test(css) &&
+    /#vargas-table th\[rowspan\] \{[^}]*vertical-align: middle/.test(css) &&
     /td\.varga-sign/.test(css);
 })());
 ok('the note says the rows come in pairs',

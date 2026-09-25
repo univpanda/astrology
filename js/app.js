@@ -126,6 +126,23 @@
     });
 
     fillZones(FALLBACK_ZONES);
+
+    /*
+     * Four groupings, narrowest first. Shodasavarga is the default because it is
+     * the whole of what the module can divide; the narrower ones are the sets
+     * vimsopaka bala is more often actually scored over.
+     */
+    var schemeSelect = document.getElementById('varga-scheme');
+    Astro.VARGA_SCHEME_ORDER.forEach(function (key) {
+      var s = Astro.VARGA_SCHEMES[key];
+      var opt = el('option', null, s.label + ' \u00b7 ' + s.count + ' divisions');
+      opt.value = key;
+      if (key === 'shodasavarga') opt.selected = true;
+      schemeSelect.appendChild(opt);
+    });
+    schemeSelect.addEventListener('change', function () {
+      if (lastChart) renderVargas(lastChart);
+    });
   }
 
   /*
@@ -723,7 +740,7 @@
      */
     drawCharts();
     renderShadbala(state);
-    renderShodasavarga(state);
+    renderVargas(state);
     renderYogas(state);
     renderAspects(state);
     renderPanchang(c);
@@ -995,10 +1012,10 @@
       'by a few virupas.';
   }
 
-  /* ----------------------------------------------------------- shodasavarga */
+  /* ----------------------------------------------------------- vargas */
 
   /**
-   * Where each graha stands in the ten vargas Parashara groups as the Shodasavarga.
+   * Where each graha stands in the ten vargas Parashara groups as the Vargas.
    *
    * The same seven-step scale the Dignity column uses, applied division by
    * division: the graha against the lord of whichever sign that division puts it
@@ -1011,7 +1028,7 @@
    * useful fact. The relation underneath is kept in the cell's title.
    */
   /** What one cell of the grid is saying, in full. */
-  function shodasavargaDetail(d, division, graha) {
+  function vargasDetail(d, division, graha) {
     var text = 'D' + division + ': ' + d.label + ' - ' + Astro.SIGNS[d.sign] +
       ', ruled by ' + d.lord + '.';
     if (d.viaProxy) {
@@ -1038,32 +1055,76 @@
    * Built here because the divisions and the weights both live in the engine;
    * repeating either in the markup would be a second place for them to drift.
    */
-  function renderShodasavargaHead(table) {
+  function renderVargasHead(table, scheme) {
     var row = table.querySelector('thead tr');
     row.innerHTML = '';
     var first = el('th', null, 'Graha');
     first.setAttribute('scope', 'col');
     row.appendChild(first);
 
-    Astro.SHODASAVARGA.forEach(function (division) {
-      var weight = Astro.VIMSOPAKA_SHODASAVARGA[division];
+    scheme.divisions.forEach(function (division) {
+      var weight = scheme.weights[division];
       var th = el('th', null, 'D' + division);
       th.setAttribute('scope', 'col');
       th.appendChild(el('span', 'varga-weight', vimsopakaFigure(weight)));
       var varga = Astro.VARGAS.filter(function (v) { return v.division === division; })[0];
+      /*
+       * Every other scheme that carries this division, with its figure. The same
+       * varga is worth 5 in one and 4 in another, and quoting a figure without
+       * its scheme is the usual reason a vimsopaka total will not reconcile.
+       */
+      var elsewhere = Astro.VARGA_SCHEME_ORDER.filter(function (k) {
+        return k !== scheme.key && Astro.VARGA_SCHEMES[k].weights[division] !== undefined;
+      }).map(function (k) {
+        var other = Astro.VARGA_SCHEMES[k];
+        return other.weights[division] + ' across the ' + other.label.toLowerCase();
+      });
       th.title = (varga ? varga.label + ', ' + varga.about + '. ' : '') +
-        'Worth ' + weight + ' of the twenty vimsopaka points across the sixteen' +
-        (Astro.VIMSOPAKA_DASAVARGA[division] !== undefined &&
-         Astro.VIMSOPAKA_DASAVARGA[division] !== weight
-          ? ', and ' + Astro.VIMSOPAKA_DASAVARGA[division] + ' across the ten.'
-          : '.');
+        'Worth ' + weight + ' of the twenty in the ' + scheme.label.toLowerCase() +
+        (elsewhere.length ? '; ' + elsewhere.join(', ') + '.' : '.');
       row.appendChild(th);
     });
   }
 
-  function renderShodasavarga(state) {
-    var table = document.getElementById('shodasavarga-table');
-    renderShodasavargaHead(table);
+  /*
+   * The note describes whichever scheme is showing, its own share-out of the
+   * twenty included. Writing one scheme's figures into the prose would be wrong
+   * for the other three the moment the select moved.
+   */
+  function vargaNote(scheme) {
+    var shares = scheme.divisions.map(function (d) {
+      return 'D' + d + ' ' + vimsopakaFigure(scheme.weights[d]);
+    }).join(', ');
+    var others = Astro.VARGA_SCHEME_ORDER.filter(function (k) { return k !== scheme.key; })
+      .map(function (k) { return Astro.VARGA_SCHEMES[k].label; });
+
+    return 'Where each graha stands in the ' + scheme.count + ' divisions of the ' +
+      scheme.label + ', judged against the lord of the sign each one gives. Every graha ' +
+      'takes two rows: the sign, numbered 1 to 12 from Aries as the chart above numbers its ' +
+      'boxes, then its dignity there. Dignities shorten to Exal, Mool, Own, Gt Fr, Fr, Neut, ' +
+      'Enm, Gt Enm and Deb; hover a cell for the full words, the sign and its lord. ' +
+      'Parashara prices dignity as varga viswa, out of twenty: own sign 20, great friend 18, ' +
+      'friend 15, neutral 10, enemy 7, great enemy 5. Moolatrikona he does not rank apart ' +
+      'from an own sign, and exaltation falls outside the six entirely, uchcha bala measuring ' +
+      'that; both appear here regardless, as does debilitation. The figure under each heading ' +
+      'is that division\u2019s share of the twenty in this scheme \u2014 ' + shares +
+      ', from ' + scheme.source + '. The ' + others.join(', ') + ' share them out ' +
+      'differently, which is the usual reason a vimsopaka total will not reconcile; hover a ' +
+      'heading for its figure in each. No luminary rules a trimsamsa, so in D30 the Sun ' +
+      'stands in as Mars and the Moon as Venus. Rahu and Ketu own no sign and keep no ' +
+      'friendships, so they are left out.';
+  }
+
+  /** Whichever scheme the select is on, falling back to the widest. */
+  function currentScheme() {
+    var chosen = document.getElementById('varga-scheme').value;
+    return Astro.VARGA_SCHEMES[chosen] || Astro.VARGA_SCHEMES.shodasavarga;
+  }
+
+  function renderVargas(state) {
+    var scheme = currentScheme();
+    var table = document.getElementById('vargas-table');
+    renderVargasHead(table, scheme);
     var tbody = table.querySelector('tbody');
     tbody.innerHTML = '';
 
@@ -1072,7 +1133,7 @@
 
     // Listed as in the graha tables, for reading across from one to the other.
     state.chart.planets.forEach(function (planet) {
-      var cells = Astro.SHODASAVARGA.map(function (division) {
+      var cells = scheme.divisions.map(function (division) {
         return Astro.vargaDignity(planet.name, planet.longitude, division, positionsD1);
       });
       if (cells.every(function (c) { return !c; })) return;   // Rahu and Ketu
@@ -1095,7 +1156,7 @@
       dignityRow.className = 'varga-dignities';
 
       cells.forEach(function (d, i) {
-        var detail = d ? shodasavargaDetail(d, Astro.SHODASAVARGA[i], planet.name) : null;
+        var detail = d ? vargasDetail(d, scheme.divisions[i], planet.name) : null;
         /*
          * The sign as its number, 1 for Aries through 12 for Pisces, which is how
          * the North Indian chart above already labels its boxes. Sixteen columns
@@ -1124,21 +1185,7 @@
      * moolatrikona is not among them - so the two scales are now named apart
      * rather than welded into one sentence that leaves a name without a number.
      */
-    document.getElementById('shodasavarga-note').textContent =
-      'Where each graha stands in all sixteen divisions, judged against the lord of the sign ' +
-      'each one gives. Every graha takes two rows: the sign, numbered 1 to 12 from Aries as ' +
-      'the chart above numbers its boxes, then its dignity there. Dignities shorten to Exal, ' +
-      'Mool, Own, Gt Fr, Fr, Neut, Enm, Gt Enm and Deb; hover a cell for the full words, the ' +
-      'sign and its lord. Parashara prices them as varga viswa, out of twenty: own sign 20, ' +
-      'great friend 18, friend 15, neutral 10, enemy 7, great enemy 5. Moolatrikona he does ' +
-      'not rank apart from an own sign, and exaltation falls outside the six entirely, uchcha ' +
-      'bala measuring that; both appear here regardless, as does debilitation. No luminary ' +
-      'rules a trimsamsa, so in D30 the Sun stands in as Mars and the Moon as Venus. The ' +
-      'figure under each heading is that division\u2019s share of the twenty: D1 3\u00bd, ' +
-      'D60 4, D9 3, D16 2, then D2, D3 and D30 at 1 and the remaining nine at a half. Across ' +
-      'the ten of the Dasavarga the shares differ \u2014 D60 is 5 there, D1 3 \u2014 which is ' +
-      'the usual source of a vimsopaka total that will not reconcile. Rahu and ' +
-      'Ketu own no sign and keep no friendships, so they are left out.';
+    document.getElementById('vargas-note').textContent = vargaNote(scheme);
   }
 
   /* --------------------------------------------------------------- yogas */
@@ -1808,7 +1855,7 @@
    * charts are set to. Fixed D1/D9 labels would have lied the moment either
    * select moved.
    */
-  var tableTabs = setupTabs(['table-a', 'table-b', 'shadbala', 'shodasavarga', 'yogas', 'aspects'],
+  var tableTabs = setupTabs(['table-a', 'table-b', 'shadbala', 'vargas', 'yogas', 'aspects'],
     document.querySelector('.tabs.subtabs'));
 
   function activateTab(name, moveFocus) { sections.activate(name, moveFocus); }
