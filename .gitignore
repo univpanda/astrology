@@ -1,0 +1,9 @@
+# GeoNames and Horizons downloads used only to regenerate data/
+cities*.txt
+cities*.zip
+admin1CodesASCII.txt
+countryInfo.txt
+vec-*.csv
+
+.DS_Store
+node_modules/

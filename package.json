@@ -1,0 +1,11 @@
+{
+  "name": "jyotisha",
+  "version": "1.0.0",
+  "description": "Vedic (sidereal) birth chart generator that runs entirely in the browser",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "test": "node test/test.js && node test/test-ui.js",
+    "serve": "python3 -m http.server 8000"
+  }
+}

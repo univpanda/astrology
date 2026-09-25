@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jyotisha · Vedic Chart Generator</title>
+<meta name="description" content="Generate a sidereal Vedic birth chart (kundli) from a name, date, time and place. Runs entirely in the browser.">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<header class="site-header">
+  <h1>Jyotisha</h1>
+  <p class="tagline">A Vedic birth chart from a date, a time and a place. Computed in your browser, sent nowhere.</p>
+</header>
+
+<main>
+  <form id="birth-form" class="card" novalidate>
+    <div class="field-grid">
+      <div class="field">
+        <label for="name">Name</label>
+        <input type="text" id="name" name="name" autocomplete="name" placeholder="Optional">
+      </div>
+
+      <div class="field">
+        <label for="date">Date of birth</label>
+        <input type="date" id="date" name="date" min="1800-01-01" max="2100-12-31" required>
+      </div>
+
+      <div class="field">
+        <label for="time">Time of birth <span class="hint">local clock time</span></label>
+        <input type="time" id="time" name="time" step="60" required>
+      </div>
+
+      <div class="field field-wide">
+        <label for="place">Place of birth</label>
+        <div class="combobox" id="place-combobox">
+          <input type="text" id="place" name="place" role="combobox" autocomplete="off"
+                 aria-expanded="false" aria-controls="place-listbox" aria-autocomplete="list"
+                 placeholder="Start typing a city, e.g. Varanasi" required>
+          <ul id="place-listbox" role="listbox" aria-label="Matching places" hidden></ul>
+        </div>
+        <p class="field-note" id="place-note" aria-live="polite"></p>
+        <button type="button" class="link-button" id="manual-toggle" aria-expanded="false">
+          Not listed? Enter coordinates
+        </button>
+      </div>
+
+      <fieldset class="field field-wide manual-coords" id="manual-coords" hidden>
+        <legend>Manual coordinates</legend>
+        <div class="manual-grid">
+          <div class="field">
+            <label for="manual-lat">Latitude <span class="hint">north positive</span></label>
+            <input type="number" id="manual-lat" step="0.0001" min="-90" max="90" placeholder="25.3176">
+          </div>
+          <div class="field">
+            <label for="manual-lon">Longitude <span class="hint">east positive</span></label>
+            <input type="number" id="manual-lon" step="0.0001" min="-180" max="180" placeholder="82.9739">
+          </div>
+          <div class="field">
+            <label for="manual-zone">Timezone</label>
+            <select id="manual-zone"></select>
+          </div>
+        </div>
+      </fieldset>
+    </div>
+
+    <details class="options">
+      <summary>Calculation options</summary>
+      <div class="options-grid">
+        <div class="field">
+          <label for="ayanamsa">Ayanamsa</label>
+          <select id="ayanamsa"></select>
+        </div>
+        <div class="field">
+          <label for="node-type">Rahu / Ketu</label>
+          <select id="node-type">
+            <option value="mean" selected>Mean node (panchang standard)</option>
+            <option value="true">True node</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="time-standard">Time standard</label>
+          <select id="time-standard">
+            <option value="zone" selected>Zone time (from the place's timezone)</option>
+            <option value="lmt">Local mean time (from longitude)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="chart-style">Chart style</label>
+          <select id="chart-style">
+            <option value="north" selected>North Indian (diamond)</option>
+            <option value="south">South Indian (square)</option>
+          </select>
+        </div>
+      </div>
+    </details>
+
+    <div class="actions">
+      <button type="submit" class="primary">Generate chart</button>
+      <p class="form-error" id="form-error" role="alert"></p>
+    </div>
+  </form>
+
+  <section id="result" class="result" hidden aria-live="polite">
+    <div class="card result-header">
+      <h2 id="result-name">Chart</h2>
+      <p id="result-birth" class="birth-line"></p>
+      <dl class="key-facts" id="key-facts"></dl>
+      <button type="button" class="link-button print-button" id="print-button">Print or save as PDF</button>
+    </div>
+
+    <div class="chart-pair">
+      <figure class="card chart-card">
+        <figcaption>Rashi (D1)</figcaption>
+        <div id="chart-d1"></div>
+      </figure>
+      <figure class="card chart-card">
+        <figcaption>Navamsa (D9)</figcaption>
+        <div id="chart-d9"></div>
+      </figure>
+    </div>
+
+    <div class="card">
+      <h3>Grahas</h3>
+      <div class="table-scroll">
+        <table id="planet-table">
+          <thead>
+            <tr>
+              <th scope="col">Graha</th><th scope="col">Sidereal longitude</th>
+              <th scope="col">Rashi</th><th scope="col">House</th>
+              <th scope="col">Nakshatra</th><th scope="col">Pada</th>
+              <th scope="col">Nakshatra lord</th><th scope="col">Navamsa</th>
+              <th scope="col">Motion</th><th scope="col">Dignity</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <h3>Panchang at birth</h3>
+        <dl class="key-facts" id="panchang"></dl>
+      </div>
+      <div class="card">
+        <h3>Vimshottari mahadasha</h3>
+        <p class="hint" id="dasha-balance"></p>
+        <div class="table-scroll">
+          <table id="dasha-table">
+            <thead><tr><th scope="col">Lord</th><th scope="col">From</th><th scope="col">To</th><th scope="col">Years</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <details class="card technical">
+      <summary>Calculation details</summary>
+      <dl class="key-facts" id="technical"></dl>
+      <p class="hint">
+        Positions come from analytical theories (ELP-2000 for the Moon, Keplerian
+        elements with a Jupiter/Saturn correction table for the planets) and agree
+        with JPL Horizons to better than 40 arcseconds over 1800&ndash;2100.
+      </p>
+    </details>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <p>
+    Whole-sign (Parashari) houses, sidereal zodiac. Place data from
+    <a href="https://www.geonames.org/" rel="noopener">GeoNames</a> (CC BY 4.0).
+    No data leaves this page.
+  </p>
+</footer>
+
+<script src="data/perturbations.js"></script>
+<script src="js/astro.js"></script>
+<script src="js/geo.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

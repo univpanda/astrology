@@ -1,0 +1,306 @@
+/* Jyotisha - a night-sky palette, one committed theme, and a light print sheet. */
+
+:root {
+  --ink: #0b1020;
+  --ink-raised: #141a31;
+  --ink-line: #273156;
+  --text: #e8ebf7;
+  --text-dim: #a7b0d0;
+  --text-faint: #7b85a8;
+  --gold: #e3b341;
+  --gold-dim: #8d6e28;
+  --saffron: #f08c3a;
+  --retro: #ff8fa3;
+  --radius: 12px;
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 12px 32px rgba(0, 0, 0, 0.35);
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0 1.25rem 4rem;
+  background:
+    radial-gradient(1200px 600px at 15% -10%, #1b2348 0%, transparent 60%),
+    radial-gradient(900px 500px at 90% 0%, #221b3a 0%, transparent 55%),
+    var(--ink);
+  color: var(--text);
+  font-family: var(--font);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+main, .site-header, .site-footer { max-width: 1080px; margin: 0 auto; }
+
+/* ------------------------------------------------------------------ header */
+
+.site-header { padding: 3rem 0 1.75rem; text-align: center; }
+
+.site-header h1 {
+  font-family: var(--font-display);
+  font-size: clamp(2.1rem, 5vw, 3rem);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  margin: 0;
+  color: var(--gold);
+}
+
+.tagline { color: var(--text-dim); margin: 0.6rem auto 0; max-width: 46ch; }
+
+/* -------------------------------------------------------------------- card */
+
+.card {
+  background: var(--ink-raised);
+  border: 1px solid var(--ink-line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.card h3 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.15rem;
+  letter-spacing: 0.04em;
+  margin: 0 0 1rem;
+  color: var(--gold);
+}
+
+/* -------------------------------------------------------------------- form */
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem 1.25rem;
+}
+
+.field-wide { grid-column: 1 / -1; }
+.field { display: flex; flex-direction: column; min-width: 0; }
+
+label, legend {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-faint);
+  margin-bottom: 0.4rem;
+}
+
+.hint { text-transform: none; letter-spacing: 0; color: var(--text-faint); font-size: 0.85em; }
+
+input, select {
+  font: inherit;
+  color: var(--text);
+  background: #0e1428;
+  border: 1px solid var(--ink-line);
+  border-radius: 8px;
+  padding: 0.6rem 0.7rem;
+  width: 100%;
+  min-width: 0;
+}
+
+input:focus-visible, select:focus-visible, button:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+input::placeholder { color: #5d688c; }
+
+.manual-coords { border: 1px dashed var(--ink-line); border-radius: 8px; padding: 1rem; }
+.manual-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; }
+
+.field-note { margin: 0.45rem 0 0; font-size: 0.85rem; color: var(--text-dim); min-height: 1.2em; }
+
+.options { margin-top: 1.5rem; border-top: 1px solid var(--ink-line); padding-top: 1rem; }
+.options summary, .technical summary {
+  cursor: pointer;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem 1.25rem;
+  margin-top: 1rem;
+}
+
+.actions { display: flex; align-items: center; gap: 1rem; margin-top: 1.5rem; flex-wrap: wrap; }
+
+button.primary {
+  font: inherit;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #241a05;
+  background: linear-gradient(180deg, var(--gold), #c8971f);
+  border: none;
+  border-radius: 8px;
+  padding: 0.7rem 1.6rem;
+  cursor: pointer;
+}
+button.primary:hover { filter: brightness(1.08); }
+
+.link-button {
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--gold);
+  background: none;
+  border: none;
+  padding: 0.35rem 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  align-self: flex-start;
+}
+
+.form-error { color: var(--retro); margin: 0; font-size: 0.9rem; }
+
+/* ---------------------------------------------------------------- combobox */
+
+.combobox { position: relative; }
+
+.combobox ul {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 300px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0.25rem;
+  list-style: none;
+  background: #0e1428;
+  border: 1px solid var(--ink-line);
+  border-radius: 8px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+
+.combobox li {
+  padding: 0.5rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.925rem;
+}
+.combobox li[aria-selected="true"], .combobox li:hover { background: #1d2647; }
+.combobox li .place-meta { color: var(--text-faint); font-size: 0.85em; display: block; }
+.combobox li.empty { color: var(--text-faint); cursor: default; }
+
+/* ------------------------------------------------------------------ result */
+
+.result-header h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  margin: 0 0 0.35rem;
+  font-size: 1.6rem;
+}
+
+.birth-line { margin: 0 0 1.25rem; color: var(--text-dim); font-size: 0.95rem; }
+
+.key-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.9rem 1.25rem;
+  margin: 0;
+}
+.key-facts div { min-width: 0; }
+.key-facts dt {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-faint);
+}
+.key-facts dd { margin: 0.15rem 0 0; font-size: 1.02rem; }
+.key-facts dd .sub { display: block; font-size: 0.85rem; color: var(--text-dim); }
+
+.print-button { margin-top: 1.25rem; }
+
+/* ------------------------------------------------------------------ charts */
+
+.chart-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.25rem;
+}
+.chart-card { margin: 0 0 1.25rem; }
+.chart-card figcaption {
+  font-family: var(--font-display);
+  color: var(--gold);
+  letter-spacing: 0.06em;
+  margin-bottom: 0.75rem;
+}
+
+svg.kundli { width: 100%; height: auto; display: block; }
+svg.kundli .frame, svg.kundli .cell {
+  fill: none;
+  stroke: var(--gold-dim);
+  stroke-width: 1.4;
+}
+svg.kundli .middle { fill: none; stroke: none; }
+svg.kundli .lagna-mark { stroke: var(--saffron); stroke-width: 2.4; }
+svg.kundli .first-house .cell { fill: rgba(227, 179, 65, 0.06); }
+svg.kundli text {
+  font-family: var(--font);
+  fill: var(--text);
+  font-size: 14px;
+}
+svg.kundli .sign-num { fill: var(--text-faint); font-size: 12px; letter-spacing: 0.04em; }
+svg.kundli .planet { font-size: 14.5px; }
+svg.kundli .planet.retro { fill: var(--retro); }
+svg.kundli .planet.lagna { fill: var(--saffron); font-weight: 600; }
+
+/* ------------------------------------------------------------------ tables */
+
+.two-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem; }
+.two-col > .card { margin-bottom: 0; }
+
+.table-scroll { overflow-x: auto; }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.925rem; }
+
+th, td {
+  text-align: left;
+  padding: 0.55rem 0.7rem;
+  border-bottom: 1px solid var(--ink-line);
+  white-space: nowrap;
+}
+
+th {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-faint);
+  font-weight: 600;
+}
+
+tbody tr:last-child td { border-bottom: none; }
+td.numeric, .longitude { font-family: var(--font-mono); font-size: 0.87rem; }
+td .retro-flag { color: var(--retro); }
+tr.current-dasha { background: rgba(227, 179, 65, 0.09); }
+tr.current-dasha td:first-child { color: var(--gold); font-weight: 600; }
+
+.technical { margin-top: 1.25rem; }
+.technical dl { margin-top: 1rem; }
+
+/* ------------------------------------------------------------------ footer */
+
+.site-footer { color: var(--text-faint); font-size: 0.85rem; text-align: center; padding-top: 2rem; }
+.site-footer a { color: var(--text-dim); }
+
+/* ------------------------------------------------------------------- print */
+
+@media print {
+  :root { --text: #111; --text-dim: #444; --text-faint: #666; --gold: #7a5c12; --gold-dim: #7a5c12; }
+  body { background: #fff; color: #111; padding: 0; }
+  .card { border: 1px solid #ccc; box-shadow: none; background: #fff; break-inside: avoid; }
+  #birth-form, .site-footer, .print-button, .options { display: none; }
+  .technical[open] summary { display: none; }
+  svg.kundli text { fill: #111; }
+  svg.kundli .planet.retro { fill: #a12b3f; }
+  svg.kundli .planet.lagna { fill: #a1560f; }
+  th, td { border-bottom: 1px solid #ddd; }
+}

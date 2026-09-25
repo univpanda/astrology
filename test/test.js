@@ -1,0 +1,396 @@
+/*
+ * Validation suite. Run with: node test/test.js
+ *
+ * Reference values are the worked examples in Jean Meeus, "Astronomical
+ * Algorithms" (2nd ed.), plus published Lahiri ayanamsa values and the
+ * sidereal ingress dates (sankranti) that any Vedic ephemeris must reproduce.
+ */
+global.PERTURBATIONS = require('../data/perturbations.js');
+var A = require('../js/astro.js');
+
+var pass = 0, fail = 0;
+function check(name, actual, expected, tol, unit) {
+  var diff = Math.abs(actual - expected);
+  var ok = diff <= tol;
+  if (ok) pass++; else fail++;
+  console.log(
+    (ok ? '  ok   ' : '  FAIL ') + name +
+    '\n         got ' + actual.toFixed(6) + '  want ' + expected.toFixed(6) +
+    '  diff ' + diff.toExponential(2) + (unit ? ' ' + unit : '') + '  tol ' + tol
+  );
+}
+function ok(name, cond, detail) {
+  if (cond) { pass++; console.log('  ok   ' + name + (detail ? '  (' + detail + ')' : '')); }
+  else { fail++; console.log('  FAIL ' + name + (detail ? '  (' + detail + ')' : '')); }
+}
+
+console.log('\nJulian Day (Meeus ch.7)');
+check('1957 Oct 4.81 UT -> JD', A.julianDay(1957, 10, 4.81, 0), 2436116.31, 1e-6);
+check('2000 Jan 1.5 -> J2000', A.julianDay(2000, 1, 1, 12), 2451545.0, 1e-9);
+check('333 Jan 27.5 (Julian cal.)', A.julianDay(333, 1, 27, 12), 1842713.0, 1e-9);
+var rt = A.calendarDate(2436116.31);
+ok('calendarDate round-trip', rt.y === 1957 && rt.m === 10 && rt.d === 4 &&
+   Math.abs(rt.hours - 19.44) < 0.01, rt.y + '-' + rt.m + '-' + rt.d + ' ' + rt.hours.toFixed(3) + 'h');
+
+console.log('\nNutation and obliquity (Meeus example 22.a, 1987 Apr 10.0 TD)');
+var T87 = (A.julianDay(1987, 4, 10, 0) - 2451545.0) / 36525;
+var nut = A.nutation(T87);
+check('delta psi', nut.dpsi * 3600, -3.788, 0.5, 'arcsec');
+check('delta epsilon', nut.deps * 3600, 9.443, 0.5, 'arcsec');
+check('mean obliquity', A.meanObliquity(T87), 23 + 26 / 60 + 27.407 / 3600, 1e-5, 'deg');
+
+console.log('\nApparent sidereal time (Meeus example 12.a, 1987 Apr 10.0 UT)');
+var jd87 = A.julianDay(1987, 4, 10, 0);
+var eps87 = A.meanObliquity(T87) + nut.deps;
+check('Greenwich apparent ST', A.apparentSiderealTime(jd87, T87, nut, eps87),
+      197.693195 + nut.dpsi * Math.cos(eps87 * Math.PI / 180), 1e-4, 'deg');
+
+console.log('\nMoon (Meeus example 47.a, 1992 Apr 12.0 TD)');
+var T92 = (A.julianDay(1992, 4, 12, 0) - 2451545.0) / 36525;
+check('geocentric longitude', A.moonLongitude(T92), 133.162655, 0.002, 'deg');
+
+console.log('\nLunar node');
+// Regression rate: one nodal cycle is 6798.38 days (18.6 years).
+var n1 = A.lunarNode(0, false), n2 = A.lunarNode(1 / 36525, false);
+check('regression rate per day', (n2 - n1) * 36525 / 36525, -1934.1362891 / 36525, 1e-9, 'deg/day');
+check('mean node at J2000', A.lunarNode(0, false), 125.0445479, 1e-9, 'deg');
+// The Meeus correction series has a maximum possible amplitude of 1.97 deg.
+ok('true node stays within 2 deg of mean', (function () {
+  for (var d = 0; d < 400; d++) {
+    var Td = (A.julianDay(2024, 1, 1, 0) + d - 2451545.0) / 36525;
+    var delta = A.norm360(A.lunarNode(Td, true) - A.lunarNode(Td, false) + 180) - 180;
+    if (Math.abs(delta) > 2.0) return false;
+  }
+  return true;
+})());
+// A solar eclipse can only happen with the Sun close to a node. These two are
+// the 2024 Apr 8 total and the 2023 Oct 14 annular eclipse.
+function sunNodeGap(y, m, d, h) {
+  var jd = A.julianDay(y, m, d, h);
+  var T = (jd + A.deltaT(jd) / 86400 - 2451545.0) / 36525;
+  var sunLon = A.apparentLongitude('sun', T, A.nutation(T)).lon;
+  var gap = A.norm360(sunLon - A.lunarNode(T, true));
+  return Math.min(gap, 360 - gap, Math.abs(gap - 180));
+}
+ok('Sun near a node at the 2024 Apr 8 eclipse', sunNodeGap(2024, 4, 8, 18.3) < 12,
+   sunNodeGap(2024, 4, 8, 18.3).toFixed(2) + ' deg');
+ok('Sun near a node at the 2023 Oct 14 eclipse', sunNodeGap(2023, 10, 14, 18) < 12,
+   sunNodeGap(2023, 10, 14, 18).toFixed(2) + ' deg');
+
+console.log('\nSun (Meeus example 25.b, 1992 Oct 13.0 TD)');
+var Ts = (A.julianDay(1992, 10, 13, 0) - 2451545.0) / 36525;
+var nutS = A.nutation(Ts);
+var sun = A.apparentLongitude('sun', Ts, nutS);
+check('apparent longitude', sun.lon, 199.90895, 0.01, 'deg');
+// Our Earth comes from the Earth/Moon *barycentre* elements, which sit up to
+// 4670 km (3.1e-5 AU) from Earth's centre - hence the loose tolerance here and
+// the ~9 arcsec offset in the longitude above.
+check('distance to Sun', sun.distance, 0.99760775, 1e-4, 'AU');
+
+console.log('\nVenus (Meeus example 33.a, 1992 Dec 20.0 TD)');
+var Tv = (A.julianDay(1992, 12, 20, 0) - 2451545.0) / 36525;
+var venus = A.apparentLongitude('venus', Tv, A.nutation(Tv));
+check('apparent longitude', venus.lon, 313.08102, 0.02, 'deg');
+check('apparent latitude', venus.lat, -2.08474, 0.02, 'deg');
+
+console.log('\nEarth orbit sanity');
+var rmin = 99, rmax = 0;
+for (var i = 0; i < 366; i++) {
+  var Te = (A.julianDay(2024, 1, 1, 0) + i - 2451545.0) / 36525;
+  var p = A.heliocentric('earth', Te);
+  var r = Math.sqrt(p.x * p.x + p.y * p.y + p.z * p.z);
+  rmin = Math.min(rmin, r); rmax = Math.max(rmax, r);
+}
+check('perihelion distance', rmin, 0.98330, 0.0002, 'AU');
+check('aphelion distance', rmax, 1.01670, 0.0002, 'AU');
+
+console.log('\nLahiri ayanamsa against published values');
+function ayanAt(y, m, d) {
+  var jd = A.julianDay(y, m, d, 0);
+  return A.ayanamsa((jd + A.deltaT(jd) / 86400 - 2451545.0) / 36525, 'lahiri');
+}
+check('2000 Jan 1', ayanAt(2000, 1, 1), 23 + 51 / 60 + 11 / 3600, 0.002, 'deg');
+check('2020 Jan 1', ayanAt(2020, 1, 1), 24 + 7 / 60 + 57 / 3600, 0.003, 'deg');
+check('1980 Jan 1', ayanAt(1980, 1, 1), 23 + 34 / 60 + 27 / 3600, 0.003, 'deg');
+check('1950 Jan 1', ayanAt(1950, 1, 1), 23 + 9 / 60 + 42 / 3600, 0.01, 'deg');
+
+console.log('\nSidereal ingresses (sankranti) - the ayanamsa cross-check');
+// The Sun's sidereal longitude must hit an exact sign boundary on the dates the
+// Indian calendar names: Mesha ~Apr 14, Makara ~Jan 14.
+function siderealSun(jdUT) {
+  var T = (jdUT + A.deltaT(jdUT) / 86400 - 2451545.0) / 36525;
+  var lon = A.apparentLongitude('sun', T, A.nutation(T)).lon;
+  return A.norm360(lon - A.ayanamsa(T, 'lahiri'));
+}
+function ingressDay(y, m, dStart, targetSign) {
+  for (var d = dStart; d < dStart + 5; d++) {
+    var a = A.norm360(siderealSun(A.julianDay(y, m, d, 0)) - targetSign * 30);
+    var b = A.norm360(siderealSun(A.julianDay(y, m, d + 1, 0)) - targetSign * 30);
+    if (a > 300 && b < 60) return d;
+  }
+  return -1;
+}
+var mesha = ingressDay(2025, 4, 12, 0);
+ok('Mesha Sankranti 2025 falls Apr 13-14 UT', mesha === 13 || mesha === 14, 'Apr ' + mesha);
+var makara = ingressDay(2026, 1, 12, 9);
+ok('Makara Sankranti 2026 falls Jan 13-14 UT', makara === 13 || makara === 14, 'Jan ' + makara);
+
+console.log('\nSidereal ingress moments against published Vedic transit dates');
+function siderealLon(body, jd) {
+  var T = (jd + A.deltaT(jd) / 86400 - 2451545.0) / 36525;
+  var n = A.nutation(T);
+  var lon = body === 'rahu' ? A.lunarNode(T, false) : A.apparentLongitude(body, T, n).lon;
+  return A.norm360(lon - A.ayanamsa(T, 'lahiri'));
+}
+/** Bisect for the moment `body` crosses into sign `target`; returns the IST date. */
+function ingressIST(body, target, jdLo, jdHi, retrograde) {
+  var f = function (jd) { var d = A.norm360(siderealLon(body, jd) - target * 30); return d > 180 ? d - 360 : d; };
+  for (var i = 0; i < 80; i++) {
+    var m = (jdLo + jdHi) / 2;
+    if (retrograde ? f(m) > 0 : f(m) < 0) jdLo = m; else jdHi = m;
+  }
+  var c = A.calendarDate((jdLo + jdHi) / 2 + 330 / 1440); // IST = UT + 5:30
+  return c.y + '-' + String(c.m).padStart(2, '0') + '-' + String(c.d).padStart(2, '0') +
+    ' ' + String(Math.floor(c.hours)).padStart(2, '0') + ':' +
+    String(Math.round((c.hours % 1) * 60)).padStart(2, '0');
+}
+[
+  ['Sun into Mesha 2025', 'sun', 0, [2025, 4, 10], [2025, 4, 18], '2025-04-14'],
+  ['Sun into Makara 2026', 'sun', 9, [2026, 1, 10], [2026, 1, 18], '2026-01-14'],
+  ['Saturn into Kumbha', 'saturn', 10, [2023, 1, 10], [2023, 1, 25], '2023-01-17'],
+  ['Saturn into Meena', 'saturn', 11, [2025, 3, 22], [2025, 4, 5], '2025-03-29'],
+  ['Jupiter into Vrishabha', 'jupiter', 1, [2024, 4, 25], [2024, 5, 6], '2024-05-01'],
+  ['Jupiter into Mithuna', 'jupiter', 2, [2025, 5, 8], [2025, 5, 20], '2025-05-14']
+].forEach(function (t) {
+  var got = ingressIST(t[1], t[2], A.julianDay(t[3][0], t[3][1], t[3][2], 0), A.julianDay(t[4][0], t[4][1], t[4][2], 0));
+  ok(t[0] + ' = ' + t[5] + ' IST', got.slice(0, 10) === t[5], got + ' IST');
+});
+// Panchangs publish the *mean* node for Rahu/Ketu, which is what this defaults to.
+var rahuIn = ingressIST('rahu', 0, A.julianDay(2023, 10, 25, 0), A.julianDay(2023, 11, 5, 0), true);
+ok('mean Rahu into Meena = 2023-10-30 IST', rahuIn.slice(0, 10) === '2023-10-30', rahuIn + ' IST');
+
+console.log('\nApparent longitudes against JPL Horizons');
+/*
+ * Reference apparent geocentric RA/Dec (true equator and equinox of date,
+ * airless) pulled from the JPL Horizons API. Converting them to ecliptic
+ * longitude with our own obliquity gives an independent check of the whole
+ * chain: theory, light-time, aberration, precession and nutation.
+ */
+var HORIZONS = [
+  ['sun', 1950, 1, 1, 0, 280.884733739, -23.070740433],
+  ['sun', 1990, 8, 15, 5, 144.489125792, 14.136941379],
+  ['sun', 2024, 5, 1, 0, 38.686103122, 15.161920510],
+  ['sun', 2024, 5, 2, 0, 39.643352626, 15.461272597],
+  ['sun', 2050, 6, 30, 12, 99.709189413, 23.130799484],
+  ['moon', 1950, 1, 1, 0, 58.451755325, 24.152480764],
+  ['moon', 1990, 8, 15, 5, 70.590491275, 26.576634736],
+  ['moon', 2024, 5, 1, 0, 308.615124762, -23.810582373],
+  ['moon', 2024, 5, 2, 0, 322.748186968, -19.313042109],
+  ['moon', 2050, 6, 30, 12, 221.744908677, -16.613809309],
+  ['mercury', 1950, 1, 1, 0, 301.881470650, -21.471268343],
+  ['mercury', 1990, 8, 15, 5, 169.124084486, 2.108958366],
+  ['mercury', 2024, 5, 1, 0, 16.734634265, 4.580952260],
+  ['mercury', 2024, 5, 2, 0, 17.219271152, 4.625085595],
+  ['mercury', 2050, 6, 30, 12, 113.001640959, 23.658494658],
+  ['venus', 1950, 1, 1, 0, 319.234862202, -15.151215943],
+  ['venus', 1990, 8, 15, 5, 123.912557612, 20.213258719],
+  ['venus', 2024, 5, 1, 0, 30.135533690, 10.972881518],
+  ['venus', 2024, 5, 2, 0, 31.307285881, 11.416127803],
+  ['venus', 2050, 6, 30, 12, 143.942028621, 16.169667679],
+  ['mars', 1950, 1, 1, 0, 183.027933187, 1.425600572],
+  ['mars', 1990, 8, 15, 5, 49.312931720, 16.207193473],
+  ['mars', 2024, 5, 1, 0, 0.752168057, -1.052354036],
+  ['mars', 2024, 5, 2, 0, 1.458699767, -0.745239714],
+  ['mars', 2050, 6, 30, 12, 329.238318138, -17.436184297],
+  ['jupiter', 1950, 1, 1, 0, 309.048450528, -19.219106210],
+  ['jupiter', 1990, 8, 15, 5, 121.553074576, 20.566500850],
+  ['jupiter', 2024, 5, 1, 0, 51.946498464, 18.067728563],
+  ['jupiter', 2024, 5, 2, 0, 52.184427227, 18.126513391],
+  ['jupiter', 2050, 6, 30, 12, 129.770984997, 19.025150220],
+  ['saturn', 1950, 1, 1, 0, 171.083465972, 6.027991724],
+  ['saturn', 1990, 8, 15, 5, 291.504276751, -21.941272259],
+  ['saturn', 2024, 5, 1, 0, 348.388633360, -6.882658102],
+  ['saturn', 2024, 5, 2, 0, 348.470384403, -6.851731269],
+  ['saturn', 2050, 6, 30, 12, 310.074110696, -18.869636311],
+];
+var worst = {};
+HORIZONS.forEach(function (r) {
+  var body = r[0], jdUT = A.julianDay(r[1], r[2], r[3], r[4]);
+  var T = (jdUT + A.deltaT(jdUT) / 86400 - 2451545.0) / 36525;
+  var nutH = A.nutation(T);
+  var eps = A.meanObliquity(T) + nutH.deps;
+  var ra = r[5] * Math.PI / 180, dec = r[6] * Math.PI / 180, e = eps * Math.PI / 180;
+  var want = A.norm360(Math.atan2(
+    Math.sin(ra) * Math.cos(e) + Math.tan(dec) * Math.sin(e), Math.cos(ra)) * 180 / Math.PI);
+  var got = body === 'moon'
+    ? A.norm360(A.moonLongitude(T) + nutH.dpsi)
+    : A.apparentLongitude(body, T, nutH).lon;
+  var d = got - want; if (d > 180) d -= 360; if (d < -180) d += 360;
+  worst[body] = Math.max(worst[body] || 0, Math.abs(d * 3600));
+});
+Object.keys(worst).forEach(function (body) {
+  // 40 arcsec is the documented budget; a pada is 12000 arcsec wide.
+  ok(body + ' within 40 arcsec of Horizons', worst[body] < 40, worst[body].toFixed(1) + '"');
+});
+
+console.log('\nNew Moon timing (elongation zero) - Sun/Moon consistency');
+// Published new moon: 2025 Oct 21, 12:25 UT.
+function elong(jd) {
+  var T = (jd + A.deltaT(jd) / 86400 - 2451545.0) / 36525;
+  var n = A.nutation(T);
+  return A.norm360(A.moonLongitude(T) + n.dpsi - A.apparentLongitude('sun', T, n).lon);
+}
+var lo = A.julianDay(2025, 10, 20, 0), hi = A.julianDay(2025, 10, 22, 12);
+for (var k = 0; k < 60; k++) {
+  var mid = (lo + hi) / 2;
+  if (elong(mid) > 180) lo = mid; else hi = mid;
+}
+var nm = A.calendarDate((lo + hi) / 2);
+ok('new moon 2025 Oct 21 ~12:25 UT', nm.d === 21 && Math.abs(nm.hours - 12.42) < 0.05,
+   'Oct ' + nm.d + ' ' + Math.floor(nm.hours) + ':' + String(Math.round((nm.hours % 1) * 60)).padStart(2, '0') + ' UT');
+
+
+console.log('\nAscendant and Midheaven, checked against the Sun itself');
+/*
+ * Two identities that must hold for any correct ascendant formula:
+ *   at geometric sunrise (Sun's altitude exactly 0) the Sun sits on the eastern
+ *   horizon, so its ecliptic longitude IS the ascendant;
+ *   at local apparent noon the Sun is on the meridian, so its longitude is the
+ *   Midheaven.
+ * Both are independent of any ephemeris reference data, and they catch sign
+ * errors, obliquity mistakes and sidereal-time drift.
+ */
+function sunHorizontal(jdUT, lat, lon) {
+  var T = (jdUT + A.deltaT(jdUT) / 86400 - 2451545.0) / 36525;
+  var nut = A.nutation(T);
+  var eps = A.meanObliquity(T) + nut.deps;
+  var sun = A.apparentLongitude('sun', T, nut);
+  var l = (sun.lon + nut.dpsi * 0) * Math.PI / 180, b = sun.lat * Math.PI / 180, e = eps * Math.PI / 180;
+  var ra = Math.atan2(Math.sin(l) * Math.cos(e) - Math.tan(b) * Math.sin(e), Math.cos(l));
+  var dec = Math.asin(Math.sin(b) * Math.cos(e) + Math.cos(b) * Math.sin(e) * Math.sin(l));
+  var gast = A.apparentSiderealTime(jdUT, T, nut, eps);
+  var ha = (gast + lon) * Math.PI / 180 - ra;
+  var phi = lat * Math.PI / 180;
+  var alt = Math.asin(Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(ha));
+  return { altitude: alt * 180 / Math.PI, hourAngle: ((ha * 180 / Math.PI) % 360 + 540) % 360 - 180,
+           longitude: sun.lon, eps: eps, gast: gast };
+}
+function ascMc(jdUT, lat, lon) {
+  var T = (jdUT + A.deltaT(jdUT) / 86400 - 2451545.0) / 36525;
+  var nut = A.nutation(T);
+  var eps = A.meanObliquity(T) + nut.deps;
+  var lst = A.norm360(A.apparentSiderealTime(jdUT, T, nut, eps) + lon);
+  var r = Math.PI / 180;
+  return {
+    asc: A.norm360(Math.atan2(Math.cos(lst * r),
+      -(Math.sin(lst * r) * Math.cos(eps * r) + Math.tan(lat * r) * Math.sin(eps * r))) / r),
+    mc: A.norm360(Math.atan2(Math.sin(lst * r), Math.cos(lst * r) * Math.cos(eps * r)) / r)
+  };
+}
+[['Delhi', 28.6139, 77.2090, 1990, 8, 15],
+ ['Chennai', 13.0827, 80.2707, 1975, 1, 20],
+ ['London', 51.5072, -0.1276, 2024, 6, 21],
+ ['Reykjavik', 64.1466, -21.9426, 2024, 3, 20],
+ ['Sydney', -33.8688, 151.2093, 2001, 12, 21],
+ ['Nairobi', -1.2921, 36.8219, 1960, 9, 9],
+ ['Quito', -0.1807, -78.4678, 2010, 11, 5]].forEach(function (place) {
+  var name = place[0], lat = place[1], lon = place[2];
+  // Bisect for the morning crossing of altitude 0.
+  var jdMid = A.julianDay(place[3], place[4], place[5], 0) - lon / 360;
+  var lo = jdMid, hi = jdMid + 0.5, rising = false;
+  for (var probe = 0; probe < 96; probe++) {
+    var t0 = jdMid + probe / 96, t1 = jdMid + (probe + 1) / 96;
+    if (sunHorizontal(t0, lat, lon).altitude < 0 && sunHorizontal(t1, lat, lon).altitude >= 0) {
+      lo = t0; hi = t1; rising = true; break;
+    }
+  }
+  if (!rising) { ok(name + ': found a sunrise', false, 'no crossing in 24h'); return; }
+  for (var i = 0; i < 60; i++) {
+    var mid = (lo + hi) / 2;
+    if (sunHorizontal(mid, lat, lon).altitude < 0) lo = mid; else hi = mid;
+  }
+  var jdRise = (lo + hi) / 2;
+  var sun = sunHorizontal(jdRise, lat, lon);
+  var ac = ascMc(jdRise, lat, lon);
+  var gap = Math.abs(A.norm360(ac.asc - sun.longitude + 180) - 180) * 60;
+  ok(name + ': Sun is on the ascendant at sunrise', gap < 2.0, gap.toFixed(3) + "' apart");
+
+  // Local apparent noon: bisect the hour angle through zero.
+  var nlo = jdMid, nhi = jdMid + 1;
+  for (var j = 0; j < 60; j++) {
+    var nmid = (nlo + nhi) / 2;
+    if (sunHorizontal(nmid, lat, lon).hourAngle < 0) nlo = nmid; else nhi = nmid;
+  }
+  var jdNoon = (nlo + nhi) / 2;
+  var sunNoon = sunHorizontal(jdNoon, lat, lon);
+  var mcGap = Math.abs(A.norm360(ascMc(jdNoon, lat, lon).mc - sunNoon.longitude + 180) - 180) * 60;
+  ok(name + ': Sun is on the midheaven at noon', mcGap < 2.0, mcGap.toFixed(3) + "' apart");
+});
+
+// The chart() entry point must agree with the formulas just verified.
+(function () {
+  var jd = A.julianDay(1990, 8, 15, 5.0);
+  var c = A.chart({ jdUT: jd, latitude: 28.6139, longitude: 77.2090, tzOffsetMinutes: 330 });
+  var direct = ascMc(jd, 28.6139, 77.2090);
+  var T = (jd + A.deltaT(jd) / 86400 - 2451545.0) / 36525;
+  var ayan = A.ayanamsa(T, 'lahiri');
+  ok('chart() ascendant matches the direct formula',
+     Math.abs(A.norm360(c.ascendant.longitude - A.norm360(direct.asc - ayan) + 180) - 180) < 1e-9);
+  ok('chart() midheaven matches the direct formula',
+     Math.abs(A.norm360(c.midheaven.longitude - A.norm360(direct.mc - ayan) + 180) - 180) < 1e-9);
+  // The ascendant rises through all twelve signs across a day.
+  var signs = {};
+  for (var h = 0; h < 24; h += 0.25) {
+    signs[A.signOf(A.chart({ jdUT: A.julianDay(1990, 8, 15, h), latitude: 28.6139, longitude: 77.2090 }).ascendant.longitude)] = true;
+  }
+  ok('ascendant passes through all twelve signs in a day', Object.keys(signs).length === 12,
+     Object.keys(signs).length + ' signs');
+})();
+
+console.log('\nZodiac helpers');
+ok('nakshatra 0 deg = Ashwini pada 1', A.nakshatraOf(0).name === 'Ashwini' && A.nakshatraOf(0).pada === 1);
+ok('nakshatra 359.9 = Revati pada 4', A.nakshatraOf(359.9).name === 'Revati' && A.nakshatraOf(359.9).pada === 4);
+ok('Moon nakshatra lord cycle', A.nakshatraOf(13.4).lord === 'Venus', A.nakshatraOf(13.4).lord);
+ok('navamsa: Aries 0-3.33 -> Aries', A.SIGNS[A.navamsaSign(1)] === 'Aries');
+ok('navamsa: Taurus start -> Capricorn', A.SIGNS[A.navamsaSign(31)] === 'Capricorn', A.SIGNS[A.navamsaSign(31)]);
+ok('navamsa: Gemini start -> Libra', A.SIGNS[A.navamsaSign(61)] === 'Libra', A.SIGNS[A.navamsaSign(61)]);
+ok('whole-sign house', A.houseOf(45, 0) === 2 && A.houseOf(15, 3) === 10);
+
+console.log('\nFull chart smoke test (1990 Aug 15, 10:30 IST, Delhi)');
+var jd = A.julianDay(1990, 8, 15, 10.5 - 5.5); // IST -> UT
+var c = A.chart({ jdUT: jd, latitude: 28.6139, longitude: 77.2090, ayanamsa: 'lahiri', tzOffsetMinutes: 330 });
+ok('nine grahas returned', c.planets.length === 9, c.planets.map(function (p) { return p.name; }).join(','));
+ok('Ketu is opposite Rahu', Math.abs(A.norm360(
+   c.planets.filter(function (p) { return p.name === 'Ketu'; })[0].longitude -
+   c.planets.filter(function (p) { return p.name === 'Rahu'; })[0].longitude) - 180) < 1e-9);
+ok('every planet has a house 1-12', c.planets.every(function (p) { return p.house >= 1 && p.house <= 12; }));
+ok('dasha periods total 120 years',
+   Math.abs(c.dashas.periods.reduce(function (s, p) { return s + p.years; }, 0) - 120) < 1e-9);
+ok('dasha timeline is continuous', c.dashas.periods.every(function (p, i, arr) {
+     return i === 0 || Math.abs(p.startJd - arr[i - 1].endJd) < 1e-6; }));
+ok('birth falls inside the first mahadasha',
+   c.dashas.periods[0].startJd <= jd && jd <= c.dashas.periods[0].endJd);
+ok('ayanamsa reported ~23.7 deg for 1990', Math.abs(c.ayanamsa - 23.72) < 0.05, c.ayanamsa.toFixed(4));
+console.log('         Lagna ' + c.ascendant.signName + ' ' + c.ascendant.degreeInSign.toFixed(2) + ' deg, ' +
+  c.planets.map(function (p) { return p.name + ' ' + p.signName + ' ' + p.degreeInSign.toFixed(2) + (p.retrograde ? 'R' : ''); }).join(' | '));
+
+console.log('\nRetrogression detection over 2024');
+['mercury', 'venus', 'mars', 'jupiter', 'saturn'].forEach(function (body) {
+  var retroDays = 0;
+  for (var d = 0; d < 365; d++) {
+    var jd1 = A.julianDay(2024, 1, 1, 0) + d;
+    var T1 = (jd1 - 2451545.0) / 36525, T2 = (jd1 + 1 - 2451545.0) / 36525;
+    var l1 = A.apparentLongitude(body, T1, A.nutation(T1)).lon;
+    var l2 = A.apparentLongitude(body, T2, A.nutation(T2)).lon;
+    var d1 = A.norm360(l2 - l1); if (d1 > 180) d1 -= 360;
+    if (d1 < 0) retroDays++;
+  }
+  // Retrograde days that actually fall inside calendar 2024: Mercury had three
+  // periods (~69d), Venus none, Mars only the tail from Dec 7 (~25d), Jupiter
+  // only Oct 9 onwards (~84d), Saturn Jun 29-Nov 15 (~139d).
+  var expect = { mercury: [50, 80], venus: [0, 45], mars: [0, 80], jupiter: [70, 135], saturn: [120, 150] }[body];
+  ok(body + ' retrograde days in 2024 plausible', retroDays >= expect[0] && retroDays <= expect[1], retroDays + ' days');
+});
+
+console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
+process.exit(fail ? 1 : 0);
