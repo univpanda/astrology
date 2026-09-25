@@ -84,10 +84,12 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
  'Vipareeta raja yoga - the reverse royal yoga',
  array[
    'Formed when the lord of a dusthana - the 6th, 8th or 12th - is itself placed in a dusthana.',
-   'The reasoning is that a lord placed in a house harms it. A house of difficulty harmed is difficulty reduced, so the lord of one house of trouble sitting in another damages trouble itself. The enemy of an enemy.',
+   'The reasoning is mutual cancellation, and it is worth stating precisely, because the loose version - that a lord harms the house it sits in - is not a principle of the subject at all. A lord in its own house is ordinarily strong.',
+   'What is true is that the lords of the 6th, 8th and 12th are themselves sources of harm. Placed in a dusthana, that harm falls on a house whose significations are unwanted anyway, so the two work against each other instead of compounding; and the placement keeps the lord away from the houses that would suffer by it.',
    'It is called reverse because the arrangement reads badly and gives well. The classical promise is of rise through circumstances that looked like ruin - gain through loss, advancement through the failure of rivals, recovery after illness or debt.',
    'It is named for the house whose lord it is, not the house it sits in: harsha from the 6th, sarala from the 8th, vimala from the 12th.',
-   'Results are read in the dasha of the graha concerned, and the classical texts are consistent that the good does not arrive quietly - it tends to follow a period in which the dusthana was felt plainly.'
+   'Results are read in the dasha of the graha concerned, and the classical texts are consistent that the good does not arrive quietly - it tends to follow a period in which the dusthana was felt plainly.',
+   'Strength varies. A single dusthana lord sitting in a dusthana is the modest form. The texts describe the fuller effect where several dusthana lords are linked to one another - by conjunction, by exchange, or by aspect - and a lone placement should not be read as if it were that.'
  ],
  'The three forms - harsha, sarala and vimala - follow below.', 30),
 

@@ -990,6 +990,11 @@ console.log('\nVipareeta raja yoga');
   ok('the reference chart shows sarala from Saturn',
      found.length === 1 && found[0].kind === 'sarala' && found[0].grahas[0] === 'Saturn',
      found.map(function (f) { return f.kind + ':' + f.grahas[0]; }).join(', '));
+  // The loose reasoning - that a lord harms the house it sits in - is not a
+  // principle of the subject, and a lord in its own house is ordinarily strong.
+  ok('the stated reason is cancellation, not a lord harming its own house',
+     found[0].reasons.every(function (r) { return !/lord in a house harms it/.test(r); }) &&
+     /source of harm/.test(found[0].reasons[0]));
   ok('it reports the good house the same graha owns',
      found[0].reasons.some(function (r) { return /also owns the 9th/.test(r); }),
      found[0].reasons[found[0].reasons.length - 1]);

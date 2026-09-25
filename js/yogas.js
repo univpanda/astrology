@@ -291,10 +291,13 @@ var Yogas = (function () {
   /**
    * Vipareeta raja yoga: a dusthana lord placed in a dusthana.
    *
-   * The reasoning is that a lord in a house harms it, so the lord of a house of
-   * difficulty placed in another house of difficulty damages that difficulty -
-   * the enemy of an enemy. Hence reverse, and hence the good result from an
-   * arrangement that reads badly.
+   * The reasoning is mutual cancellation, not that a lord harms its own house -
+   * a lord in its own house is ordinarily strong. The lords of the 6th, 8th and
+   * 12th are themselves sources of harm; placed in a dusthana, that harm falls
+   * on a house whose significations are unwanted anyway, so the two work
+   * against each other instead of compounding. The placement also keeps the
+   * lord away from the houses it could otherwise damage. Hence reverse, and
+   * hence a good result from an arrangement that reads badly.
    *
    * Named for the house whose lord it is: harsha from the 6th, sarala from the
    * 8th, vimala from the 12th. No graha owns two dusthanas - the sign gaps do
@@ -327,8 +330,9 @@ var Yogas = (function () {
 
       var summary = lord + ', lord of the ' + ordinal(house) + ', is placed in the ' +
         ordinal(placed.house) + (placed.house === house ? ' - its own house' : '') + '.';
-      var reasons = ['a lord in a house harms it, so the ' + ordinal(house) +
-        ' lord in the ' + ordinal(placed.house) + ' damages a house of difficulty'];
+      var reasons = ['the ' + ordinal(house) + ' lord is itself a source of harm, and in the ' +
+        ordinal(placed.house) + ' that harm falls on a house whose significations are ' +
+        'unwanted anyway, rather than on a house worth protecting'];
       if (alsoOwns.length) {
         reasons.push(lord + ' also owns the ' + alsoOwns.map(ordinal).join(' and the ') +
           ', which the same placement damages - some authorities count this against the yoga');
