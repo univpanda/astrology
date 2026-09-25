@@ -16,11 +16,29 @@ var Charts = (function () {
   };
   var SIGN_ABBR = ['Ar', 'Ta', 'Ge', 'Cn', 'Le', 'Vi', 'Li', 'Sc', 'Sg', 'Cp', 'Aq', 'Pi'];
 
+  // Each graha gets its own colour, the way a hand-drawn kundli distinguishes
+  // them. Kept muted so the chart still sits inside the page's palette; the
+  // class names are styled in css/styles.css rather than hard-coded here.
+  var SLUG = {
+    Sun: 'sun', Moon: 'moon', Mercury: 'mercury', Venus: 'venus', Mars: 'mars',
+    Jupiter: 'jupiter', Saturn: 'saturn', Rahu: 'rahu', Ketu: 'ketu', Ascendant: 'lagna'
+  };
+
+  /*
+   * How far the four inner arcs bow towards the centre, as a fraction of the
+   * distance from their chord's midpoint to the middle of the chart.
+   *
+   * They curve inwards, not outwards: that is what gives the classic pointed
+   * arch and, more practically, what leaves the corner triangles wide enough to
+   * hold two or three grahas. Bowing the other way would pinch them shut.
+   */
+  var CURVE_PULL = 0.42;
+
   // Label anchors for the twelve North Indian houses, as fractions of the box.
   var NORTH_ANCHORS = [
-    [0.50, 0.20], [0.25, 0.09], [0.09, 0.25], [0.25, 0.50],
-    [0.09, 0.75], [0.25, 0.91], [0.50, 0.80], [0.75, 0.91],
-    [0.91, 0.75], [0.75, 0.50], [0.91, 0.25], [0.75, 0.09]
+    [0.50, 0.23], [0.25, 0.10], [0.10, 0.25], [0.23, 0.50],
+    [0.10, 0.75], [0.25, 0.90], [0.50, 0.77], [0.75, 0.90],
+    [0.90, 0.75], [0.77, 0.50], [0.90, 0.25], [0.75, 0.10]
   ];
   // Grid position (col, row) of each sign in the South Indian layout.
   var SOUTH_CELLS = [
@@ -64,7 +82,7 @@ var Charts = (function () {
         var offset = perRow === 1 ? 0 : (c === 0 ? -maxWidth / 4 : maxWidth / 4);
         var t = el('text', {
           x: (cx + offset).toFixed(1), y: y.toFixed(1),
-          class: 'planet' + (p.retrograde ? ' retro' : '') + (p.name === 'Ascendant' ? ' lagna' : ''),
+          class: 'planet graha-' + (SLUG[p.name] || 'other') + (p.retrograde ? ' retro' : ''),
           'text-anchor': 'middle'
         }, planetText(p));
         group.appendChild(t);
@@ -95,15 +113,28 @@ var Charts = (function () {
     var m = 4, s = SIZE - 2 * m;
     var P = function (fx, fy) { return (m + fx * s).toFixed(1) + ',' + (m + fy * s).toFixed(1); };
 
-    svg.appendChild(el('rect', { x: m, y: m, width: s, height: s, rx: 10, class: 'frame frame-outer' }));
+    svg.appendChild(el('rect', { x: m, y: m, width: s, height: s, class: 'frame frame-outer' }));
     [[0, 0, 1, 1], [1, 0, 0, 1]].forEach(function (d) {
       svg.appendChild(el('line', {
         x1: m + d[0] * s, y1: m + d[1] * s, x2: m + d[2] * s, y2: m + d[3] * s, class: 'frame'
       }));
     });
-    svg.appendChild(el('polygon', {
-      points: [P(0.5, 0), P(1, 0.5), P(0.5, 1), P(0, 0.5)].join(' '), class: 'frame'
-    }));
+    /*
+     * The inner figure: four quadratic arcs between the midpoints of the sides,
+     * each pulled towards the centre. Drawn as one closed path so the join at
+     * every midpoint stays a clean cusp.
+     */
+    var mid = [[0.5, 0], [1, 0.5], [0.5, 1], [0, 0.5]];
+    var control = function (a, b) {
+      var mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+      return P(mx + (0.5 - mx) * CURVE_PULL, my + (0.5 - my) * CURVE_PULL);
+    };
+    var d = 'M ' + P(mid[0][0], mid[0][1]);
+    for (var k = 0; k < 4; k++) {
+      var from = mid[k], to = mid[(k + 1) % 4];
+      d += ' Q ' + control(from, to) + ' ' + P(to[0], to[1]);
+    }
+    svg.appendChild(el('path', { d: d + ' Z', class: 'frame frame-inner' }));
 
     for (var h = 0; h < 12; h++) {
       var sign = (data.ascSign + h) % 12;

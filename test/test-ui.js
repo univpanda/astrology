@@ -142,7 +142,7 @@ var chart = Astro.chart({ jdUT: jdUT, latitude: delhi.lat, longitude: delhi.lon,
          return new RegExp('>' + a + '(R|\\s|<)').test(svg);
        }));
     ok(tag + ': lagna highlighted once', (svg.match(/first-house/g) || []).length === 1);
-    ok(tag + ': retrograde styled', /class="planet retro"/.test(svg));
+    ok(tag + ': retrograde styled', /class="planet graha-[a-z]+ retro"/.test(svg));
     // Charts carry the graha and nothing else: degrees live in the table, where
     // there is room to show them to the arcsecond.
     ok(tag + ': no degrees anywhere in the chart', !/>[A-Z][a-z] ?\d/.test(svg));
@@ -150,6 +150,29 @@ var chart = Astro.chart({ jdUT: jdUT, latitude: delhi.lat, longitude: delhi.lon,
     ok(tag + ': no NaN in output', !/NaN/.test(svg));
   });
 });
+
+// Every graha carries its own colour class, so the stylesheet can distinguish
+// them without charts.js hard-coding any colour.
+(function () {
+  var c = makeNode('div');
+  Charts.render(c, { style: 'north', planets: chart.planets, ascendant: chart.ascendant.longitude });
+  var svg = serialise(c);
+  var slugs = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'rahu', 'ketu', 'lagna'];
+  ok('every graha has a colour class', slugs.every(function (g) {
+    return svg.indexOf('graha-' + g) >= 0;
+  }), slugs.filter(function (g) { return svg.indexOf('graha-' + g) < 0; }).join(',') || 'all present');
+  // The inner figure is four arcs bowing inwards, not a straight rhombus.
+  var path = svg.match(/<path d="([^"]+)"/);
+  ok('north chart draws curved inner arcs', !!path && (path[1].match(/Q/g) || []).length === 4,
+     path ? (path[1].match(/Q/g) || []).length + ' quadratic segments' : 'no path');
+  ok('the curves bow towards the centre', (function () {
+    if (!path) return false;
+    // First control point must sit between the chord midpoint and the centre.
+    var nums = path[1].match(/[\d.]+/g).map(Number);
+    var cx = nums[2], cy = nums[3];              // control of the first arc
+    return cx < 328 && cy > 112 && cx > 220 && cy < 220;
+  })());
+})();
 
 // South Indian layout is fixed: Aries must always sit second along the top row.
 var southContainer = makeNode('div');
@@ -230,6 +253,22 @@ ok('combobox declares role and controls', /role="combobox"/.test(html) && /aria-
 ok('listbox declares its role', /id="place-listbox" role="listbox"/.test(html));
 ok('app manages aria-activedescendant', /aria-activedescendant/.test(appSrc));
 ok('time standard select is wired', /id="time-standard"/.test(html) && /time-standard/.test(appSrc));
+
+// Saved kundalis: the panel, and the four keys that identify an entry.
+ok('the saved panel exists to the left of the form',
+   html.indexOf('saved-panel') >= 0 && html.indexOf('saved-panel') < html.indexOf('id="birth-form"'));
+ok('the saved list and its empty state are both present',
+   /id="saved-list"/.test(html) && /id="saved-empty"/.test(html));
+ok('a save control sits above the charts',
+   html.indexOf('id="save-button"') >= 0 && html.indexOf('id="save-button"') < html.indexOf('id="chart-d1"'));
+ok('entries are keyed on name, place, date and time',
+   /entry\.name, entry\.placeLabel, entry\.date, entry\.time/.test(appSrc));
+ok('saving stores to localStorage, not a server',
+   /localStorage/.test(appSrc) && !/fetch\([^)]*saved/.test(appSrc));
+ok('a saved chart can be reopened and removed',
+   /function loadSaved/.test(appSrc) && /saved-remove/.test(appSrc));
+ok('storage failure is handled rather than thrown',
+   /catch \(e\) \{\s*return \[\]/.test(appSrc) && /would not let the chart be saved/.test(appSrc));
 // Name, date, time and place are all required.
 ['name', 'date', 'birth-hour', 'birth-minute', 'place'].forEach(function (id) {
   var tag = html.match(new RegExp('<input[^>]*id="' + id + '"[^>]*>'));

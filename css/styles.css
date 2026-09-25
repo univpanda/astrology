@@ -51,7 +51,126 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-main, .site-header, .site-footer { max-width: 1060px; margin: 0 auto; }
+.site-header, .site-footer { max-width: 1280px; margin: 0 auto; }
+
+/* Saved charts on the left, everything else beside them. The sidebar drops
+   above the form on narrow screens rather than squeezing both. */
+.layout {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+.layout > main { min-width: 0; }
+
+@media (max-width: 880px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .saved-panel { position: static; max-height: none; }
+}
+
+/* ----------------------------------------------------------- saved panel */
+
+.saved-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.15rem 1rem;
+  position: sticky;
+  top: 1.25rem;
+  max-height: calc(100vh - 2.5rem);
+  overflow-y: auto;
+}
+
+.saved-panel h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  color: var(--green-deep);
+  margin: 0 0 0.85rem;
+}
+
+.saved-empty, .saved-note {
+  font-size: 0.82rem;
+  color: var(--ink-faint);
+  line-height: 1.5;
+  margin: 0;
+}
+.saved-note { margin-top: 0.9rem; padding-top: 0.8rem; border-top: 1px solid var(--line-soft); }
+
+.saved-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.4rem; }
+
+.saved-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.saved-item:hover { background: var(--green-soft); border-color: var(--line); }
+
+.saved-open {
+  font: inherit;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0.55rem 0.6rem;
+  cursor: pointer;
+  color: var(--ink);
+  min-width: 0;
+  display: grid;
+  gap: 0.1rem;
+}
+.saved-name {
+  font-weight: 600;
+  font-size: 0.93rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.saved-meta {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.saved-remove {
+  font: inherit;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--ink-faint);
+  background: none;
+  border: none;
+  padding: 0.4rem 0.55rem;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.saved-remove:hover { color: var(--retro); }
+
+/* ------------------------------------------------------------- save bar */
+
+.chart-actions { display: flex; align-items: center; gap: 0.9rem; margin-bottom: 0.9rem; flex-wrap: wrap; }
+
+.save-bar {
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--green-deep);
+  background: var(--green-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 1.2rem;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.save-bar:hover { background: #cfe9da; border-color: var(--green); }
+.save-feedback { font-size: 0.86rem; color: var(--green-deep); }
 
 /* ------------------------------------------------------------------ header */
 
@@ -338,8 +457,23 @@ svg.kundli .sign-num {
   font-weight: 600;
 }
 svg.kundli .planet { font-size: 15.5px; font-weight: 500; }
+
+/* One colour per graha, as a hand-drawn kundli distinguishes them. Muted
+   enough to sit inside the page's palette rather than fight it. */
+svg.kundli .graha-sun { fill: #c2410c; }
+svg.kundli .graha-moon { fill: #4a6fa5; }
+svg.kundli .graha-mars { fill: #b8483a; }
+svg.kundli .graha-mercury { fill: #1f7a52; }
+svg.kundli .graha-jupiter { fill: #7c5295; }
+svg.kundli .graha-venus { fill: #0e7490; }
+svg.kundli .graha-saturn { fill: #475569; }
+svg.kundli .graha-rahu { fill: #3f3f46; }
+svg.kundli .graha-ketu { fill: #92400e; }
+svg.kundli .graha-lagna { fill: var(--green-deep); font-weight: 700; }
+
+/* Retrograde overrides the graha colour: it has to read as a different kind of
+   fact, not a shade of the same one. */
 svg.kundli .planet.retro { fill: var(--retro); }
-svg.kundli .planet.lagna { fill: var(--green-deep); font-weight: 700; }
 
 /* ------------------------------------------------------------------ tables */
 
@@ -419,6 +553,18 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
   .chart-card { background: linear-gradient(180deg, var(--surface) 0%, #1b241f 100%); }
   svg.kundli .frame, svg.kundli .cell { stroke: #3b5a49; }
   svg.kundli .first-house .cell { fill: rgba(88, 192, 138, 0.12); }
+  svg.kundli .graha-sun { fill: #f0925c; }
+  svg.kundli .graha-moon { fill: #8fb3e0; }
+  svg.kundli .graha-mars { fill: #e8867a; }
+  svg.kundli .graha-mercury { fill: #63c795; }
+  svg.kundli .graha-jupiter { fill: #c4a0d8; }
+  svg.kundli .graha-venus { fill: #5bb8cd; }
+  svg.kundli .graha-saturn { fill: #a3b1c2; }
+  svg.kundli .graha-rahu { fill: #b9bcc4; }
+  svg.kundli .graha-ketu { fill: #d9a066; }
+  .saved-item:hover { background: #21362b; }
+  .save-bar { background: #21362b; color: var(--green-deep); }
+  .save-bar:hover { background: #2a4435; }
   tbody tr:hover { background: #1d2822; }
   tr.current-dasha { background: rgba(88, 192, 138, 0.13); }
 }

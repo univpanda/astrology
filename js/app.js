@@ -558,6 +558,142 @@
 
   document.getElementById('print-button').addEventListener('click', function () { window.print(); });
 
+  /* --------------------------------------------------- saved kundalis */
+
+  /*
+   * Saved charts live in this browser, not on a server. The whole page is built
+   * so birth details never leave the machine, and a list of the people someone
+   * casts charts for is more revealing than any single chart; putting it in a
+   * database would need an account, and would quietly undo that.
+   *
+   * A chart is identified by the four things that define it: name, place, date
+   * and time. Saving the same four again updates that entry instead of adding a
+   * near-duplicate nobody can tell apart in a list.
+   */
+  var STORAGE_KEY = 'jyotisha.saved.v1';
+  var savedList = document.getElementById('saved-list');
+  var savedEmpty = document.getElementById('saved-empty');
+  var saveButton = document.getElementById('save-button');
+  var saveFeedback = document.getElementById('save-feedback');
+
+  function readSaved() {
+    try {
+      var raw = window.localStorage.getItem(STORAGE_KEY);
+      var list = raw ? JSON.parse(raw) : [];
+      return Array.isArray(list) ? list : [];
+    } catch (e) {
+      return []; // private browsing, a full quota, or something else's data
+    }
+  }
+
+  function writeSaved(list) {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function keyOf(entry) {
+    return [entry.name, entry.placeLabel, entry.date, entry.time].join('\u0000').toLowerCase();
+  }
+
+  function renderSaved() {
+    var list = readSaved();
+    savedList.innerHTML = '';
+    savedEmpty.hidden = list.length > 0;
+
+    list.forEach(function (entry, index) {
+      var li = el('li', 'saved-item');
+
+      var open = el('button', 'saved-open');
+      open.type = 'button';
+      open.appendChild(el('span', 'saved-name', entry.name));
+      open.appendChild(el('span', 'saved-meta', entry.placeLabel));
+      open.appendChild(el('span', 'saved-meta', formatSavedMoment(entry)));
+      open.addEventListener('click', function () { loadSaved(entry); });
+      li.appendChild(open);
+
+      var remove = el('button', 'saved-remove', '\u00d7');
+      remove.type = 'button';
+      remove.title = 'Remove ' + entry.name;
+      remove.setAttribute('aria-label', 'Remove ' + entry.name);
+      remove.addEventListener('click', function () {
+        var current = readSaved();
+        current.splice(index, 1);
+        writeSaved(current);
+        renderSaved();
+      });
+      li.appendChild(remove);
+
+      savedList.appendChild(li);
+    });
+  }
+
+  /** "22 Mar 1985, 10:55 AM" from a saved entry's stored 24-hour time. */
+  function formatSavedMoment(entry) {
+    var d = entry.date.split('-').map(Number);
+    var t = entry.time.split(':').map(Number);
+    var clock = Geo.from24Hour(t[0]);
+    return d[2] + ' ' + MONTHS[d[1] - 1] + ' ' + d[0] + ', ' +
+      clock.hour12 + ':' + String(t[1] || 0).padStart(2, '0') +
+      (t[2] ? ':' + String(t[2]).padStart(2, '0') : '') + ' ' + clock.meridiem.toUpperCase();
+  }
+
+  function saveCurrent() {
+    if (!lastChart) return;
+    var state = lastChart;
+    var entry = {
+      name: state.name,
+      placeLabel: [state.place.name, state.place.region, state.place.nation].filter(Boolean).join(', '),
+      date: state.y + '-' + String(state.mo).padStart(2, '0') + '-' + String(state.d).padStart(2, '0'),
+      time: String(state.h).padStart(2, '0') + ':' + String(state.mi).padStart(2, '0') +
+        ':' + String(state.time.second).padStart(2, '0'),
+      latitude: state.place.lat,
+      longitude: state.place.lon,
+      zone: state.place.zone,
+      standard: state.standard,
+      ayanamsa: document.getElementById('ayanamsa').value,
+      trueNode: document.getElementById('node-type').value === 'true'
+    };
+
+    var list = readSaved();
+    var at = -1;
+    for (var i = 0; i < list.length; i++) if (keyOf(list[i]) === keyOf(entry)) at = i;
+    if (at >= 0) list[at] = entry; else list.unshift(entry);
+
+    if (writeSaved(list)) {
+      renderSaved();
+      saveFeedback.textContent = at >= 0 ? 'Updated ' + entry.name : 'Saved ' + entry.name;
+    } else {
+      saveFeedback.textContent = 'This browser would not let the chart be saved.';
+    }
+    setTimeout(function () { saveFeedback.textContent = ''; }, 4000);
+  }
+
+  /** Put a saved chart back into the form and cast it again. */
+  function loadSaved(entry) {
+    document.getElementById('name').value = entry.name;
+    document.getElementById('date').value = entry.date;
+    var t = entry.time.split(':').map(Number);
+    writeTime(t[0], t[1] || 0, t[2] || 0);
+    document.getElementById('ayanamsa').value = entry.ayanamsa || 'lahiri';
+    document.getElementById('node-type').value = entry.trueNode ? 'true' : 'mean';
+    document.getElementById('time-standard').value = entry.standard === 'lmt' ? 'lmt' : 'zone';
+
+    selectedCity = {
+      name: entry.placeLabel.split(',')[0], region: '', nation: '',
+      lat: entry.latitude, lon: entry.longitude, zone: entry.zone
+    };
+    placeInput.value = entry.placeLabel;
+    placeNote.textContent = entry.latitude.toFixed(4) + ', ' + entry.longitude.toFixed(4) + '  ·  ' + entry.zone;
+    manualFields.hidden = true;
+    form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit'));
+  }
+
+  saveButton.addEventListener('click', saveCurrent);
+
   /* ------------------------------------------- shareable URL for a chart */
 
   function writeHash(state) {
@@ -604,6 +740,7 @@
   /* ------------------------------------------------------------------ init */
 
   populateSelects();
+  renderSaved();
   if (!Geo.historicalZonesSupported()) {
     placeNote.textContent = 'This browser lacks historical timezone data, so births before ' +
       '1970 may use a modern offset. Chrome, Safari and Firefox all handle it.';

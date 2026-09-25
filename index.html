@@ -14,7 +14,18 @@
   <p class="tagline">A Vedic birth chart from a date, a time and a place. Computed in your browser, sent nowhere.</p>
 </header>
 
-<main>
+<div class="layout">
+
+  <aside class="saved-panel" aria-labelledby="saved-heading">
+    <h2 id="saved-heading">Saved kundalis</h2>
+    <p class="saved-empty" id="saved-empty">
+      Nothing saved yet. Fill in the details, generate a chart, then save it here.
+    </p>
+    <ul class="saved-list" id="saved-list"></ul>
+    <p class="saved-note">Saved in this browser only. Nothing is uploaded.</p>
+  </aside>
+
+  <main>
   <form id="birth-form" class="card" novalidate>
     <div class="field-grid">
       <div class="field">
@@ -130,6 +141,13 @@
       <button type="button" class="link-button print-button" id="print-button">Print or save as PDF</button>
     </div>
 
+    <div class="chart-actions">
+      <button type="button" class="save-bar" id="save-button">
+        <span aria-hidden="true">&#9733;</span> Save kundali
+      </button>
+      <span class="save-feedback" id="save-feedback" role="status"></span>
+    </div>
+
     <div class="chart-pair">
       <figure class="card chart-card">
         <figcaption>Rashi (D1)</figcaption>
@@ -186,7 +204,9 @@
       </p>
     </details>
   </section>
-</main>
+  </main>
+
+</div>
 
 <footer class="site-footer">
   <p>
