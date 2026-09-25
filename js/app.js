@@ -482,6 +482,7 @@
     drawCharts();
     renderShadbala(state);
     renderYogas(state);
+    renderAspects(state);
     renderPanchang(c);
     renderDashas(c, state.offset);
     renderTechnical(state);
@@ -762,6 +763,43 @@
     }).then(function (res) { return res.ok ? res.json() : null; })
       .then(function (body) { done(body && body.passages ? body.passages : null); })
       .catch(function () { done(null); });
+  }
+
+  /**
+   * Who aspects whom, in both directions.
+   *
+   * Both directions because drishti is not mutual: Saturn three signs from Mars
+   * aspects it and is not aspected back, since the 3rd is Saturn's aspect and
+   * not Mars's. A single column would make that look like an error.
+   */
+  function renderAspects(state) {
+    var tbody = document.querySelector('#aspect-table tbody');
+    tbody.innerHTML = '';
+
+    var rows = Yogas.aspectTable(state.chart);
+    rows.forEach(function (row) {
+      var tr = document.createElement('tr');
+      var named = function (list) {
+        if (!list.length) return '\u2013';
+        return list.map(function (x) {
+          return x.graha + ' (' + Yogas.ordinal(x.apart) + ')';
+        }).join(', ');
+      };
+      [[row.graha, null], [named(row.casts), null], [named(row.receives), null]]
+        .forEach(function (cell, i) {
+          var td = el(i === 0 ? 'th' : 'td', cell[1], cell[0]);
+          if (i === 0) td.setAttribute('scope', 'row');
+          tr.appendChild(td);
+        });
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById('aspect-note').textContent =
+      'Full Parashari aspects, counted whole-sign in the rashi chart: every graha aspects the ' +
+      '7th from itself, Mars the 4th and 8th besides, Jupiter the 5th and 9th, Saturn the 3rd ' +
+      'and 10th. Aspect is not mutual, so the two columns differ. Parashara gives Rahu and Ketu ' +
+      'no aspects; the 5th, 7th and 9th shown for them follow modern practice. Partial aspects ' +
+      'are not listed.';
   }
 
   /* -------------------------------------------------------------- lesson */
@@ -1285,7 +1323,7 @@
    * charts are set to. Fixed D1/D9 labels would have lied the moment either
    * select moved.
    */
-  var tableTabs = setupTabs(['table-a', 'table-b', 'shadbala', 'yogas'],
+  var tableTabs = setupTabs(['table-a', 'table-b', 'shadbala', 'yogas', 'aspects'],
     document.querySelector('.tabs.subtabs'));
 
   function activateTab(name, moveFocus) { sections.activate(name, moveFocus); }

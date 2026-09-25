@@ -357,11 +357,12 @@ function stripHtml(label) {
      /id="tab-shadbala"[\s\S]{0,140}aria-controls="panel-shadbala"/.test(html) &&
      html.indexOf('id="panel-shadbala"') > html.indexOf('id="panel-table-b"') &&
      html.indexOf('id="panel-shadbala"') < html.indexOf('class="two-col"'));
-  ok('the table strip holds four tabs', (function () {
+  ok('the table strip holds five tabs', (function () {
     var strip = stripHtml('Graha tables');
-    return (strip.match(/role="tab"/g) || []).length === 4;
+    return (strip.match(/role="tab"/g) || []).length === 5;
   })());
-  ok('the table strip is a real tablist', ['table-a', 'table-b', 'shadbala', 'yogas'].every(function (n) {
+  ok('the table strip is a real tablist',
+     ['table-a', 'table-b', 'shadbala', 'yogas', 'aspects'].every(function (n) {
     return new RegExp('id="tab-' + n + '"[\\s\\S]{0,140}aria-controls="panel-' + n + '"').test(html) &&
            new RegExp('id="panel-' + n + '"[^>]*aria-labelledby="tab-' + n + '"').test(html);
   }));
@@ -371,7 +372,7 @@ function stripHtml(label) {
   ok('one tab implementation still serves every strip',
      (appSrc.match(/function setupTabs/g) || []).length === 1 &&
      (appSrc.match(/setupTabs\(/g) || []).length === 3 &&
-     /setupTabs\(\['table-a', 'table-b', 'shadbala', 'yogas'\]/.test(appSrc));
+     /setupTabs\(\['table-a', 'table-b', 'shadbala', 'yogas', 'aspects'\]/.test(appSrc));
   ok('there are two chart slots, each with two selects', ['a', 'b'].every(function (slot) {
     return new RegExp('id="ref-' + slot + '"').test(html) &&
            new RegExp('id="varga-' + slot + '"').test(html) &&
@@ -505,6 +506,19 @@ ok('the page says which yogas it looks for',
    /Parivartana and neecha bhanga are checked so far/.test(appSrc));
 ok('a yoga resting on several conditions names the ones that applied',
    /finding\.reasons && finding\.reasons\.length/.test(appSrc) && /yoga-reasons/.test(appSrc));
+
+// Aspects, both directions.
+ok('aspects have a subtab of their own',
+   /id="tab-aspects"[\s\S]{0,140}aria-controls="panel-aspects"/.test(html) &&
+   /id="panel-aspects"[^>]*hidden/.test(html));
+ok('both directions get a column', (function () {
+  var head = html.slice(html.indexOf('id="aspect-table"'), html.indexOf('aspect-note'));
+  return head.indexOf('>Aspects<') >= 0 && head.indexOf('>Aspected by<') >= 0;
+})());
+ok('the note says aspect is not mutual', /Aspect is not mutual/.test(appSrc));
+ok('the note names the nodes as a modern convention',
+   /Parashara gives Rahu and Ketu ' \+\s*\n?\s*'no aspects/.test(appSrc) ||
+   /Parashara gives Rahu and Ketu/.test(appSrc));
 
 // Shadbala: the breakdown, not just a total.
 ok('the page loads the shadbala module', /<script src="js\/shadbala\.js"><\/script>/.test(html));

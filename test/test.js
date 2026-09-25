@@ -794,6 +794,55 @@ ok('detect gathers from every detector', (function () {
   return all.length === direct && all.length > 0;
 })());
 
+console.log('\nAspects');
+(function () {
+  var chart = A.chart({ jdUT: 2446146.7256944445, latitude: 23.5158, longitude: 87.308 });
+  var rows = Yogas.aspectTable(chart);
+  var byName = {};
+  rows.forEach(function (r) { byName[r.graha] = r; });
+
+  ok('every graha in the chart gets a row', rows.length === chart.planets.length);
+  ok('no graha aspects itself', rows.every(function (r) {
+    return !r.casts.concat(r.receives).some(function (x) { return x.graha === r.graha; });
+  }));
+
+  // The two columns must agree with each other read from the other side.
+  ok('what one casts, the other receives', rows.every(function (r) {
+    return r.casts.every(function (target) {
+      return byName[target.graha].receives.some(function (x) { return x.graha === r.graha; });
+    });
+  }));
+
+  // And drishti is not mutual, which is the reason for two columns at all.
+  ok('aspect is one-way unless both aspects reach', (function () {
+    var oneWay = false;
+    rows.forEach(function (r) {
+      r.casts.forEach(function (target) {
+        var back = byName[target.graha].casts.some(function (x) { return x.graha === r.graha; });
+        if (!back) oneWay = true;
+      });
+    });
+    return oneWay;
+  })());
+
+  // Every graha sees the seventh; only three have more.
+  ok('each graha aspects the seventh from itself', Yogas.GRAHAS.every(function (g) {
+    return Yogas.aspects(g, 0, 6);
+  }));
+  ok('only Mars, Jupiter and Saturn have aspects beyond the seventh',
+     ['Sun', 'Moon', 'Mercury', 'Venus'].every(function (g) {
+       return !Yogas.FULL_ASPECTS[g];
+     }) && Yogas.FULL_ASPECTS.Mars.join() === '4,7,8' &&
+     Yogas.FULL_ASPECTS.Jupiter.join() === '5,7,9' &&
+     Yogas.FULL_ASPECTS.Saturn.join() === '3,7,10');
+  ok('the nodes are given the 5th, 7th and 9th',
+     Yogas.FULL_ASPECTS.Rahu.join() === '5,7,9' && Yogas.FULL_ASPECTS.Ketu.join() === '5,7,9');
+  // Being opposite always, the nodes always aspect each other.
+  ok('Rahu and Ketu always aspect each other',
+     byName.Rahu.casts.some(function (x) { return x.graha === 'Ketu'; }) &&
+     byName.Ketu.casts.some(function (x) { return x.graha === 'Rahu'; }));
+})();
+
 console.log('\nNeecha bhanga');
 (function () {
   // Only a debilitated graha can have its debilitation cancelled.

@@ -213,6 +213,8 @@
                 aria-controls="panel-shadbala" aria-selected="false" tabindex="-1">Shadbala</button>
         <button type="button" class="tab" role="tab" id="tab-yogas"
                 aria-controls="panel-yogas" aria-selected="false" tabindex="-1">Yogas</button>
+        <button type="button" class="tab" role="tab" id="tab-aspects"
+                aria-controls="panel-aspects" aria-selected="false" tabindex="-1">Aspects</button>
       </div>
 
       <div id="panel-table-a" role="tabpanel" aria-labelledby="tab-table-a">
@@ -273,6 +275,22 @@
       <div id="panel-yogas" role="tabpanel" aria-labelledby="tab-yogas" hidden>
         <div id="yoga-list"></div>
         <p class="varga-note" id="yoga-note"></p>
+      </div>
+
+      <div id="panel-aspects" role="tabpanel" aria-labelledby="tab-aspects" hidden>
+        <div class="table-scroll">
+          <table id="aspect-table">
+            <thead>
+              <tr>
+                <th scope="col">Graha</th>
+                <th scope="col">Aspects</th>
+                <th scope="col">Aspected by</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="varga-note" id="aspect-note"></p>
       </div>
 
     </div>

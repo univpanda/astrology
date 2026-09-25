@@ -70,7 +70,12 @@ var Yogas = (function () {
    * used here - for cancelling a debilitation the classical texts speak of
    * being aspected, not of being aspected a quarter.
    */
-  var FULL_ASPECTS = { Mars: [4, 7, 8], Jupiter: [5, 7, 9], Saturn: [3, 7, 10] };
+  var FULL_ASPECTS = {
+    Mars: [4, 7, 8], Jupiter: [5, 7, 9], Saturn: [3, 7, 10],
+    // Parashara gives the nodes no aspects; most modern practice gives them the
+    // 5th, 7th and 9th, as Jupiter has. Named here rather than assumed.
+    Rahu: [5, 7, 9], Ketu: [5, 7, 9]
+  };
   function aspects(graha, fromSign, toSign) {
     var apart = ((toSign - fromSign) % 12 + 12) % 12 + 1;
     return (FULL_ASPECTS[graha] || [7]).indexOf(apart) >= 0;
@@ -180,6 +185,39 @@ var Yogas = (function () {
     return n + suffix;
   }
 
+  /**
+   * Who aspects whom, both ways round.
+   *
+   * Read in the rashi chart. Aspect is counted whole-sign from the graha's
+   * sign, which is the Parashari reading; partial aspects are not shown,
+   * because a list of everything partly aspecting everything says little.
+   *
+   * Not symmetric, and that is the point: Saturn in the 3rd from Mars aspects
+   * it without being aspected back, since Saturn has the 3rd aspect and Mars
+   * does not.
+   */
+  function aspectTable(chart) {
+    var rows = [];
+    var bySign = chart.planets.map(function (p) { return { name: p.name, sign: p.sign }; });
+
+    bySign.forEach(function (source) {
+      var casts = [], receives = [];
+      bySign.forEach(function (other) {
+        if (other.name === source.name) return;
+        var apartOut = ((other.sign - source.sign) % 12 + 12) % 12 + 1;
+        var apartIn = ((source.sign - other.sign) % 12 + 12) % 12 + 1;
+        if (aspects(source.name, source.sign, other.sign)) {
+          casts.push({ graha: other.name, apart: apartOut });
+        }
+        if (aspects(other.name, other.sign, source.sign)) {
+          receives.push({ graha: other.name, apart: apartIn });
+        }
+      });
+      rows.push({ graha: source.name, casts: casts, receives: receives });
+    });
+    return rows;
+  }
+
   var DETECTORS = [parivartana, neechaBhanga];
 
   /** Every yoga this module knows how to look for, in one pass. */
@@ -192,7 +230,8 @@ var Yogas = (function () {
   }
 
   return { detect: detect, parivartana: parivartana, neechaBhanga: neechaBhanga,
-    aspects: aspects, ordinal: ordinal, GRAHAS: GRAHAS };
+    aspectTable: aspectTable, aspects: aspects, ordinal: ordinal,
+    FULL_ASPECTS: FULL_ASPECTS, GRAHAS: GRAHAS };
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = Yogas;
