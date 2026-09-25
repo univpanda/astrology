@@ -473,6 +473,27 @@ console.log('\nWhat a second of clock time is worth');
      'day ' + withSeconds.d + ', ' + withSeconds.hours.toFixed(4) + 'h');
 })();
 
+console.log('\nGraha order');
+(function () {
+  var c = A.chart({ jdUT: A.julianDay(1985, 3, 22, 5.4166667), latitude: 23.5158, longitude: 87.308 });
+  var expected = ['Sun', 'Moon', 'Mars', 'Jupiter', 'Venus', 'Mercury', 'Saturn', 'Rahu', 'Ketu'];
+  var got = c.planets.map(function (p) { return p.name; });
+  ok('grahas come back in the order a Vedic table reads them',
+     got.join(',') === expected.join(','), got.join(', '));
+  // The panchang and the dasha look grahas up by name, so reordering the table
+  // must not quietly shift them onto the wrong one.
+  ok('the panchang still follows the Sun and Moon', (function () {
+    var sun = c.planets.filter(function (p) { return p.name === 'Sun'; })[0];
+    var moon = c.planets.filter(function (p) { return p.name === 'Moon'; })[0];
+    var elong = A.norm360(moon.longitude - sun.longitude);
+    return Math.abs(elong - c.panchang.moonPhaseAngle) < 1e-9;
+  })());
+  ok('the dasha still starts from the Moon nakshatra', (function () {
+    var moon = c.planets.filter(function (p) { return p.name === 'Moon'; })[0];
+    return c.dashas.birthNakshatra.name === moon.nakshatra.name;
+  })());
+})();
+
 console.log('\nDignities');
 /*
  * Dignity turns on the degree, not just the sign. Two grahas stack three

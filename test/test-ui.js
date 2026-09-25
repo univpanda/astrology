@@ -158,16 +158,7 @@ var chart = Astro.chart({ jdUT: jdUT, latitude: delhi.lat, longitude: delhi.lon,
   Charts.render(c, { style: 'north', planets: chart.planets, ascendant: chart.ascendant.longitude });
   var svg = serialise(c);
   var slugs = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'rahu', 'ketu', 'lagna'];
-  // The lagna heads the graha table instead of sitting in a tile above it.
-ok('the lagna is the first row of the table, not a summary tile',
-   /name: 'Ascendant'/.test(appSrc) && /ascendant-row/.test(appSrc) &&
-   !/fact\(facts, 'Lagna/.test(appSrc));
-ok('the ascendant row leaves motion and dignity blank',
-   /p\.isAscendant \? '\\u2013'/.test(appSrc));
-ok('the ascendant row still gets a navamsa sign',
-   /Astro\.navamsaSign\(asc\.longitude\)/.test(appSrc));
-
-ok('every graha has a colour class', slugs.every(function (g) {
+  ok('every graha has a colour class', slugs.every(function (g) {
     return svg.indexOf('graha-' + g) >= 0;
   }), slugs.filter(function (g) { return svg.indexOf('graha-' + g) < 0; }).join(',') || 'all present');
   // The inner figure is four arcs bowing inwards, not a straight rhombus.
@@ -261,6 +252,15 @@ ok('cities.js is loaded lazily, not in index.html',
 ok('combobox declares role and controls', /role="combobox"/.test(html) && /aria-controls="place-listbox"/.test(html));
 ok('listbox declares its role', /id="place-listbox" role="listbox"/.test(html));
 ok('app manages aria-activedescendant', /aria-activedescendant/.test(appSrc));
+// The lagna heads the graha table instead of sitting in a tile above it.
+ok('the lagna is the first row of the table, not a summary tile',
+   /name: 'Ascendant'/.test(appSrc) && /ascendant-row/.test(appSrc) &&
+   !/fact\(facts, 'Lagna/.test(appSrc));
+ok('the ascendant row leaves motion and dignity blank',
+   /p\.isAscendant \? '\\u2013'/.test(appSrc));
+ok('the ascendant row still gets a navamsa sign',
+   /Astro\.navamsaSign\(asc\.longitude\)/.test(appSrc));
+
 ok('time standard select is wired', /id="time-standard"/.test(html) && /time-standard/.test(appSrc));
 
 // Saved kundalis: the panel, and the four keys that identify an entry.

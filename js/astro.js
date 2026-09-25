@@ -615,10 +615,11 @@ var Astro = (function () {
     var ayanTrue = ayan + nut.dpsi;
     // Grahas arrive as mean tropical longitudes, so they take the plain ayanamsa;
     // the ascendant below is an apparent (true equinox) angle and takes ayanTrue.
+    // Listed in the order a Vedic table reads them, with Ketu following Rahu.
     var bodies = [
       { key: 'sun', name: 'Sun' }, { key: 'moon', name: 'Moon' },
-      { key: 'mercury', name: 'Mercury' }, { key: 'venus', name: 'Venus' },
       { key: 'mars', name: 'Mars' }, { key: 'jupiter', name: 'Jupiter' },
+      { key: 'venus', name: 'Venus' }, { key: 'mercury', name: 'Mercury' },
       { key: 'saturn', name: 'Saturn' }, { key: 'rahu', name: 'Rahu' }
     ];
 
@@ -644,7 +645,11 @@ var Astro = (function () {
       }
     }
 
-    var sunLon = planets[0].longitude, moonLon = planets[1].longitude;
+    var find = function (name) {
+      for (var p = 0; p < planets.length; p++) if (planets[p].name === name) return planets[p];
+      return null;
+    };
+    var sunLon = find('Sun').longitude, moonLon = find('Moon').longitude;
 
     return {
       julianDay: jdUT,
