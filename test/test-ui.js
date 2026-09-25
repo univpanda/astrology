@@ -142,9 +142,11 @@ var chart = Astro.chart({ jdUT: jdUT, latitude: delhi.lat, longitude: delhi.lon,
          return new RegExp('>' + a + '(R|\\s|<)').test(svg);
        }));
     ok(tag + ': lagna highlighted once', (svg.match(/first-house/g) || []).length === 1);
-    ok(tag + ': retrograde marked', /class="planet retro"/.test(svg));
-    ok(tag + (navamsa ? ': no degrees shown' : ': degrees shown'),
-       navamsa ? !/>Su \d/.test(svg) : /&gt;|>Su \d/.test(svg));
+    ok(tag + ': retrograde styled', /class="planet retro"/.test(svg));
+    // Charts carry the graha and nothing else: degrees live in the table, where
+    // there is room to show them to the arcsecond.
+    ok(tag + ': no degrees anywhere in the chart', !/>[A-Z][a-z] ?\d/.test(svg));
+    ok(tag + ': retrograde marked [R]', /\[R\]/.test(svg));
     ok(tag + ': no NaN in output', !/NaN/.test(svg));
   });
 });
@@ -154,6 +156,11 @@ var southContainer = makeNode('div');
 Charts.render(southContainer, { style: 'south', planets: chart.planets, ascendant: chart.ascendant.longitude });
 var southSvg = serialise(southContainer);
 ok('south: Aries cell is second in the top row', /x="114[^"]*" y="4"|x="114/.test(southSvg) || /Ar ·/.test(southSvg));
+ok('the ascendant is never marked retrograde', (function () {
+  var c = makeNode('div');
+  Charts.render(c, { style: 'north', planets: chart.planets, ascendant: chart.ascendant.longitude });
+  return !/>As \[R\]/.test(serialise(c));
+})());
 ok('south: all twelve sign labels present',
    Charts.SIGN_ABBR.every(function (a) { return southSvg.indexOf('>' + a + ' ·') >= 0; }));
 

@@ -44,17 +44,16 @@ var Charts = (function () {
     return svg;
   }
 
-  function planetText(p, showDegrees) {
-    return ABBR[p.name] + (showDegrees ? ' ' + p.degreeInSign.toFixed(0) : '') +
-      (p.retrograde ? 'R' : '');
+  function planetText(p) {
+    return ABBR[p.name] + (p.retrograde ? ' [R]' : '');
   }
 
   /**
    * Stack a house's occupants around an anchor point. Two columns are used once
    * there are more than three, so a stellium still fits inside its triangle.
    */
-  function drawOccupants(group, occupants, cx, cy, maxWidth, showDegrees) {
-    var lineHeight = 15;
+  function drawOccupants(group, occupants, cx, cy, maxWidth) {
+    var lineHeight = 17;
     var perRow = occupants.length > 3 ? 2 : 1;
     var rows = [];
     for (var i = 0; i < occupants.length; i += perRow) rows.push(occupants.slice(i, i + perRow));
@@ -67,7 +66,7 @@ var Charts = (function () {
           x: (cx + offset).toFixed(1), y: y.toFixed(1),
           class: 'planet' + (p.retrograde ? ' retro' : '') + (p.name === 'Ascendant' ? ' lagna' : ''),
           'text-anchor': 'middle'
-        }, planetText(p, showDegrees));
+        }, planetText(p));
         group.appendChild(t);
       });
     });
@@ -96,7 +95,7 @@ var Charts = (function () {
     var m = 4, s = SIZE - 2 * m;
     var P = function (fx, fy) { return (m + fx * s).toFixed(1) + ',' + (m + fy * s).toFixed(1); };
 
-    svg.appendChild(el('rect', { x: m, y: m, width: s, height: s, class: 'frame' }));
+    svg.appendChild(el('rect', { x: m, y: m, width: s, height: s, rx: 10, class: 'frame frame-outer' }));
     [[0, 0, 1, 1], [1, 0, 0, 1]].forEach(function (d) {
       svg.appendChild(el('line', {
         x1: m + d[0] * s, y1: m + d[1] * s, x2: m + d[2] * s, y2: m + d[3] * s, class: 'frame'
@@ -115,7 +114,7 @@ var Charts = (function () {
       g.appendChild(el('text', {
         x: cx, y: cy - 20, class: 'sign-num', 'text-anchor': 'middle'
       }, String(sign + 1)));
-      drawOccupants(g, data.bySign[sign], cx, cy + 4, 0.18 * s, !useNavamsa);
+      drawOccupants(g, data.bySign[sign], cx, cy + 4, 0.20 * s);
       g.appendChild(el('title', {}, 'House ' + (h + 1) + ' - ' + Astro.SIGNS[sign] +
         ' (' + Astro.SIGNS_SA[sign] + ')'));
       svg.appendChild(g);
@@ -134,7 +133,10 @@ var Charts = (function () {
       var x = m + pos[0] * cell, y = m + pos[1] * cell;
       var house = ((i - data.ascSign) % 12 + 12) % 12 + 1;
       var g = el('g', { class: 'house' + (i === data.ascSign ? ' first-house' : '') });
-      g.appendChild(el('rect', { x: x, y: y, width: cell, height: cell, class: 'cell' }));
+      g.appendChild(el('rect', {
+        x: x, y: y, width: cell, height: cell,
+        rx: i === data.ascSign ? 8 : 0, class: 'cell'
+      }));
       if (i === data.ascSign) {
         // Traditional lagna mark: a short diagonal across the cell's corner.
         g.appendChild(el('line', {
@@ -143,7 +145,7 @@ var Charts = (function () {
       }
       g.appendChild(el('text', { x: x + cell - 6, y: y + 14, class: 'sign-num', 'text-anchor': 'end' },
         SIGN_ABBR[i] + ' · ' + house));
-      drawOccupants(g, data.bySign[i], x + cell / 2, y + cell / 2 + 6, cell * 0.8, !useNavamsa);
+      drawOccupants(g, data.bySign[i], x + cell / 2, y + cell / 2 + 6, cell * 0.82);
       g.appendChild(el('title', {}, Astro.SIGNS[i] + ' (' + Astro.SIGNS_SA[i] + ') - house ' + house));
       svg.appendChild(g);
     }
