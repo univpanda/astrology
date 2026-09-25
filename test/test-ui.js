@@ -563,6 +563,19 @@ ok('the note says what is left out rather than hiding it',
    /Yuddha bala is not ' \+\s*\n?\s*'included/.test(appSrc) || /Yuddha bala is not/.test(appSrc));
 
 // What each graha rules, with the yogakaraka named.
+ok('both tables carry a dispositor column',
+   (html.match(/<th scope="col">Dispositor<\/th>/g) || []).length === 2);
+ok('the dispositor is the lord of the sign shown in that table',
+   /Astro\.SIGN_LORDS\[sign\]/.test(appSrc) && /dispositorOf\(r\.name, v\.sign, positionsD1\)/.test(appSrc));
+ok('its relation is the compound one, counted in the rashi chart',
+   /Astro\.compoundRelation\(graha, lord,/.test(appSrc) && /positionsD1\[lord\]\.sign/.test(appSrc));
+ok('a graha in its own sign disposits itself', /if \(lord === graha\) return 'itself';/.test(appSrc));
+ok('friendship is defined once, in the engine', (function () {
+  var astroSrc = fs.readFileSync(path.join(root, 'js/astro.js'), 'utf8');
+  var shadSrc = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8');
+  return /var NATURAL_FRIENDS = \{/.test(astroSrc) && !/NATURAL_FRIENDS = \{/.test(shadSrc);
+})());
+
 ok('both tables carry a rulership column',
    (html.match(/<th scope="col">Rules<\/th>/g) || []).length === 2);
 ok('rulership is counted from the same reference as the houses',

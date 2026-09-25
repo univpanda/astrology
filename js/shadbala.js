@@ -50,16 +50,6 @@ var Shadbala = (function () {
     Mercury: 25.71, Mars: 17.14, Saturn: 8.57
   };
 
-  var NATURAL_FRIENDS = {
-    Sun: { friends: ['Moon', 'Mars', 'Jupiter'], enemies: ['Venus', 'Saturn'] },
-    Moon: { friends: ['Sun', 'Mercury'], enemies: [] },
-    Mars: { friends: ['Sun', 'Moon', 'Jupiter'], enemies: ['Mercury'] },
-    Mercury: { friends: ['Sun', 'Venus'], enemies: ['Moon'] },
-    Jupiter: { friends: ['Sun', 'Moon', 'Mars'], enemies: ['Mercury', 'Venus'] },
-    Venus: { friends: ['Mercury', 'Saturn'], enemies: ['Sun', 'Moon'] },
-    Saturn: { friends: ['Mercury', 'Venus'], enemies: ['Sun', 'Moon', 'Mars'] }
-  };
-
   // Sun, Mars and Jupiter are reckoned male, Mercury and Saturn neuter, the Moon
   // and Venus female; each is strong in the matching third of a sign.
   var DREKKANA_PART = { Sun: 0, Mars: 0, Jupiter: 0, Mercury: 1, Saturn: 1, Moon: 2, Venus: 2 };
@@ -94,21 +84,6 @@ var Shadbala = (function () {
     return shortestArc(longitude, EXALTATION[graha] + 180) / 3;
   }
 
-  /** Natural, then temporal, then the compound of the two. */
-  function compoundRelation(graha, other, housesApart) {
-    var natural = NATURAL_FRIENDS[graha];
-    var naturalRank = natural.friends.indexOf(other) >= 0 ? 1
-      : natural.enemies.indexOf(other) >= 0 ? -1 : 0;
-    // Grahas in the 2nd, 3rd, 4th, 10th, 11th and 12th from one another are
-    // temporary friends; the rest are temporary enemies.
-    var temporalFriend = [2, 3, 4, 10, 11, 12].indexOf(housesApart) >= 0;
-    var combined = naturalRank + (temporalFriend ? 1 : -1);
-    return combined >= 2 ? 'adhimitra'
-      : combined === 1 ? 'mitra'
-      : combined === 0 ? 'sama'
-      : combined === -1 ? 'shatru' : 'adhishatru';
-  }
-
   var RELATION_VALUE = {
     moolatrikona: 45, own: 30, adhimitra: 22.5, mitra: 15,
     sama: 7.5, shatru: 3.75, adhishatru: 1.875
@@ -128,7 +103,7 @@ var Shadbala = (function () {
         relation = 'sama';           // the nodes disposit nothing; treat as neutral
       } else {
         var apart = ((positionsD1[lord].sign - positionsD1[graha].sign) % 12 + 12) % 12 + 1;
-        relation = compoundRelation(graha, lord, apart);
+        relation = Astro.compoundRelation(graha, lord, apart);
       }
       total += RELATION_VALUE[relation];
       detail.push({ division: division, sign: position.sign, lord: lord, relation: relation });

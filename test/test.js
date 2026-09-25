@@ -1052,6 +1052,58 @@ ok('mars, jupiter and saturn keep their own aspects',
    Yogas.aspects('Saturn', 0, 2) && Yogas.aspects('Saturn', 0, 9) &&
    !Yogas.aspects('Venus', 0, 3));
 
+console.log('\nGraha friendship');
+/*
+ * The natural table is fixed, the temporal one depends on placement, and the
+ * compound of the two is what is read. Each layer is checked on its own,
+ * because a bug in one is invisible once they are added together.
+ */
+(function () {
+  var G = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+
+  ok('natural relations are the classical ones',
+     A.naturalRelation('Sun', 'Jupiter') === 1 && A.naturalRelation('Sun', 'Saturn') === -1 &&
+     A.naturalRelation('Sun', 'Mercury') === 0 && A.naturalRelation('Saturn', 'Venus') === 1 &&
+     A.naturalRelation('Jupiter', 'Mercury') === -1 && A.naturalRelation('Moon', 'Sun') === 1);
+  ok('the Moon has no natural enemy',
+     G.every(function (g) { return g === 'Moon' || A.naturalRelation('Moon', g) >= 0; }));
+  ok('the nodes are outside the table',
+     A.naturalRelation('Rahu', 'Sun') === null && A.compoundRelation('Ketu', 'Mars', 3) === null);
+
+  // Natural friendship is not symmetric, which is easy to assume and wrong:
+  // Mercury counts the Sun a friend, the Sun counts Mercury neutral.
+  ok('natural friendship is not always mutual',
+     A.naturalRelation('Mercury', 'Sun') === 1 && A.naturalRelation('Sun', 'Mercury') === 0);
+
+  ok('temporal friendship follows the six houses',
+     [2, 3, 4, 10, 11, 12].every(function (h) { return A.temporalRelation(h) === 1; }) &&
+     [1, 5, 6, 7, 8, 9].every(function (h) { return A.temporalRelation(h) === -1; }));
+
+  // The compound of every pairing must land in the five-step scale.
+  ok('the compound is one of the five grades', (function () {
+    var grades = ['adhimitra', 'mitra', 'sama', 'shatru', 'adhishatru'];
+    for (var i = 0; i < G.length; i++) {
+      for (var j = 0; j < G.length; j++) {
+        if (i === j) continue;
+        for (var h = 1; h <= 12; h++) {
+          if (grades.indexOf(A.compoundRelation(G[i], G[j], h)) < 0) return false;
+        }
+      }
+    }
+    return true;
+  })());
+  ok('a natural friend in a temporal friend house is a great friend',
+     A.compoundRelation('Sun', 'Jupiter', 3) === 'adhimitra');
+  ok('a natural enemy in a temporal enemy house is a great enemy',
+     A.compoundRelation('Sun', 'Saturn', 7) === 'adhishatru');
+  ok('opposite layers cancel to neutral',
+     A.compoundRelation('Sun', 'Jupiter', 7) === 'sama' &&
+     A.compoundRelation('Sun', 'Saturn', 3) === 'sama');
+  ok('every grade has a label',
+     Object.keys(A.RELATION_LABELS).length === 5 &&
+     A.RELATION_LABELS.adhimitra === 'great friend' && A.RELATION_LABELS.adhishatru === 'great enemy');
+})();
+
 console.log('\nYogakaraka');
 /*
  * A yogakaraka rules both a kendra and a trikona from the lagna. The rule is

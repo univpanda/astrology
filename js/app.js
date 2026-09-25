@@ -575,6 +575,24 @@
   }
 
   /**
+   * The graha that rules the sign this one sits in, and how the two stand.
+   *
+   * The relation is the compound one - natural and temporal together - which is
+   * what is actually read. Temporal friendship is counted in the rashi chart
+   * even when the sign being judged belongs to a division, which is where the
+   * classical rule puts it.
+   */
+  function dispositorOf(graha, sign, positionsD1) {
+    var lord = Astro.SIGN_LORDS[sign];
+    if (lord === graha) return 'itself';
+    if (!positionsD1[lord] || !positionsD1[graha]) return lord;
+    var relation = Astro.compoundRelation(graha, lord,
+      ((positionsD1[lord].sign - positionsD1[graha].sign) % 12 + 12) % 12 + 1);
+    // The nodes rule nothing and have no place in the friendship table.
+    return relation ? lord + ' \u00b7 ' + Astro.RELATION_LABELS[relation] : lord;
+  }
+
+  /**
    * One table per chart, in whichever division that chart is showing.
    *
    * Houses are counted from the same reference the chart is rotated onto, so
@@ -591,6 +609,9 @@
       var anchor = c.planets.filter(function (p) { return p.name === set.reference; })[0];
       if (anchor) firstSign = positionOf(anchor.longitude).sign;
     }
+
+    var positionsD1 = {};
+    c.planets.forEach(function (p) { positionsD1[p.name] = p; });
 
     var rows = [{ name: 'Ascendant', longitude: c.ascendant.longitude, isAscendant: true }]
       .concat(c.planets.map(function (p) {
@@ -609,6 +630,7 @@
        [nak.name, null],
        [String(nak.pada), 'numeric'],
        [nak.lord + ' / ' + nak.subLord, null],
+       [r.isAscendant ? Astro.SIGN_LORDS[v.sign] : dispositorOf(r.name, v.sign, positionsD1), 'dispositor'],
        [r.isAscendant ? '\u2013' : (r.retrograde ? 'Retrograde' : 'Direct'), null],
        [(r.isAscendant ? '' : Astro.dignityOf(r.name, v.sign, v.degreeInSign)) || '\u2013', null],
        [rulership(r, firstSign), 'rulership']
@@ -616,7 +638,7 @@
         var td = el(i === 0 ? 'th' : 'td', cell[1], cell[0]);
         if (i === 0) td.setAttribute('scope', 'row');
         if (i === 1) td.title = 'Longitude ' + v.longitude.toFixed(4) + '\u00b0';
-        if (i === 7 && r.retrograde) td.className = 'retro-flag';
+        if (i === 8 && r.retrograde) td.className = 'retro-flag';
         tr.appendChild(td);
       });
       tbody.appendChild(tr);

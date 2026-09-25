@@ -694,6 +694,63 @@ var Astro = (function () {
     return holds(KENDRA) && holds(TRIKONA);
   }
 
+  /*
+   * Graha friendships.
+   *
+   * Three layers, and they compound: the natural relation never changes, the
+   * temporal one depends on where two grahas sit in a chart, and the compound
+   * of the two is what is actually read. Natural friend plus temporal friend
+   * gives a great friend; natural enemy plus temporal friend gives a neutral,
+   * and so on.
+   *
+   * Rahu and Ketu are absent. The classical table does not include them, and
+   * schemes that do disagree with one another.
+   */
+  var NATURAL_FRIENDS = {
+    Sun: { friends: ['Moon', 'Mars', 'Jupiter'], enemies: ['Venus', 'Saturn'] },
+    Moon: { friends: ['Sun', 'Mercury'], enemies: [] },
+    Mars: { friends: ['Sun', 'Moon', 'Jupiter'], enemies: ['Mercury'] },
+    Mercury: { friends: ['Sun', 'Venus'], enemies: ['Moon'] },
+    Jupiter: { friends: ['Sun', 'Moon', 'Mars'], enemies: ['Mercury', 'Venus'] },
+    Venus: { friends: ['Mercury', 'Saturn'], enemies: ['Sun', 'Moon'] },
+    Saturn: { friends: ['Mercury', 'Venus'], enemies: ['Sun', 'Moon', 'Mars'] }
+  };
+
+  var RELATION_LABELS = {
+    adhimitra: 'great friend', mitra: 'friend', sama: 'neutral',
+    shatru: 'enemy', adhishatru: 'great enemy'
+  };
+
+  /** Natural relation: 1 friend, 0 neutral, -1 enemy. Null for the nodes. */
+  function naturalRelation(graha, other) {
+    var table = NATURAL_FRIENDS[graha];
+    if (!table || !NATURAL_FRIENDS[other]) return null;
+    if (table.friends.indexOf(other) >= 0) return 1;
+    if (table.enemies.indexOf(other) >= 0) return -1;
+    return 0;
+  }
+
+  /*
+   * Temporal: grahas in the 2nd, 3rd, 4th, 10th, 11th and 12th from one another
+   * are temporary friends, the rest temporary enemies. Counted in the rashi
+   * chart, which is where the classical rule places it, even when the sign
+   * being judged belongs to a division.
+   */
+  function temporalRelation(housesApart) {
+    return [2, 3, 4, 10, 11, 12].indexOf(housesApart) >= 0 ? 1 : -1;
+  }
+
+  /** The compound of the two, which is the relation actually read. */
+  function compoundRelation(graha, other, housesApart) {
+    var natural = naturalRelation(graha, other);
+    if (natural === null) return null;
+    var combined = natural + temporalRelation(housesApart);
+    return combined >= 2 ? 'adhimitra'
+      : combined === 1 ? 'mitra'
+      : combined === 0 ? 'sama'
+      : combined === -1 ? 'shatru' : 'adhishatru';
+  }
+
   /** Whole-sign (Parashari) house of a longitude, given the ascendant sign. */
   function houseOf(lon, ascSign) {
     return ((signOf(lon) - ascSign) % 12 + 12) % 12 + 1;
@@ -1053,6 +1110,11 @@ var Astro = (function () {
     houseOf: houseOf,
     dignityOf: dignityOf,
     housesOwned: housesOwned,
+    naturalRelation: naturalRelation,
+    temporalRelation: temporalRelation,
+    compoundRelation: compoundRelation,
+    NATURAL_FRIENDS: NATURAL_FRIENDS,
+    RELATION_LABELS: RELATION_LABELS,
     isYogakaraka: isYogakaraka,
     DIGNITY: DIGNITY,
     signOf: signOf,
