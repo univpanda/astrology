@@ -212,52 +212,68 @@
 
   var hourInput = document.getElementById('birth-hour');
   var minuteInput = document.getElementById('birth-minute');
+  var secondInput = document.getElementById('birth-second');
   var meridiemSelect = document.getElementById('birth-meridiem');
 
   /**
    * Read the typed 12-hour time. Returns either an `error` to show, or the hour
    * on a 24-hour clock for the maths plus the parts as entered.
+   *
+   * Seconds are optional. A time written as "10:30" means 10:30:00, so a blank
+   * seconds box counts as zero. Minutes get no such courtesy: the hour box hands
+   * focus straight to them, so a blank one is more likely forgotten than meant,
+   * and being 59 minutes out moves the ascendant by about 14 degrees. A second of
+   * clock time is worth roughly 13 to 21 arcseconds of ascendant in the mid
+   * latitudes, which is why the box is here at all.
    */
   function readTime() {
     var hourText = hourInput.value.trim();
     var minuteText = minuteInput.value.trim();
+    var secondText = secondInput.value.trim();
     if (!hourText && !minuteText) {
       return { error: 'Enter a time of birth. If it is unknown, 12:00 PM is the usual stand-in.' };
     }
     if (!/^\d{1,2}$/.test(hourText)) return { error: 'Enter the hour as a number from 1 to 12.' };
     if (!/^\d{1,2}$/.test(minuteText)) return { error: 'Enter the minute as a number from 00 to 59.' };
-    var hour = +hourText, minute = +minuteText;
+    if (secondText && !/^\d{1,2}$/.test(secondText)) return { error: 'Enter the seconds as a number from 00 to 59, or leave the box empty.' };
+    var hour = +hourText, minute = +minuteText, second = secondText ? +secondText : 0;
     // 12-hour clocks have no hour 0, and 12 is the one that wraps to 0.
     if (hour < 1 || hour > 12) return { error: 'The hour must be from 1 to 12. Use AM or PM to say which half of the day.' };
     if (minute > 59) return { error: 'The minute must be from 00 to 59.' };
+    if (second > 59) return { error: 'The seconds must be from 00 to 59.' };
     var meridiem = meridiemSelect.value === 'pm' ? 'pm' : 'am';
     return {
-      hour12: hour, minute: minute, meridiem: meridiem,
+      hour12: hour, minute: minute, second: second, meridiem: meridiem,
       hour24: Geo.to24Hour(hour, meridiem)
     };
   }
 
-  /** Put a 24-hour time into the three controls. */
-  function writeTime(hour24, minute) {
+  /** Put a 24-hour time into the controls. */
+  function writeTime(hour24, minute, second) {
     var parts = Geo.from24Hour(hour24);
     meridiemSelect.value = parts.meridiem;
     hourInput.value = String(parts.hour12);
     minuteInput.value = String(minute).padStart(2, '0');
+    secondInput.value = second ? String(second).padStart(2, '0') : '';
   }
 
-  // Keep the two boxes numeric, and hop to the minute once the hour is settled.
-  [hourInput, minuteInput].forEach(function (input) {
-    input.addEventListener('input', function () {
-      var digits = input.value.replace(/\D/g, '').slice(0, 2);
-      if (digits !== input.value) input.value = digits;
-      if (input === hourInput && (digits.length === 2 || +digits > 1)) minuteInput.focus();
+  /*
+   * Keep the boxes numeric and hand focus along as each one can no longer grow:
+   * an hour past 1 cannot gain a digit, nor a minute or second past 5.
+   */
+  [[hourInput, minuteInput, 1], [minuteInput, secondInput, 5], [secondInput, null, 5]]
+    .forEach(function (step) {
+      var input = step[0], next = step[1], lastLeadingDigit = step[2];
+      input.addEventListener('input', function () {
+        var digits = input.value.replace(/\D/g, '').slice(0, 2);
+        if (digits !== input.value) input.value = digits;
+        if (next && (digits.length === 2 || +digits > lastLeadingDigit)) next.focus();
+      });
+      // Pad a single digit on the way out, so "5" reads back as "05".
+      input.addEventListener('blur', function () {
+        if (input !== hourInput && /^\d$/.test(input.value)) input.value = '0' + input.value;
+      });
     });
-  });
-
-  // Pad a single digit on the way out, so "5" reads back as "05".
-  minuteInput.addEventListener('blur', function () {
-    if (/^\d$/.test(minuteInput.value)) minuteInput.value = '0' + minuteInput.value;
-  });
 
   /* ---------------------------------------------------------------- submit */
 
@@ -315,7 +331,7 @@
       }
     }
 
-    var jdUT = Astro.julianDay(y, mo, d, (h * 60 + mi - offset) / 60);
+    var jdUT = Astro.julianDay(y, mo, d, (h * 3600 + mi * 60 + time.second) / 3600 - offset / 60);
     var chart = Astro.chart({
       jdUT: jdUT,
       latitude: place.lat,
@@ -353,7 +369,8 @@
     var placeLabel = [place.name, place.region, place.nation].filter(Boolean).join(', ');
     document.getElementById('result-birth').textContent =
       state.d + ' ' + MONTHS_LONG[state.mo - 1] + ' ' + state.y + ', ' +
-      state.time.hour12 + ':' + String(state.time.minute).padStart(2, '0') + ' ' +
+      state.time.hour12 + ':' + String(state.time.minute).padStart(2, '0') +
+      (state.time.second ? ':' + String(state.time.second).padStart(2, '0') : '') + ' ' +
       state.time.meridiem.toUpperCase() +
       ' (' + (state.standard === 'lmt' ? 'LMT ' : 'UTC') + Geo.formatOffset(state.offset) + ')  ·  ' +
       placeLabel + '  ·  ' +
@@ -486,7 +503,8 @@
     var p = state.place;
     var parts = [
       'd=' + state.y + '-' + String(state.mo).padStart(2, '0') + '-' + String(state.d).padStart(2, '0'),
-      't=' + String(state.h).padStart(2, '0') + ':' + String(state.mi).padStart(2, '0'),
+      't=' + String(state.h).padStart(2, '0') + ':' + String(state.mi).padStart(2, '0') +
+        (state.time.second ? ':' + String(state.time.second).padStart(2, '0') : ''),
       'lat=' + p.lat.toFixed(4), 'lon=' + p.lon.toFixed(4), 'tz=' + encodeURIComponent(p.zone),
       'place=' + encodeURIComponent(p.name)
     ];
@@ -506,7 +524,7 @@
     if (!q.d || !q.t || !q.lat || !q.lon || !q.tz) return;
     document.getElementById('date').value = q.d;
     var t = q.t.split(':');
-    writeTime(+t[0], +(t[1] || 0));
+    writeTime(+t[0], +(t[1] || 0), +(t[2] || 0));
     document.getElementById('name').value = q.n || '';
     document.getElementById('time-standard').value = q.std === 'lmt' ? 'lmt' : 'zone';
     selectedCity = {

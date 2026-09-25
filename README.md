@@ -36,12 +36,20 @@ smaller namesakes. Former names are mapped too, because birth certificates say
 them: Bombay, Calcutta, Madras, Benares, Poona, Allahabad, Dacca, Rangoon. If a
 village is not in the list, coordinates can be entered by hand.
 
-Time of birth is entered on a 12-hour clock: pick AM or PM, then type the hour
-and minute. A native `<input type="time">` renders as 12-hour or 24-hour purely
-on the browser's locale, which is not something the page can choose, so the field
-is built from a select and two typed boxes instead. The minute has to be typed
-rather than defaulting to `:00`, because a silently assumed minute can be wrong by
-up to 59, and that is 14 degrees of ascendant.
+Time of birth is entered on a 12-hour clock: pick AM or PM, then type the hour,
+minute and, if the certificate records them, seconds. A native
+`<input type="time">` renders as 12-hour or 24-hour purely on the browser's
+locale, which is not something the page can choose, so the field is built from a
+select and three typed boxes instead, each handing focus to the next as soon as it
+can no longer grow.
+
+Seconds are optional and count as `00`, because a time written "10:30" means
+10:30:00. The minute is not optional, because the hour box hands focus straight to
+it, so a blank one is more likely forgotten than meant, and being 59 minutes out
+moves the ascendant by about 14 degrees. Seconds are offered because they are not
+noise either: the ascendant advances with sidereal time, so one second of clock
+time is worth roughly 13 to 21 arcseconds of ascendant in the mid latitudes, and
+a full minute is a fifth of a degree.
 
 Timezone offsets are resolved through the browser's own IANA database at the
 *birth* instant, not today's rule. A 1943 Indian birth correctly gets +06:30

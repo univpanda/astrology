@@ -347,6 +347,33 @@ function ascMc(jdUT, lat, lon) {
      Object.keys(signs).length + ' signs');
 })();
 
+console.log('\nWhat a second of clock time is worth');
+/*
+ * This is why the form has a seconds box. The ascendant advances with sidereal
+ * time, so one second of clock time is worth roughly 13 to 21 arcseconds of
+ * ascendant in the mid latitudes, and a whole minute is a fifth of a degree.
+ */
+(function () {
+  var jd = A.julianDay(1990, 8, 15, 5.0);
+  var place = { latitude: 28.6139, longitude: 77.2090 };
+  function ascAt(offsetSeconds) {
+    return A.chart({ jdUT: jd + offsetSeconds / 86400, latitude: place.latitude, longitude: place.longitude }).ascendant.longitude;
+  }
+  var perSecond = Math.abs(A.norm360(ascAt(1) - ascAt(0) + 180) - 180) * 3600;
+  ok('one second moves the ascendant 12 to 22 arcsec', perSecond > 12 && perSecond < 22,
+     perSecond.toFixed(1) + '"');
+  var perMinute = Math.abs(A.norm360(ascAt(60) - ascAt(0) + 180) - 180) * 60;
+  ok('one minute moves the ascendant 12 to 22 arcmin', perMinute > 12 && perMinute < 22,
+     perMinute.toFixed(2) + "'");
+  // Fractional-second inputs must not be silently rounded away.
+  ok('a 30 second difference is resolved', Math.abs(ascAt(30) - ascAt(0)) > 1e-4,
+     (Math.abs(A.norm360(ascAt(30) - ascAt(0) + 180) - 180) * 60).toFixed(2) + "'");
+  // The seconds only ever move the chart forward in time, never the date.
+  var withSeconds = A.calendarDate(A.julianDay(1990, 8, 15, (10 * 3600 + 30 * 60 + 59) / 3600));
+  ok('seconds stay inside the same day', withSeconds.d === 15 && Math.abs(withSeconds.hours - 10.5164) < 1e-3,
+     'day ' + withSeconds.d + ', ' + withSeconds.hours.toFixed(4) + 'h');
+})();
+
 console.log('\nZodiac helpers');
 ok('nakshatra 0 deg = Ashwini pada 1', A.nakshatraOf(0).name === 'Ashwini' && A.nakshatraOf(0).pada === 1);
 ok('nakshatra 359.9 = Revati pada 4', A.nakshatraOf(359.9).name === 'Revati' && A.nakshatraOf(359.9).pada === 4);

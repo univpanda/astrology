@@ -230,6 +230,17 @@ ok('time standard select is wired', /id="time-standard"/.test(html) && /time-sta
 });
 ok('AM/PM select comes before the typed hour',
    html.indexOf('id="birth-meridiem"') < html.indexOf('id="birth-hour"'));
+ok('hour, minute and second appear in that order',
+   html.indexOf('id="birth-hour"') < html.indexOf('id="birth-minute"') &&
+   html.indexOf('id="birth-minute"') < html.indexOf('id="birth-second"'));
+// Seconds are optional: "10:30" means 10:30:00.
+(function () {
+  var tag = html.match(/<input[^>]*id="birth-second"[^>]*>/);
+  ok('#birth-second exists and is not required', !!tag && !/\srequired/.test(tag[0]));
+})();
+ok('blank seconds are documented as 00', /Seconds are optional/.test(html));
+ok('app.js reads the seconds box', /birth-second/.test(appSrc) && /time\.second/.test(appSrc));
+ok('seconds reach the Julian Day', /h \* 3600 \+ mi \* 60 \+ time\.second/.test(appSrc));
 ok('no 24-hour time input remains', !/type="time"/.test(html));
 ok('hour and minute take numeric keypads', (html.match(/inputmode="numeric"/g) || []).length >= 2);
 ok('app.js rejects a blank name', /if \(!nameValue\) return fail/.test(appSrc));
