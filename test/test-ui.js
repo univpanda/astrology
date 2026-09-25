@@ -262,6 +262,12 @@ ok('the saved list and its empty state are both present',
 ok('an "add a kundali" button sits under the saved list',
    html.indexOf('id="add-kundali"') > html.indexOf('id="saved-list"'));
 ok('generating saves without a separate button', /saveCurrent\(true\)/.test(appSrc) && !/id="save-button"/.test(html));
+// Reopening a saved chart must not write it back: that would bump updated_at
+// and reorder the list under the reader.
+ok('reopening a saved chart does not save it again',
+   /if \(!reopening\) saveCurrent\(true\)/.test(appSrc) && /reopeningSaved = true;/.test(appSrc));
+ok('the reopen flag is cleared synchronously on submit',
+   /var reopening = reopeningSaved;\s*\n\s*reopeningSaved = false;/.test(appSrc));
 ok('the form gives way to the chart and can be brought back',
    /function showChart/.test(appSrc) && /function showForm/.test(appSrc) &&
    /addButton\.addEventListener/.test(appSrc) && /editButton\.addEventListener/.test(appSrc));

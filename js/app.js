@@ -36,6 +36,14 @@
   var activeIndex = -1;
   var lastChart = null;      // kept so the style switch can redraw without recomputing
 
+  /*
+   * Set while a saved chart is being reopened. Opening one runs the same submit
+   * path as generating a new one, so without this it would save itself again on
+   * every click: a pointless write, and one that bumps updated_at and quietly
+   * reorders the list under the reader.
+   */
+  var reopeningSaved = false;
+
   /* ------------------------------------------------------------ formatting */
 
   var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -357,6 +365,11 @@
       tzOffsetMinutes: offset
     };
 
+    // Read and clear it here, synchronously, so a failed submit cannot leave the
+    // flag set and swallow the save of whatever is generated next.
+    var reopening = reopeningSaved;
+    reopeningSaved = false;
+
     var button = form.querySelector('button.primary');
     button.disabled = true;
     computeChart(params, function (chart, source) {
@@ -368,7 +381,8 @@
       };
       render(lastChart);
       writeHash(lastChart);
-      saveCurrent(true);
+      // Already saved, by definition, when it came from the saved list.
+      if (!reopening) saveCurrent(true);
       showChart();
     });
   });
@@ -764,6 +778,7 @@
     placeInput.value = entry.placeLabel;
     placeNote.textContent = entry.latitude.toFixed(4) + ', ' + entry.longitude.toFixed(4) + '  ·  ' + entry.zone;
     manualFields.hidden = true;
+    reopeningSaved = true;
     form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit'));
   }
 
