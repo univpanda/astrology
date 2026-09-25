@@ -454,6 +454,17 @@ ok('the ayanamsa a chart was cast with survives an edit',
    /document\.getElementById\('ayanamsa'\)\.value = state\.ayanamsa;/.test(appSrc));
 
 // Each saved row carries an edit and a delete, and delete asks first.
+// What each graha rules, with the yogakaraka named.
+ok('both tables carry a rulership column',
+   (html.match(/<th scope="col">Rules<\/th>/g) || []).length === 2);
+ok('rulership is counted from the same reference as the houses',
+   /rulership\(r, firstSign\)/.test(appSrc));
+ok('a yogakaraka is named, not left to be inferred',
+   /yogakaraka/.test(appSrc) && /Astro\.isYogakaraka\(row\.name, referenceSign\)/.test(appSrc));
+ok('the ascendant and the nodes show a dash there',
+   /if \(row\.isAscendant\) return '\\u2013';/.test(appSrc) &&
+   /if \(!houses\.length\) return '\\u2013';/.test(appSrc));
+
 // Reopening a chart must not shorten its place: the label is kept whole rather
 // than recomposed from parts that reopening had blanked.
 ok('the full place label survives a save, reopen and save',

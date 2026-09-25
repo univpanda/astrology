@@ -620,6 +620,51 @@ ok('the last sub reaches the end of the nakshatra', (function () {
   return Math.abs((n.subStart + n.subSpan) - span) < 1e-6;
 })());
 
+console.log('\nYogakaraka');
+/*
+ * A yogakaraka rules both a kendra and a trikona from the lagna. The rule is
+ * derived rather than listed, so the test is that deriving it reproduces the
+ * six ascendants the classics name, and produces nothing for the other six.
+ */
+(function () {
+  var GRAHAS = ['Sun', 'Moon', 'Mars', 'Jupiter', 'Venus', 'Mercury', 'Saturn', 'Rahu', 'Ketu'];
+  var classic = { Taurus: 'Saturn', Cancer: 'Mars', Leo: 'Mars',
+                  Libra: 'Saturn', Capricorn: 'Venus', Aquarius: 'Venus' };
+  var withOne = 0;
+  for (var lagna = 0; lagna < 12; lagna++) {
+    var found = GRAHAS.filter(function (g) { return A.isYogakaraka(g, lagna); });
+    var expected = classic[A.SIGNS[lagna]];
+    if (expected) {
+      withOne++;
+      ok(A.SIGNS[lagna] + ' lagna: ' + expected, found.join() === expected, found.join() || 'none');
+    } else {
+      ok(A.SIGNS[lagna] + ' lagna has none', found.length === 0, found.join() || 'none');
+    }
+  }
+  ok('exactly six ascendants have one', withOne === 6, withOne + ' found');
+})();
+ok('the nodes are never yogakaraka, ruling no sign', (function () {
+  for (var lagna = 0; lagna < 12; lagna++) {
+    if (A.housesOwned('Rahu', lagna).length || A.isYogakaraka('Ketu', lagna)) return false;
+  }
+  return true;
+})());
+ok('a yogakaraka really does rule a kendra and a trikona', (function () {
+  for (var lagna = 0; lagna < 12; lagna++) {
+    var houses = A.housesOwned('Saturn', lagna);
+    if (!A.isYogakaraka('Saturn', lagna)) continue;
+    var kendra = houses.some(function (h) { return [4, 7, 10].indexOf(h) >= 0; });
+    var trikona = houses.some(function (h) { return [5, 9].indexOf(h) >= 0; });
+    if (!(kendra && trikona)) return false;
+  }
+  return true;
+})());
+// Ruling only the lagna is not the same thing, though house 1 is both.
+ok('ruling the first house alone is not enough', (function () {
+  // Mercury from Virgo rules 1 and 10: a kendra but no trikona.
+  return A.housesOwned('Mercury', 5).join() === '1,10' && !A.isYogakaraka('Mercury', 5);
+})());
+
 console.log('\nGraha order');
 (function () {
   var c = A.chart({ jdUT: A.julianDay(1985, 3, 22, 5.4166667), latitude: 23.5158, longitude: 87.308 });

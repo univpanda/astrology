@@ -556,6 +556,22 @@
   }
 
   /**
+   * What a graha rules, from the same reference the table counts houses from.
+   *
+   * A yogakaraka rules both a kendra and a trikona, which happens for only six
+   * of the twelve ascendants and is the single most consequential thing a
+   * rulership column can say - so it is named rather than left for the reader
+   * to work out from the house numbers beside it.
+   */
+  function rulership(row, referenceSign) {
+    if (row.isAscendant) return '\u2013';
+    var houses = Astro.housesOwned(row.name, referenceSign);
+    if (!houses.length) return '\u2013';   // Rahu and Ketu rule no sign
+    var owns = houses.join(', ');
+    return Astro.isYogakaraka(row.name, referenceSign) ? owns + ' \u00b7 yogakaraka' : owns;
+  }
+
+  /**
    * One table per chart, in whichever division that chart is showing.
    *
    * Houses are counted from the same reference the chart is rotated onto, so
@@ -591,7 +607,8 @@
        [String(nak.pada), 'numeric'],
        [nak.lord + ' / ' + nak.subLord, null],
        [r.isAscendant ? '\u2013' : (r.retrograde ? 'Retrograde' : 'Direct'), null],
-       [(r.isAscendant ? '' : Astro.dignityOf(r.name, v.sign, v.degreeInSign)) || '\u2013', null]
+       [(r.isAscendant ? '' : Astro.dignityOf(r.name, v.sign, v.degreeInSign)) || '\u2013', null],
+       [rulership(r, firstSign), 'rulership']
       ].forEach(function (cell, i) {
         var td = el(i === 0 ? 'th' : 'td', cell[1], cell[0]);
         if (i === 0) td.setAttribute('scope', 'row');

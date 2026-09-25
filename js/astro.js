@@ -577,6 +577,37 @@ var Astro = (function () {
     return '';
   }
 
+  /*
+   * Kendras are the angles and trikonas the trines. The first house is both, but
+   * it is excluded from each list here: a graha that rules only the lagna is not
+   * what anyone means by a yogakaraka.
+   */
+  var KENDRA = [4, 7, 10];
+  var TRIKONA = [5, 9];
+
+  /** Which houses a graha rules, counted from a reference sign. */
+  function housesOwned(planet, referenceSign) {
+    var dignity = DIGNITY[planet];
+    if (!dignity) return [];   // Rahu and Ketu rule nothing, so rule out nothing
+    return dignity.own.map(function (sign) {
+      return ((sign - referenceSign) % 12 + 12) % 12 + 1;
+    }).sort(function (a, b) { return a - b; });
+  }
+
+  /**
+   * A yogakaraka rules both a kendra and a trikona from the lagna, which only
+   * happens for six of the twelve ascendants. Deriving it rather than listing
+   * those six means it also answers correctly when a chart is read from some
+   * other reference, such as the Moon.
+   */
+  function isYogakaraka(planet, referenceSign) {
+    var houses = housesOwned(planet, referenceSign);
+    var holds = function (set) {
+      return houses.some(function (h) { return set.indexOf(h) >= 0; });
+    };
+    return holds(KENDRA) && holds(TRIKONA);
+  }
+
   /** Whole-sign (Parashari) house of a longitude, given the ascendant sign. */
   function houseOf(lon, ascSign) {
     return ((signOf(lon) - ascSign) % 12 + 12) % 12 + 1;
@@ -932,6 +963,8 @@ var Astro = (function () {
     VARGAS: VARGAS,
     houseOf: houseOf,
     dignityOf: dignityOf,
+    housesOwned: housesOwned,
+    isYogakaraka: isYogakaraka,
     DIGNITY: DIGNITY,
     signOf: signOf,
     norm360: norm360,
