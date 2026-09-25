@@ -21,10 +21,17 @@ import Astro from './_astro.mjs';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SUPABASE_ANON_KEY')!;
 
+/*
+ * x-region has to be listed: the browser names it in the preflight, and a
+ * response that omits it fails the check. curl ignores CORS entirely, so this
+ * goes wrong only in a real browser - where the page quietly falls back to
+ * computing locally and the database is never reached.
+ */
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-region',
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+  'Access-Control-Max-Age': '86400',
 };
 
 function bad(message: string, status = 400) {
