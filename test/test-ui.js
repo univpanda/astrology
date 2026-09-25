@@ -515,12 +515,20 @@ ok('both directions get a column', (function () {
   var head = html.slice(html.indexOf('id="aspect-table"'), html.indexOf('aspect-note'));
   return head.indexOf('>Aspects<') >= 0 && head.indexOf('>Aspected by<') >= 0;
 })());
+ok('the columns a graha casts sit together, receiving last', (function () {
+  var head = html.slice(html.indexOf('id="aspect-table"'), html.indexOf('aspect-note'));
+  return head.indexOf('>Aspects<') < head.indexOf('>Also aspects, from previous sign<') &&
+         head.indexOf('>Also aspects, from previous sign<') < head.indexOf('>Aspected by<');
+})());
 ok('the note says aspect is not mutual', /Aspect is not mutual/.test(appSrc));
 ok('the note says retrogression does not change the classical aspect',
    /Otherwise retrogression does not change/.test(appSrc) && /cheshta bala/.test(appSrc));
-ok('the Rao rule has a column of its own', (function () {
+// The header must say which way the aspect runs; "From previous sign" beside
+// "Aspected by" read as the graha being aspected from there.
+ok('the Rao column says the graha is the one aspecting', (function () {
   var head = html.slice(html.indexOf('id="aspect-table"'), html.indexOf('aspect-note'));
-  return head.indexOf('>From previous sign<') >= 0;
+  return head.indexOf('>Also aspects, from previous sign<') >= 0 &&
+         head.indexOf('>From previous sign<') < 0;
 })());
 ok('the note attributes the rule and says it is not classical',
    /K\. N\. Rao/.test(appSrc) && /not a classical one/.test(appSrc) &&

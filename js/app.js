@@ -786,9 +786,13 @@
           return x.graha + (x.retrograde ? ' [R]' : '') + ' (' + Yogas.ordinal(x.apart) + ')';
         }).join(', ');
       };
+      // The two casting columns sit together: what it aspects from where it
+      // stands, then what the retrograde rule adds. "Aspected by" last, so the
+      // change of direction happens once rather than twice.
       [[row.graha + (row.retrograde ? ' [R]' : ''), null],
-       [named(row.casts), null], [named(row.receives), null],
-       [named(row.fromPreviousSign), 'rao-aspects']]
+       [named(row.casts), null],
+       [named(row.fromPreviousSign), 'rao-aspects'],
+       [named(row.receives), null]]
         .forEach(function (cell, i) {
           var td = el(i === 0 ? 'th' : 'td', cell[1], cell[0]);
           if (i === 0) td.setAttribute('scope', 'row');
