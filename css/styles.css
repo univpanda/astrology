@@ -159,18 +159,51 @@ main, .site-header, .site-footer { max-width: 1120px; margin: 0 auto; }
   white-space: nowrap;
 }
 
-.saved-remove {
-  font: inherit;
-  font-size: 1.1rem;
-  line-height: 1;
+.saved-actions { display: flex; align-items: center; gap: 0.15rem; padding-right: 0.35rem; }
+
+.saved-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.95rem;
+  height: 1.95rem;
+  padding: 0;
   color: var(--ink-faint);
   background: none;
   border: none;
-  padding: 0.4rem 0.55rem;
-  cursor: pointer;
   border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color 0.12s ease, background 0.12s ease;
 }
+.saved-icon svg {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.saved-icon:hover { color: var(--green-deep); background: var(--surface); }
 .saved-remove:hover { color: var(--retro); }
+
+/* The confirm step replaces the icons in place, so the row never jumps and the
+   answer sits where the question was asked. */
+.saved-actions.confirming { gap: 0.3rem; }
+.saved-confirm-label { font-size: 0.78rem; color: var(--ink-soft); }
+.saved-confirm, .saved-cancel {
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  cursor: pointer;
+}
+.saved-confirm { color: #fff; background: var(--retro); border-color: var(--retro); }
+.saved-confirm:hover { filter: brightness(1.08); }
+.saved-cancel { color: var(--ink-soft); background: var(--surface); }
+.saved-cancel:hover { color: var(--green-deep); border-color: var(--green); }
 
 /* ------------------------------------------------- add, and save status */
 

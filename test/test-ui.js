@@ -441,11 +441,38 @@ ok('saving an edit names the row it replaces',
    /action: 'save', entry: entry, id: entry\.id/.test(appSrc));
 ok('an edit replaces by id even when the four keys changed',
    /currentEntry\.id \? list\[i\]\.id === currentEntry\.id/.test(appSrc));
-ok('deleting the chart on screen forgets the row',
-   /currentEntry = null;\s*\n\s*\}\s*\n\s*if \(removed && removed\.id\)/.test(appSrc));
+ok('deleting the chart on screen forgets the row', (function () {
+  // Asserted on the body of removeSaved rather than on adjacent lines, so
+  // moving the code does not fail a test about what it does.
+  var body = appSrc.slice(appSrc.indexOf('function removeSaved'));
+  body = body.slice(0, body.indexOf('\n  }'));
+  return /currentEntry = null;/.test(body) &&
+         /removed\.id \? removed\.id === currentEntry\.id/.test(body);
+})());
 ok('the ayanamsa a chart was cast with survives an edit',
    /ayanamsa: params\.ayanamsa, trueNode: params\.trueNode/.test(appSrc) &&
    /document\.getElementById\('ayanamsa'\)\.value = state\.ayanamsa;/.test(appSrc));
+
+// Each saved row carries an edit and a delete, and delete asks first.
+ok('every saved row gets an edit and a delete control',
+   /iconButton\('edit', 'Edit ' \+ entry\.name/.test(appSrc) &&
+   /iconButton\('remove', 'Delete ' \+ entry\.name/.test(appSrc));
+ok('both row controls are labelled for screen readers',
+   /button\.setAttribute\('aria-label', label\)/.test(appSrc) && /button\.title = label;/.test(appSrc));
+ok('editing a row fills the form without casting it',
+   /function editSaved/.test(appSrc) && /function applyEntryToForm/.test(appSrc) &&
+   /function loadSaved\(entry\) \{\s*\n\s*applyEntryToForm\(entry\);\s*\n\s*reopeningSaved = true;/.test(appSrc));
+ok('editing a row remembers which row it is, so generating updates it',
+   /function applyEntryToForm\(entry\) \{\s*\n\s*currentEntry = entry;/.test(appSrc));
+ok('deleting asks before it deletes',
+   /actions\.className = 'saved-actions confirming'/.test(appSrc) &&
+   /'Delete\?'/.test(appSrc) && /saved-cancel/.test(appSrc));
+ok('nothing is removed until the confirm is pressed',
+   /yes\.addEventListener\('click', function \(\) \{ removeSaved\(index\); \}\)/.test(appSrc) &&
+   !/remove\.addEventListener\('click', function \(\) \{\s*\n\s*var current = readSaved/.test(appSrc));
+ok('cancelling restores the row untouched',
+   /no\.addEventListener\('click', renderSaved\)/.test(appSrc));
+ok('the confirm is focused, so the keyboard can answer it', /yes\.focus\(\);/.test(appSrc));
 
 ok('a saved chart can be reopened and removed',
    /function loadSaved/.test(appSrc) && /saved-remove/.test(appSrc));

@@ -750,6 +750,30 @@
     return [entry.name, entry.placeLabel, entry.date, entry.time].join('\u0000').toLowerCase();
   }
 
+  /** A small inline-SVG icon button for a row in the saved list. */
+  function iconButton(kind, label, onClick) {
+    var paths = {
+      edit: ['M4 20h4L19 9a2.5 2.5 0 0 0-3.5-3.5L4.5 16.5V20Z', 'M14.5 6.5 17.5 9.5'],
+      remove: ['M5 7h14', 'M10 7V5h4v2', 'M6.5 7l.8 12h9.4l.8-12', 'M10 10.5v5.5', 'M14 10.5v5.5']
+    }[kind];
+    var button = el('button', 'saved-icon' + (kind === 'remove' ? ' saved-remove' : ''));
+    button.type = 'button';
+    button.title = label;
+    button.setAttribute('aria-label', label);
+    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('focusable', 'false');
+    paths.forEach(function (d) {
+      var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', d);
+      svg.appendChild(path);
+    });
+    button.appendChild(svg);
+    button.addEventListener('click', onClick);
+    return button;
+  }
+
   function renderSaved() {
     var list = readSaved();
     savedList.innerHTML = '';
@@ -768,29 +792,55 @@
       open.addEventListener('click', function () { loadSaved(entry); });
       li.appendChild(open);
 
-      var remove = el('button', 'saved-remove', '\u00d7');
-      remove.type = 'button';
-      remove.title = 'Remove ' + entry.name;
-      remove.setAttribute('aria-label', 'Remove ' + entry.name);
-      remove.addEventListener('click', function () {
-        var current = readSaved();
-        var removed = current.splice(index, 1)[0];
-        writeSaved(current);
-        renderSaved();
-        if (currentEntry && removed &&
-            (removed.id ? removed.id === currentEntry.id : keyOf(removed) === keyOf(currentEntry))) {
-          currentEntry = null;
-        }
-        if (removed && removed.id) {
-          callKundaliApi({ action: 'delete', id: removed.id }, function (entries) {
-            if (entries) { writeSaved(entries.map(fromRow)); renderSaved(); }
-          });
-        }
-      });
-      li.appendChild(remove);
+      var actions = el('div', 'saved-actions');
+      actions.appendChild(iconButton('edit', 'Edit ' + entry.name, function () {
+        editSaved(entry);
+      }));
 
+      /*
+       * Deleting asks first, in the row rather than through a browser dialog:
+       * the list is the only record of these charts, the button sits a few
+       * pixels from the one that opens them, and there is no undo.
+       */
+      actions.appendChild(iconButton('remove', 'Delete ' + entry.name, function () {
+        actions.innerHTML = '';
+        actions.className = 'saved-actions confirming';
+        actions.appendChild(el('span', 'saved-confirm-label', 'Delete?'));
+
+        var yes = el('button', 'saved-confirm', 'Delete');
+        yes.type = 'button';
+        yes.setAttribute('aria-label', 'Confirm deleting ' + entry.name);
+        yes.addEventListener('click', function () { removeSaved(index); });
+        actions.appendChild(yes);
+
+        var no = el('button', 'saved-cancel', 'Cancel');
+        no.type = 'button';
+        no.setAttribute('aria-label', 'Keep ' + entry.name);
+        no.addEventListener('click', renderSaved);
+        actions.appendChild(no);
+        yes.focus();
+      }));
+
+      li.appendChild(actions);
       savedList.appendChild(li);
     });
+  }
+
+  function removeSaved(index) {
+    var current = readSaved();
+    var removed = current.splice(index, 1)[0];
+    writeSaved(current);
+    // If the chart on screen was the one deleted, the next save is a new row.
+    if (currentEntry && removed &&
+        (removed.id ? removed.id === currentEntry.id : keyOf(removed) === keyOf(currentEntry))) {
+      currentEntry = null;
+    }
+    renderSaved();
+    if (removed && removed.id) {
+      callKundaliApi({ action: 'delete', id: removed.id }, function (entries) {
+        if (entries) { writeSaved(entries.map(fromRow)); renderSaved(); }
+      });
+    }
   }
 
   /** "22 Mar 1985, 10:55 AM" from a saved entry's stored 24-hour time. */
@@ -861,8 +911,8 @@
     if (!quiet) setTimeout(function () { saveFeedback.textContent = ''; }, 4000);
   }
 
-  /** Put a saved chart back into the form and cast it again. */
-  function loadSaved(entry) {
+  /** Put a saved chart's details into the form, without casting it. */
+  function applyEntryToForm(entry) {
     currentEntry = entry;
     document.getElementById('name').value = entry.name;
     document.getElementById('date').value = entry.date;
@@ -879,9 +929,21 @@
     placeInput.value = entry.placeLabel;
     placeNote.textContent = entry.latitude.toFixed(4) + ', ' + entry.longitude.toFixed(4) + '  ·  ' + entry.zone;
     manualFields.hidden = true;
+  }
+
+  /** Open a saved chart: fill the form and cast it. */
+  function loadSaved(entry) {
+    applyEntryToForm(entry);
     reopeningSaved = true;
     activateTab('chart');
     form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit'));
+  }
+
+  /** Edit a saved chart: fill the form and stop there, so it can be corrected. */
+  function editSaved(entry) {
+    applyEntryToForm(entry);
+    activateTab('add');
+    document.getElementById('name').focus();
   }
 
   /* ------------------------------------------------------------- tabs */
