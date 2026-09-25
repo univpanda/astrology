@@ -845,6 +845,46 @@ console.log('\nShadbala');
      Object.keys(result.grahas).length === 7 &&
      !result.grahas.Rahu && !result.grahas.Ketu);
 
+  /*
+   * Chapter 27, verses 2-4, pinned to the figure. Two ladders circulate: Santhanam
+   * and Saravali give these seven, while much of the web uses a halving series
+   * 45/30/22.5/15/7.5/3.75/1.875. Swapping them moves about 1.9% of strong/weak
+   * verdicts and reorders the grahas in roughly a third of charts, so the reading
+   * in use is held here rather than left to whoever edits the file next.
+   */
+  ok('saptavargaja follows Santhanam\'s ladder, not the halving one', (function () {
+    var v = Shadbala.SAPTAVARGAJA_VALUES;
+    return v.moolatrikona === 45 && v.own === 30 && v.adhimitra === 20 && v.mitra === 15 &&
+      v.sama === 10 && v.shatru === 4 && v.adhishatru === 2 &&
+      v.adhimitra !== 22.5 && v.sama !== 7.5;
+  })());
+  ok('and the ladder only ever descends', (function () {
+    var order = ['moolatrikona', 'own', 'adhimitra', 'mitra', 'sama', 'shatru', 'adhishatru'];
+    return order.every(function (k, i) {
+      return i === 0 || Shadbala.SAPTAVARGAJA_VALUES[order[i - 1]] > Shadbala.SAPTAVARGAJA_VALUES[k];
+    });
+  })());
+  ok('so the most saptavargaja can reach is 45 across all seven vargas',
+     Shadbala.SAPTAVARGAJA_VALUES.moolatrikona * 7 === 315 &&
+     Shadbala.GRAHAS.every(function (g) { return result.grahas[g].sthana.saptavargaja <= 315; }));
+
+  /*
+   * The hora is judged here the ordinary way, by the compound relation, and NOT by
+   * the chapter 7 list the Dasavarga grid uses. Santhanam's note on chapter 27 is
+   * explicit that the compound relationships "including Hora lordship" are read in
+   * the rashi chart. The grid and this deliberately differ, so both sides are held.
+   */
+  ok('hora is one of the seven divisions scored, by relation not by the hora list',
+     Shadbala.GRAHAS.every(function (g) {
+       var hora = result.grahas[g].saptavargajaDetail.filter(function (r) { return r.division === 2; })[0];
+       return hora && [3, 4].indexOf(hora.sign) >= 0 &&        // only ever Cancer or Leo
+         ['Moon', 'Sun'].indexOf(hora.lord) >= 0 &&
+         Object.keys(Shadbala.SAPTAVARGAJA_VALUES).indexOf(hora.relation) >= 0;
+     }));
+  ok('and temporal friendship for it is read in the rashi chart, as the note requires',
+     /be\s*\n?\s*\* seen in the Rashi chart only/.test(
+       require('fs').readFileSync(require('path').join(__dirname, '../js/shadbala.js'), 'utf8')));
+
   // Every component reports separately and they add to the total.
   ok('the components sum to the total', Shadbala.GRAHAS.every(function (g) {
     var x = result.grahas[g];

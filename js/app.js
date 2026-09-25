@@ -832,7 +832,11 @@
       'Parashara sets for it, which differs by graha, so compare each total against its own ' +
       'requirement rather than against the others. Grahas are listed as in the tables beside ' +
       'this one. Hover the Sthana and Kala figures for their parts. Yuddha bala is not ' +
-      'included, and Rahu and Ketu are outside Shadbala.';
+      'included, and Rahu and Ketu are outside Shadbala. Saptavargaja uses the ladder in ' +
+      'Santhanam\u2019s chapter 27 \u2014 45, 30, 20, 15, 10, 4, 2 \u2014 rather than the ' +
+      'halving series some calculators use, which is why totals here can differ from theirs ' +
+      'by a few virupas. The hora counts by the ordinary relation there, as that chapter ' +
+      'directs, not by the rule the Dasavarga tab follows.';
   }
 
   /* ----------------------------------------------------------- dasavarga */

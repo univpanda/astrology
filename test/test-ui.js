@@ -569,6 +569,11 @@ ok('the nodes are skipped rather than shown blank',
    /if \(!x\) return;\s*\/\/ Rahu and Ketu are outside Shadbala/.test(appSrc));
 ok('each graha is judged against its own minimum',
    /x\.strong \? 'Strong' : 'Weak'/.test(appSrc) && /String\(x\.required\)/.test(appSrc));
+ok('the shadbala note names the ladder it uses, since totals differ between readings',
+   /45, 30, 20, 15, 10, 4, 2/.test(appSrc.replace(/'\s*\+\s*'/g, '')) &&
+   /halving series some calculators use/.test(appSrc.replace(/'\s*\+\s*'/g, '')));
+ok('and says the hora is counted differently there than in Dasavarga',
+   /not by the rule the Dasavarga tab follows/.test(appSrc.replace(/'\s*\+\s*'/g, '')));
 ok('the note says what is left out rather than hiding it',
    /Yuddha bala is not ' \+\s*\n?\s*'included/.test(appSrc) || /Yuddha bala is not/.test(appSrc));
 
