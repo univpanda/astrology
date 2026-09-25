@@ -384,6 +384,9 @@
       // Already saved, by definition, when it came from the saved list.
       if (!reopening) saveCurrent(true);
       showChart();
+      // The form's values now live in the chart and in the saved entry, so it
+      // starts clean for the next person; "Edit these details" refills it.
+      blankForm();
     });
   });
 
@@ -611,7 +614,6 @@
   var saveFeedback = document.getElementById('save-feedback');
   var addButton = document.getElementById('add-kundali');
   var editButton = document.getElementById('edit-button');
-  var formCard = document.getElementById('birth-form');
 
   /*
    * There are no accounts, so ownership is a capability: a random token minted
@@ -694,6 +696,8 @@
     var list = readSaved();
     savedList.innerHTML = '';
     savedEmpty.hidden = list.length > 0;
+    savedCount.textContent = list.length;
+    savedCount.hidden = list.length === 0;
 
     list.forEach(function (entry, index) {
       var li = el('li', 'saved-item');
@@ -797,41 +801,80 @@
     placeNote.textContent = entry.latitude.toFixed(4) + ', ' + entry.longitude.toFixed(4) + '  ·  ' + entry.zone;
     manualFields.hidden = true;
     reopeningSaved = true;
+    activateTab('chart');
     form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit'));
   }
 
-  /* ----------------------------------------------------- form or chart */
+  /* ------------------------------------------------------------- tabs */
 
   /*
-   * The page is either taking details or showing a chart, never both: once a
-   * chart exists the form is just a wall of inputs above the thing you came
-   * for. "Add a kundali" brings it back, empty.
+   * Three sections, one on screen at a time: the saved list, the form, and the
+   * chart. "Add a kundali" is home, because an empty page with a form on it is
+   * self-explanatory in a way an empty chart is not.
    */
-  function showForm(blank) {
-    if (blank) {
-      document.getElementById('name').value = '';
-      document.getElementById('date').value = '';
-      hourInput.value = ''; minuteInput.value = ''; secondInput.value = '';
-      meridiemSelect.value = 'am';
-      placeInput.value = '';
-      placeNote.textContent = '';
-      selectedCity = null;
-      manualFields.hidden = true;
-      manualToggle.setAttribute('aria-expanded', 'false');
-      lastChart = null;
-      history.replaceState(null, '', location.pathname + location.search);
-    }
-    errorBox.textContent = '';
-    formCard.hidden = false;
-    result.hidden = true;
-    document.getElementById('name').focus();
+  var TABS = ['saved', 'add', 'chart'];
+  var tabButtons = {}, tabPanels = {};
+  TABS.forEach(function (name) {
+    tabButtons[name] = document.getElementById('tab-' + name);
+    tabPanels[name] = document.getElementById('panel-' + name);
+  });
+  var emptyChart = document.getElementById('empty-chart');
+  var savedCount = document.getElementById('saved-count');
+  var activeTab = 'add';
+
+  function activateTab(name, moveFocus) {
+    activeTab = name;
+    TABS.forEach(function (other) {
+      var selected = other === name;
+      tabButtons[other].setAttribute('aria-selected', String(selected));
+      tabButtons[other].tabIndex = selected ? 0 : -1;
+      tabPanels[other].hidden = !selected;
+    });
+    if (moveFocus) tabButtons[name].focus();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  TABS.forEach(function (name) {
+    tabButtons[name].addEventListener('click', function () { activateTab(name); });
+  });
+
+  // Arrow keys move along the tab strip, as a tablist is expected to.
+  document.querySelector('.tabs').addEventListener('keydown', function (e) {
+    var step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+    if (step) {
+      e.preventDefault();
+      activateTab(TABS[(TABS.indexOf(activeTab) + step + TABS.length) % TABS.length], true);
+    } else if (e.key === 'Home') {
+      e.preventDefault(); activateTab(TABS[0], true);
+    } else if (e.key === 'End') {
+      e.preventDefault(); activateTab(TABS[TABS.length - 1], true);
+    }
+  });
+
+  /** Empty the form so the next chart starts from nothing. */
+  function blankForm() {
+    document.getElementById('name').value = '';
+    document.getElementById('date').value = '';
+    hourInput.value = ''; minuteInput.value = ''; secondInput.value = '';
+    meridiemSelect.value = 'am';
+    placeInput.value = '';
+    placeNote.textContent = '';
+    selectedCity = null;
+    manualFields.hidden = true;
+    manualToggle.setAttribute('aria-expanded', 'false');
+    errorBox.textContent = '';
+  }
+
+  function showForm(blank) {
+    if (blank) blankForm();
+    activateTab('add');
+    document.getElementById('name').focus();
+  }
+
   function showChart() {
-    formCard.hidden = true;
+    emptyChart.hidden = true;
     result.hidden = false;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    activateTab('chart');
   }
 
   addButton.addEventListener('click', function () { showForm(true); });

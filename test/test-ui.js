@@ -279,13 +279,40 @@ ok('the ascendant row still gets a navamsa sign',
 
 ok('time standard select is wired', /id="time-standard"/.test(html) && /time-standard/.test(appSrc));
 
-// Saved kundalis: the panel, and the four keys that identify an entry.
-ok('the saved panel exists to the left of the form',
-   html.indexOf('saved-panel') >= 0 && html.indexOf('saved-panel') < html.indexOf('id="birth-form"'));
+// Three tabs, with the form as home.
+(function () {
+  var names = ['saved', 'add', 'chart'];
+  ok('there are exactly three tabs', (html.match(/role="tab"/g) || []).length === 3);
+  ok('each tab has a panel, and each panel names its tab', names.every(function (n) {
+    return new RegExp('id="tab-' + n + '"').test(html) &&
+           new RegExp('id="panel-' + n + '"[^>]*aria-labelledby="tab-' + n + '"').test(html);
+  }));
+  ok('every tab points at its panel', names.every(function (n) {
+    return new RegExp('id="tab-' + n + '"[\\s\\S]{0,140}aria-controls="panel-' + n + '"').test(html);
+  }));
+  ok('"add a kundali" is the tab selected on arrival',
+     /id="tab-add"[\s\S]{0,140}aria-selected="true"/.test(html) &&
+     (html.match(/aria-selected="true"/g) || []).length === 1);
+  ok('the other two panels start hidden',
+     /id="panel-saved"[^>]*hidden/.test(html) && /id="panel-chart"[^>]*hidden/.test(html) &&
+     !/id="panel-add"[^>]*hidden/.test(html));
+  ok('only the selected tab is reachable by tab key',
+     (html.match(/tabindex="-1"/g) || []).length === 2);
+  ok('the tab strip is keyboard navigable',
+     /ArrowRight/.test(appSrc) && /ArrowLeft/.test(appSrc) && /'Home'/.test(appSrc) && /'End'/.test(appSrc));
+  ok('the chart tab has something to say when empty', /id="empty-chart"/.test(html));
+  ok('generating moves you to the chart tab and clears the form',
+     /showChart\(\);\s*\n[\s\S]{0,200}blankForm\(\);/.test(appSrc));
+  ok('opening a saved chart lands on the chart tab',
+     /reopeningSaved = true;\s*\n\s*activateTab\('chart'\)/.test(appSrc));
+})();
+
+// Saved kundalis: the list, and the four keys that identify an entry.
 ok('the saved list and its empty state are both present',
    /id="saved-list"/.test(html) && /id="saved-empty"/.test(html));
 ok('an "add a kundali" button sits under the saved list',
    html.indexOf('id="add-kundali"') > html.indexOf('id="saved-list"'));
+ok('the saved tab shows how many are stored', /id="saved-count"/.test(html) && /savedCount/.test(appSrc));
 ok('generating saves without a separate button', /saveCurrent\(true\)/.test(appSrc) && !/id="save-button"/.test(html));
 // Reopening a saved chart must not write it back: that would bump updated_at
 // and reorder the list under the reader.

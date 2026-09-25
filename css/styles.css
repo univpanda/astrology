@@ -51,47 +51,55 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-.site-header, .site-footer { max-width: 1280px; margin: 0 auto; }
+main, .site-header, .site-footer { max-width: 1120px; margin: 0 auto; }
 
-/* Saved charts on the left, everything else beside them. The sidebar drops
-   above the form on narrow screens rather than squeezing both. */
-.layout {
-  max-width: 1280px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: 250px minmax(0, 1fr);
-  gap: 1.25rem;
-  align-items: start;
-}
-.layout > main { min-width: 0; }
+/* ------------------------------------------------------------------ tabs */
 
-@media (max-width: 880px) {
-  .layout { grid-template-columns: minmax(0, 1fr); }
-  .saved-panel { position: static; max-height: none; }
+.tabs {
+  display: flex;
+  gap: 0.35rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
 }
+
+.tab {
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  padding: 0.7rem 1.05rem;
+  margin-bottom: -1px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+}
+.tab:hover { color: var(--green-deep); background: var(--green-soft); }
+.tab[aria-selected="true"] {
+  color: var(--green-deep);
+  border-bottom-color: var(--green);
+}
+
+.tab-count {
+  display: inline-block;
+  min-width: 1.35rem;
+  margin-left: 0.3rem;
+  padding: 0.05rem 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--green-deep);
+  background: var(--green-soft);
+  border-radius: 999px;
+}
+
+.empty-chart { color: var(--ink-faint); text-align: center; padding: 3rem 1.5rem; }
 
 /* ----------------------------------------------------------- saved panel */
-
-.saved-panel {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 1.15rem 1rem;
-  position: sticky;
-  top: 1.25rem;
-  max-height: calc(100vh - 2.5rem);
-  overflow-y: auto;
-}
-
-.saved-panel h2 {
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 1.05rem;
-  letter-spacing: 0.02em;
-  color: var(--green-deep);
-  margin: 0 0 0.85rem;
-}
 
 .saved-empty, .saved-note {
   font-size: 0.82rem;
@@ -631,8 +639,9 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
   body { background: #fff; color: #111; padding: 0; }
   .card { border: 1px solid #ddd; box-shadow: none; background: #fff; break-inside: avoid; }
   .chart-card { background: #fff; }
-  #birth-form, .site-footer, .result-actions, .options, .saved-panel, .save-feedback { display: none; }
-  .layout { display: block; }
+  .tabs, .site-footer, .result-actions, .options, .save-feedback { display: none; }
+  #panel-add, #panel-saved, .empty-chart { display: none; }
+  #panel-chart[hidden] { display: block; }
   .technical[open] summary { display: none; }
   svg.kundli text { fill: #111; }
   svg.kundli .frame, svg.kundli .cell { stroke: #9bbcab; }

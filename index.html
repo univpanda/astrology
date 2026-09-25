@@ -14,19 +14,31 @@
   <p class="tagline">A Vedic birth chart from a date, a time and a place. Computed in your browser, sent nowhere.</p>
 </header>
 
-<div class="layout">
+<main>
 
-  <aside class="saved-panel" aria-labelledby="saved-heading">
-    <h2 id="saved-heading">Saved kundalis</h2>
-    <p class="saved-empty" id="saved-empty">
-      Nothing saved yet. Fill in the details, generate a chart, then save it here.
-    </p>
-    <ul class="saved-list" id="saved-list"></ul>
-    <button type="button" class="add-kundali" id="add-kundali">+ Add a kundali</button>
-    <p class="saved-note" id="saved-note">Charts are saved as soon as they are generated.</p>
-  </aside>
+  <div class="tabs" role="tablist" aria-label="Sections">
+    <button type="button" class="tab" role="tab" id="tab-saved"
+            aria-controls="panel-saved" aria-selected="false" tabindex="-1">
+      Saved kundalis <span class="tab-count" id="saved-count" hidden></span>
+    </button>
+    <button type="button" class="tab" role="tab" id="tab-add"
+            aria-controls="panel-add" aria-selected="true">Add a kundali</button>
+    <button type="button" class="tab" role="tab" id="tab-chart"
+            aria-controls="panel-chart" aria-selected="false" tabindex="-1">Kundali</button>
+  </div>
 
-  <main>
+  <section class="panel" id="panel-saved" role="tabpanel" aria-labelledby="tab-saved" hidden>
+    <div class="card saved-panel">
+      <p class="saved-empty" id="saved-empty">
+        Nothing saved yet. Add a kundali and it will appear here as soon as it is generated.
+      </p>
+      <ul class="saved-list" id="saved-list"></ul>
+      <button type="button" class="add-kundali" id="add-kundali">+ Add a kundali</button>
+      <p class="saved-note" id="saved-note">Charts are saved as soon as they are generated.</p>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-add" role="tabpanel" aria-labelledby="tab-add">
   <form id="birth-form" class="card" novalidate>
     <div class="field-grid">
       <div class="field">
@@ -134,7 +146,13 @@
     </div>
   </form>
 
-  <section id="result" class="result" hidden aria-live="polite">
+  </section>
+
+  <section class="panel" id="panel-chart" role="tabpanel" aria-labelledby="tab-chart" hidden>
+    <p class="empty-chart card" id="empty-chart">
+      No kundali on screen yet. Add one, or open a saved chart.
+    </p>
+    <section id="result" class="result" hidden aria-live="polite">
     <div class="card result-header">
       <h2 id="result-name">Chart</h2>
       <div class="birth-row">
@@ -215,10 +233,10 @@
         with JPL Horizons to better than 40 arcseconds over 1800&ndash;2100.
       </p>
     </details>
+    </section>
   </section>
-  </main>
 
-</div>
+</main>
 
 <footer class="site-footer">
   <p>
