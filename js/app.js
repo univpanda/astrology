@@ -515,7 +515,7 @@
         [String(p.house), 'numeric'],
         [p.nakshatra.name, null],
         [String(p.nakshatra.pada), 'numeric'],
-        [p.nakshatra.lord, null],
+        [p.nakshatra.lord + ' / ' + p.nakshatra.subLord, null],
         [p.navamsaSignName, null],
         [p.isAscendant ? '\u2013' : (p.retrograde ? 'Retrograde' : 'Direct'), null],
         [p.dignity || '\u2013', null]

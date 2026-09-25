@@ -514,16 +514,43 @@ var Astro = (function () {
 
   function signOf(lon) { return Math.floor(norm360(lon) / 30); }
 
+  /**
+   * Nakshatra, pada, lord and KP sub lord for a sidereal longitude.
+   *
+   * The sub lord divides each nakshatra into nine unequal parts, in the same
+   * order and the same proportions as the Vimshottari dasha: a lord's share of
+   * the 13 deg 20' is its share of the 120 years. The sequence starts with the
+   * nakshatra's own lord, so the first sliver of any nakshatra is ruled twice
+   * over by the same graha.
+   */
   function nakshatraOf(lon) {
     var l = norm360(lon);
     var span = 360 / 27;
     var idx = Math.floor(l / span);
     var within = l - idx * span;
+    var lordIndex = idx % 9;
+
+    var subLord = DASHA_ORDER[lordIndex], subStart = 0, subSpan = span;
+    for (var i = 0, edge = 0; i < 9; i++) {
+      var candidate = DASHA_ORDER[(lordIndex + i) % 9];
+      var width = span * DASHA_YEARS[candidate] / 120;
+      // The last sub absorbs any rounding, so a longitude at the very end of a
+      // nakshatra cannot fall past every boundary and come back empty.
+      if (within < edge + width || i === 8) {
+        subLord = candidate; subStart = edge; subSpan = width;
+        break;
+      }
+      edge += width;
+    }
+
     return {
       index: idx,
       name: NAKSHATRAS[idx],
       pada: Math.floor(within / (span / 4)) + 1,
-      lord: DASHA_ORDER[idx % 9],
+      lord: DASHA_ORDER[lordIndex],
+      subLord: subLord,
+      subStart: subStart,
+      subSpan: subSpan,
       within: within
     };
   }

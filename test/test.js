@@ -473,6 +473,51 @@ console.log('\nWhat a second of clock time is worth');
      'day ' + withSeconds.d + ', ' + withSeconds.hours.toFixed(4) + 'h');
 })();
 
+console.log('\nNakshatra sub lords (KP)');
+/*
+ * Each nakshatra splits into nine unequal subs, in Vimshottari order and
+ * Vimshottari proportions, beginning with the nakshatra's own lord.
+ */
+[[320.6319, 'Purva Bhadrapada', 1, 'Jupiter', 'Jupiter'],
+ [146.3211, 'Purva Phalguni', 4, 'Venus', 'Ketu']].forEach(function (t) {
+  var n = A.nakshatraOf(t[0]);
+  ok(t[1] + ' pada ' + t[2] + ' is ' + t[3] + ' / ' + t[4],
+     n.name === t[1] && n.pada === t[2] && n.lord === t[3] && n.subLord === t[4],
+     n.name + ' pada ' + n.pada + ', ' + n.lord + ' / ' + n.subLord);
+});
+ok('a nakshatra opens with its own lord as sub lord', (function () {
+  for (var i = 0; i < 27; i++) {
+    var n = A.nakshatraOf(i * (360 / 27) + 0.001);
+    if (n.subLord !== n.lord) return false;
+  }
+  return true;
+})());
+ok('the nine subs fill the nakshatra exactly', (function () {
+  var span = 360 / 27;
+  for (var i = 0; i < 27; i++) {
+    var total = 0, seen = {};
+    for (var step = 0; step < 4000; step++) {
+      var n = A.nakshatraOf(i * span + (step + 0.5) * span / 4000);
+      seen[n.subLord] = true;
+      if (!seen['__' + n.subLord]) { seen['__' + n.subLord] = true; total += n.subSpan; }
+    }
+    if (Object.keys(seen).filter(function (k) { return k.indexOf('__') !== 0; }).length !== 9) return false;
+    if (Math.abs(total - span) > 1e-9) return false;
+  }
+  return true;
+})());
+ok('sub widths follow the dasha years', (function () {
+  var span = 360 / 27;
+  var n = A.nakshatraOf(0.001);                       // Ashwini, Ketu sub
+  var expected = span * A.DASHA_YEARS.Ketu / 120;
+  return Math.abs(n.subSpan - expected) < 1e-12;
+})());
+ok('the last sub reaches the end of the nakshatra', (function () {
+  var span = 360 / 27;
+  var n = A.nakshatraOf(span - 1e-9);
+  return Math.abs((n.subStart + n.subSpan) - span) < 1e-6;
+})());
+
 console.log('\nGraha order');
 (function () {
   var c = A.chart({ jdUT: A.julianDay(1985, 3, 22, 5.4166667), latitude: 23.5158, longitude: 87.308 });
