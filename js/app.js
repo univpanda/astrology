@@ -398,6 +398,9 @@
         chart: chart, place: place, offset: offset,
         name: nameValue, standard: standard, time: time, source: source,
         ayanamsa: params.ayanamsa, trueNode: params.trueNode,
+        gender: document.getElementById('gender').value,
+        celebrity: document.getElementById('celebrity').checked,
+        note: document.getElementById('person-note').value.trim(),
         y: y, mo: mo, d: d, h: h, mi: mi
       };
       render(lastChart);
@@ -461,7 +464,13 @@
 
     // Just the name. The page is a chart; saying so in the heading of one adds
     // nothing, and a long name plus a possessive wraps on a phone.
-    document.getElementById('result-name').textContent = state.name;
+    var heading = document.getElementById('result-name');
+    heading.textContent = state.name;
+    if (state.celebrity) heading.appendChild(el('span', 'celebrity-mark', 'public figure'));
+
+    var noteLine = document.getElementById('result-note');
+    noteLine.textContent = state.note || '';
+    noteLine.hidden = !state.note;
 
     var placeLabel = placeLabelOf(place);
     document.getElementById('result-birth').textContent =
@@ -471,7 +480,9 @@
       state.time.meridiem.toUpperCase() +
       ' (' + (state.standard === 'lmt' ? 'LMT ' : 'UTC') + Geo.formatOffset(state.offset) + ')  ·  ' +
       placeLabel + '  ·  ' +
-      Geo.formatDMS(place.lat, 'N', 'S') + ' ' + Geo.formatDMS(place.lon, 'E', 'W');
+      Geo.formatDMS(place.lat, 'N', 'S') + ' ' + Geo.formatDMS(place.lon, 'E', 'W') +
+      (state.gender && state.gender !== 'unstated'
+        ? '  \u00b7  ' + state.gender.charAt(0).toUpperCase() + state.gender.slice(1) : '');
 
     /*
      * No summary tiles here any more. The lagna, both rashis and the janma
@@ -1040,7 +1051,10 @@
       time: String(row.birth_time).slice(0, 8),
       standard: row.time_standard,
       ayanamsa: row.ayanamsa,
-      trueNode: row.true_node
+      trueNode: row.true_node,
+      gender: row.gender || 'unstated',
+      celebrity: row.celebrity === true,
+      note: row.note || ''
     };
   }
 
@@ -1120,7 +1134,9 @@
 
       var open = el('button', 'saved-open');
       open.type = 'button';
-      open.appendChild(el('span', 'saved-name', entry.name));
+      var savedName = el('span', 'saved-name', entry.name);
+      if (entry.celebrity) savedName.appendChild(el('span', 'celebrity-mark', 'study'));
+      open.appendChild(savedName);
       open.appendChild(el('span', 'saved-meta', entry.placeLabel));
       open.appendChild(el('span', 'saved-meta', formatSavedMoment(entry)));
       open.addEventListener('click', function () { loadSaved(entry); });
@@ -1201,7 +1217,10 @@
       zone: state.place.zone,
       standard: state.standard,
       ayanamsa: state.ayanamsa,
-      trueNode: state.trueNode
+      trueNode: state.trueNode,
+      gender: state.gender,
+      celebrity: state.celebrity,
+      note: state.note
     };
 
     /*
@@ -1255,6 +1274,9 @@
     document.getElementById('ayanamsa').value = entry.ayanamsa || 'lahiri';
     document.getElementById('node-type').value = entry.trueNode ? 'true' : 'mean';
     document.getElementById('time-standard').value = entry.standard === 'lmt' ? 'lmt' : 'zone';
+    document.getElementById('gender').value = entry.gender || 'unstated';
+    document.getElementById('celebrity').checked = entry.celebrity === true;
+    document.getElementById('person-note').value = entry.note || '';
 
     selectedCity = {
       name: entry.placeLabel.split(',')[0],
@@ -1359,6 +1381,9 @@
     meridiemSelect.value = 'am';
     placeInput.value = '';
     placeNote.textContent = '';
+    document.getElementById('gender').value = 'unstated';
+    document.getElementById('celebrity').checked = false;
+    document.getElementById('person-note').value = '';
     selectedCity = null;
     manualFields.hidden = true;
     manualToggle.setAttribute('aria-expanded', 'false');
@@ -1374,6 +1399,9 @@
     document.getElementById('time-standard').value = state.standard === 'lmt' ? 'lmt' : 'zone';
     document.getElementById('ayanamsa').value = state.ayanamsa;
     document.getElementById('node-type').value = state.trueNode ? 'true' : 'mean';
+    document.getElementById('gender').value = state.gender || 'unstated';
+    document.getElementById('celebrity').checked = state.celebrity === true;
+    document.getElementById('person-note').value = state.note || '';
     selectedCity = state.place;
     placeInput.value = placeLabelOf(state.place);
     placeNote.textContent = state.place.lat.toFixed(4) + ', ' + state.place.lon.toFixed(4) +

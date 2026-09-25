@@ -48,6 +48,11 @@ function clean(entry: Record<string, unknown>, token: string) {
     time_standard: entry.standard === 'lmt' ? 'lmt' : 'zone',
     ayanamsa: text(entry.ayanamsa, 32) || 'lahiri',
     true_node: entry.trueNode === true,
+    // Whitelisted rather than passed through: an unknown value would fail the
+    // check constraint and lose the whole save.
+    gender: ['female', 'male', 'other'].includes(String(entry.gender)) ? String(entry.gender) : 'unstated',
+    celebrity: entry.celebrity === true,
+    note: entry.note ? text(entry.note, 2000) : null,
     updated_at: new Date().toISOString(),
   };
 }
@@ -61,7 +66,8 @@ Deno.serve(async (req) => {
     if (token.length < 16 || token.length > 128) return json({ error: 'a valid owner token is required' }, 400);
 
     const query = `?owner_token=eq.${encodeURIComponent(token)}` +
-      '&select=id,name,place_label,latitude,longitude,zone,birth_date,birth_time,time_standard,ayanamsa,true_node' +
+      '&select=id,name,place_label,latitude,longitude,zone,birth_date,birth_time,time_standard,' +
+      'ayanamsa,true_node,gender,celebrity,note' +
       '&order=updated_at.desc&limit=200';
 
     if (body.action === 'list') {

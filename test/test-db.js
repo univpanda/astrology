@@ -246,6 +246,32 @@ if (process.env.KUNDALI_API) {
   call({ action: 'delete', id: removed.entries[0].id });
   ok('the token is left empty again', call({ action: 'list' }).entries.length === 0);
 
+  /*
+   * Person fields. Written last because each assertion above counts rows, and a
+   * test that inserts one in the middle breaks every count after it.
+   */
+  var extra = call({ action: 'save', entry: Object.assign({}, entry,
+    { name: 'Odd Gender', gender: 'wizard', celebrity: true, note: 'a note' }) });
+  var oddRow = extra.entries.filter(function (e) { return e.name === 'Odd Gender'; })[0];
+  ok('an unknown gender is corrected rather than refusing the save',
+     !!oddRow && oddRow.gender === 'unstated', oddRow && oddRow.gender);
+  ok('celebrity and note survive the round trip',
+     !!oddRow && oddRow.celebrity === true && oddRow.note === 'a note');
+
+  var stated = call({ action: 'save', entry: Object.assign({}, entry,
+    { name: 'Stated Gender', gender: 'female' }) });
+  ok('a known gender is kept', stated.entries.some(function (e) {
+    return e.name === 'Stated Gender' && e.gender === 'female';
+  }));
+  ok('gender defaults to unstated when absent', call({ action: 'save', entry: entry })
+     .entries.some(function (e) { return e.name === entry.name && e.gender === 'unstated'; }));
+
+  // Leave the token as it was found: empty.
+  call({ action: 'list' }).entries.forEach(function (e) {
+    call({ action: 'delete', id: e.id });
+  });
+  ok('the suite leaves nothing behind', call({ action: 'list' }).entries.length === 0);
+
   // The table must be unreachable with the public key, not merely unadvertised.
   ok('astro_charts has no RLS policy, so PostgREST cannot read it',
      +sql("select count(*) from pg_policies where tablename='astro_charts';") === 0);

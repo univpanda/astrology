@@ -448,8 +448,7 @@ ok('the page claims nothing about data staying put',
    !/sent nowhere|No data leaves this page|never leave the machine/.test(html + appSrc));
 
 ok('the chart heading is the name alone',
-   /getElementById\('result-name'\)\.textContent = state\.name;/.test(appSrc) &&
-   !/s chart'/.test(appSrc));
+   /heading\.textContent = state\.name;/.test(appSrc) && !/s chart'/.test(appSrc));
 
 ok('editing refills the form from the chart on screen',
    /function fillForm/.test(appSrc) && /} else if \(lastChart\) \{\s*\n\s*fillForm\(lastChart\);/.test(appSrc));
@@ -644,6 +643,42 @@ ok('a saved chart can be reopened and removed',
    /function loadSaved/.test(appSrc) && /saved-remove/.test(appSrc));
 ok('storage failure is handled rather than thrown',
    /catch \(e\) \{\s*return \[\]/.test(appSrc) && /would not let the chart be saved/.test(appSrc));
+// Who the chart is for, beyond the four keys that identify it.
+ok('gender, celebrity and a note are on the form',
+   /id="gender"/.test(html) && /id="celebrity"/.test(html) && /id="person-note"/.test(html));
+ok('all three are optional', (function () {
+  var gender = html.match(/<select[^>]*id="gender"[^>]*>/)[0];
+  var celebrity = html.match(/<input[^>]*id="celebrity"[^>]*>/)[0];
+  var note = html.match(/<textarea[^>]*id="person-note"[^>]*>/)[0];
+  return !/\srequired/.test(gender) && !/\srequired/.test(celebrity) && !/\srequired/.test(note);
+})());
+ok('gender defaults to not stated',
+   /<option value="unstated" selected>/.test(html) && /'unstated'/.test(appSrc));
+ok('the note is bounded', /maxlength="2000"/.test(html));
+ok('the checkbox is labelled beside itself, not above',
+   /<label class="checkbox-field" for="celebrity">/.test(html));
+
+// They must survive save, reload and edit, or they are decoration.
+ok('all three are saved with the chart',
+   /gender: state\.gender/.test(appSrc) && /celebrity: state\.celebrity/.test(appSrc) &&
+   /note: state\.note/.test(appSrc));
+ok('all three come back from a stored row',
+   /gender: row\.gender \|\| 'unstated'/.test(appSrc) &&
+   /celebrity: row\.celebrity === true/.test(appSrc) && /note: row\.note \|\| ''/.test(appSrc));
+ok('all three refill the form on edit', (function () {
+  var fill = appSrc.slice(appSrc.indexOf('function fillForm'), appSrc.indexOf('function showForm'));
+  return /gender/.test(fill) && /celebrity/.test(fill) && /person-note/.test(fill);
+})());
+ok('a blank form clears all three', (function () {
+  var blank = appSrc.slice(appSrc.indexOf('function blankForm'), appSrc.indexOf('function showForm'));
+  return /gender'\)\.value = 'unstated'/.test(blank) && /celebrity'\)\.checked = false/.test(blank) &&
+         /person-note'\)\.value = ''/.test(blank);
+})());
+ok('the note and the public-figure mark show on the chart',
+   /id="result-note"/.test(html) && /celebrity-mark/.test(appSrc));
+ok('gender shows only when it was stated',
+   /state\.gender !== 'unstated'/.test(appSrc));
+
 // Name, date, time and place are all required.
 ['name', 'date', 'birth-hour', 'birth-minute', 'place'].forEach(function (id) {
   var tag = html.match(new RegExp('<input[^>]*id="' + id + '"[^>]*>'));
