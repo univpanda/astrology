@@ -190,17 +190,19 @@ main, .site-header, .site-footer { max-width: 1120px; margin: 0 auto; }
 }
 .add-kundali:hover { background: #cfe9da; border-color: var(--green); }
 
+/* Takes no room until it has something to say; a reserved empty line was most
+   of the spare height in this card. */
 .save-feedback {
-  margin: 0.9rem 0 0;
-  font-size: 0.86rem;
+  margin: 0.7rem 0 0;
+  font-size: 0.84rem;
   color: var(--green-deep);
-  min-height: 1.2em;
 }
+.save-feedback:empty { display: none; }
 
 
 /* ------------------------------------------------------------------ header */
 
-.site-header { padding: 3.25rem 0 1.75rem; text-align: center; }
+.site-header { padding: 3rem 0 1.5rem; text-align: center; }
 
 .site-header h1 {
   font-family: var(--font-display);
@@ -210,8 +212,6 @@ main, .site-header, .site-footer { max-width: 1120px; margin: 0 auto; }
   margin: 0;
   color: var(--green-deep);
 }
-
-.tagline { color: var(--ink-soft); margin: 0.65rem auto 0; max-width: 46ch; }
 
 /* -------------------------------------------------------------------- card */
 
@@ -409,11 +409,15 @@ button.primary:disabled { opacity: 0.6; cursor: progress; transform: none; }
 
 /* ------------------------------------------------------------------ result */
 
+/* Tighter than the other cards: it holds three short lines and was reserving
+   room for a fourth. */
+.result-header { padding: 1.2rem 1.5rem; }
+
 .result-header h2 {
   font-family: var(--font-display);
   font-weight: 500;
-  margin: 0 0 0.35rem;
-  font-size: 1.7rem;
+  margin: 0 0 0.2rem;
+  font-size: 1.4rem;
   color: var(--green-deep);
 }
 
@@ -426,7 +430,7 @@ button.primary:disabled { opacity: 0.6; cursor: progress; transform: none; }
   gap: 1rem;
   flex-wrap: wrap;
 }
-.birth-line { margin: 0; color: var(--ink-soft); font-size: 0.95rem; flex: 1 1 22rem; min-width: 0; }
+.birth-line { margin: 0; color: var(--ink-soft); font-size: 0.9rem; flex: 1 1 22rem; min-width: 0; }
 
 .result-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
 
@@ -434,8 +438,8 @@ button.primary:disabled { opacity: 0.6; cursor: progress; transform: none; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.3rem;
-  height: 2.3rem;
+  width: 2.1rem;
+  height: 2.1rem;
   padding: 0;
   color: var(--ink-soft);
   background: var(--paper-tint);

@@ -656,10 +656,8 @@
   /* --------------------------------------------------- saved kundalis */
 
   /*
-   * Saved charts live in this browser, not on a server. The whole page is built
-   * so birth details never leave the machine, and a list of the people someone
-   * casts charts for is more revealing than any single chart; putting it in a
-   * database would need an account, and would quietly undo that.
+   * Saved charts are written here first and synced to astro_charts behind that,
+   * so the panel updates without a round trip and the list still works offline.
    *
    * A chart is identified by the four things that define it: name, place, date
    * and time. Saving the same four again updates that entry instead of adding a

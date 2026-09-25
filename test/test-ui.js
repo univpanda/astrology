@@ -419,6 +419,13 @@ ok('entries are keyed on name, place, date and time',
 ok('a local copy is written first so the panel works offline',
    /writeSaved\(list\)/.test(appSrc) && /localStorage/.test(appSrc));
 // Editing has to refill the form and then update the row it came from.
+// A privacy claim that has stopped being true is worse than none.
+ok('the save status reserves no space when silent',
+   /\.save-feedback:empty \{ display: none; \}/.test(fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8')));
+
+ok('the page claims nothing about data staying put',
+   !/sent nowhere|No data leaves this page|never leave the machine/.test(html + appSrc));
+
 ok('the chart heading is the name alone',
    /getElementById\('result-name'\)\.textContent = state\.name;/.test(appSrc) &&
    !/s chart'/.test(appSrc));
