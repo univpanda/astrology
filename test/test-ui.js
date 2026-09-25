@@ -309,10 +309,17 @@ ok('the ascendant row still gets a navamsa sign',
 
 ok('time standard select is wired', /id="time-standard"/.test(html) && /time-standard/.test(appSrc));
 
-// Three tabs, with the form as home.
+// Two tab strips: the page's sections, and the divisional charts inside one of
+// them. Counts are taken per strip, since a global count says nothing once
+// there is more than one tablist.
+function stripHtml(label) {
+  var at = html.indexOf('aria-label="' + label + '"');
+  return at < 0 ? '' : html.slice(at, html.indexOf('</div>', at));
+}
 (function () {
   var names = ['saved', 'add', 'chart'];
-  ok('there are exactly three tabs', (html.match(/role="tab"/g) || []).length === 3);
+  var strip = stripHtml('Sections');
+  ok('the section strip holds exactly three tabs', (strip.match(/role="tab"/g) || []).length === 3);
   ok('each tab has a panel, and each panel names its tab', names.every(function (n) {
     return new RegExp('id="tab-' + n + '"').test(html) &&
            new RegExp('id="panel-' + n + '"[^>]*aria-labelledby="tab-' + n + '"').test(html);
@@ -320,14 +327,14 @@ ok('time standard select is wired', /id="time-standard"/.test(html) && /time-sta
   ok('every tab points at its panel', names.every(function (n) {
     return new RegExp('id="tab-' + n + '"[\\s\\S]{0,140}aria-controls="panel-' + n + '"').test(html);
   }));
-  ok('"add a kundali" is the tab selected on arrival',
-     /id="tab-add"[\s\S]{0,140}aria-selected="true"/.test(html) &&
-     (html.match(/aria-selected="true"/g) || []).length === 1);
+  ok('"add a kundali" is the section selected on arrival',
+     /id="tab-add"[\s\S]{0,140}aria-selected="true"/.test(strip) &&
+     (strip.match(/aria-selected="true"/g) || []).length === 1);
   ok('the other two panels start hidden',
      /id="panel-saved"[^>]*hidden/.test(html) && /id="panel-chart"[^>]*hidden/.test(html) &&
      !/id="panel-add"[^>]*hidden/.test(html));
-  ok('only the selected tab is reachable by tab key',
-     (html.match(/tabindex="-1"/g) || []).length === 2);
+  ok('only the selected section tab is reachable by tab key',
+     (strip.match(/tabindex="-1"/g) || []).length === 2);
   ok('the tab strip is keyboard navigable',
      /ArrowRight/.test(appSrc) && /ArrowLeft/.test(appSrc) && /'Home'/.test(appSrc) && /'End'/.test(appSrc));
   ok('the chart tab has something to say when empty', /id="empty-chart"/.test(html));
@@ -335,6 +342,36 @@ ok('time standard select is wired', /id="time-standard"/.test(html) && /time-sta
      /showChart\(\);\s*\n[\s\S]{0,200}blankForm\(\);/.test(appSrc));
   ok('opening a saved chart lands on the chart tab',
      /reopeningSaved = true;\s*\n\s*activateTab\('chart'\)/.test(appSrc));
+})();
+
+// D1 and D9 each get their own chart and their own table.
+(function () {
+  var strip = stripHtml('Divisional charts');
+  ok('the divisional strip holds exactly two tabs', (strip.match(/role="tab"/g) || []).length === 2);
+  ok('D1 is the division selected on arrival',
+     /id="tab-d1"[\s\S]{0,140}aria-selected="true"/.test(strip) &&
+     (strip.match(/aria-selected="true"/g) || []).length === 1);
+  ok('each division has its own chart and table',
+     /id="panel-d1"[\s\S]*id="chart-d1"[\s\S]*id="planet-table"[\s\S]*id="panel-d9"/.test(html) &&
+     /id="panel-d9"[\s\S]*id="chart-d9"[\s\S]*id="navamsa-table"/.test(html));
+  ok('the D9 panel starts hidden', /id="panel-d9"[^>]*hidden/.test(html));
+  ok('one tab implementation serves both strips',
+     (appSrc.match(/function setupTabs/g) || []).length === 1 &&
+     /setupTabs\(\['saved', 'add', 'chart'\]/.test(appSrc) &&
+     /setupTabs\(\['d1', 'd9'\]/.test(appSrc));
+
+  // Navamsa left the D1 table; it is the whole point of the D9 one.
+  var d1Head = html.slice(html.indexOf('id="planet-table"'), html.indexOf('id="panel-d9"'));
+  ok('the D1 table no longer carries a navamsa column', !/>Navamsa</.test(d1Head));
+  ok('the D9 table carries the navamsa rashi', /Navamsa rashi/.test(html));
+  ok('D9 does not repeat degrees, nakshatras or padas',
+     !/id="navamsa-table"[\s\S]{0,600}(Sidereal longitude|Nakshatra<|Pada<)/.test(html));
+  ok('D9 houses are counted from the D9 ascendant',
+     /var ascSign = Astro\.navamsaSign\(c\.ascendant\.longitude\)/.test(appSrc) &&
+     /\(r\.sign - ascSign\)/.test(appSrc));
+  // Mooltrikona needs a degree within the sign, which a varga table does not have.
+  ok('D9 does not claim Mooltrikona it cannot know',
+     /if \(dignity === 'Mooltrikona'\) dignity = 'Own sign';/.test(appSrc));
 })();
 
 // Saved kundalis: the list, and the four keys that identify an entry.

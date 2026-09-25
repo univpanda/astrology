@@ -178,33 +178,64 @@
       <p class="save-feedback" id="save-feedback" role="status"></p>
     </div>
 
-    <div class="chart-pair">
-      <figure class="card chart-card">
-        <figcaption>Rashi (D1)</figcaption>
-        <div id="chart-d1"></div>
-      </figure>
-      <figure class="card chart-card">
-        <figcaption>Navamsa (D9)</figcaption>
-        <div id="chart-d9"></div>
-      </figure>
+    <div class="tabs subtabs" role="tablist" aria-label="Divisional charts">
+      <button type="button" class="tab" role="tab" id="tab-d1"
+              aria-controls="panel-d1" aria-selected="true">D1 &middot; Rashi</button>
+      <button type="button" class="tab" role="tab" id="tab-d9"
+              aria-controls="panel-d9" aria-selected="false" tabindex="-1">D9 &middot; Navamsa</button>
     </div>
 
-    <div class="card">
-      <h3>Lagna and grahas</h3>
-      <div class="table-scroll">
-        <table id="planet-table">
-          <thead>
-            <tr>
-              <th scope="col">Graha</th><th scope="col">Sidereal longitude</th>
-              <th scope="col">Rashi</th><th scope="col">House</th>
-              <th scope="col">Nakshatra</th><th scope="col">Pada</th>
-              <th scope="col">Lord / sub lord</th><th scope="col">Navamsa</th>
-              <th scope="col">Motion</th><th scope="col">Dignity</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+    <div id="panel-d1" role="tabpanel" aria-labelledby="tab-d1">
+      <figure class="card chart-card">
+        <figcaption>Rashi (D1) &mdash; body, and matters in general</figcaption>
+        <div id="chart-d1"></div>
+      </figure>
+
+      <div class="card">
+        <h3>Lagna and grahas</h3>
+        <div class="table-scroll">
+          <table id="planet-table">
+            <thead>
+              <tr>
+                <th scope="col">Graha</th><th scope="col">Sidereal longitude</th>
+                <th scope="col">Rashi</th><th scope="col">House</th>
+                <th scope="col">Nakshatra</th><th scope="col">Pada</th>
+                <th scope="col">Lord / sub lord</th>
+                <th scope="col">Motion</th><th scope="col">Dignity</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
+    </div>
+
+    <div id="panel-d9" role="tabpanel" aria-labelledby="tab-d9" hidden>
+      <figure class="card chart-card">
+        <figcaption>Navamsa (D9) &mdash; marriage, and inner strength</figcaption>
+        <div id="chart-d9"></div>
+      </figure>
+
+      <div class="card">
+        <h3>Navamsa positions</h3>
+        <div class="table-scroll">
+          <table id="navamsa-table">
+            <thead>
+              <tr>
+                <th scope="col">Graha</th><th scope="col">Navamsa rashi</th>
+                <th scope="col">House</th><th scope="col">Rashi lord</th>
+                <th scope="col">Dignity in D9</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <p class="varga-note">
+        A divisional chart re-reads the same longitudes on a finer scale, so the
+        degrees, nakshatras and padas are the ones in D1 above; only the rashi a
+        graha falls in changes.
+      </p>
     </div>
 
     <div class="two-col">

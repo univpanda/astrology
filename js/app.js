@@ -458,6 +458,7 @@
      */
     drawCharts(state);
     renderPlanets(c);
+    renderNavamsa(c);
     renderPanchang(c);
     renderDashas(c, state.offset);
     renderTechnical(state);
@@ -514,7 +515,6 @@
         [p.nakshatra.name, null],
         [String(p.nakshatra.pada), 'numeric'],
         [p.nakshatra.lord + ' / ' + p.nakshatra.subLord, null],
-        [p.navamsaSignName, null],
         [p.isAscendant ? '\u2013' : (p.retrograde ? 'Retrograde' : 'Direct'), null],
         [p.dignity || '\u2013', null]
       ];
@@ -523,7 +523,42 @@
         var td = el(i === 0 ? 'th' : 'td', cell[1], cell[0]);
         if (i === 0) td.setAttribute('scope', 'row');
         if (i === 1) td.title = 'Sidereal longitude ' + p.longitude.toFixed(4) + '°';
-        if (i === 8 && p.retrograde) td.className = 'retro-flag';
+        if (i === 7 && p.retrograde) td.className = 'retro-flag';
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+  }
+
+  /**
+   * The navamsa table. Degrees, nakshatras and padas are not repeated here: a
+   * divisional chart re-reads the same longitudes on a finer scale, so those
+   * belong to D1 and only the rashi a graha falls in changes.
+   */
+  function renderNavamsa(c) {
+    var tbody = document.querySelector('#navamsa-table tbody');
+    tbody.innerHTML = '';
+    var ascSign = Astro.navamsaSign(c.ascendant.longitude);
+
+    var rows = [{ name: 'Ascendant', sign: ascSign, isAscendant: true }].concat(
+      c.planets.map(function (p) { return { name: p.name, sign: p.navamsaSign, retrograde: p.retrograde }; }));
+
+    rows.forEach(function (r) {
+      var tr = document.createElement('tr');
+      if (r.isAscendant) tr.className = 'ascendant-row';
+      // Dignity is read afresh against the D9 sign, which is the point of
+      // looking at a divisional chart at all. Without a degree inside that sign
+      // Mooltrikona cannot be told from own sign, so it is not claimed here.
+      var dignity = r.isAscendant ? '' : Astro.dignityOf(r.name, r.sign, null);
+      if (dignity === 'Mooltrikona') dignity = 'Own sign';
+      [[r.name, null],
+       [Astro.SIGNS[r.sign] + ' (' + Astro.SIGNS_SA[r.sign] + ')', null],
+       [String(((r.sign - ascSign) % 12 + 12) % 12 + 1), 'numeric'],
+       [Astro.SIGN_LORDS[r.sign], null],
+       [dignity || '\u2013', null]
+      ].forEach(function (cell, i) {
+        var td = el(i === 0 ? 'th' : 'td', cell[1], cell[0]);
+        if (i === 0) td.setAttribute('scope', 'row');
         tr.appendChild(td);
       });
       tbody.appendChild(tr);
@@ -812,44 +847,58 @@
    * chart. "Add a kundali" is home, because an empty page with a form on it is
    * self-explanatory in a way an empty chart is not.
    */
-  var TABS = ['saved', 'add', 'chart'];
-  var tabButtons = {}, tabPanels = {};
-  TABS.forEach(function (name) {
-    tabButtons[name] = document.getElementById('tab-' + name);
-    tabPanels[name] = document.getElementById('panel-' + name);
-  });
-  var emptyChart = document.getElementById('empty-chart');
-  var savedCount = document.getElementById('saved-count');
-  var activeTab = 'add';
-
-  function activateTab(name, moveFocus) {
-    activeTab = name;
-    TABS.forEach(function (other) {
-      var selected = other === name;
-      tabButtons[other].setAttribute('aria-selected', String(selected));
-      tabButtons[other].tabIndex = selected ? 0 : -1;
-      tabPanels[other].hidden = !selected;
+  /**
+   * Wire one strip of tabs. Two of them exist - the page's sections, and the
+   * divisional charts within one of those - so this is written once and given
+   * the names each time.
+   */
+  function setupTabs(names, strip, options) {
+    var buttons = {}, panels = {}, active = names[0];
+    names.forEach(function (name) {
+      buttons[name] = document.getElementById('tab-' + name);
+      panels[name] = document.getElementById('panel-' + name);
     });
-    if (moveFocus) tabButtons[name].focus();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    function activate(name, moveFocus) {
+      active = name;
+      names.forEach(function (other) {
+        var selected = other === name;
+        buttons[other].setAttribute('aria-selected', String(selected));
+        buttons[other].tabIndex = selected ? 0 : -1;
+        panels[other].hidden = !selected;
+      });
+      if (moveFocus) buttons[name].focus();
+      if (options && options.scrollToTop) window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (options && options.onChange) options.onChange(name);
+    }
+
+    names.forEach(function (name) {
+      buttons[name].addEventListener('click', function () { activate(name); });
+    });
+
+    strip.addEventListener('keydown', function (e) {
+      var step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (step) {
+        e.preventDefault();
+        activate(names[(names.indexOf(active) + step + names.length) % names.length], true);
+      } else if (e.key === 'Home') {
+        e.preventDefault(); activate(names[0], true);
+      } else if (e.key === 'End') {
+        e.preventDefault(); activate(names[names.length - 1], true);
+      }
+    });
+
+    return { activate: activate, current: function () { return active; } };
   }
 
-  TABS.forEach(function (name) {
-    tabButtons[name].addEventListener('click', function () { activateTab(name); });
-  });
+  var emptyChart = document.getElementById('empty-chart');
+  var savedCount = document.getElementById('saved-count');
 
-  // Arrow keys move along the tab strip, as a tablist is expected to.
-  document.querySelector('.tabs').addEventListener('keydown', function (e) {
-    var step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
-    if (step) {
-      e.preventDefault();
-      activateTab(TABS[(TABS.indexOf(activeTab) + step + TABS.length) % TABS.length], true);
-    } else if (e.key === 'Home') {
-      e.preventDefault(); activateTab(TABS[0], true);
-    } else if (e.key === 'End') {
-      e.preventDefault(); activateTab(TABS[TABS.length - 1], true);
-    }
-  });
+  var sections = setupTabs(['saved', 'add', 'chart'],
+    document.querySelector('.tabs:not(.subtabs)'), { scrollToTop: true });
+  var vargas = setupTabs(['d1', 'd9'], document.querySelector('.tabs.subtabs'));
+
+  function activateTab(name, moveFocus) { sections.activate(name, moveFocus); }
 
   /** Empty the form so the next chart starts from nothing. */
   function blankForm() {
