@@ -1091,7 +1091,7 @@
    * twenty included. Writing one scheme's figures into the prose would be wrong
    * for the other three the moment the select moved.
    */
-  function vargaNote(scheme) {
+  function vargaNote(scheme, brief) {
     var shares = scheme.divisions.map(function (d) {
       return 'D' + d + ' ' + vimsopakaFigure(scheme.weights[d]);
     }).join(', ');
@@ -1100,9 +1100,14 @@
 
     return 'Where each graha stands in the ' + scheme.count + ' divisions of the ' +
       scheme.label + ', judged against the lord of the sign each one gives. Every graha ' +
-      'takes two rows: the sign, numbered 1 to 12 from Aries as the chart above numbers its ' +
-      'boxes, then its dignity there. Dignities shorten to Exal, Mool, Own, Gt Fr, Fr, Neut, ' +
-      'Enm, Gt Enm and Deb; hover a cell for the full words, the sign and its lord. ' +
+      'takes two rows: the sign' +
+      (brief ? ', numbered 1 to 12 from Aries as the chart above numbers its ' : ', ') +
+      (brief
+        ? 'boxes, then its dignity there. Sixteen columns leave no room for the words, so ' +
+          'signs go as numbers and dignities shorten to Exal, Mool, Own, Gt Fr, Fr, Neut, ' +
+          'Enm, Gt Enm and Deb; hover a cell for the words themselves, and for the lord. '
+        : 'then its dignity there. Hover a cell for the sign\u2019s lord and the reading ' +
+          'behind it. ') +
       'Parashara prices dignity as varga viswa, out of twenty: own sign 20, great friend 18, ' +
       'friend 15, neutral 10, enemy 7, great enemy 5. Moolatrikona he does not rank apart ' +
       'from an own sign, and exaltation falls outside the six entirely, uchcha bala measuring ' +
@@ -1115,6 +1120,15 @@
       'friendships, so they are left out.';
   }
 
+  /*
+   * Past ten divisions the row stops fitting and the words have to give way to
+   * abbreviations. Below that there is room, and shortening where there is room
+   * serves nobody: six columns of "Great enemy" read better than six of "Gt Enm".
+   * Ten full-word columns come to roughly the width of the graha tables beside
+   * this one, which already scroll and are none the worse for it.
+   */
+  var ABBREVIATE_ABOVE = 10;
+
   /** Whichever scheme the select is on, falling back to the widest. */
   function currentScheme() {
     var chosen = document.getElementById('varga-scheme').value;
@@ -1123,6 +1137,7 @@
 
   function renderVargas(state) {
     var scheme = currentScheme();
+    var brief = scheme.divisions.length > ABBREVIATE_ABOVE;
     var table = document.getElementById('vargas-table');
     renderVargasHead(table, scheme);
     var tbody = table.querySelector('tbody');
@@ -1158,14 +1173,16 @@
       cells.forEach(function (d, i) {
         var detail = d ? vargasDetail(d, scheme.divisions[i], planet.name) : null;
         /*
-         * The sign as its number, 1 for Aries through 12 for Pisces, which is how
-         * the North Indian chart above already labels its boxes. Sixteen columns
-         * of names do not fit, and a number the reader already uses beats an
-         * abbreviation invented for this one table. The name is in the title.
+         * Where a name will not fit, the sign goes as its number - 1 for Aries
+         * through 12 for Pisces, which is how the chart above already labels its
+         * boxes, so it is a number the reader already uses rather than an
+         * abbreviation invented for this table. Both words stay in the title
+         * either way.
          */
-        var sign = el('td', 'varga-sign', d ? String(d.sign + 1) : '\u2013');
+        var sign = el('td', 'varga-sign' + (brief ? ' varga-sign-number' : ''),
+          d ? (brief ? String(d.sign + 1) : Astro.SIGNS[d.sign]) : '\u2013');
         var dignity = el('td', d ? 'dig dig-' + d.key : null,
-          d ? Astro.VARGA_DIGNITY_SHORT[d.key] : '\u2013');
+          d ? (brief ? Astro.VARGA_DIGNITY_SHORT[d.key] : d.label) : '\u2013');
         if (detail) { sign.title = detail; dignity.title = detail; }
         signRow.appendChild(sign);
         dignityRow.appendChild(dignity);
@@ -1185,7 +1202,7 @@
      * moolatrikona is not among them - so the two scales are now named apart
      * rather than welded into one sentence that leaves a name without a number.
      */
-    document.getElementById('vargas-note').textContent = vargaNote(scheme);
+    document.getElementById('vargas-note').textContent = vargaNote(scheme, brief);
   }
 
   /* --------------------------------------------------------------- yogas */

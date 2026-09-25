@@ -818,10 +818,30 @@ ok('each cell gives its full dignity, sign and lord in the title',
  * numbers, which the chart above already uses for its boxes, and dignities as
  * short forms. Both words stay in the title, so nothing is lost, only shortened.
  */
-ok('the sign row shows the sign number, 1 for Aries through 12 for Pisces',
-   /el\('td', 'varga-sign', d \? String\(d\.sign \+ 1\) : '\\u2013'\)/.test(appSrc));
-ok('the dignity row shows the short form',
-   /Astro\.VARGA_DIGNITY_SHORT\[d\.key\]/.test(appSrc));
+/*
+ * Abbreviation is forced by width, not chosen, so it applies only where the words
+ * will not fit. Ten full-word columns come to about the width of the graha tables
+ * beside this one; sixteen do not, so only the sixteen shorten.
+ */
+ok('words give way to abbreviations only past ten divisions',
+   /var ABBREVIATE_ABOVE = 10;/.test(appSrc) &&
+   /var brief = scheme\.divisions\.length > ABBREVIATE_ABOVE;/.test(appSrc));
+ok('so the six, seven and ten keep their words and the sixteen do not', (function () {
+  var over = Astro.VARGA_SCHEME_ORDER.filter(function (k) {
+    return Astro.VARGA_SCHEMES[k].divisions.length > 10;
+  });
+  return over.length === 1 && over[0] === 'shodasavarga';
+})());
+ok('the sign is its name in full, or its number where names will not fit',
+   /brief \? String\(d\.sign \+ 1\) : Astro\.SIGNS\[d\.sign\]/.test(appSrc));
+ok('and the dignity likewise',
+   /brief \? Astro\.VARGA_DIGNITY_SHORT\[d\.key\] : d\.label/.test(appSrc));
+ok('tabular figures are applied to the numbered form only, not to sign names',
+   (function () {
+     var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+     return /td\.varga-sign-number \{[^}]*tabular-nums/.test(css) &&
+       !/td\.varga-sign \{[^}]*tabular-nums/.test(css);
+   })());
 ok('every dignity has a short form, each distinct and short enough to fit', (function () {
   var full = Object.keys(Astro.VARGA_DIGNITY_LABELS);
   var brief = full.map(function (k) { return Astro.VARGA_DIGNITY_SHORT[k]; });
@@ -829,16 +849,22 @@ ok('every dignity has a short form, each distinct and short enough to fit', (fun
     brief.every(function (t) { return t.length <= 6; });
 })(), Object.keys(Astro.VARGA_DIGNITY_SHORT).map(function (k) {
   return Astro.VARGA_DIGNITY_SHORT[k]; }).join(' '));
-ok('the note explains both abbreviations rather than leaving them to be guessed', (function () {
+ok('the note explains the abbreviations where it uses them, and not otherwise', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');
-  return /Dignities shorten to Exal, Mool, Own, Gt Fr, Fr, Neut, Enm, Gt Enm and Deb/.test(flat) &&
-    /numbered 1 to 12 from Aries/.test(flat);
+  return /Sixteen columns leave no room for the words/.test(flat) &&
+    /dignities shorten to Exal, Mool, Own, Gt Fr, Fr, Neut, Enm, Gt Enm and Deb/.test(flat) &&
+    /numbered 1 to 12 from Aries/.test(flat) &&
+    /function vargaNote\(scheme, brief\)/.test(appSrc);
 })());
-// It said "hover any cell" twice, once for the words and once for the lord.
-ok('and says it once, not twice', (function () {
-  var note = appSrc.slice(appSrc.indexOf("'Where each graha stands"));
+/*
+ * It said "hover a cell" twice, once for the words and once for the lord. There
+ * are two branches now, abbreviated and not, so exactly two mentions total is one
+ * per branch; three would be the old duplication returning.
+ */
+ok('and says it once per branch, not twice in one', (function () {
+  var note = appSrc.slice(appSrc.indexOf('function vargaNote'));
   note = note.slice(0, note.indexOf("left out.';"));
-  return (note.match(/hover a cell/gi) || []).length === 1;
+  return (note.match(/hover a cell/gi) || []).length === 2;
 })());
 ok('and gives the seven-step reading when it differs from the label shown',
    /d\.relationLabel !== d\.label/.test(appSrc));
