@@ -711,11 +711,12 @@
   }
 
   /**
-   * Yogas found in the chart, each with the passage that explains it.
+   * Yogas found in the chart: what is present, and how it forms.
    *
-   * The detector names a subject, the library is asked for exactly that
-   * subject, and the two meet here. Neither knows about the other, so adding a
-   * yoga means a detector and a row, not a change to this function.
+   * No explanation here. This panel answers "what does this chart have", and a
+   * paragraph of theory repeated under every finding buries the answer -
+   * particularly when a chart holds several. The passages live in the Lesson
+   * tab, which is where someone goes to read rather than to look.
    */
   function renderYogas(state) {
     var list = document.getElementById('yoga-list');
@@ -725,10 +726,11 @@
     var found = Yogas.detect(state.chart);
     if (!found.length) {
       note.textContent = 'No yoga among those this page looks for is present in this chart. ' +
-        'Parivartana and neecha bhanga are checked so far.';
+        'Parivartana and neecha bhanga are checked so far; the Lesson tab explains both.';
       return;
     }
-    note.textContent = 'Only parivartana is checked so far; more will follow.';
+    note.textContent = 'Parivartana and neecha bhanga are checked so far; more will follow. ' +
+      'The Lesson tab explains what each one means.';
 
     found.forEach(function (finding) {
       var card = el('div', 'yoga-finding');
@@ -747,15 +749,7 @@
         finding.reasons.forEach(function (reason) { why.appendChild(el('li', null, reason)); });
         card.appendChild(why);
       }
-      var explanation = el('div', 'yoga-explanation');
-      card.appendChild(explanation);
       list.appendChild(card);
-
-      // The passage is fetched per finding, so a chart with none makes no call.
-      fetchPassages({ subjects: finding.subject, condition: finding.condition },
-        function (passages) {
-          if (passages && passages.length) explanation.appendChild(passageBlock(passages[0]));
-        });
     });
   }
 

@@ -614,7 +614,6 @@ svg.kundli .planet.retro { fill: var(--retro); }
   color: var(--ink-soft);
 }
 .yoga-reasons li { margin-bottom: 0.2rem; }
-.yoga-explanation { margin-top: 0.9rem; }
 
 .lesson-search { max-width: 34rem; margin-bottom: 0.9rem; }
 .lesson-filters { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1.2rem; }

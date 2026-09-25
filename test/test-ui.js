@@ -476,8 +476,14 @@ ok('the library loads when the lesson tab is opened',
    /if \(name === 'lesson'\) loadLessons\(\);/.test(appSrc));
 ok('the library is fetched once and searched in the page',
    /if \(lessonLibrary\) return renderLessons\(\);/.test(appSrc));
-ok('a detected yoga asks the library for its own subject and kind',
-   /fetchPassages\(\{ subjects: finding\.subject, condition: finding\.condition \}/.test(appSrc));
+// The yogas panel answers what the chart has; the reading of it is elsewhere.
+ok('the yogas panel carries no explanatory passage',
+   !/yoga-explanation/.test(appSrc) && !/fetchPassages\(\{ subjects:/.test(appSrc));
+ok('it still says how each yoga forms',
+   /finding\.summary/.test(appSrc) && /yoga-reasons/.test(appSrc) && /finding\.grahas\.join/.test(appSrc));
+ok('it points at the Lesson tab for the meaning',
+   /The Lesson tab explains/.test(appSrc));
+ok('the library is still fetched for the lesson tab', /fetchPassages\(\{\}/.test(appSrc));
 ok('the three kinds are conditions of one subject, not four subjects', (function () {
   var seed = fs.readFileSync(path.join(root, 'supabase/seed/astro_readings_yogas.sql'), 'utf8');
   return /'yoga', 'Parivartana', 'general'/.test(seed) &&
