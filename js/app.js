@@ -468,8 +468,22 @@
     var max = which === 'lat' ? 90 : 180;
     ['d', 'm', 's', 'h'].forEach(function (part) {
       ['input', 'change'].forEach(function (evt) {
-        document.getElementById('manual-' + which + '-' + part)
-          .addEventListener(evt, function () { showDecimal(which, max); deriveZone(); });
+        document.getElementById('manual-' + which + '-' + part).addEventListener(evt, function () {
+          /*
+           * Typing a coordinate means using it. resolvePlace answers with the
+           * chosen city before it ever looks at these boxes, and only opening the
+           * panel used to clear that, so editing a coordinate while the panel
+           * was already open changed nothing: the chart cast, saved, and reopened
+           * on the old place, with no error anywhere to say why.
+           *
+           * Restoring a saved chart sets these boxes in code, which fires no
+           * events, so reopening still keeps its city.
+           */
+          selectedCity = null;
+          placeNote.textContent = '';
+          showDecimal(which, max);
+          deriveZone();
+        });
       });
     });
   });

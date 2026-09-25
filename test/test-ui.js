@@ -1107,6 +1107,38 @@ console.log('\nReopening a saved chart');
   })());
 })();
 
+/*
+ * resolvePlace answers with the chosen city before it looks at the coordinate
+ * boxes, which is right for a city picked from the list and wrong the moment
+ * someone edits a coordinate. Only opening the panel used to clear the city, so
+ * editing one while the panel was already open changed nothing at all: the chart
+ * cast, saved and reopened on the old place, with no error to say why.
+ */
+ok('editing any coordinate box drops the chosen city, so the edit takes effect', (function () {
+  var wiring = appSrc.slice(appSrc.indexOf("['lat', 'lon'].forEach(function (which) {"),
+                            appSrc.indexOf('function writeCoords'));
+  return /selectedCity = null;/.test(wiring) &&
+    /showDecimal\(which, max\);/.test(wiring) && /deriveZone\(\);/.test(wiring);
+})());
+ok('it applies to the hemisphere selects too, not just the number boxes', (function () {
+  var wiring = appSrc.slice(appSrc.indexOf("['lat', 'lon'].forEach(function (which) {"),
+                            appSrc.indexOf('function writeCoords'));
+  return /\['d', 'm', 's', 'h'\]\.forEach/.test(wiring);
+})());
+ok('and the stale coordinates note is cleared with it', (function () {
+  var wiring = appSrc.slice(appSrc.indexOf("['lat', 'lon'].forEach(function (which) {"),
+                            appSrc.indexOf('function writeCoords'));
+  return /placeNote\.textContent = '';/.test(wiring);
+})());
+/*
+ * The counterpart: restoring writes these boxes in code, which fires no events,
+ * so reopening a saved chart must not lose its city to the line above.
+ */
+ok('restoring sets values without firing the handler that would clear the city',
+   /function writeCoords/.test(appSrc) &&
+   !/dispatchEvent/.test(appSrc.slice(appSrc.indexOf('function writeCoords'),
+                                      appSrc.indexOf('function resolvePlace'))));
+
 ok('both ways of reopening a chart fill the boxes',
    (appSrc.match(/writeCoords\(/g) || []).length >= 3 &&
    /writeCoords\(entry\.latitude, entry\.longitude, entry\.zone\)/.test(appSrc) &&
@@ -1196,8 +1228,11 @@ ok('a zone chosen by hand is never overwritten by the guess',
    /zoneChosenByHand = true;/.test(appSrc));
 ok('and resetting the form forgets that choice',
    /zoneChosenByHand = false;\s*\n\s*document\.getElementById\('zone-note'\)\.textContent = '';/.test(appSrc));
-ok('deriving runs whenever a coordinate box changes',
-   /showDecimal\(which, max\); deriveZone\(\);/.test(appSrc));
+ok('deriving runs whenever a coordinate box changes', (function () {
+  var wiring = appSrc.slice(appSrc.indexOf("['lat', 'lon'].forEach(function (which) {"),
+                            appSrc.indexOf('function writeCoords'));
+  return /showDecimal\(which, max\);\s*\n\s*deriveZone\(\);/.test(wiring);
+})());
 
 ok('the degree boxes allow the decimals and negatives the parser accepts', (function () {
   var at = function (id) {
