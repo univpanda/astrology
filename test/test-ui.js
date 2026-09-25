@@ -654,9 +654,12 @@ ok('the ascendant is eligible for the flag too', (function () {
 ok('the table leaves vargottama to the chart',
    !/<th scope="col">Vargottama<\/th>/.test(html) &&
    !/el\('span', 'flag', ' \[V\]'\)/.test(appSrc));
-ok('the page carries a key for both flags',
-   /\[R\] is retrograde\. \[V\] is vargottama/.test(html) &&
-   /measured against D9 whichever division is on screen/.test(html));
+ok('the page carries a key for both flags', (function () {
+  // Collapsed, so re-wrapping the paragraph cannot fail this on whitespace alone.
+  var flat = html.replace(/\s+/g, ' ');
+  return /\[R\] is retrograde\. \[V\] is vargottama/.test(flat) &&
+    /measured against D9 whichever division is on screen/.test(flat);
+})());
 
 console.log('\nShodasavarga panel');
 ok('the columns are exactly the sixteen Shodasavarga divisions, in order', (function () {
