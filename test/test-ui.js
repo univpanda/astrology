@@ -253,6 +253,22 @@ ok('combobox declares role and controls', /role="combobox"/.test(html) && /aria-
 ok('listbox declares its role', /id="place-listbox" role="listbox"/.test(html));
 ok('app manages aria-activedescendant', /aria-activedescendant/.test(appSrc));
 // The lagna heads the graha table instead of sitting in a tile above it.
+// Nothing above the charts repeats what the table says below them.
+ok('no summary tiles remain above the charts',
+   !/id="key-facts"/.test(html) && !/Chandra rashi|Janma nakshatra|Surya rashi/.test(appSrc));
+ok('edit and download sit on the birth details line',
+   /class="birth-row"/.test(html) &&
+   html.indexOf('id="edit-button"') > html.indexOf('id="result-birth"') &&
+   html.indexOf('id="edit-button"') < html.indexOf('id="chart-d1"'));
+ok('both icon buttons are labelled for screen readers', (function () {
+  var buttons = html.match(/<button[^>]*class="icon-button"[^>]*>/g) || [];
+  return buttons.length === 2 && buttons.every(function (b) {
+    return /aria-label="[^"]+"/.test(b) && /title="[^"]+"/.test(b);
+  });
+})());
+ok('the icons are inline svg, not an external font or image',
+   /<svg viewBox="0 0 24 24" aria-hidden="true"/.test(html) && !/<img/.test(html));
+
 ok('the lagna is the first row of the table, not a summary tile',
    /name: 'Ascendant'/.test(appSrc) && /ascendant-row/.test(appSrc) &&
    !/fact\(facts, 'Lagna/.test(appSrc));

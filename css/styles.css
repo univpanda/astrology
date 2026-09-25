@@ -172,13 +172,12 @@ body {
 .add-kundali:hover { background: #cfe9da; border-color: var(--green); }
 
 .save-feedback {
-  margin: 0 0 0.9rem;
+  margin: 0.9rem 0 0;
   font-size: 0.86rem;
   color: var(--green-deep);
   min-height: 1.2em;
 }
-.result-actions { display: flex; gap: 1.25rem; flex-wrap: wrap; margin-top: 0.25rem; }
-.result-actions .link-button { margin-top: 0; }
+
 
 /* ------------------------------------------------------------------ header */
 
@@ -398,7 +397,43 @@ button.primary:disabled { opacity: 0.6; cursor: progress; transform: none; }
   color: var(--green-deep);
 }
 
-.birth-line { margin: 0 0 1.3rem; color: var(--ink-soft); font-size: 0.95rem; }
+/* Birth details and the two actions share a line: the actions belong to those
+   details, and a row of their own only added height above the charts. */
+.birth-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.birth-line { margin: 0; color: var(--ink-soft); font-size: 0.95rem; flex: 1 1 22rem; min-width: 0; }
+
+.result-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
+
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.3rem;
+  height: 2.3rem;
+  padding: 0;
+  color: var(--ink-soft);
+  background: var(--paper-tint);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+}
+.icon-button:hover { color: var(--green-deep); background: var(--green-soft); border-color: var(--green); }
+.icon-button svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 
 .key-facts {
   display: grid;

@@ -137,13 +137,27 @@
   <section id="result" class="result" hidden aria-live="polite">
     <div class="card result-header">
       <h2 id="result-name">Chart</h2>
-      <p id="result-birth" class="birth-line"></p>
-      <dl class="key-facts" id="key-facts"></dl>
-      <p class="save-feedback" id="save-feedback" role="status"></p>
-      <div class="result-actions">
-        <button type="button" class="link-button" id="edit-button">Edit these details</button>
-        <button type="button" class="link-button print-button" id="print-button">Print or save as PDF</button>
+      <div class="birth-row">
+        <p id="result-birth" class="birth-line"></p>
+        <div class="result-actions">
+          <button type="button" class="icon-button" id="edit-button"
+                  title="Edit these details" aria-label="Edit these details">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M4 20h4L19 9a2.5 2.5 0 0 0-3.5-3.5L4.5 16.5V20Z"/>
+              <path d="M14.5 6.5 17.5 9.5"/>
+            </svg>
+          </button>
+          <button type="button" class="icon-button" id="print-button"
+                  title="Print or save as PDF" aria-label="Print or save as PDF">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M12 3.5v11"/>
+              <path d="m7.5 10 4.5 4.5 4.5-4.5"/>
+              <path d="M4.5 19.5h15"/>
+            </svg>
+          </button>
+        </div>
       </div>
+      <p class="save-feedback" id="save-feedback" role="status"></p>
     </div>
 
     <div class="chart-pair">

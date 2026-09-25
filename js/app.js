@@ -447,17 +447,12 @@
       placeLabel + '  ·  ' +
       Geo.formatDMS(place.lat, 'N', 'S') + ' ' + Geo.formatDMS(place.lon, 'E', 'W');
 
-    var facts = document.getElementById('key-facts');
-    facts.innerHTML = '';
-    // The lagna is the first row of the graha table rather than a tile up here:
-    // it has the same columns to fill as a graha, and repeating it twice only
-    // crowded the top of the page.
-    var moon = planet(c, 'Moon'), sun = planet(c, 'Sun');
-    fact(facts, 'Chandra rashi (moon sign)', moon.signName + ' ' + dms(moon.degreeInSign), moon.signSanskrit);
-    fact(facts, 'Janma nakshatra', moon.nakshatra.name + ', pada ' + moon.nakshatra.pada,
-      'lord ' + moon.nakshatra.lord);
-    fact(facts, 'Surya rashi (sun sign)', sun.signName + ' ' + dms(sun.degreeInSign), sun.signSanskrit);
-
+    /*
+     * No summary tiles here any more. The lagna, both rashis and the janma
+     * nakshatra were all repeated verbatim in the graha table a few hundred
+     * pixels below, and saying them twice pushed the charts off the first
+     * screen.
+     */
     drawCharts(state);
     renderPlanets(c);
     renderPanchang(c);
