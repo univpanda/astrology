@@ -489,6 +489,9 @@ button.primary:disabled { opacity: 0.6; cursor: progress; transform: none; }
   background: linear-gradient(180deg, var(--surface) 0%, #f7fcf9 100%);
 }
 
+.subtabs { margin-bottom: 1.1rem; }
+.subtabs .tab { font-size: 0.88rem; padding: 0.55rem 0.95rem; }
+
 .chart-controls { display: flex; gap: 0.5rem; margin-bottom: 0.9rem; }
 .chart-select {
   font-size: 0.85rem;
@@ -670,6 +673,8 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
   #panel-add, #panel-saved, .empty-chart { display: none; }
   #panel-chart[hidden] { display: block; }
   .chart-controls { display: none; }
+  /* Paper has no tabs, so both tables print, whichever was on screen. */
+  #panel-table-a[hidden], #panel-table-b[hidden] { display: block; }
   .technical[open] summary { display: none; }
   svg.kundli text { fill: #111; }
   svg.kundli .frame, svg.kundli .cell { stroke: #9bbcab; }

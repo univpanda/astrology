@@ -203,39 +203,47 @@
     </div>
 
     <div class="card">
-      <h3 id="heading-a">Grahas</h3>
-      <div class="table-scroll">
-        <table id="table-a">
-          <thead>
-            <tr>
-              <th scope="col">Graha</th><th scope="col">Longitude</th>
-              <th scope="col">Rashi</th><th scope="col">House</th>
-              <th scope="col">Nakshatra</th><th scope="col">Pada</th>
-              <th scope="col">Lord / sub lord</th>
-              <th scope="col">Motion</th><th scope="col">Dignity</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+      <div class="tabs subtabs" role="tablist" aria-label="Graha tables">
+        <button type="button" class="tab" role="tab" id="tab-table-a"
+                aria-controls="panel-table-a" aria-selected="true"></button>
+        <button type="button" class="tab" role="tab" id="tab-table-b"
+                aria-controls="panel-table-b" aria-selected="false" tabindex="-1"></button>
       </div>
-    </div>
 
-    <div class="card">
-      <h3 id="heading-b">Grahas</h3>
-      <div class="table-scroll">
-        <table id="table-b">
-          <thead>
-            <tr>
-              <th scope="col">Graha</th><th scope="col">Longitude</th>
-              <th scope="col">Rashi</th><th scope="col">House</th>
-              <th scope="col">Nakshatra</th><th scope="col">Pada</th>
-              <th scope="col">Lord / sub lord</th>
-              <th scope="col">Motion</th><th scope="col">Dignity</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+      <div id="panel-table-a" role="tabpanel" aria-labelledby="tab-table-a">
+        <div class="table-scroll">
+          <table id="table-a">
+            <thead>
+              <tr>
+                <th scope="col">Graha</th><th scope="col">Longitude</th>
+                <th scope="col">Rashi</th><th scope="col">House</th>
+                <th scope="col">Nakshatra</th><th scope="col">Pada</th>
+                <th scope="col">Lord / sub lord</th>
+                <th scope="col">Motion</th><th scope="col">Dignity</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
+
+      <div id="panel-table-b" role="tabpanel" aria-labelledby="tab-table-b" hidden>
+        <div class="table-scroll">
+          <table id="table-b">
+            <thead>
+              <tr>
+                <th scope="col">Graha</th><th scope="col">Longitude</th>
+                <th scope="col">Rashi</th><th scope="col">House</th>
+                <th scope="col">Nakshatra</th><th scope="col">Pada</th>
+                <th scope="col">Lord / sub lord</th>
+                <th scope="col">Motion</th><th scope="col">Dignity</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
 
     <div class="two-col">

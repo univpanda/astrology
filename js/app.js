@@ -532,8 +532,7 @@
     var from = set.reference === 'Ascendant' ? 'from the ascendant' : 'from the ' + set.reference;
     document.getElementById('caption-' + slot).textContent =
       varga.name + ' \u00b7 ' + varga.label + ' \u2014 ' + varga.about + ', ' + from;
-    document.getElementById('heading-' + slot).textContent =
-      varga.name + ' \u00b7 ' + varga.label + ' \u2014 grahas';
+    document.getElementById('tab-table-' + slot).textContent = varga.name + ' \u00b7 ' + varga.label;
     renderSlotTable(slot, state.chart, set);
   }
 
@@ -940,7 +939,14 @@
   var savedCount = document.getElementById('saved-count');
 
   var sections = setupTabs(['saved', 'add', 'chart'],
-    document.querySelector('.tabs'), { scrollToTop: true });
+    document.querySelector('.tabs:not(.subtabs)'), { scrollToTop: true });
+
+  /*
+   * The two graha tables share one strip, labelled from whichever divisions the
+   * charts are set to. Fixed D1/D9 labels would have lied the moment either
+   * select moved.
+   */
+  var tableTabs = setupTabs(['table-a', 'table-b'], document.querySelector('.tabs.subtabs'));
 
   function activateTab(name, moveFocus) { sections.activate(name, moveFocus); }
 

@@ -344,7 +344,23 @@ function stripHtml(label) {
 
 // Two charts at once, each with its own division and its own first house.
 (function () {
-  ok('the divisional tabs are gone', !/subtabs|id="tab-d1"|id="tab-d9"/.test(html));
+  ok('there are no fixed divisional tabs', !/id="tab-d1"|id="tab-d9"/.test(html));
+
+  // The tables share a strip whose labels follow the selects, so a chart set to
+  // D4 is headed D4 and not whatever was hard-coded in the markup.
+  ok('the table tabs carry no label in the markup',
+     /id="tab-table-a"[^>]*>\s*<\/button>/.test(html.replace(/\n\s*/g, ' ')) ||
+     />\s*<\/button>/.test(html));
+  ok('the table tabs are labelled from the chosen division',
+     /document\.getElementById\('tab-table-' \+ slot\)\.textContent = varga\.name/.test(appSrc));
+  ok('the table strip is a real tablist', ['table-a', 'table-b'].every(function (n) {
+    return new RegExp('id="tab-' + n + '"[\\s\\S]{0,140}aria-controls="panel-' + n + '"').test(html) &&
+           new RegExp('id="panel-' + n + '"[^>]*aria-labelledby="tab-' + n + '"').test(html);
+  }));
+  ok('the second table starts hidden', /id="panel-table-b"[^>]*hidden/.test(html));
+  ok('one tab implementation still serves every strip',
+     (appSrc.match(/function setupTabs/g) || []).length === 1 &&
+     (appSrc.match(/setupTabs\(/g) || []).length === 3);
   ok('there are two chart slots, each with two selects', ['a', 'b'].every(function (slot) {
     return new RegExp('id="ref-' + slot + '"').test(html) &&
            new RegExp('id="varga-' + slot + '"').test(html) &&
