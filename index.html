@@ -49,9 +49,9 @@
       </div>
 
       <div class="field">
-        <label for="gender">Gender <span class="hint">optional</span></label>
-        <select id="gender">
-          <option value="unstated" selected>Not stated</option>
+        <label for="gender">Gender</label>
+        <select id="gender" required>
+          <option value="" selected>Select</option>
           <option value="female">Female</option>
           <option value="male">Male</option>
           <option value="other">Other</option>
@@ -73,18 +73,16 @@
           </select>
           <label class="visually-hidden" for="birth-hour">Hour</label>
           <input type="text" id="birth-hour" inputmode="numeric" autocomplete="off"
-                 maxlength="2" placeholder="hh" aria-describedby="time-note" required>
+                 maxlength="2" placeholder="hh" required>
           <span class="time-colon" aria-hidden="true">:</span>
           <label class="visually-hidden" for="birth-minute">Minute</label>
           <input type="text" id="birth-minute" inputmode="numeric" autocomplete="off"
-                 maxlength="2" placeholder="mm" aria-describedby="time-note" required>
+                 maxlength="2" placeholder="mm" required>
           <span class="time-colon" aria-hidden="true">:</span>
           <label class="visually-hidden" for="birth-second">Second</label>
           <input type="text" id="birth-second" inputmode="numeric" autocomplete="off"
-                 maxlength="2" placeholder="ss" aria-describedby="time-note">
+                 maxlength="2" placeholder="ss">
         </div>
-        <p class="field-note" id="time-note">Choose AM or PM, then type the hour and minute.
-          Seconds are optional and count as 00 if left blank.</p>
       </fieldset>
 
       <div class="field field-wide">

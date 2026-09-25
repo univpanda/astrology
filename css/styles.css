@@ -391,7 +391,6 @@ input::placeholder { color: #a9bdb2; }
   padding-right: 0.3rem;
   font-variant-numeric: tabular-nums;
 }
-.time-field .field-note { font-size: 0.8rem; }
 
 .visually-hidden {
   position: absolute;

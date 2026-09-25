@@ -646,14 +646,17 @@ ok('storage failure is handled rather than thrown',
 // Who the chart is for, beyond the four keys that identify it.
 ok('gender, celebrity and a note are on the form',
    /id="gender"/.test(html) && /id="celebrity"/.test(html) && /id="person-note"/.test(html));
-ok('all three are optional', (function () {
+ok('gender is required, the other two are not', (function () {
   var gender = html.match(/<select[^>]*id="gender"[^>]*>/)[0];
   var celebrity = html.match(/<input[^>]*id="celebrity"[^>]*>/)[0];
   var note = html.match(/<textarea[^>]*id="person-note"[^>]*>/)[0];
-  return !/\srequired/.test(gender) && !/\srequired/.test(celebrity) && !/\srequired/.test(note);
+  return /\srequired/.test(gender) && !/\srequired/.test(celebrity) && !/\srequired/.test(note);
 })());
-ok('gender defaults to not stated',
-   /<option value="unstated" selected>/.test(html) && /'unstated'/.test(appSrc));
+ok('gender starts unanswered and is checked on submit',
+   /<option value="" selected>Select<\/option>/.test(html) &&
+   /if \(!genderValue\) return fail\('Choose a gender\.'\);/.test(appSrc));
+ok('a chart saved before gender was asked leaves the select unanswered',
+   /=== 'unstated'\) \? '' :/.test(appSrc));
 ok('the note is bounded', /maxlength="2000"/.test(html));
 ok('the checkbox is labelled beside itself, not above',
    /<label class="checkbox-field" for="celebrity">/.test(html));
@@ -671,7 +674,7 @@ ok('all three refill the form on edit', (function () {
 })());
 ok('a blank form clears all three', (function () {
   var blank = appSrc.slice(appSrc.indexOf('function blankForm'), appSrc.indexOf('function showForm'));
-  return /gender'\)\.value = 'unstated'/.test(blank) && /celebrity'\)\.checked = false/.test(blank) &&
+  return /gender'\)\.value = '';/.test(blank) && /celebrity'\)\.checked = false/.test(blank) &&
          /person-note'\)\.value = ''/.test(blank);
 })());
 ok('the note and the public-figure mark show on the chart',
@@ -693,8 +696,11 @@ ok('hour, minute and second appear in that order',
 (function () {
   var tag = html.match(/<input[^>]*id="birth-second"[^>]*>/);
   ok('#birth-second exists and is not required', !!tag && !/\srequired/.test(tag[0]));
+  ok('no field points at a note that no longer exists', !/aria-describedby="time-note"/.test(html));
 })();
-ok('blank seconds are documented as 00', /Seconds are optional/.test(html));
+// The time field explains itself through its own controls now.
+ok('the time field carries no instructions',
+   !/id="time-note"/.test(html) && !/Choose AM or PM/.test(html) && !/Seconds are optional/.test(html));
 ok('app.js reads the seconds box', /birth-second/.test(appSrc) && /time\.second/.test(appSrc));
 ok('seconds reach the Julian Day', /h \* 3600 \+ mi \* 60 \+ time\.second/.test(appSrc));
 ok('no 24-hour time input remains', !/type="time"/.test(html));

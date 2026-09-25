@@ -341,11 +341,13 @@
     errorBox.textContent = '';
 
     var nameValue = document.getElementById('name').value.trim();
+    var genderValue = document.getElementById('gender').value;
     var dateValue = document.getElementById('date').value;
     var time = readTime();
     var place = resolvePlace();
 
     if (!nameValue) return fail('Enter the name this chart belongs to.');
+    if (!genderValue) return fail('Choose a gender.');
     if (!dateValue) return fail('Enter a date of birth.');
     if (time.error) return fail(time.error);
     if (!place) return fail('Pick a place from the list, or open "Enter coordinates" and type latitude and longitude.');
@@ -398,7 +400,7 @@
         chart: chart, place: place, offset: offset,
         name: nameValue, standard: standard, time: time, source: source,
         ayanamsa: params.ayanamsa, trueNode: params.trueNode,
-        gender: document.getElementById('gender').value,
+        gender: genderValue,
         celebrity: document.getElementById('celebrity').checked,
         note: document.getElementById('person-note').value.trim(),
         y: y, mo: mo, d: d, h: h, mi: mi
@@ -1274,7 +1276,8 @@
     document.getElementById('ayanamsa').value = entry.ayanamsa || 'lahiri';
     document.getElementById('node-type').value = entry.trueNode ? 'true' : 'mean';
     document.getElementById('time-standard').value = entry.standard === 'lmt' ? 'lmt' : 'zone';
-    document.getElementById('gender').value = entry.gender || 'unstated';
+    document.getElementById('gender').value =
+      (!entry.gender || entry.gender === 'unstated') ? '' : entry.gender;
     document.getElementById('celebrity').checked = entry.celebrity === true;
     document.getElementById('person-note').value = entry.note || '';
 
@@ -1381,7 +1384,7 @@
     meridiemSelect.value = 'am';
     placeInput.value = '';
     placeNote.textContent = '';
-    document.getElementById('gender').value = 'unstated';
+    document.getElementById('gender').value = '';
     document.getElementById('celebrity').checked = false;
     document.getElementById('person-note').value = '';
     selectedCity = null;
@@ -1399,7 +1402,8 @@
     document.getElementById('time-standard').value = state.standard === 'lmt' ? 'lmt' : 'zone';
     document.getElementById('ayanamsa').value = state.ayanamsa;
     document.getElementById('node-type').value = state.trueNode ? 'true' : 'mean';
-    document.getElementById('gender').value = state.gender || 'unstated';
+    document.getElementById('gender').value =
+      (!state.gender || state.gender === 'unstated') ? '' : state.gender;
     document.getElementById('celebrity').checked = state.celebrity === true;
     document.getElementById('person-note').value = state.note || '';
     selectedCity = state.place;
