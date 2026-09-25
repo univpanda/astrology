@@ -698,9 +698,37 @@ ok('hour, minute and second appear in that order',
   ok('#birth-second exists and is not required', !!tag && !/\srequired/.test(tag[0]));
   ok('no field points at a note that no longer exists', !/aria-describedby="time-note"/.test(html));
 })();
-// The time field explains itself through its own controls now.
-ok('the time field carries no instructions',
-   !/id="time-note"/.test(html) && !/Choose AM or PM/.test(html) && !/Seconds are optional/.test(html));
+/*
+ * The standing instructions are gone; the controls explain themselves. What is
+ * left is one hint on the one thing they cannot show: that the seconds box may
+ * be left empty. It is revealed on focus, so it answers the question at the
+ * moment it is asked.
+ */
+ok('the standing time instructions are gone',
+   !/id="time-note"/.test(html) && !/Choose AM or PM/.test(html));
+ok('the seconds hint is tied to the seconds box',
+   /id="seconds-hint"/.test(html) && /aria-describedby="seconds-hint"/.test(html));
+ok('it is revealed by focus, not shown always', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  return /#birth-second:focus ~ \.seconds-hint \{ opacity: 1; \}/.test(css) &&
+         /\.seconds-hint \{[^}]*opacity: 0;/.test(css);
+})());
+ok('it is faded rather than removed, so it is still read aloud', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var rule = css.slice(css.indexOf('.seconds-hint {'), css.indexOf('#birth-second:focus'));
+  return !/display:\s*none/.test(rule) && !/visibility:\s*hidden/.test(rule);
+})());
+ok('it says what actually happens: blank means zero',
+   /Seconds are optional, and count as 00\./.test(html) &&
+   /second = secondText \? \+secondText : 0/.test(appSrc));
+
+// Every single-line control is one height, since a select and a text input do
+// not come out the same size from the same padding.
+ok('form controls share one height', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  return /--control-height:/.test(css) && /height: var\(--control-height\)/.test(css) &&
+         /input\[type="checkbox"\] \{ height: auto; \}/.test(css);
+})());
 ok('app.js reads the seconds box', /birth-second/.test(appSrc) && /time\.second/.test(appSrc));
 ok('seconds reach the Julian Day', /h \* 3600 \+ mi \* 60 \+ time\.second/.test(appSrc));
 ok('no 24-hour time input remains', !/type="time"/.test(html));

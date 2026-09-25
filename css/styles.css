@@ -32,6 +32,10 @@
 
   --radius: 16px;
   --radius-sm: 10px;
+  /* Selects carry their own minimum height and their own idea of line-height,
+     so identical padding does not produce identical boxes. Setting the height
+     explicitly is what actually lines them up with the text inputs. */
+  --control-height: 2.7rem;
   --shadow: 0 1px 2px rgba(31, 84, 58, 0.05), 0 8px 24px rgba(31, 84, 58, 0.07);
   --shadow-lift: 0 2px 6px rgba(31, 84, 58, 0.08), 0 18px 40px rgba(31, 84, 58, 0.12);
 
@@ -290,6 +294,7 @@ label, legend {
 
 textarea {
   font: inherit;
+  line-height: 1.5;
   color: var(--ink);
   background: var(--paper-tint);
   border: 1px solid var(--line);
@@ -348,15 +353,21 @@ textarea::placeholder { color: #a9bdb2; }
 
 input, select {
   font: inherit;
+  line-height: 1.4;
   color: var(--ink);
   background: var(--paper-tint);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  padding: 0.65rem 0.75rem;
+  padding: 0 0.75rem;
+  height: var(--control-height);
   width: 100%;
   min-width: 0;
   transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
+
+/* Checkboxes keep their own size; the height above is for the boxes you type
+   or choose in. */
+input[type="checkbox"] { height: auto; }
 
 input:hover, select:hover { border-color: #b8ddc8; }
 
@@ -385,6 +396,20 @@ input::placeholder { color: #a9bdb2; }
   gap: 0.3rem;
 }
 .time-colon { color: var(--ink-faint); text-align: center; }
+
+/* Shown while the seconds box has focus, which is exactly when it answers a
+   question and never otherwise. Kept in the accessibility tree at all times -
+   faded rather than removed - so a screen reader still reads it out when the
+   field is reached. */
+.seconds-hint {
+  grid-column: 1 / -1;
+  margin: 0.4rem 0 0;
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+#birth-second:focus ~ .seconds-hint { opacity: 1; }
 #birth-hour, #birth-minute, #birth-second {
   text-align: center;
   padding-left: 0.3rem;
