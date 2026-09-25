@@ -87,14 +87,83 @@ var Astro = (function () {
 
   /* ------------------------------------------- nutation, obliquity, sid.time */
 
-  /** Nutation in longitude and obliquity, degrees. Leading IAU 1980 terms. */
+  /*
+   * IAU 1980 nutation, the leading terms of Meeus table 22.A. Columns are the
+   * multipliers of D, M, M', F and Omega, then the sine coefficients for delta
+   * psi and the cosine coefficients for delta epsilon, in units of 0.0001".
+   *
+   * The four largest terms alone are good to about 1.5", which sounds negligible
+   * until you follow it into the ascendant: nutation enters both the sidereal
+   * time and the ayanamsa, and the ascendant can move two to three degrees per
+   * degree of sidereal time, so the error arrives amplified.
+   */
+  var NUTATION_TERMS = [
+    [0, 0, 0, 0, 1, -171996, -174.2, 92025, 8.9],
+    [-2, 0, 0, 2, 2, -13187, -1.6, 5736, -3.1],
+    [0, 0, 0, 2, 2, -2274, -0.2, 977, -0.5],
+    [0, 0, 0, 0, 2, 2062, 0.2, -895, 0.5],
+    [0, 1, 0, 0, 0, 1426, -3.4, 54, -0.1],
+    [0, 0, 1, 0, 0, 712, 0.1, -7, 0],
+    [-2, 1, 0, 2, 2, -517, 1.2, 224, -0.6],
+    [0, 0, 0, 2, 1, -386, -0.4, 200, 0],
+    [0, 0, 1, 2, 2, -301, 0, 129, -0.1],
+    [-2, -1, 0, 2, 2, 217, -0.5, -95, 0.3],
+    [-2, 0, 1, 0, 0, -158, 0, -1, 0],
+    [-2, 0, 0, 2, 1, 129, 0.1, -70, 0],
+    [0, 0, -1, 2, 2, 123, 0, -53, 0],
+    [2, 0, 0, 0, 0, 63, 0, -2, 0],
+    [0, 0, 1, 0, 1, 63, 0.1, -33, 0],
+    [2, 0, -1, 2, 2, -59, 0, 26, 0],
+    [0, 0, -1, 0, 1, -58, -0.1, 32, 0],
+    [0, 0, 1, 2, 1, -51, 0, 27, 0],
+    [-2, 0, 2, 0, 0, 48, 0, 1, 0],
+    [0, 0, -2, 2, 1, 46, 0, -24, 0],
+    [2, 0, 0, 2, 2, -38, 0, 16, 0],
+    [0, 0, 2, 2, 2, -31, 0, 13, 0],
+    [0, 0, 2, 0, 0, 29, 0, -1, 0],
+    [-2, 0, 1, 2, 2, 29, 0, -12, 0],
+    [0, 0, 0, 2, 0, 26, 0, -1, 0],
+    [-2, 0, 0, 2, 0, -22, 0, 0, 0],
+    [0, 0, -1, 2, 1, 21, 0, -10, 0],
+    [0, 2, 0, 0, 0, 17, -0.1, 0, 0],
+    [2, 0, -1, 0, 1, 16, 0, -8, 0],
+    [-2, 2, 0, 2, 2, -16, 0.1, 7, 0],
+    [0, 1, 0, 0, 1, -15, 0, 9, 0],
+    [-2, 0, 1, 0, 1, -13, 0, 7, 0],
+    [0, -1, 0, 0, 1, -12, 0, 6, 0],
+    [0, 0, 2, -2, 0, 11, 0, 0, 0],
+    [2, 0, -1, 2, 1, -10, 0, 5, 0],
+    [2, 0, 1, 2, 2, -8, 0, 3, 0],
+    [0, 1, 0, 2, 2, 7, 0, -3, 0],
+    [-2, 1, 1, 0, 0, -7, 0, 0, 0],
+    [0, -1, 0, 2, 2, -7, 0, 3, 0],
+    [2, 0, 0, 2, 1, -7, 0, 3, 0],
+    [2, 0, 1, 0, 0, 6, 0, 0, 0],
+    [-2, 0, 2, 2, 2, 6, 0, -3, 0],
+    [-2, 0, 1, 2, 1, 6, 0, -3, 0],
+    [2, 0, -2, 0, 1, -6, 0, 3, 0],
+    [2, 0, 0, 0, 1, -6, 0, 3, 0],
+    [0, -1, 1, 0, 0, 5, 0, 0, 0],
+    [-2, -1, 0, 2, 1, -5, 0, 3, 0],
+    [-2, 0, 0, 0, 1, -5, 0, 3, 0],
+    [0, 0, 2, 2, 1, -5, 0, 3, 0]
+  ];
+
+  /** Nutation in longitude and obliquity, degrees. */
   function nutation(T) {
+    var D = 297.85036 + 445267.111480 * T - 0.0019142 * T * T + T * T * T / 189474;
+    var M = 357.52772 + 35999.050340 * T - 0.0001603 * T * T - T * T * T / 300000;
+    var Mp = 134.96298 + 477198.867398 * T + 0.0086972 * T * T + T * T * T / 56250;
+    var F = 93.27191 + 483202.017538 * T - 0.0036825 * T * T + T * T * T / 327270;
     var omega = 125.04452 - 1934.136261 * T + 0.0020708 * T * T + T * T * T / 450000;
-    var L = 280.4665 + 36000.7698 * T;
-    var Lp = 218.3165 + 481267.8813 * T;
-    var dpsi = -17.20 * sin(omega) - 1.32 * sin(2 * L) - 0.23 * sin(2 * Lp) + 0.21 * sin(2 * omega);
-    var deps = 9.20 * cos(omega) + 0.57 * cos(2 * L) + 0.10 * cos(2 * Lp) - 0.09 * cos(2 * omega);
-    return { dpsi: dpsi / 3600, deps: deps / 3600 };
+    var dpsi = 0, deps = 0;
+    for (var i = 0; i < NUTATION_TERMS.length; i++) {
+      var t = NUTATION_TERMS[i];
+      var arg = t[0] * D + t[1] * M + t[2] * Mp + t[3] * F + t[4] * omega;
+      dpsi += (t[5] + t[6] * T) * sin(arg);
+      deps += (t[7] + t[8] * T) * cos(arg);
+    }
+    return { dpsi: dpsi / 36000000, deps: deps / 36000000 };
   }
 
   /** Mean obliquity of the ecliptic, degrees (Laskar). */
@@ -106,11 +175,21 @@ var Astro = (function () {
       2.45 * Math.pow(u, 10)) / 3600;
   }
 
-  /** Apparent sidereal time at Greenwich, degrees. */
+  /**
+   * Apparent sidereal time at Greenwich, degrees.
+   *
+   * Built on the Earth Rotation Angle and the IAU 2006 expression for GMST
+   * rather than the older IAU 1982 polynomial, which drifts from it by a couple
+   * of arcseconds by 2050. That is nothing in a planet's longitude, but it lands
+   * undiluted in the ascendant, which is the one number a birth chart turns on.
+   */
   function apparentSiderealTime(jdUT, T, nut, trueEps) {
-    var theta = 280.46061837 + 360.98564736629 * (jdUT - 2451545.0) +
-      0.000387933 * T * T - T * T * T / 38710000;
-    return norm360(theta + nut.dpsi * cos(trueEps));
+    var du = jdUT - 2451545.0;
+    var era = 360 * (0.7790572732640 + 1.00273781191135448 * du); // Earth rotation angle
+    var gmst = era + (0.014506 + 4612.156534 * T + 1.3915817 * T * T -
+      0.00000044 * Math.pow(T, 3) - 0.000029956 * Math.pow(T, 4) -
+      0.0000000368 * Math.pow(T, 5)) / 3600;
+    return norm360(gmst + nut.dpsi * cos(trueEps)); // equation of the equinoxes
   }
 
   /* ----------------------------------------------------------- precession */
@@ -137,21 +216,29 @@ var Astro = (function () {
   /* ------------------------------------------------------------- ayanamsa */
 
   /*
-   * Ayanamsa = tropical longitude of the sidereal zero point. Each entry is its
-   * J2000.0 value; precession is added on top. Lahiri (Chitrapaksha) is the
-   * Indian civil standard and the vetted one here - the other three are given to
-   * within a few arcminutes and are offered as a convenience.
+   * Ayanamsa = the tropical longitude of the sidereal zero point, measured from
+   * the MEAN equinox of date (this is the number panchangs publish, and what
+   * Swiss Ephemeris' swe_get_ayanamsa_ut returns).
+   *
+   * `j2000` is the value at J2000.0 and `rate` a small correction in arcseconds
+   * per century on top of the precession polynomial above. Both were calibrated
+   * against Swiss Ephemeris over 1800-2100 by scripts/fit-ayanamsa.mjs; the
+   * residual is under 0.01" for the four precession-defined systems, and under
+   * 0.3" for True Chitra, whose zero point tracks Spica itself and so drifts at
+   * a slightly different rate.
    */
   var AYANAMSA = {
-    lahiri: { label: 'Lahiri (Chitrapaksha)', j2000: 23.853064 },
-    raman: { label: 'B. V. Raman (approx.)', j2000: 22.371 },
-    kp: { label: 'Krishnamurti / KP (approx.)', j2000: 23.756 },
-    fagan: { label: 'Fagan-Bradley (approx.)', j2000: 24.736 }
+    lahiri: { label: 'Lahiri (Chitrapaksha)', j2000: 23.857092, rate: -0.294 },
+    trueCitra: { label: 'True Chitra Paksha', j2000: 23.840003, rate: -4.958 },
+    kp: { label: 'Krishnamurti (KP)', j2000: 23.760239, rate: -0.294 },
+    raman: { label: 'B. V. Raman', j2000: 22.410790, rate: -0.294 },
+    fagan: { label: 'Fagan-Bradley', j2000: 24.740299, rate: -0.294 }
   };
 
+  /** Ayanamsa from the mean equinox of date, degrees. */
   function ayanamsa(T, system) {
     var base = AYANAMSA[system] || AYANAMSA.lahiri;
-    return base.j2000 + precessionSinceJ2000(T);
+    return base.j2000 + precessionSinceJ2000(T) + base.rate * T / 3600;
   }
 
   /* ----------------------------------------------------------------- moon */
@@ -245,9 +332,9 @@ var Astro = (function () {
 
   /*
    * data/perturbations.js holds the residual between the two-body model above and
-   * JPL Horizons for Jupiter and Saturn, sampled every 100 days. Outside the
-   * table's range the raw Keplerian result is used unchanged, which is the same
-   * accuracy you would get without the table at all.
+   * JPL Horizons, sampled on a time grid per body. Outside a table's range the
+   * raw Keplerian result is used unchanged, which is the same accuracy you would
+   * get without the table at all.
    */
   function perturbationTable() {
     if (typeof PERTURBATIONS !== 'undefined') return PERTURBATIONS;
@@ -268,15 +355,16 @@ var Astro = (function () {
   /** Residual corrections {dlon, dlat, dr} in degrees/degrees/AU, or null. */
   function perturbation(body, T) {
     var tab = perturbationTable();
-    if (!tab || !tab[body]) return null;
+    var entry = tab && tab[body];
+    if (!entry) return null;
     var jd = T * 36525 + 2451545.0;
-    var x = (jd - tab.jd0) / tab.step;
-    var dlon = interpolate(tab[body].dlon, x);
+    var x = (jd - entry.jd0) / entry.step;
+    var dlon = interpolate(entry.dlon, x);
     if (dlon === null) return null;
     return {
       dlon: dlon / 36000,
-      dlat: interpolate(tab[body].dlat, x) / 36000,
-      dr: interpolate(tab[body].dr, x) / 1e7
+      dlat: interpolate(entry.dlat, x) / 36000,
+      dr: interpolate(entry.dr, x) / 1e7
     };
   }
 
@@ -470,7 +558,17 @@ var Astro = (function () {
     var nut = nutation(T);
     var eps = meanObliquity(T) + nut.deps;
     var ayan = ayanamsa(T, o.ayanamsa || 'lahiri');
-    var sidereal = function (tropical) { return norm360(tropical - ayan); };
+    /*
+     * The ayanamsa above is measured from the MEAN equinox, while every apparent
+     * longitude below is measured from the TRUE equinox. Referring the ayanamsa
+     * to the true equinox as well makes nutation cancel out of the subtraction,
+     * so a sidereal longitude is a genuinely fixed-star-frame position rather
+     * than one that wobbles by up to 17 arcseconds on an 18.6-year cycle. This
+     * is the convention Swiss Ephemeris uses, and it must be applied to every
+     * body alike or the grahas drift against the nodes.
+     */
+    var ayanTrue = ayan + nut.dpsi;
+    var sidereal = function (tropicalApparent) { return norm360(tropicalApparent - ayanTrue); };
 
     // Tropical longitudes first, plus the same a day-fraction later so we can
     // report speed and retrogression.
@@ -478,7 +576,7 @@ var Astro = (function () {
     function tropicalOf(body, Tx) {
       var n = nutation(Tx);
       if (body === 'moon') return moonLongitude(Tx) + n.dpsi;
-      if (body === 'rahu') return lunarNode(Tx, o.trueNode === true);
+      if (body === 'rahu') return lunarNode(Tx, o.trueNode === true) + n.dpsi;
       return apparentLongitude(body, Tx, n).lon;
     }
 

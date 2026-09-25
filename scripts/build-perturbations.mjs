@@ -1,23 +1,27 @@
 /**
- * Builds data/perturbations.js - a correction table for Jupiter and Saturn.
+ * Builds data/perturbations.js - correction tables for the slower planets.
  *
  * WHY THIS EXISTS
  * Standish's Keplerian elements (used in js/astro.js) are a two-body fit, so they
- * miss the mutual Jupiter-Saturn perturbations, above all the "great inequality"
- * near the 5:2 resonance. Measured against JPL Horizons the residual reaches
- * ~2.8' for Jupiter and ~7.4' for Saturn - enough to move a planet across a pada
- * (3 deg 20') boundary and so change its reported nakshatra pada and Navamsa sign.
+ * miss planet-on-planet perturbations. Measured against Swiss Ephemeris the
+ * residual reaches ~10' for Saturn, ~5' for Jupiter and ~3' for Mars, which is
+ * enough to move a graha across a pada (3 deg 20') boundary and so change its
+ * reported pada and Navamsa sign.
  *
  * Rather than embed a truncated VSOP87 series, this samples the residual itself
- * on a 100-day grid from 1800 to 2101 and stores it as small integers. The
- * residual is smooth (its fastest component is a few years long), so Catmull-Rom
- * interpolation between samples costs well under an arcsecond.
+ * on a time grid and stores it as small integers. The residual is smooth on the
+ * scale of a planet's own period, so Catmull-Rom interpolation between samples
+ * costs well under an arcsecond - provided the step stays well inside that
+ * period, which is why each body carries its own step.
+ *
+ * The grid runs 1780-2120, comfortably past the 1800-2100 range the app offers,
+ * because Catmull-Rom needs two samples on each side and would otherwise fall
+ * back to raw Keplerian values at the very edges.
  *
  * TO REGENERATE
- *   1. Fetch geometric heliocentric vectors from JPL Horizons, J2000 ecliptic,
- *      Sun-centred, 100-day steps (see fetch command in README):
- *        vec-jupiter.csv, vec-saturn.csv
- *   2. node scripts/build-perturbations.mjs <dir-with-csvs>
+ *   Fetch geometric heliocentric vectors from JPL Horizons, J2000 ecliptic,
+ *   Sun-centred (see README), then:
+ *     node scripts/build-perturbations.mjs <dir-with-csvs>
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -27,25 +31,40 @@ const Astro = createRequire(import.meta.url)('../js/astro.js');
 const src = process.argv[2] || '.';
 const DEG = Math.PI / 180;
 
-const JD0 = 2378496.5; // 1800 Jan 1.0 TDB
-const STEP = 100;      // days
+// Step in days per body. Each must be a small fraction of the shortest period
+// present in that body's residual, or interpolation aliases.
+//
+// Earth matters most and is easy to overlook: every geocentric longitude is the
+// difference between a planet's heliocentric position and Earth's, so an error
+// in Earth shows up in all of them, amplified by 1/distance for the near ones.
+// Correcting Earth alone pulls the Sun, Mercury, Venus and Mars in together.
+const BODIES = { earth: 25, venus: 25, mars: 25, jupiter: 100, saturn: 100 };
 
-const out = {};
-for (const body of ['jupiter', 'saturn']) {
-  const rows = readFileSync(join(src, `vec-${body}.csv`), 'utf8').trim().split('\n');
+const tables = {};
+for (const [body, step] of Object.entries(BODIES)) {
+  let text;
+  try {
+    text = readFileSync(join(src, `vec2-${body}.csv`), 'utf8');
+  } catch (e) {
+    console.log(`${body}: no vec2-${body}.csv, skipping`);
+    continue;
+  }
+  const rows = text.trim().split('\n');
+  const jd0 = +rows[0].split(',')[0];
   const dlon = [], dlat = [], dr = [];
   rows.forEach((line, i) => {
     const f = line.split(',');
     const jd = +f[0];
-    const expected = JD0 + i * STEP;
-    if (Math.abs(jd - expected) > 1e-6) throw new Error(`grid mismatch at row ${i}: ${jd} vs ${expected}`);
+    const expected = jd0 + i * step;
+    if (Math.abs(jd - expected) > 1e-6) throw new Error(`${body} grid mismatch at row ${i}: ${jd} vs ${expected}`);
     const x = +f[2], y = +f[3], z = +f[4];
 
     const refLon = Math.atan2(y, x) / DEG;
     const refR = Math.hypot(x, y, z);
     const refLat = Math.asin(z / refR) / DEG;
 
-    const p = Astro.heliocentric(body, (jd - 2451545.0) / 36525, true); // raw = no correction
+    // raw = true: sample the UNCORRECTED model, so corrections never compound.
+    const p = Astro.heliocentric(body, (jd - 2451545.0) / 36525, true);
     const modLon = Math.atan2(p.y, p.x) / DEG;
     const modR = Math.hypot(p.x, p.y, p.z);
     const modLat = Math.asin(p.z / modR) / DEG;
@@ -56,31 +75,25 @@ for (const body of ['jupiter', 'saturn']) {
     dlat.push(Math.round((refLat - modLat) * 36000));
     dr.push(Math.round((refR - modR) * 1e7)); // 1e-7 AU units
   });
-  out[body] = { dlon, dlat, dr };
+  tables[body] = { jd0, step, dlon, dlat, dr };
   const peak = (a, s) => (Math.max(...a.map(Math.abs)) / s).toFixed(2);
-  console.log(`${body}: ${dlon.length} samples, peak residual ` +
+  console.log(`${body}: ${dlon.length} samples every ${step}d, peak residual ` +
     `lon ${peak(dlon, 10)}" lat ${peak(dlat, 10)}" r ${peak(dr, 1e7)} AU`);
 }
 
-const pack = (a) => JSON.stringify(a);
+const body = Object.entries(tables).map(([name, t]) =>
+  `  ${name}: {\n    jd0: ${t.jd0}, step: ${t.step},\n` +
+  `    dlon: ${JSON.stringify(t.dlon)},\n` +
+  `    dlat: ${JSON.stringify(t.dlat)},\n` +
+  `    dr: ${JSON.stringify(t.dr)}\n  }`).join(',\n');
+
 writeFileSync(new URL('../data/perturbations.js', import.meta.url).pathname,
 `// Generated by scripts/build-perturbations.mjs from JPL Horizons vectors.
 // Residual (Horizons - Keplerian model) for heliocentric longitude, latitude and
-// radius, sampled every ${STEP} days from JD ${JD0} (1800-01-01 TDB) to JD ${JD0 + (out.jupiter.dlon.length - 1) * STEP}.
-// Units: dlon/dlat in 0.1 arcsec, dr in 1e-7 AU.
+// radius. Units: dlon/dlat in 0.1 arcsec, dr in 1e-7 AU. Each body carries its
+// own grid origin and step.
 var PERTURBATIONS = {
-  jd0: ${JD0},
-  step: ${STEP},
-  jupiter: {
-    dlon: ${pack(out.jupiter.dlon)},
-    dlat: ${pack(out.jupiter.dlat)},
-    dr: ${pack(out.jupiter.dr)}
-  },
-  saturn: {
-    dlon: ${pack(out.saturn.dlon)},
-    dlat: ${pack(out.saturn.dlat)},
-    dr: ${pack(out.saturn.dr)}
-  }
+${body}
 };
 if (typeof module !== 'undefined' && module.exports) module.exports = PERTURBATIONS;
 `);
