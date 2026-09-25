@@ -650,6 +650,13 @@
     rows.forEach(function (r) {
       var v = positionOf(r.longitude);
       var nak = Astro.nakshatraOf(v.longitude);
+      /*
+       * Vargottama is read off the rashi longitude against the navamsha, so the
+       * flag holds steady as the division dropdown changes. The Motion column
+       * already spells out retrogression, so only [V] is needed here; the chart
+       * itself carries [R][V] together.
+       */
+      var vargottama = Astro.isVargottama(r.longitude);
       var tr = document.createElement('tr');
       if (r.isAscendant) tr.className = 'ascendant-row';
       /*
@@ -668,6 +675,12 @@
       ].forEach(function (cell, i) {
         var td = el(i === 0 ? 'th' : 'td', cell[1], cell[0]);
         if (i === 0) td.setAttribute('scope', 'row');
+        if (i === 0 && vargottama) {
+          // A span so the flag can be dimmed without dimming the graha's name.
+          td.appendChild(el('span', 'flag', ' [V]'));
+          td.title = r.name + ' holds the same sign in the rashi and in the navamsha, so it ' +
+            'is vargottama. That sharpens whatever it already is, for better or for worse.';
+        }
         if (i === 1 && r.retrograde) td.className = 'retro-flag';
         if (i === 4 && !r.isAscendant) td.title = dispositorDetail(r.name, v.sign, positionsD1);
         if (i === 5) td.title = 'Longitude ' + v.longitude.toFixed(4) + '\u00b0';

@@ -862,6 +862,25 @@ var Astro = (function () {
   }
 
   /**
+   * Vargottama: the same sign in the rashi and in the navamsha.
+   *
+   * Always D1 against D9, whatever division is being looked at. Narasimha Rao
+   * reads a D4 chart and still writes "vargottama in Navamsa", because it is a
+   * property the graha carries rather than something the displayed varga
+   * changes. Sign repetition between D1 and some other varga is perfectly
+   * computable, and D3, D4, D7, D10 and D12 each have exactly one repeating
+   * division per sign, but no classical authority calls that vargottama.
+   *
+   * Mechanically this is the 1st navamsha of a movable sign, the 5th of a fixed
+   * one and the 9th of a dual one, which is the form the rule is usually taught
+   * in. It says nothing about whether the placement is good: a graha at the end
+   * of Virgo is vargottama, and Venus there is also debilitated.
+   */
+  function isVargottama(longitude) {
+    return signOf(longitude) === vargaPosition(longitude, 9).sign;
+  }
+
+  /**
    * Position in a divisional chart.
    *
    * A varga maps each slice of a sign onto a whole sign, and the position
@@ -1106,6 +1125,7 @@ var Astro = (function () {
     nakshatraOf: nakshatraOf,
     navamsaSign: navamsaSign,
     vargaPosition: vargaPosition,
+    isVargottama: isVargottama,
     VARGAS: VARGAS,
     houseOf: houseOf,
     dignityOf: dignityOf,

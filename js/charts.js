@@ -62,8 +62,14 @@ var Charts = (function () {
     return svg;
   }
 
+  /*
+   * Flags ride together after the abbreviation, retrograde first: "Sa [R][V]".
+   * [V] is vargottama, which is D1 against D9 and so does not change when a
+   * different division is put on screen.
+   */
   function planetText(p) {
-    return ABBR[p.name] + (p.retrograde ? ' [R]' : '');
+    var flags = (p.retrograde ? '[R]' : '') + (p.vargottama ? '[V]' : '');
+    return ABBR[p.name] + (flags ? ' ' + flags : '');
   }
 
   /**
@@ -107,11 +113,15 @@ var Charts = (function () {
 
     planets.forEach(function (p) {
       bySign[signOfBody(p.longitude)].push({
-        name: p.name, retrograde: p.retrograde, longitude: p.longitude
+        name: p.name, retrograde: p.retrograde, longitude: p.longitude,
+        vargottama: Astro.isVargottama(p.longitude)
       });
     });
     var ascSign = signOfBody(ascLongitude);
-    bySign[ascSign].unshift({ name: 'Ascendant', retrograde: false, longitude: ascLongitude });
+    bySign[ascSign].unshift({
+      name: 'Ascendant', retrograde: false, longitude: ascLongitude,
+      vargottama: Astro.isVargottama(ascLongitude)
+    });
 
     var firstSign = ascSign;
     if (reference && reference !== 'Ascendant') {

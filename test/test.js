@@ -527,6 +527,58 @@ ok('a stretched longitude stays inside its sign', (function () {
 ok('an unknown division returns nothing rather than guessing',
    A.vargaPosition(10, 5) === null && A.vargaPosition(10, 11) === null);
 
+console.log('\nVargottama');
+/*
+ * The rule as it is taught: the 1st navamsha of a movable sign, the 5th of a
+ * fixed one, the 9th of a dual one. Derived here from vargaPosition rather than
+ * hard-coded, so it is a real check on the varga arithmetic.
+ */
+var MOVABLE = [0, 3, 6, 9], FIXED = [1, 4, 7, 10];
+ok('it falls on the 1st, 5th and 9th navamsha by sign nature', (function () {
+  for (var sign = 0; sign < 12; sign++) {
+    var want = MOVABLE.indexOf(sign) >= 0 ? 1 : FIXED.indexOf(sign) >= 0 ? 5 : 9;
+    for (var n = 1; n <= 9; n++) {
+      var lon = sign * 30 + (n - 0.5) * (30 / 9);
+      if (A.isVargottama(lon) !== (n === want)) return false;
+    }
+  }
+  return true;
+})());
+
+ok('so exactly one navamsha of each sign qualifies', (function () {
+  for (var sign = 0; sign < 12; sign++) {
+    var hits = 0;
+    for (var n = 1; n <= 9; n++) if (A.isVargottama(sign * 30 + (n - 0.5) * (30 / 9))) hits++;
+    if (hits !== 1) return false;
+  }
+  return true;
+})());
+
+/*
+ * K.N. Rao's own example, quoted in his interview on research: "Venus at 29
+ * degrees and 58 minutes in Virgo will be in debilitation and it will also be
+ * vargottama". It is the case that stops vargottama being read as a blessing.
+ */
+var raoVenus = 5 * 30 + 29 + 58 / 60;
+ok('a debilitated graha can be vargottama (Rao: Venus at Virgo 29\u00b058\u2032)',
+   A.isVargottama(raoVenus) && A.dignityOf('Venus', A.signOf(raoVenus), raoVenus % 30) === 'Debilitated');
+
+// And the converse, from a chart of this repo's own: exalted and vargottama at once.
+var exaltedV = 11 * 30 + 27.1842;
+ok('and so can an exalted one', A.isVargottama(exaltedV) &&
+   A.dignityOf('Venus', A.signOf(exaltedV), exaltedV % 30) === 'Exalted');
+
+// D2 cannot produce ten of the signs and D30 cannot produce Cancer or Leo, which
+// is why a blanket "vargottama in any varga" rule does not hold up.
+ok('D9 spans all twelve signs, unlike D2 and D30', (function () {
+  var span = function (division) {
+    var seen = {};
+    for (var d = 0; d < 360; d += 0.05) seen[A.vargaPosition(d, division).sign] = true;
+    return Object.keys(seen).length;
+  };
+  return span(9) === 12 && span(2) === 2 && span(30) === 10;
+})());
+
 console.log('\nThe sixteen divisions');
 ok('all sixteen are defined', A.VARGAS.length === 16,
    A.VARGAS.map(function (v) { return v.name; }).join(' '));

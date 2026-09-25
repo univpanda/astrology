@@ -579,6 +579,59 @@ ok('its relation is the compound one, counted in the rashi chart',
    /Astro\.compoundRelation\(graha, lord,/.test(appSrc) && /positionsD1\[lord\]\.sign/.test(appSrc));
 ok('a graha in its own sign disposits itself', /if \(lord === graha\) return 'itself';/.test(appSrc));
 
+console.log('\nVargottama flags');
+/*
+ * A chart with Venus both retrograde and vargottama, so the paired flag has a
+ * real case to render rather than a contrived one: 22 March 1985, 10:55 local,
+ * Durgapur. Venus is exalted in Pisces, retrograde, and in the 9th navamsha.
+ */
+var vgChart = Astro.chart({
+  jdUT: Astro.julianDay(1985, 3, 22, 10 + 55 / 60 - 5.5),
+  latitude: 23.55, longitude: 87.32, tzOffsetMinutes: 330
+});
+var vgVenus = vgChart.planets.filter(function (p) { return p.name === 'Venus'; })[0];
+ok('the fixture really is retrograde and vargottama at once',
+   vgVenus.retrograde && Astro.isVargottama(vgVenus.longitude));
+
+var renderIn = function (division) {
+  var box = makeNode('div');
+  Charts.render(box, {
+    style: 'north', division: division,
+    planets: vgChart.planets, ascendant: vgChart.ascendant.longitude
+  });
+  return serialise(box);
+};
+
+ok('both flags ride together, retrograde first', /Ve \[R\]\[V\]/.test(renderIn(1)));
+ok('retrograde alone stays bare [R]', /Sa \[R\]<|Sa \[R\]\s/.test(renderIn(1)));
+ok('a graha with neither carries no brackets', /Ju<\/text>|>Ju</.test(renderIn(1)));
+
+/*
+ * The point of the whole design: vargottama is D1 against D9, so putting another
+ * division on screen must not move the flag. Narasimha Rao reads D4 and still
+ * writes "vargottama in Navamsa".
+ */
+ok('the flag does not change with the division shown',
+   [1, 3, 4, 9, 10, 12, 60].every(function (d) { return /Ve \[R\]\[V\]/.test(renderIn(d)); }));
+
+// A vargottama lagna is what Satabdika dasa turns on, so the ascendant is eligible.
+ok('the ascendant is eligible for the flag too', (function () {
+  var lon = 0.5;                                    // 1st navamsha of Aries
+  if (!Astro.isVargottama(lon)) return false;
+  var box = makeNode('div');
+  Charts.render(box, { style: 'north', division: 1, planets: [], ascendant: lon });
+  return /As \[V\]/.test(serialise(box));
+})());
+
+ok('the table flags it beside the graha name, not as a colour on it',
+   /td\.appendChild\(el\('span', 'flag', ' \[V\]'\)\)/.test(appSrc));
+ok('and explains it on hover', /is vargottama\. That sharpens whatever it already is/.test(appSrc));
+ok('the table reads vargottama off the rashi longitude',
+   /var vargottama = Astro\.isVargottama\(r\.longitude\);/.test(appSrc));
+ok('the page carries a key for both flags',
+   /\[R\] is retrograde\. \[V\] is vargottama/.test(html) &&
+   /measured against D9 whichever division is on screen/.test(html));
+
 /*
  * The dispositor relation is asymmetric, so the cell has to say whose view it
  * shows. These pull the two helpers straight out of app.js and run them, rather

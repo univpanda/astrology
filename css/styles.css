@@ -811,6 +811,10 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: none; }
 tbody tr:hover { background: #f1f9f4; }
 td.numeric, .longitude { font-family: var(--font-mono); font-size: 0.87rem; }
 td .retro-flag, td.retro-flag { color: var(--retro); }
+/* Vargottama is a fact about the graha rather than a verdict on it, so the flag
+   is dimmed instead of being coloured good or bad. */
+th .flag { color: var(--ink-soft); font-weight: 400; }
+.flag-key { max-width: 60ch; margin: 0 auto 1rem; text-align: center; }
 /* A yogakaraka is worth spotting at a glance; the bare house numbers beside it
    are not, so only the named case is picked out. */
 td.rulership, td.dispositor { color: var(--ink-soft); }
