@@ -90,25 +90,39 @@ var Charts = (function () {
     });
   }
 
-  /** Occupants of each sign, 0 = Aries. Ascendant is included as a marker. */
-  function occupantsBySign(planets, ascLongitude, useNavamsa) {
+  /**
+   * Occupants of each sign in a given division, 0 = Aries.
+   *
+   * `reference` names what house 1 should be: the ascendant, or a graha whose
+   * own sign becomes the first house. Rotating that way is how a chart is read
+   * from the Moon or from any other graha, and it is the sign in the chosen
+   * division that counts, not the one in D1.
+   */
+  function occupantsBySign(planets, ascLongitude, division, reference) {
     var bySign = [];
     for (var i = 0; i < 12; i++) bySign.push([]);
+    var signOfBody = function (longitude) {
+      return Astro.vargaPosition(longitude, division || 1).sign;
+    };
+
     planets.forEach(function (p) {
-      var sign = useNavamsa ? p.navamsaSign : p.sign;
-      bySign[sign].push({ name: p.name, degreeInSign: p.degreeInSign, retrograde: p.retrograde });
+      bySign[signOfBody(p.longitude)].push({
+        name: p.name, retrograde: p.retrograde, longitude: p.longitude
+      });
     });
-    var ascSign = useNavamsa ? Astro.navamsaSign(ascLongitude) : Astro.signOf(ascLongitude);
-    bySign[ascSign].unshift({
-      name: 'Ascendant',
-      degreeInSign: ascLongitude - Astro.signOf(ascLongitude) * 30,
-      retrograde: false
-    });
-    return { bySign: bySign, ascSign: ascSign };
+    var ascSign = signOfBody(ascLongitude);
+    bySign[ascSign].unshift({ name: 'Ascendant', retrograde: false, longitude: ascLongitude });
+
+    var firstSign = ascSign;
+    if (reference && reference !== 'Ascendant') {
+      var anchor = planets.filter(function (p) { return p.name === reference; })[0];
+      if (anchor) firstSign = signOfBody(anchor.longitude);
+    }
+    return { bySign: bySign, ascSign: ascSign, firstSign: firstSign };
   }
 
-  function renderNorth(container, planets, ascLongitude, useNavamsa) {
-    var data = occupantsBySign(planets, ascLongitude, useNavamsa);
+  function renderNorth(container, planets, ascLongitude, division, reference) {
+    var data = occupantsBySign(planets, ascLongitude, division, reference);
     var svg = svgRoot('north');
     var m = 4, s = SIZE - 2 * m;
     var P = function (fx, fy) { return (m + fx * s).toFixed(1) + ',' + (m + fy * s).toFixed(1); };
@@ -137,7 +151,7 @@ var Charts = (function () {
     svg.appendChild(el('path', { d: d + ' Z', class: 'frame frame-inner' }));
 
     for (var h = 0; h < 12; h++) {
-      var sign = (data.ascSign + h) % 12;
+      var sign = (data.firstSign + h) % 12;
       var a = NORTH_ANCHORS[h];
       var cx = m + a[0] * s, cy = m + a[1] * s;
       var g = el('g', { class: 'house' + (h === 0 ? ' first-house' : '') });
@@ -154,21 +168,22 @@ var Charts = (function () {
     container.appendChild(svg);
   }
 
-  function renderSouth(container, planets, ascLongitude, useNavamsa) {
-    var data = occupantsBySign(planets, ascLongitude, useNavamsa);
+  function renderSouth(container, planets, ascLongitude, division, reference) {
+    var data = occupantsBySign(planets, ascLongitude, division, reference);
     var svg = svgRoot('south');
     var m = 4, cell = (SIZE - 2 * m) / 4;
 
     for (var i = 0; i < 12; i++) {
       var pos = SOUTH_CELLS[i];
       var x = m + pos[0] * cell, y = m + pos[1] * cell;
-      var house = ((i - data.ascSign) % 12 + 12) % 12 + 1;
-      var g = el('g', { class: 'house' + (i === data.ascSign ? ' first-house' : '') });
+      var house = ((i - data.firstSign) % 12 + 12) % 12 + 1;
+      var g = el('g', { class: 'house' + (i === data.firstSign ? ' first-house' : '') });
       g.appendChild(el('rect', {
         x: x, y: y, width: cell, height: cell,
-        rx: i === data.ascSign ? 8 : 0, class: 'cell'
+        rx: i === data.firstSign ? 8 : 0, class: 'cell'
       }));
       if (i === data.ascSign) {
+        // The lagna mark stays on the ascendant even when the chart is rotated.
         // Traditional lagna mark: a short diagonal across the cell's corner.
         g.appendChild(el('line', {
           x1: x, y1: y, x2: x + cell * 0.3, y2: y + cell * 0.3, class: 'lagna-mark'
@@ -188,7 +203,7 @@ var Charts = (function () {
 
   function render(container, opts) {
     var fn = opts.style === 'south' ? renderSouth : renderNorth;
-    fn(container, opts.planets, opts.ascendant, !!opts.navamsa);
+    fn(container, opts.planets, opts.ascendant, opts.division || 1, opts.reference);
   }
 
   return { render: render, ABBR: ABBR, SIGN_ABBR: SIGN_ABBR };

@@ -589,18 +589,103 @@ var Astro = (function () {
   }
 
   /*
-   * Which sign each slice of a sign maps to, per division.
+   * The Shodasavarga: Parashara's sixteen divisional charts.
    *
-   * D9 runs straight through the zodiac, which is the same thing as the
-   * classical rule: movable signs start from themselves, fixed from the ninth,
-   * dual from the fifth. D10 counts from the sign itself for odd signs and from
-   * the ninth for even ones.
+   * Each entry says how many parts a sign is cut into and which sign a given
+   * part maps to. `start` helpers below name the recurring patterns rather than
+   * repeating them, since most of the disagreement between authorities is about
+   * where a division starts counting, and it is easier to audit in one place.
+   *
+   * Sign indices are 0-based, so "odd signs" in the classical sense - Aries,
+   * Gemini, Leo - are the even indices here.
+   *
+   * Left out deliberately: D5, D6, D8 and D11, whose starting signs differ
+   * between authorities with no settled answer, and Bhava Chalit, which is not
+   * a division at all but a house chart and would need cusps this engine does
+   * not compute.
    */
-  var VARGA_RULES = {
-    1: function (sign) { return sign; },
-    9: function (sign, index) { return (sign * 9 + index) % 12; },
-    10: function (sign, index) { return (sign + (sign % 2 === 0 ? index : 8 + index)) % 12; }
+  var movableFixedDual = function (starts) {
+    return function (sign, index) { return (starts[sign % 3] + index) % 12; };
   };
+  // Two shapes of odd/even rule, and mixing them up is the classic way to get a
+  // varga subtly wrong: one counts from a fixed sign, the other from the sign
+  // the graha is already in.
+  var oddEvenFromFixed = function (oddStart, evenStart) {
+    return function (sign, index) {
+      return ((sign % 2 === 0 ? oddStart : evenStart) + index) % 12;
+    };
+  };
+  var oddEvenFromSelf = function (oddOffset, evenOffset) {
+    return function (sign, index) {
+      return (sign + (sign % 2 === 0 ? oddOffset : evenOffset) + index) % 12;
+    };
+  };
+  var fromSign = function (step) {
+    return function (sign, index) { return (sign + step * index) % 12; };
+  };
+
+  var VARGAS = [
+    { division: 1, name: 'D1', label: 'Rashi', about: 'the body, and matters in general',
+      parts: 1, rule: function (sign) { return sign; } },
+    { division: 2, name: 'D2', label: 'Hora', about: 'wealth',
+      parts: 2, rule: function (sign, index) {
+        // Sun's hora is Leo, the Moon's is Cancer; odd signs take the Sun first.
+        return sign % 2 === 0 ? (index === 0 ? 4 : 3) : (index === 0 ? 3 : 4);
+      } },
+    { division: 3, name: 'D3', label: 'Drekkana', about: 'siblings, and courage',
+      parts: 3, rule: fromSign(4) },
+    { division: 4, name: 'D4', label: 'Chaturthamsha', about: 'home, and fortune',
+      parts: 4, rule: fromSign(3) },
+    { division: 7, name: 'D7', label: 'Saptamsha', about: 'children',
+      parts: 7, rule: oddEvenFromSelf(0, 6) },
+    { division: 9, name: 'D9', label: 'Navamsa', about: 'marriage, and inner strength',
+      parts: 9, rule: function (sign, index) { return (sign * 9 + index) % 12; } },
+    { division: 10, name: 'D10', label: 'Dashamsha', about: 'work, and standing',
+      parts: 10, rule: oddEvenFromSelf(0, 8) },
+    { division: 12, name: 'D12', label: 'Dvadashamsha', about: 'parents',
+      parts: 12, rule: fromSign(1) },
+    { division: 16, name: 'D16', label: 'Shodashamsha', about: 'vehicles, and comforts',
+      parts: 16, rule: movableFixedDual([0, 4, 8]) },
+    { division: 20, name: 'D20', label: 'Vimshamsha', about: 'spiritual practice',
+      parts: 20, rule: movableFixedDual([0, 8, 4]) },
+    { division: 24, name: 'D24', label: 'Chaturvimshamsha', about: 'learning',
+      parts: 24, rule: oddEvenFromFixed(4, 3) },
+    { division: 27, name: 'D27', label: 'Saptavimshamsha', about: 'strengths and weaknesses',
+      parts: 27, rule: function (sign, index) { return ([0, 3, 6, 9][sign % 4] + index) % 12; } },
+    { division: 30, name: 'D30', label: 'Trimshamsha', about: 'misfortune',
+      parts: 5, unequal: true },
+    { division: 40, name: 'D40', label: 'Khavedamsha', about: 'maternal legacy',
+      parts: 40, rule: oddEvenFromFixed(0, 6) },
+    { division: 45, name: 'D45', label: 'Akshavedamsha', about: 'paternal legacy',
+      parts: 45, rule: movableFixedDual([0, 4, 8]) },
+    { division: 60, name: 'D60', label: 'Shashtiamsha', about: 'the sum of past deeds',
+      parts: 60, rule: fromSign(1) }
+  ];
+
+  var VARGA_BY_DIVISION = {};
+  for (var vi = 0; vi < VARGAS.length; vi++) VARGA_BY_DIVISION[VARGAS[vi].division] = VARGAS[vi];
+
+  /*
+   * Trimshamsha alone has unequal parts, ruled by the five non-luminaries. Odd
+   * signs run Mars, Saturn, Jupiter, Mercury, Venus across 5, 5, 8, 7 and 5
+   * degrees; even signs run the same five in reverse, each taking the sign it
+   * owns on that side of the zodiac.
+   */
+  var TRIMSHAMSHA_ODD = [[5, 0], [5, 10], [8, 8], [7, 2], [5, 6]];
+  var TRIMSHAMSHA_EVEN = [[5, 1], [7, 5], [8, 11], [5, 9], [5, 7]];
+
+  function trimshamsha(sign, within) {
+    var table = sign % 2 === 0 ? TRIMSHAMSHA_ODD : TRIMSHAMSHA_EVEN;
+    var edge = 0;
+    for (var i = 0; i < table.length; i++) {
+      var width = table[i][0];
+      if (within < edge + width || i === table.length - 1) {
+        return { sign: table[i][1], degreeInSign: (within - edge) / width * 30 };
+      }
+      edge += width;
+    }
+    return null;
+  }
 
   /**
    * Position in a divisional chart.
@@ -614,15 +699,21 @@ var Astro = (function () {
    * degrees to the arcsecond.
    */
   function vargaPosition(longitude, division) {
-    var rule = VARGA_RULES[division];
-    if (!rule) return null;
+    var varga = VARGA_BY_DIVISION[division];
+    if (!varga) return null;
     var l = norm360(longitude);
     var sign = Math.floor(l / 30);
     var within = l - sign * 30;
-    var width = 30 / division;
-    var index = Math.floor(within / width);
-    var target = rule(sign, index);
-    var degree = division === 1 ? within : (within - index * width) / width * 30;
+
+    if (varga.unequal) {
+      var t = trimshamsha(sign, within);
+      return { sign: t.sign, degreeInSign: t.degreeInSign, longitude: t.sign * 30 + t.degreeInSign };
+    }
+
+    var width = 30 / varga.parts;
+    var index = Math.min(varga.parts - 1, Math.floor(within / width));
+    var target = varga.rule(sign, index);
+    var degree = varga.parts === 1 ? within : (within - index * width) / width * 30;
     return { sign: target, degreeInSign: degree, longitude: target * 30 + degree };
   }
 
@@ -838,7 +929,7 @@ var Astro = (function () {
     nakshatraOf: nakshatraOf,
     navamsaSign: navamsaSign,
     vargaPosition: vargaPosition,
-    VARGA_RULES: VARGA_RULES,
+    VARGAS: VARGAS,
     houseOf: houseOf,
     dignityOf: dignityOf,
     DIGNITY: DIGNITY,

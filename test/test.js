@@ -521,7 +521,59 @@ ok('a stretched longitude stays inside its sign', (function () {
   }
   return true;
 })());
-ok('an unknown division returns nothing rather than guessing', A.vargaPosition(10, 7) === null);
+ok('an unknown division returns nothing rather than guessing',
+   A.vargaPosition(10, 5) === null && A.vargaPosition(10, 11) === null);
+
+console.log('\nThe sixteen divisions');
+ok('all sixteen are defined', A.VARGAS.length === 16,
+   A.VARGAS.map(function (v) { return v.name; }).join(' '));
+ok('every division lands on a real sign and degree', A.VARGAS.every(function (v) {
+  for (var d = 0; d < 360; d += 0.037) {
+    var p = A.vargaPosition(d, v.division);
+    if (!p || p.sign < 0 || p.sign > 11) return false;
+    if (!(p.degreeInSign >= 0 && p.degreeInSign < 30)) return false;
+  }
+  return true;
+}));
+// Hora only ever reaches the luminaries' signs; Trimshamsha never reaches them.
+// Those two exceptions are the quickest check that the rules are the right ones.
+ok('Hora reaches only Cancer and Leo', (function () {
+  var seen = {};
+  for (var d = 0; d < 360; d += 0.05) seen[A.vargaPosition(d, 2).sign] = true;
+  var signs = Object.keys(seen).map(Number).sort(function (a, b) { return a - b; });
+  return signs.length === 2 && signs[0] === 3 && signs[1] === 4;
+})());
+ok('Trimshamsha never reaches Cancer or Leo', (function () {
+  for (var d = 0; d < 360; d += 0.05) {
+    var sign = A.vargaPosition(d, 30).sign;
+    if (sign === 3 || sign === 4) return false;
+  }
+  return true;
+})());
+ok('Trimshamsha parts are unequal and total a sign', (function () {
+  // Odd signs run 5, 5, 8, 7, 5 degrees; even signs the same five reversed.
+  var edges = [], last = null;
+  for (var d = 0; d < 30; d += 0.001) {
+    var sign = A.vargaPosition(d, 30).sign;
+    if (sign !== last) { edges.push(d); last = sign; }
+  }
+  return edges.length === 5 &&
+    Math.abs(edges[1] - 5) < 0.01 && Math.abs(edges[2] - 10) < 0.01 &&
+    Math.abs(edges[3] - 18) < 0.01 && Math.abs(edges[4] - 25) < 0.01;
+})());
+ok('each equal division stretches its part across a whole sign', A.VARGAS.every(function (v) {
+  if (v.unequal || v.parts === 1) return true;
+  var width = 30 / v.parts;
+  var atStart = A.vargaPosition(width * 3 + 1e-9, v.division);
+  var atEnd = A.vargaPosition(width * 4 - 1e-9, v.division);
+  return atStart.degreeInSign < 0.001 && atEnd.degreeInSign > 29.999;
+}));
+ok('D60 gives each of the sixty parts a distinct half degree', (function () {
+  var width = 30 / 60, seen = {};
+  for (var i = 0; i < 60; i++) seen[A.vargaPosition(i * width + width / 2, 60).sign] = true;
+  // Sixty parts cycle five times through the twelve signs.
+  return Object.keys(seen).length === 12;
+})());
 
 console.log('\nNakshatra sub lords (KP)');
 /*

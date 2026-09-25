@@ -476,30 +476,32 @@ button.primary:disabled { opacity: 0.6; cursor: progress; transform: none; }
 
 /* ------------------------------------------------------------------ charts */
 
-/* One chart at a time now, so it is bounded and centred rather than stretched
-   across the full width of a desktop window. */
+/* Two charts, side by side, so a division can be read against the rashi chart
+   without clicking between them. They stack rather than shrink on narrow
+   screens: a kundli below about 300px stops being readable. */
+.chart-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+  gap: 1.25rem;
+}
 .chart-card {
-  max-width: 460px;
-  margin: 0 auto 1.25rem;
+  margin: 0 0 1.25rem;
   background: linear-gradient(180deg, var(--surface) 0%, #f7fcf9 100%);
 }
 
-.subtabs { margin-bottom: 1rem; }
-.subtabs .tab { font-size: 0.88rem; padding: 0.55rem 0.95rem; }
-
-.varga-note {
-  max-width: 60ch;
-  margin: 0 auto 1.25rem;
+.chart-controls { display: flex; gap: 0.5rem; margin-bottom: 0.9rem; }
+.chart-select {
   font-size: 0.85rem;
-  color: var(--ink-faint);
-  text-align: center;
+  padding: 0.45rem 0.5rem;
+  flex: 1 1 0;
+  min-width: 0;
 }
 .chart-card figcaption {
   font-family: var(--font-display);
   color: var(--green-deep);
-  letter-spacing: 0.03em;
-  font-size: 1.05rem;
-  margin-bottom: 0.9rem;
+  letter-spacing: 0.02em;
+  font-size: 0.95rem;
+  margin-top: 0.9rem;
   text-align: center;
 }
 
@@ -666,9 +668,8 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
   .chart-card { background: #fff; }
   .tabs, .site-footer, .result-actions, .options, .save-feedback { display: none; }
   #panel-add, #panel-saved, .empty-chart { display: none; }
-  /* Paper has no tabs, so both divisions print, whichever was on screen. */
-  #panel-chart[hidden], #panel-d1[hidden], #panel-d9[hidden] { display: block; }
-  .chart-card { max-width: 420px; }
+  #panel-chart[hidden] { display: block; }
+  .chart-controls { display: none; }
   .technical[open] summary { display: none; }
   svg.kundli text { fill: #111; }
   svg.kundli .frame, svg.kundli .cell { stroke: #9bbcab; }

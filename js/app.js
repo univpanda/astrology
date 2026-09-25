@@ -456,9 +456,7 @@
      * pixels below, and saying them twice pushed the charts off the first
      * screen.
      */
-    drawCharts(state);
-    renderPlanets(c);
-    renderNavamsa(c);
+    drawCharts();
     renderPanchang(c);
     renderDashas(c, state.offset);
     renderTechnical(state);
@@ -468,82 +466,90 @@
     return chart.planets.filter(function (p) { return p.name === name; })[0];
   }
 
-  function drawCharts(state) {
-    var style = styleSelect.value;
-    Charts.render(document.getElementById('chart-d1'), {
-      style: style, planets: state.chart.planets, ascendant: state.chart.ascendant.longitude
-    });
-    Charts.render(document.getElementById('chart-d9'), {
-      style: style, planets: state.chart.planets, ascendant: state.chart.ascendant.longitude, navamsa: true
+  /* --------------------------------------------------------- chart slots */
+
+  /*
+   * Two charts, side by side, each with its own division and its own first
+   * house. Two at once is the point: a varga is read against the rashi chart,
+   * and a graha's standing is read by rotating the same chart onto it, so
+   * comparing is the work. Tabs would have made every comparison a click.
+   */
+  var SLOTS = ['a', 'b'];
+  var REFERENCES = ['Ascendant', 'Sun', 'Moon', 'Mars', 'Jupiter', 'Venus',
+    'Mercury', 'Saturn', 'Rahu', 'Ketu'];
+
+  function populateSlotSelects() {
+    SLOTS.forEach(function (slot, i) {
+      var ref = document.getElementById('ref-' + slot);
+      REFERENCES.forEach(function (name) {
+        var opt = el('option', null, name === 'Ascendant' ? 'From the ascendant' : 'From the ' + name);
+        opt.value = name;
+        ref.appendChild(opt);
+      });
+      var varga = document.getElementById('varga-' + slot);
+      Astro.VARGAS.forEach(function (v) {
+        var opt = el('option', null, v.name + ' \u00b7 ' + v.label);
+        opt.value = String(v.division);
+        varga.appendChild(opt);
+      });
+      // The rashi chart beside the navamsa is the pairing people reach for.
+      varga.value = i === 0 ? '1' : '9';
+      [ref, varga].forEach(function (control) {
+        control.addEventListener('change', function () { if (lastChart) drawSlot(slot); });
+      });
     });
   }
 
-  styleSelect.addEventListener('change', function () { if (lastChart) drawCharts(lastChart); });
+  function slotSettings(slot) {
+    return {
+      reference: document.getElementById('ref-' + slot).value,
+      division: +document.getElementById('varga-' + slot).value
+    };
+  }
 
-  function renderPlanets(c) {
-    var tbody = document.querySelector('#planet-table tbody');
-    tbody.innerHTML = '';
+  /** Draw one slot: its chart, its caption and its table. */
+  function drawSlot(slot) {
+    var state = lastChart;
+    var set = slotSettings(slot);
+    var varga = Astro.VARGAS.filter(function (v) { return v.division === set.division; })[0];
 
-    /*
-     * The ascendant is not a graha, so the columns that describe motion do not
-     * apply to it: it never turns retrograde and holds no dignity. It is always
-     * the first house by definition.
-     */
-    var asc = c.ascendant;
-    var ascNavamsa = Astro.navamsaSign(asc.longitude);
-    var rows = [{
-      name: 'Ascendant',
-      degreeInSign: asc.degreeInSign,
-      longitude: asc.longitude,
-      signName: asc.signName,
-      signSanskrit: asc.signSanskrit,
-      house: 1,
-      nakshatra: asc.nakshatra,
-      navamsaSignName: Astro.SIGNS[ascNavamsa],
-      retrograde: false,
-      dignity: '',
-      isAscendant: true
-    }].concat(c.planets);
-
-    rows.forEach(function (p) {
-      var tr = document.createElement('tr');
-      var cells = [
-        [p.name, null],
-        [dms(p.degreeInSign), 'longitude'],
-        [p.signName + ' (' + p.signSanskrit + ')', null],
-        [String(p.house), 'numeric'],
-        [p.nakshatra.name, null],
-        [String(p.nakshatra.pada), 'numeric'],
-        [p.nakshatra.lord + ' / ' + p.nakshatra.subLord, null],
-        [p.isAscendant ? '\u2013' : (p.retrograde ? 'Retrograde' : 'Direct'), null],
-        [p.dignity || '\u2013', null]
-      ];
-      if (p.isAscendant) tr.className = 'ascendant-row';
-      cells.forEach(function (cell, i) {
-        var td = el(i === 0 ? 'th' : 'td', cell[1], cell[0]);
-        if (i === 0) td.setAttribute('scope', 'row');
-        if (i === 1) td.title = 'Sidereal longitude ' + p.longitude.toFixed(4) + '°';
-        if (i === 7 && p.retrograde) td.className = 'retro-flag';
-        tr.appendChild(td);
-      });
-      tbody.appendChild(tr);
+    Charts.render(document.getElementById('chart-' + slot), {
+      style: styleSelect.value,
+      planets: state.chart.planets,
+      ascendant: state.chart.ascendant.longitude,
+      division: set.division,
+      reference: set.reference
     });
+
+    var from = set.reference === 'Ascendant' ? 'from the ascendant' : 'from the ' + set.reference;
+    document.getElementById('caption-' + slot).textContent =
+      varga.name + ' \u00b7 ' + varga.label + ' \u2014 ' + varga.about + ', ' + from;
+    document.getElementById('heading-' + slot).textContent =
+      varga.name + ' \u00b7 ' + varga.label + ' \u2014 grahas';
+    renderSlotTable(slot, state.chart, set);
+  }
+
+  function drawCharts() {
+    SLOTS.forEach(drawSlot);
   }
 
   /**
-   * The navamsa table, carrying the same columns as D1 because a divisional
-   * chart has the same kinds of fact in it. Its longitudes are the stretched
-   * ones from Astro.vargaPosition, so the nakshatra, pada and sub lord are D9's
-   * own rather than D1's repeated.
+   * One table per chart, in whichever division that chart is showing.
    *
-   * Two things are not re-derived. Retrogression belongs to the graha, not the
-   * division. And the house is counted from the D9 ascendant, since using the
-   * D1 one in a varga table is a quiet way to be wrong in every row.
+   * Houses are counted from the same reference the chart is rotated onto, so
+   * the two always agree. Retrogression is carried over unchanged: it belongs
+   * to the graha, not to the division it is being viewed in.
    */
-  function renderNavamsa(c) {
-    var tbody = document.querySelector('#navamsa-table tbody');
+  function renderSlotTable(slot, c, set) {
+    var tbody = document.querySelector('#table-' + slot + ' tbody');
     tbody.innerHTML = '';
-    var ascVarga = Astro.vargaPosition(c.ascendant.longitude, 9);
+
+    var positionOf = function (longitude) { return Astro.vargaPosition(longitude, set.division); };
+    var firstSign = positionOf(c.ascendant.longitude).sign;
+    if (set.reference !== 'Ascendant') {
+      var anchor = c.planets.filter(function (p) { return p.name === set.reference; })[0];
+      if (anchor) firstSign = positionOf(anchor.longitude).sign;
+    }
 
     var rows = [{ name: 'Ascendant', longitude: c.ascendant.longitude, isAscendant: true }]
       .concat(c.planets.map(function (p) {
@@ -551,25 +557,23 @@
       }));
 
     rows.forEach(function (r) {
-      var v = Astro.vargaPosition(r.longitude, 9);
+      var v = positionOf(r.longitude);
       var nak = Astro.nakshatraOf(v.longitude);
       var tr = document.createElement('tr');
       if (r.isAscendant) tr.className = 'ascendant-row';
-      var cells = [
-        [r.name, null],
-        [dms(v.degreeInSign), 'longitude'],
-        [Astro.SIGNS[v.sign] + ' (' + Astro.SIGNS_SA[v.sign] + ')', null],
-        [String(((v.sign - ascVarga.sign) % 12 + 12) % 12 + 1), 'numeric'],
-        [nak.name, null],
-        [String(nak.pada), 'numeric'],
-        [nak.lord + ' / ' + nak.subLord, null],
-        [r.isAscendant ? '\u2013' : (r.retrograde ? 'Retrograde' : 'Direct'), null],
-        [(r.isAscendant ? '' : Astro.dignityOf(r.name, v.sign, v.degreeInSign)) || '\u2013', null]
-      ];
-      cells.forEach(function (cell, i) {
+      [[r.name, null],
+       [dms(v.degreeInSign), 'longitude'],
+       [Astro.SIGNS[v.sign] + ' (' + Astro.SIGNS_SA[v.sign] + ')', null],
+       [String(((v.sign - firstSign) % 12 + 12) % 12 + 1), 'numeric'],
+       [nak.name, null],
+       [String(nak.pada), 'numeric'],
+       [nak.lord + ' / ' + nak.subLord, null],
+       [r.isAscendant ? '\u2013' : (r.retrograde ? 'Retrograde' : 'Direct'), null],
+       [(r.isAscendant ? '' : Astro.dignityOf(r.name, v.sign, v.degreeInSign)) || '\u2013', null]
+      ].forEach(function (cell, i) {
         var td = el(i === 0 ? 'th' : 'td', cell[1], cell[0]);
         if (i === 0) td.setAttribute('scope', 'row');
-        if (i === 1) td.title = 'Navamsa longitude ' + v.longitude.toFixed(4) + '\u00b0';
+        if (i === 1) td.title = 'Longitude ' + v.longitude.toFixed(4) + '\u00b0';
         if (i === 7 && r.retrograde) td.className = 'retro-flag';
         tr.appendChild(td);
       });
@@ -907,8 +911,7 @@
   var savedCount = document.getElementById('saved-count');
 
   var sections = setupTabs(['saved', 'add', 'chart'],
-    document.querySelector('.tabs:not(.subtabs)'), { scrollToTop: true });
-  var vargas = setupTabs(['d1', 'd9'], document.querySelector('.tabs.subtabs'));
+    document.querySelector('.tabs'), { scrollToTop: true });
 
   function activateTab(name, moveFocus) { sections.activate(name, moveFocus); }
 
@@ -987,6 +990,7 @@
   /* ------------------------------------------------------------------ init */
 
   populateSelects();
+  populateSlotSelects();
   renderSaved();
   /*
    * Charts saved before this browser could reach the database have no id. Push

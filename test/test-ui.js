@@ -289,7 +289,7 @@ ok('no summary tiles remain above the charts',
 ok('edit and download sit on the birth details line',
    /class="birth-row"/.test(html) &&
    html.indexOf('id="edit-button"') > html.indexOf('id="result-birth"') &&
-   html.indexOf('id="edit-button"') < html.indexOf('id="chart-d1"'));
+   html.indexOf('id="edit-button"') < html.indexOf('id="chart-a"'));
 ok('both icon buttons are labelled for screen readers', (function () {
   var buttons = html.match(/<button[^>]*class="icon-button"[^>]*>/g) || [];
   return buttons.length === 2 && buttons.every(function (b) {
@@ -303,9 +303,7 @@ ok('the lagna is the first row of the table, not a summary tile',
    /name: 'Ascendant'/.test(appSrc) && /ascendant-row/.test(appSrc) &&
    !/fact\(facts, 'Lagna/.test(appSrc));
 ok('the ascendant row leaves motion and dignity blank',
-   /p\.isAscendant \? '\\u2013'/.test(appSrc));
-ok('the ascendant row still gets a navamsa sign',
-   /Astro\.navamsaSign\(asc\.longitude\)/.test(appSrc));
+   /r\.isAscendant \? '\\u2013'/.test(appSrc));
 
 ok('time standard select is wired', /id="time-standard"/.test(html) && /time-standard/.test(appSrc));
 
@@ -344,38 +342,39 @@ function stripHtml(label) {
      /reopeningSaved = true;\s*\n\s*activateTab\('chart'\)/.test(appSrc));
 })();
 
-// D1 and D9 each get their own chart and their own table.
+// Two charts at once, each with its own division and its own first house.
 (function () {
-  var strip = stripHtml('Divisional charts');
-  ok('the divisional strip holds exactly two tabs', (strip.match(/role="tab"/g) || []).length === 2);
-  ok('D1 is the division selected on arrival',
-     /id="tab-d1"[\s\S]{0,140}aria-selected="true"/.test(strip) &&
-     (strip.match(/aria-selected="true"/g) || []).length === 1);
-  ok('each division has its own chart and table',
-     /id="panel-d1"[\s\S]*id="chart-d1"[\s\S]*id="planet-table"[\s\S]*id="panel-d9"/.test(html) &&
-     /id="panel-d9"[\s\S]*id="chart-d9"[\s\S]*id="navamsa-table"/.test(html));
-  ok('the D9 panel starts hidden', /id="panel-d9"[^>]*hidden/.test(html));
-  ok('one tab implementation serves both strips',
-     (appSrc.match(/function setupTabs/g) || []).length === 1 &&
-     /setupTabs\(\['saved', 'add', 'chart'\]/.test(appSrc) &&
-     /setupTabs\(\['d1', 'd9'\]/.test(appSrc));
+  ok('the divisional tabs are gone', !/subtabs|id="tab-d1"|id="tab-d9"/.test(html));
+  ok('there are two chart slots, each with two selects', ['a', 'b'].every(function (slot) {
+    return new RegExp('id="ref-' + slot + '"').test(html) &&
+           new RegExp('id="varga-' + slot + '"').test(html) &&
+           new RegExp('id="chart-' + slot + '"').test(html) &&
+           new RegExp('id="table-' + slot + '"').test(html);
+  }));
+  ok('both charts sit in one row, not behind each other',
+     /class="chart-pair"/.test(html) &&
+     html.indexOf('id="chart-a"') < html.indexOf('id="chart-b"') &&
+     html.indexOf('id="chart-b"') < html.indexOf('id="table-a"'));
+  ok('every select is labelled', ['ref-a', 'varga-a', 'ref-b', 'varga-b'].every(function (id) {
+    return new RegExp('<label[^>]*for="' + id + '"').test(html);
+  }));
+  ok('the pair opens on rashi beside navamsa',
+     /varga\.value = i === 0 \? '1' : '9'/.test(appSrc));
+  ok('changing either select redraws only that chart',
+     /control\.addEventListener\('change', function \(\) \{ if \(lastChart\) drawSlot\(slot\); \}\)/.test(appSrc));
 
-  // Navamsa left the D1 table; it is the whole point of the D9 one.
-  var d1Head = html.slice(html.indexOf('id="planet-table"'), html.indexOf('id="panel-d9"'));
-  ok('the D1 table no longer carries a navamsa column', !/>Navamsa</.test(d1Head));
-  // D9 carries the same kinds of fact as D1, from its own stretched longitudes.
-  var d9Head = html.slice(html.indexOf('id="navamsa-table"'), html.indexOf('varga-note'));
-  ok('the D9 table carries the same columns as D1',
-     ['Navamsa longitude', 'Rashi', 'House', 'Nakshatra', 'Pada', 'Lord / sub lord', 'Motion', 'Dignity']
-       .every(function (c) { return d9Head.indexOf('>' + c + '<') >= 0; }));
-  ok('D9 reads its own longitudes, not D1 repeated',
-     /Astro\.vargaPosition\(r\.longitude, 9\)/.test(appSrc) &&
-     /Astro\.nakshatraOf\(v\.longitude\)/.test(appSrc));
-  ok('D9 houses are counted from the D9 ascendant',
-     /vargaPosition\(c\.ascendant\.longitude, 9\)/.test(appSrc) &&
-     /\(v\.sign - ascVarga\.sign\)/.test(appSrc));
-  ok('retrogression is not re-derived per division',
-     /Retrogression belongs to the graha/.test(appSrc));
+  // Rotation: house 1 moves to the chosen graha's sign, in the chosen division.
+  ok('all ten reference points are offered',
+     /REFERENCES = \['Ascendant', 'Sun', 'Moon', 'Mars', 'Jupiter', 'Venus',\s*\n?\s*'Mercury', 'Saturn', 'Rahu', 'Ketu'\]/.test(appSrc));
+  var chartsSrc = fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8');
+  ok('houses in the chart run from the first sign, not the ascendant',
+     /data\.firstSign/.test(chartsSrc) && !/\(data\.ascSign \+ h\)/.test(chartsSrc));
+  ok('the lagna mark stays on the ascendant when rotated',
+     /if \(i === data\.ascSign\) \{/.test(chartsSrc));
+  ok('the rotation anchor is read in the chosen division',
+     /signOfBody\(anchor\.longitude\)/.test(chartsSrc));
+  ok('the table counts houses from the same reference as its chart',
+     /if \(set\.reference !== 'Ascendant'\)/.test(appSrc) && /\(v\.sign - firstSign\)/.test(appSrc));
 })();
 
 // Saved kundalis: the list, and the four keys that identify an entry.
