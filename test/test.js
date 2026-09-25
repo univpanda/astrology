@@ -590,14 +590,72 @@ ok('the ten divisions are Parashara\'s, in his order',
   var pos = {};
   c.planets.forEach(function (p) { pos[p.name] = p; });
 
-  ok('every cell lands on one of the nine labels', (function () {
-    var allowed = Object.keys(A.VARGA_DIGNITY_LABELS).length === 9;
-    return allowed && Shadbala.GRAHAS.every(function (g) {
+  ok('every cell lands on a label from the scale that division uses', (function () {
+    if (Object.keys(A.VARGA_DIGNITY_LABELS).length !== 9) return false;
+    if (Object.keys(A.HORA_LABELS).length !== 2) return false;
+    return Shadbala.GRAHAS.every(function (g) {
       return A.DASAVARGA.every(function (d) {
         var vd = A.vargaDignity(g, pos[g].longitude, d, pos);
-        return vd && A.VARGA_DIGNITY_LABELS[vd.key] === vd.label;
+        if (!vd) return false;
+        var scale = d === 2 ? A.HORA_LABELS : A.VARGA_DIGNITY_LABELS;
+        return scale[vd.key] === vd.label;
       });
     });
+  })());
+
+  /*
+   * Chapter 7, verses 13-16. The hora yields Cancer and Leo alone, so the seven
+   * steps cannot describe it: own sign is reachable only by the Moon and the Sun,
+   * exaltation only by Jupiter, debilitation only by Mars. Parashara answers it
+   * with a list instead, and this holds the grid to that list.
+   */
+  ok('the hora follows Parashara\'s list, not the seven steps', (function () {
+    var cancer = 3 * 30 + 1, leo = 4 * 30 + 1;    // a hora is only ever one of these
+    var inHora = function (g, signStart) {
+      // find a longitude whose D2 lands on the wanted sign
+      for (var lon = 0; lon < 360; lon += 0.25) {
+        if (A.vargaPosition(lon, 2).sign === A.signOf(signStart)) {
+          var vd = A.vargaDignity(g, lon, 2, pos);
+          if (vd) return vd;
+        }
+      }
+      return null;
+    };
+    var sunsHora = ['Sun', 'Jupiter', 'Mars', 'Mercury'];
+    var moonsHora = ['Moon', 'Venus', 'Saturn', 'Mercury'];
+    return Shadbala.GRAHAS.every(function (g) {
+      var inLeo = inHora(g, leo), inCancer = inHora(g, cancer);
+      return inLeo.hora === 'Sun' && inCancer.hora === 'Moon' &&
+        (inLeo.key === 'pronounced') === (sunsHora.indexOf(g) >= 0) &&
+        (inCancer.key === 'pronounced') === (moonsHora.indexOf(g) >= 0);
+    });
+  })());
+  ok('Mercury is the one graha that tells in both horas', (function () {
+    var both = Shadbala.GRAHAS.filter(function (g) {
+      return A.HORA_STRONG.Sun.indexOf(g) >= 0 && A.HORA_STRONG.Moon.indexOf(g) >= 0;
+    });
+    return both.length === 1 && both[0] === 'Mercury';
+  })());
+
+  /*
+   * Verse 16: no luminary rules a trimsamsa, so without a stand-in neither could
+   * ever hold one of its own. Cancer and Leo never appear in D30 at all.
+   */
+  ok('the luminaries can own a trimsamsa only through the stand-in', (function () {
+    if (A.TRIMSAMSA_PROXY.Sun !== 'Mars' || A.TRIMSAMSA_PROXY.Moon !== 'Venus') return false;
+    var ownsOne = function (graha, wantLord) {
+      for (var lon = 0; lon < 360; lon += 0.05) {
+        var p30 = A.vargaPosition(lon, 30);
+        if (A.SIGN_LORDS[p30.sign] !== wantLord) continue;
+        var vd = A.vargaDignity(graha, lon, 30, pos);
+        if (vd && (vd.key === 'own' || vd.key === 'moolatrikona') && vd.viaProxy === wantLord) return true;
+      }
+      return false;
+    };
+    // Cancer and Leo, the signs they really own, never turn up in a trimsamsa.
+    var seen = {};
+    for (var d = 0; d < 360; d += 0.05) seen[A.vargaPosition(d, 30).sign] = true;
+    return !seen[3] && !seen[4] && ownsOne('Sun', 'Mars') && ownsOne('Moon', 'Venus');
   })());
 
   ok('the nodes own nothing and befriend nobody, so they get no reading',
@@ -614,13 +672,25 @@ ok('the ten divisions are Parashara\'s, in his order',
    * reading rather than trusted to stay in step.
    */
   var detail = Shadbala.compute(c, place);
-  ok('the underlying relation agrees with saptavargaja bala, division by division',
+  /*
+   * The two must agree wherever they use the same scale, which is every division
+   * except the two Parashara singles out in chapter 7. Shadbala's saptavargaja is
+   * a different reckoning and keeps the ordinary relation for hora and trimsamsa;
+   * the grid follows the chapter 7 rules instead. So the exclusions are the point
+   * of this test, not a hole in it.
+   */
+  var SHARED = [1, 3, 7, 9, 12];
+  ok('the underlying relation agrees with saptavargaja bala where both use the same scale',
      Shadbala.GRAHAS.every(function (g) {
        return detail.grahas[g].saptavargajaDetail.every(function (row) {
+         if (SHARED.indexOf(row.division) < 0) return true;
          var vd = A.vargaDignity(g, pos[g].longitude, row.division, pos);
          return vd && vd.relation === row.relation && vd.sign === row.sign && vd.lord === row.lord;
        });
      }));
+  ok('and the two divisions left out are exactly the ones with their own rules',
+     [2, 30].every(function (d) { return SHARED.indexOf(d) < 0; }) &&
+     [1, 3, 7, 9, 12].every(function (d) { return SHARED.indexOf(d) >= 0; }));
 
   /*
    * Exaltation outranks the relation on display but must not erase it, because

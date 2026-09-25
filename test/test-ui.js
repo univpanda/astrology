@@ -410,8 +410,10 @@ function stripHtml(label) {
     var chartsSrc = fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8');
     return /data\.firstSign/.test(chartsSrc) && /signOfBody\(anchor\.longitude\)/.test(chartsSrc);
   })());
-  ok('the table no longer depends on which sign leads',
-     !/firstSign/.test(appSrc) && !/<th scope="col">House<\/th>/.test(html));
+  ok('houses are counted from whatever the chart beside the table is rotated onto',
+     /var firstSign = positionOf\(c\.ascendant\.longitude\)\.sign;/.test(appSrc) &&
+     /set\.reference !== 'Ascendant'/.test(appSrc) &&
+     /<th scope="col">House<\/th>/.test(html));
 })();
 
 // Saved kundalis: the list, and the four keys that identify an entry.
@@ -623,9 +625,12 @@ ok('the ascendant is eligible for the flag too', (function () {
   return /As \[V\]/.test(serialise(box));
 })());
 
-ok('the table flags it beside the graha name, not as a colour on it',
-   /td\.appendChild\(el\('span', 'flag', ' \[V\]'\)\)/.test(appSrc));
-ok('and explains it on hover', /is vargottama\. That sharpens whatever it already is/.test(appSrc));
+ok('the table gives it a column of its own rather than a flag on the name',
+   /<th scope="col">Vargottama<\/th>/.test(html) &&
+   !/el\('span', 'flag', ' \[V\]'\)/.test(appSrc));
+ok('and explains it on hover, both ways round',
+   /it sharpens \nwhatever it already is|it sharpens /.test(appSrc) &&
+   /sits in different signs in the rashi and the navamsha/.test(appSrc));
 ok('the table reads vargottama off the rashi longitude',
    /var vargottama = Astro\.isVargottama\(r\.longitude\);/.test(appSrc));
 ok('the page carries a key for both flags',
@@ -656,20 +661,35 @@ ok('each cell says which sign and lord produced it',
 ok('and gives the seven-step reading when it differs from the label shown',
    /d\.relationLabel !== d\.label/.test(appSrc));
 
-ok('every dignity tier has a colour, and no colour is orphaned', (function () {
+ok('every reading has a colour, on both scales, and no colour is orphaned', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-  var keys = Object.keys(Astro.VARGA_DIGNITY_LABELS);
+  var keys = Object.keys(Astro.VARGA_DIGNITY_LABELS).concat(Object.keys(Astro.HORA_LABELS));
   var styled = (css.match(/td\.dig-([a-z]+)/g) || [])
     .map(function (m) { return m.replace('td.dig-', ''); });
   return keys.every(function (k) { return styled.indexOf(k) >= 0; }) &&
     styled.every(function (k) { return keys.indexOf(k) >= 0; });
 })());
 
-ok('the note says exaltation is outside the classical seven steps',
-   /exaltation is not one of those seven steps/i.test(appSrc) &&
-   /uchcha bala/.test(appSrc));
+ok('the note says exaltation is outside the classical steps',
+   /Exaltation is not one of those steps/.test(appSrc) && /uchcha bala/.test(appSrc));
+ok('and carries Parashara\'s own varga viswa figures',
+   /20, 18, 15, 10, 7 and \n?\s*'?5 out of twenty/.test(appSrc.replace(/\s+/g, ' ')) ||
+   /20, 18, 15, 10, 7 and 5 out of twenty/.test(appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ')));
+ok('and says why the hora and the trimsamsa are read differently',
+   /yields only Cancer and Leo/.test(appSrc.replace(/'\s*\+\s*'/g, '')) &&
+   /the Sun \nstands in as Mars|stands in as Mars/.test(appSrc));
 ok('and that the nodes are left out',
-   /Rahu and Ketu own no sign and keep no friendships/.test(appSrc));
+   /Rahu \n?\s*'?and Ketu own no sign and keep no friendships/.test(appSrc) ||
+   /Rahu and Ketu own no sign and keep no friendships/.test(appSrc.replace(/'\s*\+\s*'/g, '')));
+
+// The hora cell must explain itself by Parashara's rule, not by ownership.
+ok('the hora cell quotes the rule it is following',
+   /Parashara names Jupiter, the Sun and Mars as pronounced/.test(appSrc.replace(/'\s*\+\s*'/g, '')));
+ok('and reports the parity and the third it falls in',
+   /hora tells in an odd rashi/.test(appSrc.replace(/'\s*\+\s*'/g, '')) &&
+   /\['full', 'medium', 'nil'\]\[d\.third\]/.test(appSrc));
+ok('the trimsamsa stand-in is explained where it fires',
+   /stands in as ' \+ d\.viaProxy/.test(appSrc));
 
 /*
  * The dispositor relation is asymmetric, so the cell has to say whose view it
@@ -710,7 +730,7 @@ ok('a node is said to keep no friendships', /Rahu keeps no friendships/.test(
    Disp.detail('Rahu', 5, { Rahu: { sign: 5 }, Mercury: { sign: 5 } })));
 
 ok('the dispositor cell carries that title, and the ascendant row does not',
-   /i === 4 && !r\.isAscendant\) td\.title = dispositorDetail\(r\.name, v\.sign, positionsD1\)/.test(appSrc));
+   /title: r\.isAscendant \? null : dispositorDetail\(r\.name, v\.sign, positionsD1\)/.test(appSrc));
 ok('both tables state the direction in view, not only on hover',
    (html.match(/the graha's own view of the lord whose sign it occupies/g) || []).length === 2);
 ok('friendship is defined once, in the engine', (function () {
@@ -720,9 +740,9 @@ ok('friendship is defined once, in the engine', (function () {
 })());
 
 // The columns, in the order they read.
-ok('both tables carry the same nine columns, in order', (function () {
-  var wanted = ['Graha', 'Motion', 'Rashi', 'Dignity', 'Dispositor', 'Longitude',
-                'Nakshatra', 'Pada', 'Lord / sub lord'];
+ok('both tables carry the same eleven columns, in order', (function () {
+  var wanted = ['Graha', 'Motion', 'Rashi', 'House', 'Dignity', 'Vargottama',
+                'Dispositor', 'Longitude', 'Nakshatra', 'Pada', 'Lord / sub lord'];
   return ['table-a', 'table-b'].every(function (id) {
     var at = html.indexOf('id="' + id + '"');
     var head = html.slice(at, html.indexOf('</thead>', at));
@@ -731,17 +751,23 @@ ok('both tables carry the same nine columns, in order', (function () {
     return found.join('|') === wanted.join('|');
   });
 })());
-ok('house and rules are gone from the tables',
-   !/<th scope="col">House<\/th>/.test(html) && !/<th scope="col">Rules<\/th>/.test(html) &&
-   !/function rulership/.test(appSrc));
+ok('the rules column stayed gone when house came back',
+   !/<th scope="col">Rules<\/th>/.test(html) && !/function rulership/.test(appSrc));
 ok('what a graha is comes before where it is', (function () {
   var at = html.indexOf('id="table-a"');
   var head = html.slice(at, html.indexOf('</thead>', at));
   return head.indexOf('>Motion<') < head.indexOf('>Longitude<') &&
          head.indexOf('>Dignity<') < head.indexOf('>Longitude<');
 })());
-ok('the retrograde flag follows the motion column to its new place',
-   /if \(i === 1 && r\.retrograde\) td\.className = 'retro-flag';/.test(appSrc));
+/*
+ * Cells were positional until House and Vargottama went in mid-table, which moved
+ * every title onto the wrong column. They are named now, so this checks the names
+ * rather than indices that any future column would break again.
+ */
+ok('cells are named, not indexed, so a new column cannot shift the titles',
+   !/if \(i === \d && /.test(appSrc.slice(appSrc.indexOf('function renderSlotTable'),
+                                        appSrc.indexOf('function renderShadbala'))) &&
+   /cls: r\.retrograde \? 'retro-flag' : null/.test(appSrc));
 
 // Reopening a chart must not shorten its place: the label is kept whole rather
 // than recomposed from parts that reopening had blanked.
@@ -886,6 +912,88 @@ ok('no field is advertised as optional', !/placeholder="Optional"/i.test(html));
   ok('every input and select has a label', unlabelled.length === 0,
      unlabelled.join(', ') || (Object.keys(labels).length + ' labels matched'));
 })();
+
+console.log('\nManual coordinates');
+/*
+ * Coordinates arrive as degrees, minutes, seconds and a letter, from an atlas, a
+ * panchang or a birth record. The parser is pulled out of app.js and run against
+ * a stub document, so these are real conversions rather than a source grep.
+ */
+(function () {
+  var dmsSrc = appSrc.slice(appSrc.indexOf('function readDms'), appSrc.indexOf('function showDecimal'));
+  var fields = {};
+  var readDms = new Function('document',
+    dmsSrc + '\nreturn readDms;')({ getElementById: function (id) { return fields[id] || { value: '' }; } });
+
+  var put = function (which, d, m, sec, h) {
+    fields['manual-' + which + '-d'] = { value: String(d) };
+    fields['manual-' + which + '-m'] = { value: String(m) };
+    fields['manual-' + which + '-s'] = { value: String(sec) };
+    fields['manual-' + which + '-h'] = { value: h };
+  };
+  var near = function (a, b) { return a !== null && Math.abs(a - b) < 1e-9; };
+
+  put('lat', 25, 19, 3, 'N');
+  ok('degrees, minutes and seconds convert', near(readDms('lat', 90), 25 + 19 / 60 + 3 / 3600),
+     String(readDms('lat', 90)));
+
+  /*
+   * The whole reason for the change. A dropped minus sign is invisible: the chart
+   * still draws, for a birth in the other hemisphere. A dropped letter cannot
+   * happen, because the select always holds one.
+   */
+  put('lat', 25, 19, 3, 'S');
+  ok('S negates, N does not', near(readDms('lat', 90), -(25 + 19 / 60 + 3 / 3600)));
+  put('lon', 82, 58, 26, 'W');
+  ok('W negates, E does not', near(readDms('lon', 180), -(82 + 58 / 60 + 26 / 3600)));
+  put('lon', 82, 58, 26, 'E');
+  ok('and east is positive', near(readDms('lon', 180), 82 + 58 / 60 + 26 / 3600));
+
+  put('lat', 23, '', '', 'N');
+  ok('minutes and seconds may be left empty', near(readDms('lat', 90), 23));
+  put('lat', 23.55, '', '', 'N');
+  ok('a decimal in the degrees box on its own still works', near(readDms('lat', 90), 23.55));
+  put('lat', 23.55, 30, '', 'N');
+  ok('but a decimal mixed with minutes is refused rather than guessed',
+     readDms('lat', 90) === null);
+
+  put('lat', '', '', '', 'N');
+  ok('nothing typed reads as nothing', readDms('lat', 90) === null);
+  put('lat', 25, 60, 0, 'N');
+  ok('sixty minutes is refused', readDms('lat', 90) === null);
+  put('lat', 25, 0, 60, 'N');
+  ok('sixty seconds too', readDms('lat', 90) === null);
+  put('lat', -25, 0, 0, 'N');
+  ok('a negative degree is refused, since the letter carries the sign',
+     readDms('lat', 90) === null);
+  put('lat', 90, 0, 1, 'N');
+  ok('past the pole is refused', readDms('lat', 90) === null);
+  put('lon', 180, 0, 1, 'E');
+  ok('and past the antimeridian', readDms('lon', 180) === null);
+  put('lat', 90, 0, 0, 'S');
+  ok('but the pole itself is fine', near(readDms('lat', 90), -90));
+})();
+
+ok('the signed decimal boxes are gone, hints and all',
+   !/id="manual-lat"/.test(html) && !/id="manual-lon"/.test(html) &&
+   !/north positive/.test(html) && !/east positive/.test(html));
+ok('latitude offers N and S, longitude E and W', (function () {
+  var block = function (id) {
+    var at = html.indexOf('id="' + id + '"');
+    return html.slice(at, html.indexOf('</select>', at));
+  };
+  return /value="N"/.test(block('manual-lat-h')) && /value="S"/.test(block('manual-lat-h')) &&
+    /value="E"/.test(block('manual-lon-h')) && /value="W"/.test(block('manual-lon-h')) &&
+    !/value="E"/.test(block('manual-lat-h'));
+})());
+ok('the converted decimal is echoed back rather than worked out silently',
+   /id="lat-decimal"/.test(html) && /id="lon-decimal"/.test(html) &&
+   /function showDecimal/.test(appSrc) && /decimal\.toFixed\(4\)/.test(appSrc));
+ok('an unreadable coordinate says so instead of echoing a number',
+   /Not a coordinate that can be read/.test(appSrc) && /dms-bad/.test(appSrc));
+ok('resetting the form clears all six boxes and both hemispheres',
+   /document\.getElementById\('manual-' \+ which \+ '-' \+ part\)\.value = '';/.test(appSrc) &&
+   /which === 'lat' \? 'N' : 'E'/.test(appSrc));
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

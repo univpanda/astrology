@@ -114,18 +114,55 @@
         <legend>Manual coordinates</legend>
         <div class="manual-grid">
           <div class="field">
-            <label for="manual-lat">Latitude <span class="hint">north positive</span></label>
-            <input type="number" id="manual-lat" step="0.0001" min="-90" max="90" placeholder="25.3176">
+            <span class="dms-label" id="lat-label">Latitude</span>
+            <div class="dms-row" role="group" aria-labelledby="lat-label">
+              <label class="visually-hidden" for="manual-lat-d">Latitude degrees</label>
+              <input type="number" id="manual-lat-d" min="0" max="90" step="1" placeholder="25"
+                     inputmode="decimal" aria-describedby="lat-decimal">
+              <span class="dms-mark">&deg;</span>
+              <label class="visually-hidden" for="manual-lat-m">Latitude minutes</label>
+              <input type="number" id="manual-lat-m" min="0" max="59" step="1" placeholder="19">
+              <span class="dms-mark">&prime;</span>
+              <label class="visually-hidden" for="manual-lat-s">Latitude seconds</label>
+              <input type="number" id="manual-lat-s" min="0" max="59.999" step="any" placeholder="03">
+              <span class="dms-mark">&Prime;</span>
+              <label class="visually-hidden" for="manual-lat-h">North or south</label>
+              <select id="manual-lat-h">
+                <option value="N" selected>N</option>
+                <option value="S">S</option>
+              </select>
+            </div>
+            <p class="dms-decimal" id="lat-decimal" role="status"></p>
           </div>
           <div class="field">
-            <label for="manual-lon">Longitude <span class="hint">east positive</span></label>
-            <input type="number" id="manual-lon" step="0.0001" min="-180" max="180" placeholder="82.9739">
+            <span class="dms-label" id="lon-label">Longitude</span>
+            <div class="dms-row" role="group" aria-labelledby="lon-label">
+              <label class="visually-hidden" for="manual-lon-d">Longitude degrees</label>
+              <input type="number" id="manual-lon-d" min="0" max="180" step="1" placeholder="82"
+                     inputmode="decimal" aria-describedby="lon-decimal">
+              <span class="dms-mark">&deg;</span>
+              <label class="visually-hidden" for="manual-lon-m">Longitude minutes</label>
+              <input type="number" id="manual-lon-m" min="0" max="59" step="1" placeholder="58">
+              <span class="dms-mark">&prime;</span>
+              <label class="visually-hidden" for="manual-lon-s">Longitude seconds</label>
+              <input type="number" id="manual-lon-s" min="0" max="59.999" step="any" placeholder="26">
+              <span class="dms-mark">&Prime;</span>
+              <label class="visually-hidden" for="manual-lon-h">East or west</label>
+              <select id="manual-lon-h">
+                <option value="E" selected>E</option>
+                <option value="W">W</option>
+              </select>
+            </div>
+            <p class="dms-decimal" id="lon-decimal" role="status"></p>
           </div>
           <div class="field">
             <label for="manual-zone">Timezone</label>
             <select id="manual-zone"></select>
           </div>
         </div>
+        <p class="varga-note">Degrees, minutes and seconds, the way an atlas or a birth record
+          gives them, so there is no sign to get backwards. Minutes and seconds may be left
+          empty. A decimal typed into the degrees box on its own works too.</p>
       </fieldset>
     </div>
 
@@ -227,7 +264,7 @@
       rashi and in the navamsha, which is measured against D9 whichever division is on screen.
       It sharpens a graha rather than blessing it: a debilitated graha can be vargottama too.</p>
 
-    <div class="card">
+    <div class="card wide-card">
       <div class="tabs subtabs" role="tablist" aria-label="Graha tables">
         <button type="button" class="tab" role="tab" id="tab-table-a"
                 aria-controls="panel-table-a" aria-selected="true"></button>
@@ -249,7 +286,8 @@
             <thead>
               <tr>
                 <th scope="col">Graha</th><th scope="col">Motion</th>
-                <th scope="col">Rashi</th><th scope="col">Dignity</th>
+                <th scope="col">Rashi</th><th scope="col">House</th>
+                <th scope="col">Dignity</th><th scope="col">Vargottama</th>
                 <th scope="col">Dispositor</th><th scope="col">Longitude</th>
                 <th scope="col">Nakshatra</th><th scope="col">Pada</th>
                 <th scope="col">Lord / sub lord</th>
@@ -267,7 +305,8 @@
             <thead>
               <tr>
                 <th scope="col">Graha</th><th scope="col">Motion</th>
-                <th scope="col">Rashi</th><th scope="col">Dignity</th>
+                <th scope="col">Rashi</th><th scope="col">House</th>
+                <th scope="col">Dignity</th><th scope="col">Vargottama</th>
                 <th scope="col">Dispositor</th><th scope="col">Longitude</th>
                 <th scope="col">Nakshatra</th><th scope="col">Pada</th>
                 <th scope="col">Lord / sub lord</th>

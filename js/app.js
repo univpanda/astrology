@@ -247,7 +247,7 @@
     var show = manualFields.hidden;
     manualFields.hidden = !show;
     manualToggle.setAttribute('aria-expanded', String(show));
-    if (show) { selectedCity = null; document.getElementById('manual-lat').focus(); }
+    if (show) { selectedCity = null; document.getElementById('manual-lat-d').focus(); }
   });
 
   /* ------------------------------------------------------------ time field */
@@ -319,15 +319,72 @@
 
   /* ---------------------------------------------------------------- submit */
 
+  /**
+   * One coordinate, read as degrees, minutes, seconds and a hemisphere.
+   *
+   * This is the form an atlas, a panchang or a birth record gives, so it is the
+   * form that gets typed. Signed decimals were the field before, and a dropped
+   * minus is not a visible mistake: it silently moves the birth into the other
+   * hemisphere and the chart still looks plausible. A letter cannot be dropped.
+   *
+   * A decimal in the degrees box with the other two empty is still accepted,
+   * since that is how coordinates arrive from a map.
+   *
+   * Returns a signed decimal, or null if what is there cannot be read.
+   */
+  function readDms(which, maxDegrees) {
+    var value = function (part) { return document.getElementById('manual-' + which + '-' + part).value.trim(); };
+    var degText = value('d'), minText = value('m'), secText = value('s');
+    if (degText === '') return null;
+
+    var deg = +degText, min = minText === '' ? 0 : +minText, sec = secText === '' ? 0 : +secText;
+    if (!isFinite(deg) || !isFinite(min) || !isFinite(sec)) return null;
+    if (deg < 0 || min < 0 || sec < 0) return null;         // the hemisphere carries the sign
+    if (min >= 60 || sec >= 60) return null;
+    // A decimal in the degrees box is only meaningful on its own.
+    if (deg % 1 !== 0 && (minText !== '' || secText !== '')) return null;
+
+    var total = deg + min / 60 + sec / 3600;
+    if (total > maxDegrees) return null;
+    var hemisphere = document.getElementById('manual-' + which + '-h').value;
+    return hemisphere === 'S' || hemisphere === 'W' ? -total : total;
+  }
+
+  /*
+   * Echo the decimal back as it is typed. The conversion is the step where a
+   * mistake hides, so it is shown rather than done silently.
+   */
+  function showDecimal(which, maxDegrees) {
+    var out = document.getElementById(which === 'lat' ? 'lat-decimal' : 'lon-decimal');
+    var parts = ['d', 'm', 's'].map(function (part) {
+      return document.getElementById('manual-' + which + '-' + part).value.trim();
+    });
+    if (parts[0] === '') { out.textContent = ''; return; }
+    var decimal = readDms(which, maxDegrees);
+    out.textContent = decimal === null
+      ? 'Not a coordinate that can be read.'
+      : decimal.toFixed(4) + '\u00b0';
+    out.className = 'dms-decimal' + (decimal === null ? ' dms-bad' : '');
+  }
+
+  ['lat', 'lon'].forEach(function (which) {
+    var max = which === 'lat' ? 90 : 180;
+    ['d', 'm', 's', 'h'].forEach(function (part) {
+      document.getElementById('manual-' + which + '-' + part)
+        .addEventListener('input', function () { showDecimal(which, max); });
+      document.getElementById('manual-' + which + '-' + part)
+        .addEventListener('change', function () { showDecimal(which, max); });
+    });
+  });
+
   /** Where is the birth? Either a chosen city or the manual coordinates. */
   function resolvePlace() {
     if (selectedCity) return selectedCity;
     if (!manualFields.hidden) {
-      var lat = parseFloat(document.getElementById('manual-lat').value);
-      var lon = parseFloat(document.getElementById('manual-lon').value);
+      var lat = readDms('lat', 90);
+      var lon = readDms('lon', 180);
       var zone = document.getElementById('manual-zone').value;
-      if (isNaN(lat) || isNaN(lon)) return null;
-      if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
+      if (lat === null || lon === null) return null;
       return {
         name: placeInput.value.trim() || 'Custom location',
         region: '', nation: '', lat: lat, lon: lon, zone: zone, manual: true
@@ -648,43 +705,64 @@
         return { name: p.name, longitude: p.longitude, retrograde: p.retrograde };
       }));
 
+    /*
+     * House 1 is whatever the chart beside this table is rotated onto, worked out
+     * in the division on show so the two always agree. Counting from the
+     * ascendant while the chart is rotated onto the Moon would put every number
+     * in this column at odds with the picture above it.
+     */
+    var firstSign = positionOf(c.ascendant.longitude).sign;
+    if (set.reference && set.reference !== 'Ascendant') {
+      var anchor = c.planets.filter(function (p) { return p.name === set.reference; })[0];
+      if (anchor) firstSign = positionOf(anchor.longitude).sign;
+    }
+
     rows.forEach(function (r) {
       var v = positionOf(r.longitude);
       var nak = Astro.nakshatraOf(v.longitude);
-      /*
-       * Vargottama is read off the rashi longitude against the navamsha, so the
-       * flag holds steady as the division dropdown changes. The Motion column
-       * already spells out retrogression, so only [V] is needed here; the chart
-       * itself carries [R][V] together.
-       */
+      var house = ((v.sign - firstSign) % 12 + 12) % 12 + 1;
+      // Always D1 against D9, so this column alone does not move when the
+      // division dropdown does, unlike every other column here.
       var vargottama = Astro.isVargottama(r.longitude);
       var tr = document.createElement('tr');
       if (r.isAscendant) tr.className = 'ascendant-row';
+
       /*
-       * What a graha is comes before where it is: motion, sign, dignity and
-       * dispositor first, then the position that produced them.
+       * Cells are named rather than positional. They were indexed until this
+       * column was added, and inserting one in the middle silently moved the
+       * titles onto the wrong cells.
+       *
+       * What a graha is comes before where it is: motion, sign, house, dignity
+       * and dispositor first, then the position that produced them.
        */
-      [[r.name, null],
-       [r.isAscendant ? '\u2013' : (r.retrograde ? 'Retrograde' : 'Direct'), null],
-       [Astro.SIGNS[v.sign] + ' (' + Astro.SIGNS_SA[v.sign] + ')', null],
-       [(r.isAscendant ? '' : Astro.dignityOf(r.name, v.sign, v.degreeInSign)) || '\u2013', null],
-       [r.isAscendant ? Astro.SIGN_LORDS[v.sign] : dispositorOf(r.name, v.sign, positionsD1), 'dispositor'],
-       [dms(v.degreeInSign), 'longitude'],
-       [nak.name, null],
-       [String(nak.pada), 'numeric'],
-       [nak.lord + ' / ' + nak.subLord, null]
-      ].forEach(function (cell, i) {
-        var td = el(i === 0 ? 'th' : 'td', cell[1], cell[0]);
-        if (i === 0) td.setAttribute('scope', 'row');
-        if (i === 0 && vargottama) {
-          // A span so the flag can be dimmed without dimming the graha's name.
-          td.appendChild(el('span', 'flag', ' [V]'));
-          td.title = r.name + ' holds the same sign in the rashi and in the navamsha, so it ' +
-            'is vargottama. That sharpens whatever it already is, for better or for worse.';
-        }
-        if (i === 1 && r.retrograde) td.className = 'retro-flag';
-        if (i === 4 && !r.isAscendant) td.title = dispositorDetail(r.name, v.sign, positionsD1);
-        if (i === 5) td.title = 'Longitude ' + v.longitude.toFixed(4) + '\u00b0';
+      [{ text: r.name, header: true },
+       { text: r.isAscendant ? '\u2013' : (r.retrograde ? 'Retrograde' : 'Direct'),
+         cls: r.retrograde ? 'retro-flag' : null },
+       { text: Astro.SIGNS[v.sign] + ' (' + Astro.SIGNS_SA[v.sign] + ')' },
+       { text: String(house), cls: 'numeric',
+         title: 'Whole sign house, counted from ' +
+           (set.reference === 'Ascendant' ? 'the ascendant' : set.reference) +
+           ' in ' + (Astro.VARGAS.filter(function (x) { return x.division === set.division; })[0] || {}).name + '.' },
+       { text: (r.isAscendant ? '' : Astro.dignityOf(r.name, v.sign, v.degreeInSign)) || '\u2013' },
+       { text: vargottama ? 'Yes' : '\u2013',
+         cls: vargottama ? 'vargottama-yes' : null,
+         title: vargottama
+           ? r.name + ' holds the same sign in the rashi and in the navamsha, so it is ' +
+             'vargottama. Measured against D9 whatever division is on show, and it sharpens ' +
+             'whatever it already is rather than improving it.'
+           : r.name + ' sits in different signs in the rashi and the navamsha.' },
+       { text: r.isAscendant ? Astro.SIGN_LORDS[v.sign] : dispositorOf(r.name, v.sign, positionsD1),
+         cls: 'dispositor',
+         title: r.isAscendant ? null : dispositorDetail(r.name, v.sign, positionsD1) },
+       { text: dms(v.degreeInSign), cls: 'longitude',
+         title: 'Longitude ' + v.longitude.toFixed(4) + '\u00b0' },
+       { text: nak.name },
+       { text: String(nak.pada), cls: 'numeric' },
+       { text: nak.lord + ' / ' + nak.subLord }
+      ].forEach(function (cell) {
+        var td = el(cell.header ? 'th' : 'td', cell.cls, cell.text);
+        if (cell.header) td.setAttribute('scope', 'row');
+        if (cell.title) td.title = cell.title;
         tr.appendChild(td);
       });
       tbody.appendChild(tr);
@@ -772,6 +850,33 @@
    * reporting an exalted graha as a great friend's guest would hide the more
    * useful fact. The relation underneath is kept in the cell's title.
    */
+  /**
+   * What one cell of the grid is saying, in full.
+   *
+   * The hora answers to a different rule and so needs a different sentence: what
+   * the ordinary scale would call a great friend's sign is not the question there.
+   */
+  function dasavargaDetail(d, division, graha) {
+    if (division === 2) {
+      return graha + ' is in the ' + d.hora + '\u2019s hora, ' + Astro.SIGNS[d.sign] + '. ' +
+        'Parashara names Jupiter, the Sun and Mars as pronounced in the Sun\u2019s hora, and ' +
+        'the Moon, Venus and Saturn in the Moon\u2019s, with Mercury telling in both. ' +
+        'The Sun\u2019s hora tells in an odd rashi and the Moon\u2019s in an even one, ' +
+        'making this the ' + (d.strongerHalf ? 'telling' : 'weaker') + ' hora here. It is the ' +
+        ['first', 'second', 'third'][d.third] + ' third of the hora, where Parashara puts the ' +
+        'effect at ' + ['full', 'medium', 'nil'][d.third] + '.';
+    }
+    var text = 'D' + division + ': ' + Astro.SIGNS[d.sign] + ', ruled by ' + d.lord + '.';
+    if (d.viaProxy) {
+      text += ' Neither luminary rules a trimsamsa, so for this division ' + graha +
+        ' stands in as ' + d.viaProxy + ', which is what lets it hold one of its own.';
+    }
+    if (d.relationLabel && d.relationLabel !== d.label) {
+      text += ' On the seven-step varga scale that counts as ' + d.relationLabel.toLowerCase() + '.';
+    }
+    return text;
+  }
+
   function renderDasavarga(state) {
     var tbody = document.querySelector('#dasavarga-table tbody');
     tbody.innerHTML = '';
@@ -793,13 +898,7 @@
 
       cells.forEach(function (d, i) {
         var td = el('td', d ? 'dig dig-' + d.key : null, d ? d.label : '\u2013');
-        if (d) {
-          var where = Astro.SIGNS[d.sign] + ', ruled by ' + d.lord;
-          td.title = 'D' + Astro.DASAVARGA[i] + ': ' + where +
-            (d.relationLabel && d.relationLabel !== d.label
-              ? '. On the seven-step varga scale that counts as ' + d.relationLabel.toLowerCase() + '.'
-              : '.');
-        }
+        if (d) td.title = dasavargaDetail(d, Astro.DASAVARGA[i], planet.name);
         tr.appendChild(td);
       });
       tbody.appendChild(tr);
@@ -808,12 +907,15 @@
     document.getElementById('dasavarga-note').textContent =
       'Dignity in each of the ten Dasavarga divisions, judged against the lord of the sign ' +
       'that division gives. The classical scale runs Mooltrikona, own sign, great friend, ' +
-      'friend, neutral, enemy, great enemy, and vimsopaka bala scores it with D60 and D1 ' +
-      'weighted heaviest. Exaltation is not one of those seven steps, being measured by ' +
-      'uchcha bala instead, but it is shown here when it falls, as is debilitation; hover a ' +
-      'cell for the sign, its lord, and the seven-step reading underneath. Grahas are listed ' +
-      'as in the tables beside this one. Rahu and Ketu own no sign and keep no friendships, ' +
-      'so they are left out.';
+      'friend, neutral, enemy, great enemy, which Parashara scores as 20, 18, 15, 10, 7 and ' +
+      '5 out of twenty. Exaltation is not one of those steps, being measured by uchcha bala ' +
+      'instead, but it is shown here when it falls, as is debilitation. Two divisions cannot ' +
+      'take that scale at all and Parashara supplies his own rules, in chapter 7. The hora ' +
+      'yields only Cancer and Leo, so it is read by his list of which grahas tell in which ' +
+      'hora rather than by ownership. No luminary rules a trimsamsa, so in D30 the Sun ' +
+      'stands in as Mars and the Moon as Venus. Hover any cell for the sign, its lord and ' +
+      'the reading underneath. Grahas are listed as in the tables beside this one, and Rahu ' +
+      'and Ketu own no sign and keep no friendships, so they are left out.';
   }
 
   /* --------------------------------------------------------------- yogas */
@@ -1499,6 +1601,13 @@
     document.getElementById('celebrity').checked = false;
     document.getElementById('person-note').value = '';
     selectedCity = null;
+    ['lat', 'lon'].forEach(function (which) {
+      ['d', 'm', 's'].forEach(function (part) {
+        document.getElementById('manual-' + which + '-' + part).value = '';
+      });
+      document.getElementById('manual-' + which + '-h').value = which === 'lat' ? 'N' : 'E';
+      document.getElementById(which + '-decimal').textContent = '';
+    });
     manualFields.hidden = true;
     manualToggle.setAttribute('aria-expanded', 'false');
     errorBox.textContent = '';
