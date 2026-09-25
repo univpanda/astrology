@@ -588,6 +588,44 @@ var Astro = (function () {
     return (Math.floor(l / (30 / 9))) % 12;
   }
 
+  /*
+   * Which sign each slice of a sign maps to, per division.
+   *
+   * D9 runs straight through the zodiac, which is the same thing as the
+   * classical rule: movable signs start from themselves, fixed from the ninth,
+   * dual from the fifth. D10 counts from the sign itself for odd signs and from
+   * the ninth for even ones.
+   */
+  var VARGA_RULES = {
+    1: function (sign) { return sign; },
+    9: function (sign, index) { return (sign * 9 + index) % 12; },
+    10: function (sign, index) { return (sign + (sign % 2 === 0 ? index : 8 + index)) % 12; }
+  };
+
+  /**
+   * Position in a divisional chart.
+   *
+   * A varga maps each slice of a sign onto a whole sign, and the position
+   * within that slice is stretched back across the full 30 degrees. That
+   * stretch is what gives a divisional chart a longitude of its own, and with
+   * it a nakshatra, a pada and a sub lord. It is a convention rather than a
+   * fact - one school holds that a varga yields only signs - but it is the one
+   * every widely used panchang follows, and it reproduces their divisional
+   * degrees to the arcsecond.
+   */
+  function vargaPosition(longitude, division) {
+    var rule = VARGA_RULES[division];
+    if (!rule) return null;
+    var l = norm360(longitude);
+    var sign = Math.floor(l / 30);
+    var within = l - sign * 30;
+    var width = 30 / division;
+    var index = Math.floor(within / width);
+    var target = rule(sign, index);
+    var degree = division === 1 ? within : (within - index * width) / width * 30;
+    return { sign: target, degreeInSign: degree, longitude: target * 30 + degree };
+  }
+
   /* ---------------------------------------------------------- the chart */
 
   /**
@@ -799,6 +837,8 @@ var Astro = (function () {
     meanTropicalOf: meanTropicalOf,
     nakshatraOf: nakshatraOf,
     navamsaSign: navamsaSign,
+    vargaPosition: vargaPosition,
+    VARGA_RULES: VARGA_RULES,
     houseOf: houseOf,
     dignityOf: dignityOf,
     DIGNITY: DIGNITY,

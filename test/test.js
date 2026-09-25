@@ -473,6 +473,56 @@ console.log('\nWhat a second of clock time is worth');
      'day ' + withSeconds.d + ', ' + withSeconds.hours.toFixed(4) + 'h');
 })();
 
+console.log('\nDivisional longitudes');
+/*
+ * A varga maps a slice of a sign onto a whole sign, and the position inside the
+ * slice is stretched back across 30 degrees. That stretch is what gives a
+ * divisional chart a longitude, and so a nakshatra and a pada, of its own.
+ *
+ * The check against a published chart: New Delhi at the moment whose D1
+ * ascendant is Aquarius 20 37' 55" has a D10 ascendant of Leo 26 19' 16".
+ */
+(function () {
+  var target = 300 + 20 + 37 / 60 + 55 / 3600;
+  var lo = A.julianDay(2026, 9, 25, 17.3 - 5.5), hi = lo + 600 / 86400;
+  for (var i = 0; i < 60; i++) {
+    var mid = (lo + hi) / 2;
+    if (A.chart({ jdUT: mid, latitude: 28.6139, longitude: 77.2090 }).ascendant.longitude < target) lo = mid;
+    else hi = mid;
+  }
+  var asc = A.chart({ jdUT: (lo + hi) / 2, latitude: 28.6139, longitude: 77.2090 }).ascendant.longitude;
+  var d10 = A.vargaPosition(asc, 10);
+  check('D10 ascendant for a published D1 of Aquarius 20 37 55',
+        d10.sign * 30 + d10.degreeInSign, 120 + 26 + 19 / 60 + 16 / 3600, 30 / 3600, 'deg');
+})();
+
+ok('D1 is the identity', (function () {
+  var v = A.vargaPosition(47.5, 1);
+  return v.sign === 1 && Math.abs(v.degreeInSign - 17.5) < 1e-12;
+})());
+ok('the varga sign agrees with navamsaSign everywhere', (function () {
+  for (var d = 0; d < 360; d += 0.017) {
+    if (A.vargaPosition(d, 9).sign !== A.navamsaSign(d)) return false;
+  }
+  return true;
+})());
+ok('each navamsa fills exactly one sign', (function () {
+  // 3 deg 20' of D1 has to stretch to 30 deg of D9, and land back at 0.
+  var start = A.vargaPosition(0.0000001, 9), end = A.vargaPosition(30 / 9 - 0.0000001, 9);
+  var next = A.vargaPosition(30 / 9 + 0.0000001, 9);
+  return start.degreeInSign < 0.001 && end.degreeInSign > 29.999 &&
+         next.sign === (start.sign + 1) % 12 && next.degreeInSign < 0.001;
+})());
+ok('a stretched longitude stays inside its sign', (function () {
+  for (var d = 0; d < 360; d += 0.013) {
+    var v = A.vargaPosition(d, 9);
+    if (v.degreeInSign < 0 || v.degreeInSign >= 30) return false;
+    if (Math.abs(v.longitude - (v.sign * 30 + v.degreeInSign)) > 1e-9) return false;
+  }
+  return true;
+})());
+ok('an unknown division returns nothing rather than guessing', A.vargaPosition(10, 7) === null);
+
 console.log('\nNakshatra sub lords (KP)');
 /*
  * Each nakshatra splits into nine unequal subs, in Vimshottari order and

@@ -531,34 +531,46 @@
   }
 
   /**
-   * The navamsa table. Degrees, nakshatras and padas are not repeated here: a
-   * divisional chart re-reads the same longitudes on a finer scale, so those
-   * belong to D1 and only the rashi a graha falls in changes.
+   * The navamsa table, carrying the same columns as D1 because a divisional
+   * chart has the same kinds of fact in it. Its longitudes are the stretched
+   * ones from Astro.vargaPosition, so the nakshatra, pada and sub lord are D9's
+   * own rather than D1's repeated.
+   *
+   * Two things are not re-derived. Retrogression belongs to the graha, not the
+   * division. And the house is counted from the D9 ascendant, since using the
+   * D1 one in a varga table is a quiet way to be wrong in every row.
    */
   function renderNavamsa(c) {
     var tbody = document.querySelector('#navamsa-table tbody');
     tbody.innerHTML = '';
-    var ascSign = Astro.navamsaSign(c.ascendant.longitude);
+    var ascVarga = Astro.vargaPosition(c.ascendant.longitude, 9);
 
-    var rows = [{ name: 'Ascendant', sign: ascSign, isAscendant: true }].concat(
-      c.planets.map(function (p) { return { name: p.name, sign: p.navamsaSign, retrograde: p.retrograde }; }));
+    var rows = [{ name: 'Ascendant', longitude: c.ascendant.longitude, isAscendant: true }]
+      .concat(c.planets.map(function (p) {
+        return { name: p.name, longitude: p.longitude, retrograde: p.retrograde };
+      }));
 
     rows.forEach(function (r) {
+      var v = Astro.vargaPosition(r.longitude, 9);
+      var nak = Astro.nakshatraOf(v.longitude);
       var tr = document.createElement('tr');
       if (r.isAscendant) tr.className = 'ascendant-row';
-      // Dignity is read afresh against the D9 sign, which is the point of
-      // looking at a divisional chart at all. Without a degree inside that sign
-      // Mooltrikona cannot be told from own sign, so it is not claimed here.
-      var dignity = r.isAscendant ? '' : Astro.dignityOf(r.name, r.sign, null);
-      if (dignity === 'Mooltrikona') dignity = 'Own sign';
-      [[r.name, null],
-       [Astro.SIGNS[r.sign] + ' (' + Astro.SIGNS_SA[r.sign] + ')', null],
-       [String(((r.sign - ascSign) % 12 + 12) % 12 + 1), 'numeric'],
-       [Astro.SIGN_LORDS[r.sign], null],
-       [dignity || '\u2013', null]
-      ].forEach(function (cell, i) {
+      var cells = [
+        [r.name, null],
+        [dms(v.degreeInSign), 'longitude'],
+        [Astro.SIGNS[v.sign] + ' (' + Astro.SIGNS_SA[v.sign] + ')', null],
+        [String(((v.sign - ascVarga.sign) % 12 + 12) % 12 + 1), 'numeric'],
+        [nak.name, null],
+        [String(nak.pada), 'numeric'],
+        [nak.lord + ' / ' + nak.subLord, null],
+        [r.isAscendant ? '\u2013' : (r.retrograde ? 'Retrograde' : 'Direct'), null],
+        [(r.isAscendant ? '' : Astro.dignityOf(r.name, v.sign, v.degreeInSign)) || '\u2013', null]
+      ];
+      cells.forEach(function (cell, i) {
         var td = el(i === 0 ? 'th' : 'td', cell[1], cell[0]);
         if (i === 0) td.setAttribute('scope', 'row');
+        if (i === 1) td.title = 'Navamsa longitude ' + v.longitude.toFixed(4) + '\u00b0';
+        if (i === 7 && r.retrograde) td.className = 'retro-flag';
         tr.appendChild(td);
       });
       tbody.appendChild(tr);

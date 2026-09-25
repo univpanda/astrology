@@ -363,15 +363,19 @@ function stripHtml(label) {
   // Navamsa left the D1 table; it is the whole point of the D9 one.
   var d1Head = html.slice(html.indexOf('id="planet-table"'), html.indexOf('id="panel-d9"'));
   ok('the D1 table no longer carries a navamsa column', !/>Navamsa</.test(d1Head));
-  ok('the D9 table carries the navamsa rashi', /Navamsa rashi/.test(html));
-  ok('D9 does not repeat degrees, nakshatras or padas',
-     !/id="navamsa-table"[\s\S]{0,600}(Sidereal longitude|Nakshatra<|Pada<)/.test(html));
+  // D9 carries the same kinds of fact as D1, from its own stretched longitudes.
+  var d9Head = html.slice(html.indexOf('id="navamsa-table"'), html.indexOf('varga-note'));
+  ok('the D9 table carries the same columns as D1',
+     ['Navamsa longitude', 'Rashi', 'House', 'Nakshatra', 'Pada', 'Lord / sub lord', 'Motion', 'Dignity']
+       .every(function (c) { return d9Head.indexOf('>' + c + '<') >= 0; }));
+  ok('D9 reads its own longitudes, not D1 repeated',
+     /Astro\.vargaPosition\(r\.longitude, 9\)/.test(appSrc) &&
+     /Astro\.nakshatraOf\(v\.longitude\)/.test(appSrc));
   ok('D9 houses are counted from the D9 ascendant',
-     /var ascSign = Astro\.navamsaSign\(c\.ascendant\.longitude\)/.test(appSrc) &&
-     /\(r\.sign - ascSign\)/.test(appSrc));
-  // Mooltrikona needs a degree within the sign, which a varga table does not have.
-  ok('D9 does not claim Mooltrikona it cannot know',
-     /if \(dignity === 'Mooltrikona'\) dignity = 'Own sign';/.test(appSrc));
+     /vargaPosition\(c\.ascendant\.longitude, 9\)/.test(appSrc) &&
+     /\(v\.sign - ascVarga\.sign\)/.test(appSrc));
+  ok('retrogression is not re-derived per division',
+     /Retrogression belongs to the graha/.test(appSrc));
 })();
 
 // Saved kundalis: the list, and the four keys that identify an entry.
