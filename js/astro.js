@@ -491,15 +491,25 @@ var Astro = (function () {
   var VARAS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   var VARA_LORDS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
 
-  // Exaltation degree and debilitation sign, for the dignity column.
+  /*
+   * Dignity depends on the degree, not just the sign, which is why this table
+   * carries ranges. Two grahas stack three dignities inside one sign: Mercury in
+   * Virgo is exalted to 15 degrees, Mooltrikona to 20, and in its own sign
+   * beyond; the Moon is exalted through the first 3 degrees of Taurus and
+   * Mooltrikona for the rest of it.
+   *
+   * `exalt.to` is 30 for the grahas whose whole exaltation sign counts, and
+   * `exalt.deep` is the point of deepest exaltation, kept because it is what
+   * strength calculations use even though the column does not show it.
+   */
   var DIGNITY = {
-    Sun: { exalt: 0, debil: 6, own: [4] },
-    Moon: { exalt: 1, debil: 7, own: [3] },
-    Mars: { exalt: 9, debil: 3, own: [0, 7] },
-    Mercury: { exalt: 5, debil: 11, own: [2, 5] },
-    Jupiter: { exalt: 3, debil: 9, own: [8, 11] },
-    Venus: { exalt: 11, debil: 5, own: [1, 6] },
-    Saturn: { exalt: 6, debil: 0, own: [9, 10] }
+    Sun: { exalt: { sign: 0, to: 30, deep: 10 }, debil: 6, own: [4], mool: { sign: 4, from: 0, to: 20 } },
+    Moon: { exalt: { sign: 1, to: 3, deep: 3 }, debil: 7, own: [3], mool: { sign: 1, from: 3, to: 30 } },
+    Mars: { exalt: { sign: 9, to: 30, deep: 28 }, debil: 3, own: [0, 7], mool: { sign: 0, from: 0, to: 12 } },
+    Mercury: { exalt: { sign: 5, to: 15, deep: 15 }, debil: 11, own: [2, 5], mool: { sign: 5, from: 15, to: 20 } },
+    Jupiter: { exalt: { sign: 3, to: 30, deep: 5 }, debil: 9, own: [8, 11], mool: { sign: 8, from: 0, to: 10 } },
+    Venus: { exalt: { sign: 11, to: 30, deep: 27 }, debil: 5, own: [1, 6], mool: { sign: 6, from: 0, to: 15 } },
+    Saturn: { exalt: { sign: 6, to: 30, deep: 20 }, debil: 0, own: [9, 10], mool: { sign: 10, from: 0, to: 20 } }
   };
 
   function signOf(lon) { return Math.floor(norm360(lon) / 30); }
@@ -518,10 +528,23 @@ var Astro = (function () {
     };
   }
 
-  function dignityOf(planet, sign) {
+  /**
+   * Dignity of a graha at a position.
+   *
+   * Order matters where a sign holds more than one: Mooltrikona is checked
+   * before exaltation, because the Moon past 3 degrees of Taurus and Mercury
+   * between 15 and 20 of Virgo are Mooltrikona rather than still exalted.
+   *
+   * Rahu and Ketu are left blank. They have no universally agreed exaltation -
+   * the usual candidates contradict each other - and inventing one here would
+   * put a number on a disagreement.
+   */
+  function dignityOf(planet, sign, degreeInSign) {
     var d = DIGNITY[planet];
     if (!d) return '';
-    if (sign === d.exalt) return 'Exalted';
+    var deg = degreeInSign || 0;
+    if (d.mool && sign === d.mool.sign && deg >= d.mool.from && deg < d.mool.to) return 'Mooltrikona';
+    if (sign === d.exalt.sign && deg < d.exalt.to) return 'Exalted';
     if (sign === d.debil) return 'Debilitated';
     if (d.own.indexOf(sign) >= 0) return 'Own sign';
     return '';
@@ -672,7 +695,7 @@ var Astro = (function () {
       speed: speed,
       // Rahu and Ketu are always taken as retrograde in Vedic practice.
       retrograde: name === 'Rahu' || name === 'Ketu' ? true : speed < 0,
-      dignity: dignityOf(name, sign),
+      dignity: dignityOf(name, sign, lon - sign * 30),
       navamsaSign: nav,
       navamsaSignName: SIGNS[nav]
     };
@@ -745,6 +768,8 @@ var Astro = (function () {
     nakshatraOf: nakshatraOf,
     navamsaSign: navamsaSign,
     houseOf: houseOf,
+    dignityOf: dignityOf,
+    DIGNITY: DIGNITY,
     signOf: signOf,
     norm360: norm360,
     SIGNS: SIGNS,

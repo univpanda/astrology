@@ -473,6 +473,46 @@ console.log('\nWhat a second of clock time is worth');
      'day ' + withSeconds.d + ', ' + withSeconds.hours.toFixed(4) + 'h');
 })();
 
+console.log('\nDignities');
+/*
+ * Dignity turns on the degree, not just the sign. Two grahas stack three
+ * dignities inside a single sign, and those are the cases worth pinning: the
+ * Moon through and past 3 degrees of Taurus, and Mercury across 15 and 20 of
+ * Virgo.
+ */
+[['Sun', 0, 5, 'Exalted'], ['Sun', 4, 10, 'Mooltrikona'], ['Sun', 4, 25, 'Own sign'], ['Sun', 6, 15, 'Debilitated'],
+ ['Moon', 1, 2, 'Exalted'], ['Moon', 1, 20, 'Mooltrikona'], ['Moon', 3, 10, 'Own sign'], ['Moon', 7, 10, 'Debilitated'],
+ ['Mercury', 5, 10, 'Exalted'], ['Mercury', 5, 18, 'Mooltrikona'], ['Mercury', 5, 25, 'Own sign'], ['Mercury', 11, 5, 'Debilitated'],
+ ['Mars', 0, 6, 'Mooltrikona'], ['Mars', 0, 20, 'Own sign'], ['Mars', 9, 28, 'Exalted'], ['Mars', 3, 10, 'Debilitated'],
+ ['Jupiter', 8, 5, 'Mooltrikona'], ['Jupiter', 8, 20, 'Own sign'], ['Jupiter', 3, 5, 'Exalted'], ['Jupiter', 9, 10, 'Debilitated'],
+ ['Venus', 6, 10, 'Mooltrikona'], ['Venus', 6, 20, 'Own sign'], ['Venus', 11, 27, 'Exalted'], ['Venus', 5, 10, 'Debilitated'],
+ ['Saturn', 10, 10, 'Mooltrikona'], ['Saturn', 10, 25, 'Own sign'], ['Saturn', 6, 20, 'Exalted'], ['Saturn', 0, 5, 'Debilitated']
+].forEach(function (t) {
+  var got = A.dignityOf(t[0], t[1], t[2]);
+  ok(t[0] + ' at ' + A.SIGNS[t[1]] + ' ' + t[2] + ' is ' + t[3], got === t[3], got || '(none)');
+});
+ok('an ordinary placement has no dignity', A.dignityOf('Sun', 2, 15) === '', A.dignityOf('Sun', 2, 15) || '(none)');
+ok('the nodes are left without one', A.dignityOf('Rahu', 1, 10) === '' && A.dignityOf('Ketu', 7, 10) === '');
+// Exaltation and debilitation always sit opposite each other.
+ok('every debilitation faces its exaltation', Object.keys(A.DIGNITY).every(function (graha) {
+  var d = A.DIGNITY[graha];
+  return (d.exalt.sign + 6) % 12 === d.debil;
+}));
+// A graha's Mooltrikona sign is always one it owns, except the Moon's.
+ok('Mooltrikona falls in a sign the graha owns, the Moon excepted',
+   Object.keys(A.DIGNITY).every(function (graha) {
+     var d = A.DIGNITY[graha];
+     return graha === 'Moon' || d.own.indexOf(d.mool.sign) >= 0;
+   }));
+// Every graha reports each of the four dignities somewhere in the zodiac.
+ok('all four dignities are reachable for every graha', Object.keys(A.DIGNITY).every(function (graha) {
+  var seen = {};
+  for (var sign = 0; sign < 12; sign++) {
+    for (var deg = 0; deg < 30; deg++) seen[A.dignityOf(graha, sign, deg)] = true;
+  }
+  return seen.Exalted && seen.Debilitated && seen.Mooltrikona && seen['Own sign'];
+}));
+
 console.log('\nZodiac helpers');
 ok('nakshatra 0 deg = Ashwini pada 1', A.nakshatraOf(0).name === 'Ashwini' && A.nakshatraOf(0).pada === 1);
 ok('nakshatra 359.9 = Revati pada 4', A.nakshatraOf(359.9).name === 'Revati' && A.nakshatraOf(359.9).pada === 4);
