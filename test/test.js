@@ -1306,6 +1306,29 @@ ok('the Moon debilitated outside a kendra cancels on nothing self-referential', 
  * cancellation conditions land on one graha and read as a repetition if reported
  * separately. They are still two conditions, so they are said as two in one clause.
  */
+/*
+ * A role is worth stating the first time a graha appears and not after. Repeating
+ * it reads as a stammer - "Mars, the lord of this sign, is in a kendra; and Mars,
+ * the lord of this sign, aspects Moon" - and dropping it entirely would leave the
+ * reader working out who Mars is to the Moon.
+ */
+ok('a graha\'s role is stated once, however many clauses it appears in', (function () {
+  var lagna = 1;                                   // Taurus, so Scorpio is the 7th
+  var house = function (sign) { return ((sign - lagna) % 12 + 12) % 12 + 1; };
+  var body = function (name, sign, deg) {
+    return { name: name, sign: sign, longitude: sign * 30 + deg, house: house(sign) };
+  };
+  var chart = { ascendant: { longitude: lagna * 30 + 10 }, planets: [
+    body('Moon', 7, 12),                           // debilitated in Scorpio, the 7th
+    body('Mars', 4, 10)] };                        // Leo, a kendra, and aspecting Scorpio
+  var f = Yogas.neechaBhanga(chart)[0];
+  if (!f || f.reasons.length < 2) return false;
+  var withRole = f.reasons.filter(function (r) { return /the lord of this sign/.test(r); });
+  var aboutMars = f.reasons.filter(function (r) { return /^Mars/.test(r); });
+  return aboutMars.length >= 2 && withRole.length === 1 &&
+    /^Mars, the lord of this sign,/.test(aboutMars[0]) && /^Mars aspects Moon$/.test(aboutMars[1]);
+})());
+
 ok('where one graha both rules the sign and is exalted in it, it is said once', (function () {
   var lagna = 0;
   var chart = { ascendant: { longitude: 10 }, planets: [

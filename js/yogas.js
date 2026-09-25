@@ -150,7 +150,25 @@ var Yogas = (function () {
        */
       var reasons = [];
       var from;
-      var ruler = dispositor + ', the lord of this sign,';
+
+      /*
+       * A graha's role is worth stating the first time it appears and not after.
+       * Repeating it reads as a stammer - "Mars, the lord of this sign, is in a
+       * kendra; and Mars, the lord of this sign, aspects Moon" - while dropping
+       * it entirely would leave the reader working out who Mars is to the Moon.
+       * Subject and object forms differ only in the closing comma.
+       */
+      var namedRuler = false, namedExalted = false;
+      var ruler = function (subject) {
+        if (namedRuler) return dispositor;
+        namedRuler = true;
+        return dispositor + ', the lord of this sign' + (subject ? ',' : '');
+      };
+      var exalted = function (subject) {
+        if (namedExalted) return exaltedHere;
+        namedExalted = true;
+        return exaltedHere + ', exalted in this sign' + (subject ? ',' : '');
+      };
 
       /*
        * In Virgo the lord and the graha exalted there are both Mercury, so the two
@@ -161,25 +179,26 @@ var Yogas = (function () {
       var bothRoles = exaltedHere === dispositor;
       if ((from = inKendraFromEither(
             positions[dispositor] ? positions[dispositor].sign : -1, dispositor))) {
+        if (bothRoles) { namedRuler = true; namedExalted = true; }
         reasons.push(bothRoles
           ? dispositor + ', which both rules this sign and is exalted in it, is in a kendra ' +
             'from ' + from
-          : ruler + ' is in a kendra from ' + from);
+          : ruler(true) + ' is in a kendra from ' + from);
       }
       if (!bothRoles && exaltedHere && positions[exaltedHere] &&
           (from = inKendraFromEither(positions[exaltedHere].sign, exaltedHere))) {
-        reasons.push(exaltedHere + ', exalted in this sign, is in a kendra from ' + from);
+        reasons.push(exalted(true) + ' is in a kendra from ' + from);
       }
       if (positions[dispositor] && positions[dispositor].sign === p.sign) {
-        reasons.push(graha + ' is conjunct ' + ruler.replace(/,$/, ''));
+        reasons.push(graha + ' is conjunct ' + ruler(false));
       }
       if (positions[dispositor] &&
           aspects(dispositor, positions[dispositor].sign, p.sign)) {
-        reasons.push(ruler + ' aspects ' + graha);
+        reasons.push(ruler(true) + ' aspects ' + graha);
       }
       if (exaltedHere && positions[exaltedHere] &&
           aspects(exaltedHere, positions[exaltedHere].sign, p.sign)) {
-        reasons.push(exaltedHere + ', exalted in this sign, aspects ' + graha);
+        reasons.push(exalted(true) + ' aspects ' + graha);
       }
       if (positions[dispositor] &&
           Astro.SIGN_LORDS[positions[dispositor].sign] === graha) {
