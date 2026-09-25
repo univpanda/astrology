@@ -521,9 +521,9 @@ ok('a chart with no yoga makes no request for one',
  */
 ok('the page says which yogas it looks for, and the list is current', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');
-  var named = ['Parivartana', 'neecha bhanga', 'vipareeta raja', 'Lakshmi'];
+  var named = ['Parivartana', 'neecha bhanga', 'vipareeta raja', 'Lakshmi', 'Mahapurusha'];
   return named.every(function (n) { return flat.indexOf(n) >= 0; }) &&
-    /Parivartana, neecha bhanga, vipareeta raja and Lakshmi yoga are checked/.test(flat) &&
+    /Parivartana, neecha bhanga, vipareeta raja, Lakshmi and the five Mahapurusha yogas are checked/.test(flat) &&
     named.length === Yogas.DETECTOR_COUNT;
 })(), Yogas.DETECTOR_COUNT + ' detectors');
 ok('and the yoga check is handed the strengths it needs',

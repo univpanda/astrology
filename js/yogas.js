@@ -448,7 +448,78 @@ var Yogas = (function () {
     }];
   }
 
-  var DETECTORS = [parivartana, neechaBhanga, vipareeta, lakshmi];
+  /*
+   * Chapter 75, verses 1-2: "When Mars, Mercury, Jupiter, Venus and Saturn being
+   * in their own sign or in their sign of exaltation, be in Kendra to the
+   * Ascendant, they give rise to Ruchaka, Bhadra, Hamsa, Malavya and Sasa yogas
+   * respectively."
+   *
+   * One rule with five names, so it is one detector. Malavya is Venus's case and
+   * differs from Sasa or Hamsa in nothing but which graha stands there.
+   *
+   * The luminaries are not in it. The text lists the five taras and stops, and
+   * that is the whole membership rather than an omission to be tidied up.
+   */
+  var MAHAPURUSHA = {
+    Mars: 'Ruchaka', Mercury: 'Bhadra', Jupiter: 'Hamsa',
+    Venus: 'Malavya', Saturn: 'Sasa'
+  };
+
+  var MAHAPURUSHA_ABOUT = {
+    Ruchaka: 'the warrior', Bhadra: 'the scholar', Hamsa: 'the teacher',
+    Malavya: 'the refined', Sasa: 'the ruler'
+  };
+
+  /**
+   * The five Mahapurusha yogas.
+   *
+   * "Own sign or exaltation", with no mention of moolatrikona - which costs
+   * nothing, because all five of these grahas have their moolatrikona inside a
+   * sign they already own. Only the Moon's lies outside its own signs, and the
+   * Moon is not one of the five. A test holds that, since the day it stopped
+   * being true the wording would quietly start excluding placements.
+   *
+   * Kendra to the ascendant, as the text says. Many modern readings also allow a
+   * kendra from the Moon; that is not what is written here, so it is not counted.
+   */
+  function mahapurusha(chart) {
+    var lagna = Astro.signOf(chart.ascendant.longitude);
+    var found = [];
+
+    chart.planets.forEach(function (p) {
+      var name = MAHAPURUSHA[p.name];
+      if (!name) return;
+      if (KENDRAS.indexOf(p.house) < 0) return;
+      var dignity = Astro.dignityOf(p.name, p.sign, p.longitude % 30);
+      if (DIGNIFIED.indexOf(dignity) < 0) return;
+
+      var seat = dignity === 'Exalted' ? 'its exaltation sign'
+        : dignity === 'Mooltrikona' ? 'its moolatrikona, inside a sign it owns'
+        : 'its own sign';
+
+      found.push({
+        yoga: 'Pancha Mahapurusha Yoga',
+        kind: name.toLowerCase(),
+        subject: 'Pancha Mahapurusha Yoga',
+        condition: name.toLowerCase(),
+        title: name + ' yoga',
+        family: 'Pancha Mahapurusha yoga',
+        grahas: [p.name],
+        houses: [p.house],
+        reasons: [
+          p.name + ' stands in ' + Astro.SIGNS[p.sign] + ', ' + seat + ', and in the ' +
+            ordinal(p.house) + ' - a kendra from the lagna, which is what the rule asks',
+          'the yoga takes its name from the graha: ' + p.name + ' gives ' + name +
+            ', ' + MAHAPURUSHA_ABOUT[name]
+        ],
+        summary: p.name + ' is in ' + seat + ' in the ' + ordinal(p.house) +
+          ', a kendra, which is ' + name + ' yoga.'
+      });
+    });
+    return found;
+  }
+
+  var DETECTORS = [parivartana, neechaBhanga, vipareeta, lakshmi, mahapurusha];
 
   /**
    * Every yoga this module knows how to look for, in one pass.
@@ -466,7 +537,8 @@ var Yogas = (function () {
   }
 
   return { detect: detect, parivartana: parivartana, neechaBhanga: neechaBhanga,
-    vipareeta: vipareeta, lakshmi: lakshmi, VIPAREETA_NAMES: VIPAREETA_NAMES,
+    vipareeta: vipareeta, lakshmi: lakshmi, mahapurusha: mahapurusha,
+    VIPAREETA_NAMES: VIPAREETA_NAMES, MAHAPURUSHA: MAHAPURUSHA,
     KENDRAS: KENDRAS,
     // Exposed so a test can notice a detector being added without being wired
     // into the test that checks detect() gathers from all of them.

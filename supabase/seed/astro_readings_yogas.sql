@@ -181,3 +181,72 @@ on conflict (topic, subject, condition) do update set
   note = excluded.note,
   sort_order = excluded.sort_order,
   updated_at = now();
+
+-- The five Mahapurusha yogas. One rule with five names, so they are one subject
+-- in five conditions plus a general passage, the way parivartana is handled.
+
+insert into astro_readings (topic, subject, condition, heading, points, note, sort_order) values
+('yoga', 'Pancha Mahapurusha Yoga', 'general',
+ 'The five Mahapurusha yogas',
+ array[
+   'Parashara states all five in a single sentence, chapter 75: "When Mars, Mercury, Jupiter, Venus and Saturn being in their own sign or in their sign of exaltation, be in Kendra to the Ascendant, they give rise to Ruchaka, Bhadra, Hamsa, Malavya and Sasa yogas respectively."',
+   'So there is one rule, not five. A graha of the five standing in its own sign or its exaltation, in the 1st, 4th, 7th or 10th from the lagna. The name follows from which graha it was.',
+   'The luminaries are not included. The text lists the five taras and stops; a Sun exalted in a kendra forms nothing here, however strong it looks.',
+   'Moolatrikona is not mentioned, and costs nothing by its absence: all five of these grahas have their moolatrikona inside a sign they already own. Only the Moon''s lies outside its own sign, and the Moon is not one of the five.',
+   'The text says kendra to the Ascendant. Many modern readings allow a kendra from the Moon as well, which makes the yoga far commoner; that is not what is written, and is not counted here.',
+   'A mahapurusha is a "great person", and the yoga is read as a cast of character rather than a piece of luck - it says what kind of person, not what happens to them.'
+ ],
+ 'Each of the five follows below, by the graha that causes it.', 50),
+
+('yoga', 'Pancha Mahapurusha Yoga', 'ruchaka',
+ 'Ruchaka - Mars in its own sign or exaltation, in a kendra',
+ array[
+   'Mars in Aries or Scorpio, or exalted in Capricorn, standing in the 1st, 4th, 7th or 10th.',
+   'Read as the soldier''s make: physical courage, command, a taste for difficulty, and a willingness to be disliked for it.',
+   'Mars gives the yoga its edge. The same placement that makes for resolve makes for temper, and the classical descriptions do not pretend otherwise.'
+ ],
+ null, 51),
+
+('yoga', 'Pancha Mahapurusha Yoga', 'bhadra',
+ 'Bhadra - Mercury in its own sign or exaltation, in a kendra',
+ array[
+   'Mercury in Gemini or Virgo, standing in the 1st, 4th, 7th or 10th. Virgo is both its own sign and its exaltation, so Mercury reaches this yoga more readily than the others.',
+   'Read as the scholar''s make: quickness, speech, analysis, and a memory that holds detail.',
+   'Bhadra means auspicious or fair, and the descriptions run to learning and to being listened to rather than to wealth.'
+ ],
+ null, 52),
+
+('yoga', 'Pancha Mahapurusha Yoga', 'hamsa',
+ 'Hamsa - Jupiter in its own sign or exaltation, in a kendra',
+ array[
+   'Jupiter in Sagittarius or Pisces, or exalted in Cancer, standing in the 1st, 4th, 7th or 10th.',
+   'Read as the teacher''s make: judgement, generosity, a reputation for fairness, and the standing that follows from it.',
+   'The hamsa is the swan of the tradition, which is said to separate milk from water - the discrimination the yoga is named for.'
+ ],
+ null, 53),
+
+('yoga', 'Pancha Mahapurusha Yoga', 'malavya',
+ 'Malavya - Venus in its own sign or exaltation, in a kendra',
+ array[
+   'Venus in Taurus or Libra, or exalted in Pisces, standing in the 1st, 4th, 7th or 10th.',
+   'Read as the refined make: proportion, taste, comfort, and an eye for what is well made. The classical descriptions dwell on the pleasant life rather than the powerful one.',
+   'Venus is the karaka of marriage and of the arts, so the yoga is read across both: the company kept and the things made.',
+   'It is the commonest of the five in practice, Venus never straying far from the Sun and so passing through the kendras from the lagna often.'
+ ],
+ null, 54),
+
+('yoga', 'Pancha Mahapurusha Yoga', 'sasa',
+ 'Sasa - Saturn in its own sign or exaltation, in a kendra',
+ array[
+   'Saturn in Capricorn or Aquarius, or exalted in Libra, standing in the 1st, 4th, 7th or 10th.',
+   'Read as the ruler''s make: endurance, authority over others, and the patience to outlast opposition rather than overcome it.',
+   'Saturn gives the yoga its cost as well. The descriptions include a hardness towards others, and the position is not read as a comfortable one to have been raised by.'
+ ],
+ null, 55)
+
+on conflict (topic, subject, condition) do update set
+  heading = excluded.heading,
+  points = excluded.points,
+  note = excluded.note,
+  sort_order = excluded.sort_order,
+  updated_at = now();

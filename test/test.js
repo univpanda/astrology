@@ -1078,7 +1078,8 @@ ok('ordinals read correctly', Yogas.ordinal(1) === '1st' && Yogas.ordinal(2) ===
   // Every detector the module has must be named here. The count assertion is
   // what makes adding one without listing it a failing test rather than a
   // quietly incomplete check.
-  var detectors = [Yogas.parivartana, Yogas.neechaBhanga, Yogas.vipareeta, Yogas.lakshmi];
+  var detectors = [Yogas.parivartana, Yogas.neechaBhanga, Yogas.vipareeta, Yogas.lakshmi,
+                   Yogas.mahapurusha];
   ok('every detector is covered by this test', detectors.length === Yogas.DETECTOR_COUNT,
      detectors.length + ' named, ' + Yogas.DETECTOR_COUNT + ' in the module');
 
@@ -1618,6 +1619,92 @@ console.log('\nLakshmi yoga');
       if (A.SIGN_LORDS[sign] === A.SIGN_LORDS[(sign + 8) % 12]) return false;
     }
     return true;
+  })());
+})();
+
+console.log('\nPancha Mahapurusha yogas');
+/*
+ * BPHS chapter 75, verses 1-2: "When Mars, Mercury, Jupiter, Venus and Saturn
+ * being in their own sign or in their sign of exaltation, be in Kendra to the
+ * Ascendant, they give rise to Ruchaka, Bhadra, Hamsa, Malavya and Sasa yogas
+ * respectively."
+ *
+ * One rule with five names, so it is one detector, and Malavya differs from Sasa
+ * in nothing but which graha is standing there.
+ */
+(function () {
+  var lagna = 0;                                   // Aries
+  var body = function (name, sign, deg) {
+    return { name: name, sign: sign, longitude: sign * 30 + deg,
+             house: ((sign - lagna) % 12 + 12) % 12 + 1 };
+  };
+  var chartOf = function (planets) {
+    return { ascendant: { longitude: lagna * 30 + 10 }, planets: planets };
+  };
+
+  // Venus exalted in Pisces is the 12th from Aries, so move the lagna to make it
+  // a kendra: from Capricorn, Pisces is the 3rd; from Sagittarius, the 4th.
+  var malavya = (function () {
+    var asc = 8;                                   // Sagittarius, so Pisces is the 4th
+    var house = ((11 - asc) % 12 + 12) % 12 + 1;
+    return { ascendant: { longitude: asc * 30 + 10 },
+      planets: [{ name: 'Venus', sign: 11, longitude: 11 * 30 + 12, house: house }] };
+  })();
+  var found = Yogas.mahapurusha(malavya);
+  ok('Venus exalted in a kendra is Malavya yoga',
+     found.length === 1 && found[0].title === 'Malavya yoga' &&
+     found[0].grahas.join('') === 'Venus' && found[0].houses.join('') === '4', found.length + ' found');
+  ok('and it is reported as one of the five, not as its own thing',
+     found[0].yoga === 'Pancha Mahapurusha Yoga' && found[0].family === 'Pancha Mahapurusha yoga' &&
+     found[0].kind === 'malavya');
+
+  ok('each of the five is named for its own graha', (function () {
+    var want = { Mars: 'Ruchaka', Mercury: 'Bhadra', Jupiter: 'Hamsa',
+                 Venus: 'Malavya', Saturn: 'Sasa' };
+    return Object.keys(want).every(function (g) { return Yogas.MAHAPURUSHA[g] === want[g]; }) &&
+      Object.keys(Yogas.MAHAPURUSHA).length === 5;
+  })());
+
+  /*
+   * The luminaries are not in it. The text lists the five taras and stops, so a
+   * Sun exalted in a kendra forms nothing here however strong it looks.
+   */
+  ok('the Sun and Moon form no Mahapurusha yoga', (function () {
+    var sunExalted = chartOf([body('Sun', 0, 10), body('Moon', 1, 2)]);   // Aries 1st, Taurus 2nd
+    return Yogas.mahapurusha(sunExalted).length === 0 &&
+      Yogas.MAHAPURUSHA.Sun === undefined && Yogas.MAHAPURUSHA.Moon === undefined;
+  })());
+
+  // Both halves bind: dignity without a kendra, and a kendra without dignity.
+  ok('an own sign outside a kendra forms nothing',
+     Yogas.mahapurusha(chartOf([body('Mars', 7, 10)])).length === 0);   // Scorpio, the 8th
+  ok('and a kendra without dignity forms nothing',
+     Yogas.mahapurusha(chartOf([body('Mars', 3, 10)])).length === 0);   // Cancer, 4th, debilitated
+
+  ok('all four kendras count, and only those', (function () {
+    var houses = [];
+    for (var sign = 0; sign < 12; sign++) {
+      // Mars in Aries or Scorpio only; test the house rule with Aries and a moving lagna
+      var asc = ((0 - sign) % 12 + 12) % 12;
+      var c = { ascendant: { longitude: asc * 30 + 10 },
+        planets: [{ name: 'Mars', sign: 0, longitude: 10, house: sign + 1 }] };
+      if (Yogas.mahapurusha(c).length) houses.push(sign + 1);
+    }
+    return houses.join(',') === '1,4,7,10';
+  })());
+
+  /*
+   * The text says "own sign or exaltation" and never mentions moolatrikona, which
+   * costs nothing only because all five of these grahas have their moolatrikona
+   * inside a sign they already own. The Moon's is the one that lies outside, and
+   * the Moon is not one of the five. If that ever stopped being true the wording
+   * would start quietly excluding placements.
+   */
+  ok('every one of the five has its moolatrikona inside a sign it owns', (function () {
+    return Object.keys(Yogas.MAHAPURUSHA).every(function (g) {
+      var d = A.DIGNITY[g];
+      return d.mool && d.own.indexOf(d.mool.sign) >= 0;
+    }) && A.DIGNITY.Moon.own.indexOf(A.DIGNITY.Moon.mool.sign) < 0;
   })());
 })();
 
