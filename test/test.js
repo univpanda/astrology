@@ -825,6 +825,23 @@ console.log('\nAspects');
     return oneWay;
   })());
 
+  // Retrogression must not alter what a graha aspects.
+  ok('a retrograde graha aspects what a direct one in the same sign would', (function () {
+    var retro = chart.planets.filter(function (p) { return p.retrograde; });
+    if (!retro.length) return false;      // the reference chart has several
+    return retro.every(function (p) {
+      var row = byName[p.name];
+      return row.casts.every(function (target) {
+        // The aspect must follow from the signs alone.
+        var others = chart.planets.filter(function (q) { return q.name === target.graha; })[0];
+        return Yogas.aspects(p.name, p.sign, others.sign);
+      });
+    });
+  })());
+  ok('the table carries the retrograde flag without acting on it',
+     rows.some(function (r) { return r.retrograde; }) &&
+     !/retrograde/.test(Yogas.aspects.toString()));
+
   // Every graha sees the seventh; only three have more.
   ok('each graha aspects the seventh from itself', Yogas.GRAHAS.every(function (g) {
     return Yogas.aspects(g, 0, 6);

@@ -198,7 +198,9 @@ var Yogas = (function () {
    */
   function aspectTable(chart) {
     var rows = [];
-    var bySign = chart.planets.map(function (p) { return { name: p.name, sign: p.sign }; });
+    var bySign = chart.planets.map(function (p) {
+      return { name: p.name, sign: p.sign, retrograde: p.retrograde };
+    });
 
     bySign.forEach(function (source) {
       var casts = [], receives = [];
@@ -206,14 +208,22 @@ var Yogas = (function () {
         if (other.name === source.name) return;
         var apartOut = ((other.sign - source.sign) % 12 + 12) % 12 + 1;
         var apartIn = ((source.sign - other.sign) % 12 + 12) % 12 + 1;
+        /*
+         * Retrogression is not consulted. Drishti is counted from the position
+         * a graha occupies, and Parashara's rules do not mention direction of
+         * motion; retrogression acts on strength instead, through cheshta bala.
+         */
         if (aspects(source.name, source.sign, other.sign)) {
-          casts.push({ graha: other.name, apart: apartOut });
+          casts.push({ graha: other.name, apart: apartOut, retrograde: other.retrograde });
         }
         if (aspects(other.name, other.sign, source.sign)) {
-          receives.push({ graha: other.name, apart: apartIn });
+          receives.push({ graha: other.name, apart: apartIn, retrograde: other.retrograde });
         }
       });
-      rows.push({ graha: source.name, casts: casts, receives: receives });
+      rows.push({
+        graha: source.name, retrograde: source.retrograde,
+        casts: casts, receives: receives
+      });
     });
     return rows;
   }

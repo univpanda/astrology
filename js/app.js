@@ -782,10 +782,11 @@
       var named = function (list) {
         if (!list.length) return '\u2013';
         return list.map(function (x) {
-          return x.graha + ' (' + Yogas.ordinal(x.apart) + ')';
+          return x.graha + (x.retrograde ? ' [R]' : '') + ' (' + Yogas.ordinal(x.apart) + ')';
         }).join(', ');
       };
-      [[row.graha, null], [named(row.casts), null], [named(row.receives), null]]
+      [[row.graha + (row.retrograde ? ' [R]' : ''), null],
+       [named(row.casts), null], [named(row.receives), null]]
         .forEach(function (cell, i) {
           var td = el(i === 0 ? 'th' : 'td', cell[1], cell[0]);
           if (i === 0) td.setAttribute('scope', 'row');
@@ -797,9 +798,12 @@
     document.getElementById('aspect-note').textContent =
       'Full Parashari aspects, counted whole-sign in the rashi chart: every graha aspects the ' +
       '7th from itself, Mars the 4th and 8th besides, Jupiter the 5th and 9th, Saturn the 3rd ' +
-      'and 10th. Aspect is not mutual, so the two columns differ. Parashara gives Rahu and Ketu ' +
-      'no aspects; the 5th, 7th and 9th shown for them follow modern practice. Partial aspects ' +
-      'are not listed.';
+      'and 10th. Aspect is not mutual, so the two columns differ. Retrogression does not change ' +
+      'what a graha aspects: drishti is counted from the position it occupies, and a retrograde ' +
+      'graha is marked [R] here only so you can see which are. Where retrogression does tell is ' +
+      'strength, through cheshta bala on the Shadbala tab. Parashara gives Rahu and Ketu no ' +
+      'aspects; the 5th, 7th and 9th shown for them follow modern practice. Partial aspects are ' +
+      'not listed.';
   }
 
   /* -------------------------------------------------------------- lesson */

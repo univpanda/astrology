@@ -516,6 +516,10 @@ ok('both directions get a column', (function () {
   return head.indexOf('>Aspects<') >= 0 && head.indexOf('>Aspected by<') >= 0;
 })());
 ok('the note says aspect is not mutual', /Aspect is not mutual/.test(appSrc));
+ok('the note says retrogression does not change the aspect',
+   /Retrogression does not change/.test(appSrc) && /cheshta bala/.test(appSrc));
+ok('retrograde grahas are marked in the aspect table',
+   /row\.retrograde \? ' \[R\]' : ''/.test(appSrc));
 ok('the note names the nodes as a modern convention',
    /Parashara gives Rahu and Ketu ' \+\s*\n?\s*'no aspects/.test(appSrc) ||
    /Parashara gives Rahu and Ketu/.test(appSrc));
