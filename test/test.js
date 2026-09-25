@@ -1708,5 +1708,94 @@ console.log('\nPancha Mahapurusha yogas');
   })());
 })();
 
+console.log('\nVimsopaka bala');
+/*
+ * Verses 26-27: "Multiply the figure due to full strength for the division by the
+ * Varga Viswa and divide by 20 to get the exact strength of the planet."
+ */
+(function () {
+  var place = { latitude: 23.5158, longitude: 87.308, tzOffsetMinutes: 330 };
+  var c = A.chart({ jdUT: 2446146.7256944445, latitude: place.latitude,
+                    longitude: place.longitude, tzOffsetMinutes: 330 });
+  var pos = {};
+  c.planets.forEach(function (p) { pos[p.name] = p; });
+
+  /*
+   * The name means "of twenty", and the two ends of the scale are what fix the
+   * arithmetic: own sign in every division is the full twenty, a great enemy in
+   * every division is five. Five rather than nothing, which is the part that
+   * catches people out - the floor is not zero.
+   */
+  ok('own sign throughout scores exactly twenty, in every scheme', (function () {
+    return A.VARGA_SCHEME_ORDER.every(function (k) {
+      var sch = A.VARGA_SCHEMES[k];
+      var total = sch.divisions.reduce(function (t, d) {
+        return t + sch.weights[d] * A.VARGA_VISWA.own / 20;
+      }, 0);
+      return Math.abs(total - 20) < 1e-9;
+    });
+  })());
+  ok('and a great enemy throughout scores five, not nothing', (function () {
+    return A.VARGA_SCHEME_ORDER.every(function (k) {
+      var sch = A.VARGA_SCHEMES[k];
+      var total = sch.divisions.reduce(function (t, d) {
+        return t + sch.weights[d] * A.VARGA_VISWA.adhishatru / 20;
+      }, 0);
+      return Math.abs(total - 5) < 1e-9;
+    });
+  })());
+
+  ok('moolatrikona keeps the same twenty as an own sign, the text giving it no rung',
+     A.VARGA_VISWA.moolatrikona === 20 && A.VARGA_VISWA.own === 20);
+  ok('the varga viswa figures are Parashara\'s six',
+     A.VARGA_VISWA.adhimitra === 18 && A.VARGA_VISWA.mitra === 15 &&
+     A.VARGA_VISWA.sama === 10 && A.VARGA_VISWA.shatru === 7 &&
+     A.VARGA_VISWA.adhishatru === 5);
+
+  ok('every graha scores inside the five-to-twenty range, in every scheme', (function () {
+    return A.VARGA_SCHEME_ORDER.every(function (k) {
+      var sch = A.VARGA_SCHEMES[k];
+      return Shadbala.GRAHAS.every(function (g) {
+        var v = A.vimsopaka(g, pos[g].longitude, sch, pos);
+        return v && v.total >= 5 - 1e-9 && v.total <= 20 + 1e-9;
+      });
+    });
+  })());
+
+  ok('the parts add up to the total they are shown beside', (function () {
+    var sch = A.VARGA_SCHEMES.shodasavarga;
+    return Shadbala.GRAHAS.every(function (g) {
+      var v = A.vimsopaka(g, pos[g].longitude, sch, pos);
+      var sum = v.parts.reduce(function (t, p) { return t + p.score; }, 0);
+      return v.parts.length === sch.divisions.length && Math.abs(sum - v.total) < 1e-9;
+    });
+  })());
+
+  // Exaltation has no varga viswa rung, so it is scored by the relation beneath it.
+  ok('an exalted graha is scored by its relation to the sign\'s lord', (function () {
+    var sch = A.VARGA_SCHEMES.shodasavarga;
+    var v = A.vimsopaka('Venus', pos.Venus.longitude, sch, pos);
+    return v.parts.every(function (p) { return A.VARGA_VISWA[p.relation] !== undefined; });
+  })());
+
+  ok('the nodes get no score at all', (function () {
+    var sch = A.VARGA_SCHEMES.saptavarga;
+    return ['Rahu', 'Ketu'].every(function (n) {
+      return A.vimsopaka(n, pos[n].longitude, sch, pos) === null;
+    });
+  })());
+
+  /*
+   * Verses 26-27 again: below 5 incapable, 5 to 10 some good, up to 15 mediocre,
+   * above 15 wholly favourable.
+   */
+  ok('the bands are the four Parashara names, in order', (function () {
+    var b = A.VIMSOPAKA_BANDS;
+    return b.length === 4 && b[0].below === 5 && b[1].below === 10 &&
+      b[3].below === Infinity &&
+      b.map(function (x) { return x.key; }).join(',') === 'poor,some,mediocre,strong';
+  })());
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

@@ -930,6 +930,71 @@ var Astro = (function () {
    */
   var TRIMSAMSA_PROXY = { Sun: 'Mars', Moon: 'Venus' };
 
+  /*
+   * Varga viswa, verses 21-25: what a graha keeps of a division's points,
+   * out of twenty. "The Vimsopaka strength remains as 20 ... only when the planet
+   * is in own house Vargas. Otherwise the total strength from 20 declines to 18
+   * in extreme friend's Vargas, to 15 in friendly Vargas, to 10 in equal's
+   * divisions, to 7 in enemy's Vargas and to 5 in sworn enemy's Vargas."
+   *
+   * Six categories, and moolatrikona is not one of them: the text gives the top
+   * rung to an own sign and says nothing further, so moolatrikona keeps the same
+   * twenty rather than being invented a rung of its own. Exaltation is likewise
+   * absent, so an exalted graha is scored by its relation to the sign's lord -
+   * which is exactly why vargaDignity reports that relation underneath the label.
+   */
+  var VARGA_VISWA = {
+    moolatrikona: 20, own: 20, adhimitra: 18, mitra: 15,
+    sama: 10, shatru: 7, adhishatru: 5
+  };
+
+  /*
+   * Verses 26-27: "Multiply the figure due to full strength for the division by
+   * the Varga Viswa and divide by 20 to get the exact strength of the planet. If
+   * such total is below 5 the planet will not be capable of giving auspicious
+   * results. If it is above 5 but below 10, the planet will yield some good
+   * effects. Later on, up to 15 it is indicative of mediocre effect. A planet
+   * with above 15 will yield wholly favourable effects."
+   */
+  var VIMSOPAKA_BANDS = [
+    { below: 5, key: 'poor', label: 'not capable of auspicious results' },
+    { below: 10, key: 'some', label: 'yields some good effects' },
+    { below: 15.0000001, key: 'mediocre', label: 'mediocre' },
+    { below: Infinity, key: 'strong', label: 'wholly favourable' }
+  ];
+
+  function vimsopakaBand(total) {
+    for (var i = 0; i < VIMSOPAKA_BANDS.length; i++) {
+      if (total < VIMSOPAKA_BANDS[i].below) return VIMSOPAKA_BANDS[i];
+    }
+    return VIMSOPAKA_BANDS[VIMSOPAKA_BANDS.length - 1];
+  }
+
+  /**
+   * Vimsopaka bala: one graha's score out of twenty, over one scheme.
+   *
+   * Each division contributes its share of the twenty, scaled by what the graha
+   * keeps of it. Own sign everywhere gives the full twenty, which is what the
+   * name means; a great enemy everywhere gives five, the floor rather than zero.
+   *
+   * Returns null for a graha the scheme cannot judge - the nodes, which own no
+   * sign and keep no friendships.
+   */
+  function vimsopaka(graha, longitude, scheme, positionsD1) {
+    var total = 0, parts = [];
+    for (var i = 0; i < scheme.divisions.length; i++) {
+      var division = scheme.divisions[i];
+      var d = vargaDignity(graha, longitude, division, positionsD1);
+      if (!d || !d.relation) return null;
+      var kept = VARGA_VISWA[d.relation];
+      var share = scheme.weights[division] * kept / 20;
+      total += share;
+      parts.push({ division: division, weight: scheme.weights[division],
+                   relation: d.relation, viswa: kept, score: share });
+    }
+    return { total: total, parts: parts, band: vimsopakaBand(total) };
+  }
+
   var VARGA_DIGNITY_LABELS = {
     exalted: 'Exalted', moolatrikona: 'Mooltrikona', own: 'Own sign',
     adhimitra: 'Great friend', mitra: 'Friend', sama: 'Neutral',
@@ -1268,6 +1333,9 @@ var Astro = (function () {
     DASAVARGA: DASAVARGA,
     SHODASAVARGA: SHODASAVARGA,
     VARGA_SCHEMES: VARGA_SCHEMES,
+    VARGA_VISWA: VARGA_VISWA,
+    VIMSOPAKA_BANDS: VIMSOPAKA_BANDS,
+    vimsopaka: vimsopaka,
     VARGA_SCHEME_ORDER: VARGA_SCHEME_ORDER,
     VIMSOPAKA_DASAVARGA: VIMSOPAKA_DASAVARGA,
     VIMSOPAKA_SHODASAVARGA: VIMSOPAKA_SHODASAVARGA,

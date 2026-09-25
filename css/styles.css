@@ -869,6 +869,21 @@ td.varga-sign-number { font-family: var(--font-mono); font-variant-numeric: tabu
 /* Sixteen columns is a lot of table; let it breathe less than the others. */
 #vargas-table th, #vargas-table td { padding-left: 0.45rem; padding-right: 0.45rem; }
 #vargas-table td.dig { font-size: 0.86rem; }
+/* The total belongs to the graha, so it sits centred against both its rows, and
+   reads as a figure rather than as another dignity. Banded by Parashara's own
+   four readings rather than by a gradient nobody agreed on. */
+#vargas-table td.vimsopaka {
+  vertical-align: middle;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  border-left: 1px solid var(--line-soft);
+}
+td.vimsopaka-strong { color: var(--green-deep); }
+td.vimsopaka-mediocre { color: var(--ink); }
+td.vimsopaka-some { color: var(--ink-soft); }
+td.vimsopaka-poor { color: var(--retro); }
 /* The scheme picker sits above its table, labelled inline: it changes what the
    table is, not merely how it looks, so it reads as part of the panel. */
 .varga-scheme-row { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.9rem; }

@@ -746,6 +746,31 @@ ok('Rashi is priced differently in every one of the four', (function () {
   return seen.join(',') === '6,5,3,3.5' && new Set(seen).size === 4;
 })());
 
+/*
+ * The score belongs to the graha rather than to either of its two rows, so it
+ * spans both, the way the name does.
+ */
+ok('the total spans the graha\'s pair of rows',
+   /td\.setAttribute\('rowspan', '2'\);/.test(appSrc) &&
+   /Astro\.vimsopaka\(planet\.name, planet\.longitude, scheme, positionsD1\)/.test(appSrc));
+ok('it is banded by Parashara\'s four readings, not by a gradient', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  return Astro.VIMSOPAKA_BANDS.every(function (b) {
+    return new RegExp('td\\.vimsopaka-' + b.key + ' \\{').test(css);
+  }) && /' vimsopaka-' \+ score\.band\.key/.test(appSrc);
+})());
+ok('and the title breaks the score into its divisions',
+   /part\.viswa \+ '\/20'/.test(appSrc) &&
+   /which Parashara reads as ' \+ score\.band\.label/.test(appSrc));
+ok('the column has a heading that says what it is out of',
+   /el\('th', null, 'Vimsopaka'\)/.test(appSrc) &&
+   /el\('span', 'varga-weight', '\/ 20'\)/.test(appSrc));
+ok('the note explains the totalling and the four readings', (function () {
+  var flat = appSrc.replace(/'\s*\+\s*'/g, '');
+  return /The last column totals them, verses 26-27/.test(flat) &&
+    /below 5 as incapable of auspicious results, 5 to 10 as some good, up to 15 as mediocre and above 15 as wholly favourable/.test(flat);
+})());
+
 ok('the picker offers all four, widest last and chosen', (function () {
   return /Astro\.VARGA_SCHEME_ORDER\.forEach\(function \(key\) \{/.test(appSrc) &&
     /if \(key === 'shodasavarga'\) opt\.selected = true;/.test(appSrc) &&

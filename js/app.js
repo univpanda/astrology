@@ -1084,6 +1084,14 @@
         (elsewhere.length ? '; ' + elsewhere.join(', ') + '.' : '.');
       row.appendChild(th);
     });
+
+    var total = el('th', null, 'Vimsopaka');
+    total.setAttribute('scope', 'col');
+    total.appendChild(el('span', 'varga-weight', '/ 20'));
+    total.title = 'Verses 26-27: each division\u2019s share of the twenty, scaled by what the ' +
+      'graha keeps of it. Own sign throughout gives the full twenty; a great enemy throughout ' +
+      'gives five, which is the floor rather than nothing.';
+    row.appendChild(total);
   }
 
   /*
@@ -1115,7 +1123,11 @@
       'is that division\u2019s share of the twenty in this scheme \u2014 ' + shares +
       ', from ' + scheme.source + '. The ' + others.join(', ') + ' share them out ' +
       'differently, which is the usual reason a vimsopaka total will not reconcile; hover a ' +
-      'heading for its figure in each. No luminary rules a trimsamsa, so in D30 the Sun ' +
+      'heading for its figure in each. The last column totals them, verses 26-27: ' +
+      'each share scaled by what the graha keeps of it, own sign counting the full twenty and ' +
+      'a great enemy five. Parashara reads below 5 as incapable of auspicious results, 5 to 10 ' +
+      'as some good, up to 15 as mediocre and above 15 as wholly favourable. No luminary ' +
+      'rules a trimsamsa, so in D30 the Sun ' +
       'stands in as Mars and the Moon as Venus. Rahu and Ketu own no sign and keep no ' +
       'friendships, so they are left out.';
   }
@@ -1187,6 +1199,24 @@
         signRow.appendChild(sign);
         dignityRow.appendChild(dignity);
       });
+
+      /*
+       * The total belongs to the graha, not to either of its rows, so it spans
+       * both the way the name does.
+       */
+      var score = Astro.vimsopaka(planet.name, planet.longitude, scheme, positionsD1);
+      var td = el('td', 'vimsopaka' + (score ? ' vimsopaka-' + score.band.key : ''),
+        score ? score.total.toFixed(2) : '\u2013');
+      td.setAttribute('rowspan', '2');
+      if (score) {
+        td.title = planet.name + ' scores ' + score.total.toFixed(2) + ' of twenty across the ' +
+          scheme.label.toLowerCase() + ', which Parashara reads as ' + score.band.label + '. ' +
+          score.parts.map(function (part) {
+            return 'D' + part.division + ' ' + vimsopakaFigure(part.weight) + '\u00d7' +
+              part.viswa + '/20';
+          }).join(', ') + '.';
+      }
+      signRow.appendChild(td);
 
       tbody.appendChild(signRow);
       tbody.appendChild(dignityRow);
