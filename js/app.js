@@ -208,6 +208,57 @@
     if (show) { selectedCity = null; document.getElementById('manual-lat').focus(); }
   });
 
+  /* ------------------------------------------------------------ time field */
+
+  var hourInput = document.getElementById('birth-hour');
+  var minuteInput = document.getElementById('birth-minute');
+  var meridiemSelect = document.getElementById('birth-meridiem');
+
+  /**
+   * Read the typed 12-hour time. Returns either an `error` to show, or the hour
+   * on a 24-hour clock for the maths plus the parts as entered.
+   */
+  function readTime() {
+    var hourText = hourInput.value.trim();
+    var minuteText = minuteInput.value.trim();
+    if (!hourText && !minuteText) {
+      return { error: 'Enter a time of birth. If it is unknown, 12:00 PM is the usual stand-in.' };
+    }
+    if (!/^\d{1,2}$/.test(hourText)) return { error: 'Enter the hour as a number from 1 to 12.' };
+    if (!/^\d{1,2}$/.test(minuteText)) return { error: 'Enter the minute as a number from 00 to 59.' };
+    var hour = +hourText, minute = +minuteText;
+    // 12-hour clocks have no hour 0, and 12 is the one that wraps to 0.
+    if (hour < 1 || hour > 12) return { error: 'The hour must be from 1 to 12. Use AM or PM to say which half of the day.' };
+    if (minute > 59) return { error: 'The minute must be from 00 to 59.' };
+    var meridiem = meridiemSelect.value === 'pm' ? 'pm' : 'am';
+    return {
+      hour12: hour, minute: minute, meridiem: meridiem,
+      hour24: Geo.to24Hour(hour, meridiem)
+    };
+  }
+
+  /** Put a 24-hour time into the three controls. */
+  function writeTime(hour24, minute) {
+    var parts = Geo.from24Hour(hour24);
+    meridiemSelect.value = parts.meridiem;
+    hourInput.value = String(parts.hour12);
+    minuteInput.value = String(minute).padStart(2, '0');
+  }
+
+  // Keep the two boxes numeric, and hop to the minute once the hour is settled.
+  [hourInput, minuteInput].forEach(function (input) {
+    input.addEventListener('input', function () {
+      var digits = input.value.replace(/\D/g, '').slice(0, 2);
+      if (digits !== input.value) input.value = digits;
+      if (input === hourInput && (digits.length === 2 || +digits > 1)) minuteInput.focus();
+    });
+  });
+
+  // Pad a single digit on the way out, so "5" reads back as "05".
+  minuteInput.addEventListener('blur', function () {
+    if (/^\d$/.test(minuteInput.value)) minuteInput.value = '0' + minuteInput.value;
+  });
+
   /* ---------------------------------------------------------------- submit */
 
   /** Where is the birth? Either a chosen city or the manual coordinates. */
@@ -231,18 +282,19 @@
     e.preventDefault();
     errorBox.textContent = '';
 
+    var nameValue = document.getElementById('name').value.trim();
     var dateValue = document.getElementById('date').value;
-    var timeValue = document.getElementById('time').value;
+    var time = readTime();
     var place = resolvePlace();
 
+    if (!nameValue) return fail('Enter the name this chart belongs to.');
     if (!dateValue) return fail('Enter a date of birth.');
-    if (!timeValue) return fail('Enter a time of birth. If it is unknown, noon is the usual stand-in.');
+    if (time.error) return fail(time.error);
     if (!place) return fail('Pick a place from the list, or open "Enter coordinates" and type latitude and longitude.');
 
     var dateParts = dateValue.split('-').map(Number);
-    var timeParts = timeValue.split(':').map(Number);
     var y = dateParts[0], mo = dateParts[1], d = dateParts[2];
-    var h = timeParts[0], mi = timeParts[1] || 0;
+    var h = time.hour24, mi = time.minute;
 
     /*
      * Before standard time reached a country, a recorded birth time was local
@@ -275,8 +327,9 @@
 
     lastChart = {
       chart: chart, place: place, offset: offset,
-      name: document.getElementById('name').value.trim(),
+      name: nameValue,
       standard: standard,
+      time: time,
       y: y, mo: mo, d: d, h: h, mi: mi
     };
     render(lastChart);
@@ -295,13 +348,13 @@
   function render(state) {
     var c = state.chart, place = state.place;
 
-    document.getElementById('result-name').textContent =
-      state.name ? state.name + '’s chart' : 'Birth chart';
+    document.getElementById('result-name').textContent = state.name + '\u2019s chart';
 
     var placeLabel = [place.name, place.region, place.nation].filter(Boolean).join(', ');
     document.getElementById('result-birth').textContent =
       state.d + ' ' + MONTHS_LONG[state.mo - 1] + ' ' + state.y + ', ' +
-      hhmm(state.h + state.mi / 60) +
+      state.time.hour12 + ':' + String(state.time.minute).padStart(2, '0') + ' ' +
+      state.time.meridiem.toUpperCase() +
       ' (' + (state.standard === 'lmt' ? 'LMT ' : 'UTC') + Geo.formatOffset(state.offset) + ')  ·  ' +
       placeLabel + '  ·  ' +
       Geo.formatDMS(place.lat, 'N', 'S') + ' ' + Geo.formatDMS(place.lon, 'E', 'W');
@@ -406,7 +459,7 @@
     list.innerHTML = '';
     var ut = Astro.calendarDate(c.julianDay);
     fact(list, 'Ayanamsa', dms(c.ayanamsa), c.ayanamsaName);
-    fact(list, 'Universal time', jdToDate(c.julianDay, 0) + ' ' + hhmm(ut.hours));
+    fact(list, 'Universal time', jdToDate(c.julianDay, 0) + ' ' + hhmm(ut.hours), '24-hour clock');
     fact(list, 'Julian Day (UT)', c.julianDay.toFixed(6));
     fact(list, 'Delta T applied', c.deltaT.toFixed(1) + ' s', 'UT → TT');
     fact(list, 'Local sidereal time', hhmm(c.siderealTime / 15), c.siderealTime.toFixed(4) + '°');
@@ -438,7 +491,7 @@
       'place=' + encodeURIComponent(p.name)
     ];
     if (state.standard === 'lmt') parts.push('std=lmt');
-    if (state.name) parts.push('n=' + encodeURIComponent(state.name));
+    parts.push('n=' + encodeURIComponent(state.name));
     history.replaceState(null, '', '#' + parts.join('&'));
   }
 
@@ -452,7 +505,8 @@
     });
     if (!q.d || !q.t || !q.lat || !q.lon || !q.tz) return;
     document.getElementById('date').value = q.d;
-    document.getElementById('time').value = q.t;
+    var t = q.t.split(':');
+    writeTime(+t[0], +(t[1] || 0));
     document.getElementById('name').value = q.n || '';
     document.getElementById('time-standard').value = q.std === 'lmt' ? 'lmt' : 'zone';
     selectedCity = {
@@ -461,6 +515,10 @@
     };
     placeInput.value = q.place || (q.lat + ', ' + q.lon);
     placeNote.textContent = (+q.lat).toFixed(4) + ', ' + (+q.lon).toFixed(4) + '  ·  ' + q.tz;
+    if (!q.n) {
+      document.getElementById('name').focus();
+      return;
+    }
     form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit'));
   }
 

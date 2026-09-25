@@ -36,6 +36,13 @@ smaller namesakes. Former names are mapped too, because birth certificates say
 them: Bombay, Calcutta, Madras, Benares, Poona, Allahabad, Dacca, Rangoon. If a
 village is not in the list, coordinates can be entered by hand.
 
+Time of birth is entered on a 12-hour clock: pick AM or PM, then type the hour
+and minute. A native `<input type="time">` renders as 12-hour or 24-hour purely
+on the browser's locale, which is not something the page can choose, so the field
+is built from a select and two typed boxes instead. The minute has to be typed
+rather than defaulting to `:00`, because a silently assumed minute can be wrong by
+up to 59, and that is 14 degrees of ascendant.
+
 Timezone offsets are resolved through the browser's own IANA database at the
 *birth* instant, not today's rule. A 1943 Indian birth correctly gets +06:30
 (wartime), a July 1975 New York birth gets -04:00 while a January one gets

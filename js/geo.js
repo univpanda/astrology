@@ -201,6 +201,23 @@ var Geo = (function () {
     } catch (e) { return false; }
   }
 
+  /**
+   * 12-hour clock to 24-hour. The two cases worth stating: 12 AM is hour 0
+   * (midnight) and 12 PM is hour 12 (noon), which is where naive arithmetic
+   * usually goes wrong.
+   */
+  function to24Hour(hour12, meridiem) {
+    return (hour12 % 12) + (meridiem === 'pm' ? 12 : 0);
+  }
+
+  /** The inverse: 24-hour clock to {hour12, meridiem}. */
+  function from24Hour(hour24) {
+    return {
+      hour12: hour24 % 12 === 0 ? 12 : hour24 % 12,
+      meridiem: hour24 >= 12 ? 'pm' : 'am'
+    };
+  }
+
   function formatDMS(value, posLabel, negLabel) {
     var sign = value < 0 ? negLabel : posLabel;
     var abs = Math.abs(value);
@@ -218,6 +235,8 @@ var Geo = (function () {
     label: label,
     offsetMinutes: offsetMinutes,
     formatOffset: formatOffset,
+    to24Hour: to24Hour,
+    from24Hour: from24Hour,
     formatDMS: formatDMS,
     historicalZonesSupported: historicalZonesSupported,
     count: function () { return load().length; }

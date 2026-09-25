@@ -19,7 +19,8 @@
     <div class="field-grid">
       <div class="field">
         <label for="name">Name</label>
-        <input type="text" id="name" name="name" autocomplete="name" placeholder="Optional">
+        <input type="text" id="name" name="name" autocomplete="name"
+               placeholder="Whose chart is this?" required>
       </div>
 
       <div class="field">
@@ -27,10 +28,24 @@
         <input type="date" id="date" name="date" min="1800-01-01" max="2100-12-31" required>
       </div>
 
-      <div class="field">
-        <label for="time">Time of birth <span class="hint">local clock time</span></label>
-        <input type="time" id="time" name="time" step="60" required>
-      </div>
+      <fieldset class="field time-field">
+        <legend>Time of birth <span class="hint">local clock time</span></legend>
+        <div class="time-grid">
+          <label class="visually-hidden" for="birth-meridiem">AM or PM</label>
+          <select id="birth-meridiem" required>
+            <option value="am" selected>AM</option>
+            <option value="pm">PM</option>
+          </select>
+          <label class="visually-hidden" for="birth-hour">Hour</label>
+          <input type="text" id="birth-hour" inputmode="numeric" autocomplete="off"
+                 maxlength="2" placeholder="hh" aria-describedby="time-note" required>
+          <span class="time-colon" aria-hidden="true">:</span>
+          <label class="visually-hidden" for="birth-minute">Minute</label>
+          <input type="text" id="birth-minute" inputmode="numeric" autocomplete="off"
+                 maxlength="2" placeholder="mm" aria-describedby="time-note" required>
+        </div>
+        <p class="field-note" id="time-note">Choose AM or PM, then type the hour and minute.</p>
+      </fieldset>
 
       <div class="field field-wide">
         <label for="place">Place of birth</label>

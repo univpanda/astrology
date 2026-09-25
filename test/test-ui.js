@@ -97,6 +97,29 @@ console.log('\nTimezone resolution');
 
 /* --------------------------------------------------------- chart drawing */
 
+console.log('\n12-hour clock conversion');
+[[12, 'am', 0], [1, 'am', 1], [11, 'am', 11], [12, 'pm', 12], [1, 'pm', 13], [11, 'pm', 23]].forEach(function (t) {
+  ok(t[0] + ':00 ' + t[1].toUpperCase() + ' is hour ' + t[2], Geo.to24Hour(t[0], t[1]) === t[2],
+     'got ' + Geo.to24Hour(t[0], t[1]));
+});
+ok('every hour round-trips through 12-hour form', (function () {
+  for (var h = 0; h < 24; h++) {
+    var p = Geo.from24Hour(h);
+    if (p.hour12 < 1 || p.hour12 > 12) return false;
+    if (Geo.to24Hour(p.hour12, p.meridiem) !== h) return false;
+  }
+  return true;
+})());
+// Midnight and noon are the pair that breaks naive conversions.
+ok('midnight shows as 12 AM, not 0 AM', Geo.from24Hour(0).hour12 === 12 && Geo.from24Hour(0).meridiem === 'am');
+ok('noon shows as 12 PM', Geo.from24Hour(12).hour12 === 12 && Geo.from24Hour(12).meridiem === 'pm');
+// A 12 AM birth must land on the right calendar day, not twelve hours away.
+(function () {
+  var midnight = Astro.julianDay(1990, 8, 15, Geo.to24Hour(12, 'am') - 5.5);
+  var noon = Astro.julianDay(1990, 8, 15, Geo.to24Hour(12, 'pm') - 5.5);
+  ok('12 AM and 12 PM are twelve hours apart', Math.abs((noon - midnight) * 24 - 12) < 1e-9);
+})();
+
 console.log('\nChart rendering');
 var offset = Geo.offsetMinutes(delhi.zone, 1990, 8, 15, 10, 30);
 var jdUT = Astro.julianDay(1990, 8, 15, (10 * 60 + 30 - offset) / 60);
@@ -200,16 +223,33 @@ ok('combobox declares role and controls', /role="combobox"/.test(html) && /aria-
 ok('listbox declares its role', /id="place-listbox" role="listbox"/.test(html));
 ok('app manages aria-activedescendant', /aria-activedescendant/.test(appSrc));
 ok('time standard select is wired', /id="time-standard"/.test(html) && /time-standard/.test(appSrc));
-ok('every input has a matching label', (function () {
+// Name, date, time and place are all required.
+['name', 'date', 'birth-hour', 'birth-minute', 'place'].forEach(function (id) {
+  var tag = html.match(new RegExp('<input[^>]*id="' + id + '"[^>]*>'));
+  ok('#' + id + ' is marked required in the markup', !!tag && /\srequired/.test(tag[0]));
+});
+ok('AM/PM select comes before the typed hour',
+   html.indexOf('id="birth-meridiem"') < html.indexOf('id="birth-hour"'));
+ok('no 24-hour time input remains', !/type="time"/.test(html));
+ok('hour and minute take numeric keypads', (html.match(/inputmode="numeric"/g) || []).length >= 2);
+ok('app.js rejects a blank name', /if \(!nameValue\) return fail/.test(appSrc));
+ok('no field is advertised as optional', !/placeholder="Optional"/i.test(html));
+(function () {
+  // `for` is not always the first attribute on a label, so match it anywhere.
   var labels = {};
-  (html.match(/<label for="([^"]+)"/g) || []).forEach(function (l) { labels[l.slice(12, -1)] = true; });
-  var unlabelled = [];
-  (html.match(/<(?:input|select)[^>]*id="([^"]+)"[^>]*>/g) || []).forEach(function (tag) {
-    var id = tag.match(/id="([^"]+)"/)[1];
-    if (!labels[id]) unlabelled.push(id);
+  (html.match(/<label\b[^>]*>/g) || []).forEach(function (tag) {
+    var m = tag.match(/for="([^"]+)"/);
+    if (m) labels[m[1]] = true;
   });
-  return unlabelled.length === 0 || unlabelled.join(',') === '';
-})());
+  var unlabelled = [];
+  (html.match(/<(?:input|select)\b[^>]*>/g) || []).forEach(function (tag) {
+    var id = tag.match(/id="([^"]+)"/);
+    if (!id) { unlabelled.push('(no id) ' + tag.slice(0, 40)); return; }
+    if (!labels[id[1]]) unlabelled.push('#' + id[1]);
+  });
+  ok('every input and select has a label', unlabelled.length === 0,
+     unlabelled.join(', ') || (Object.keys(labels).length + ' labels matched'));
+})();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
