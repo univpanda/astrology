@@ -719,8 +719,8 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
   #panel-add, #panel-saved, .empty-chart { display: none; }
   #panel-chart[hidden] { display: block; }
   .chart-controls { display: none; }
-  /* Paper has no tabs, so both tables print, whichever was on screen. */
-  #panel-table-a[hidden], #panel-table-b[hidden] { display: block; }
+  /* Paper has no tabs, so every panel prints, whichever was on screen. */
+  #panel-table-a[hidden], #panel-table-b[hidden], #panel-shadbala[hidden] { display: block; }
   .technical[open] summary { display: none; }
   svg.kundli text { fill: #111; }
   svg.kundli .frame, svg.kundli .cell { stroke: #9bbcab; }

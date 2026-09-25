@@ -1097,7 +1097,8 @@
    * charts are set to. Fixed D1/D9 labels would have lied the moment either
    * select moved.
    */
-  var tableTabs = setupTabs(['table-a', 'table-b'], document.querySelector('.tabs.subtabs'));
+  var tableTabs = setupTabs(['table-a', 'table-b', 'shadbala'],
+    document.querySelector('.tabs.subtabs'));
 
   function activateTab(name, moveFocus) { sections.activate(name, moveFocus); }
 

@@ -353,14 +353,25 @@ function stripHtml(label) {
      />\s*<\/button>/.test(html));
   ok('the table tabs are labelled from the chosen division',
      /document\.getElementById\('tab-table-' \+ slot\)\.textContent = varga\.name/.test(appSrc));
-  ok('the table strip is a real tablist', ['table-a', 'table-b'].every(function (n) {
+  ok('shadbala shares the table strip rather than a card of its own',
+     /id="tab-shadbala"[\s\S]{0,140}aria-controls="panel-shadbala"/.test(html) &&
+     html.indexOf('id="panel-shadbala"') > html.indexOf('id="panel-table-b"') &&
+     html.indexOf('id="panel-shadbala"') < html.indexOf('class="two-col"'));
+  ok('the strip holds three tabs', (function () {
+    var strip = stripHtml('Graha tables');
+    return (strip.match(/role="tab"/g) || []).length === 3;
+  })());
+  ok('the table strip is a real tablist', ['table-a', 'table-b', 'shadbala'].every(function (n) {
     return new RegExp('id="tab-' + n + '"[\\s\\S]{0,140}aria-controls="panel-' + n + '"').test(html) &&
            new RegExp('id="panel-' + n + '"[^>]*aria-labelledby="tab-' + n + '"').test(html);
   }));
-  ok('the second table starts hidden', /id="panel-table-b"[^>]*hidden/.test(html));
+  ok('only the first panel starts visible',
+     /id="panel-table-b"[^>]*hidden/.test(html) && /id="panel-shadbala"[^>]*hidden/.test(html) &&
+     !/id="panel-table-a"[^>]*hidden/.test(html));
   ok('one tab implementation still serves every strip',
      (appSrc.match(/function setupTabs/g) || []).length === 1 &&
-     (appSrc.match(/setupTabs\(/g) || []).length === 3);
+     (appSrc.match(/setupTabs\(/g) || []).length === 3 &&
+     /setupTabs\(\['table-a', 'table-b', 'shadbala'\]/.test(appSrc));
   ok('there are two chart slots, each with two selects', ['a', 'b'].every(function (slot) {
     return new RegExp('id="ref-' + slot + '"').test(html) &&
            new RegExp('id="varga-' + slot + '"').test(html) &&
@@ -456,6 +467,7 @@ ok('the ayanamsa a chart was cast with survives an edit',
 // Each saved row carries an edit and a delete, and delete asks first.
 // Shadbala: the breakdown, not just a total.
 ok('the page loads the shadbala module', /<script src="js\/shadbala\.js"><\/script>/.test(html));
+ok('shadbala no longer has a card to itself', !/<h3>Shadbala<\/h3>/.test(html));
 ok('all six components have their own column', (function () {
   var head = html.slice(html.indexOf('id="shadbala-table"'), html.indexOf('shadbala-note'));
   return ['Sthana', 'Dig', 'Kala', 'Cheshta', 'Naisargika', 'Drik', 'Total', 'Rupas', 'Needs']

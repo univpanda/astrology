@@ -207,6 +207,8 @@
                 aria-controls="panel-table-a" aria-selected="true"></button>
         <button type="button" class="tab" role="tab" id="tab-table-b"
                 aria-controls="panel-table-b" aria-selected="false" tabindex="-1"></button>
+        <button type="button" class="tab" role="tab" id="tab-shadbala"
+                aria-controls="panel-shadbala" aria-selected="false" tabindex="-1">Shadbala</button>
       </div>
 
       <div id="panel-table-a" role="tabpanel" aria-labelledby="tab-table-a">
@@ -245,26 +247,25 @@
         </div>
       </div>
 
-    </div>
-
-    <div class="card">
-      <h3>Shadbala</h3>
-      <div class="table-scroll">
-        <table id="shadbala-table">
-          <thead>
-            <tr>
-              <th scope="col">Graha</th>
-              <th scope="col">Sthana</th><th scope="col">Dig</th>
-              <th scope="col">Kala</th><th scope="col">Cheshta</th>
-              <th scope="col">Naisargika</th><th scope="col">Drik</th>
-              <th scope="col">Total</th><th scope="col">Rupas</th>
-              <th scope="col">Needs</th><th scope="col">Verdict</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+      <div id="panel-shadbala" role="tabpanel" aria-labelledby="tab-shadbala" hidden>
+        <div class="table-scroll">
+          <table id="shadbala-table">
+            <thead>
+              <tr>
+                <th scope="col">Graha</th>
+                <th scope="col">Sthana</th><th scope="col">Dig</th>
+                <th scope="col">Kala</th><th scope="col">Cheshta</th>
+                <th scope="col">Naisargika</th><th scope="col">Drik</th>
+                <th scope="col">Total</th><th scope="col">Rupas</th>
+                <th scope="col">Needs</th><th scope="col">Verdict</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="varga-note" id="shadbala-note"></p>
       </div>
-      <p class="varga-note" id="shadbala-note"></p>
+
     </div>
 
     <div class="two-col">
