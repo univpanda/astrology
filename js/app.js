@@ -85,6 +85,19 @@
       now.getUTCHours() + now.getUTCMinutes() / 60);
   }
 
+  /*
+   * A place's full label, kept on the object once it is known.
+   *
+   * Reopening a saved chart used to rebuild the place from its label's first
+   * comma-separated piece with the region and country left blank, and the next
+   * save recomposed the label from those - so "Cuttack, Odisha, India" came
+   * back as "Cuttack" and stayed that way.
+   */
+  function placeLabelOf(place) {
+    if (!place) return '';
+    return place.label || [place.name, place.region, place.nation].filter(Boolean).join(', ');
+  }
+
   function el(tag, className, text) {
     var node = document.createElement(tag);
     if (className) node.className = className;
@@ -450,7 +463,7 @@
     // nothing, and a long name plus a possessive wraps on a phone.
     document.getElementById('result-name').textContent = state.name;
 
-    var placeLabel = [place.name, place.region, place.nation].filter(Boolean).join(', ');
+    var placeLabel = placeLabelOf(place);
     document.getElementById('result-birth').textContent =
       state.d + ' ' + MONTHS_LONG[state.mo - 1] + ' ' + state.y + ', ' +
       state.time.hour12 + ':' + String(state.time.minute).padStart(2, '0') +
@@ -858,7 +871,7 @@
     var state = lastChart;
     var entry = {
       name: state.name,
-      placeLabel: [state.place.name, state.place.region, state.place.nation].filter(Boolean).join(', '),
+      placeLabel: placeLabelOf(state.place),
       date: state.y + '-' + String(state.mo).padStart(2, '0') + '-' + String(state.d).padStart(2, '0'),
       time: String(state.h).padStart(2, '0') + ':' + String(state.mi).padStart(2, '0') +
         ':' + String(state.time.second).padStart(2, '0'),
@@ -923,7 +936,9 @@
     document.getElementById('time-standard').value = entry.standard === 'lmt' ? 'lmt' : 'zone';
 
     selectedCity = {
-      name: entry.placeLabel.split(',')[0], region: '', nation: '',
+      name: entry.placeLabel.split(',')[0],
+      region: '', nation: '',
+      label: entry.placeLabel,          // keep the whole thing, not just the town
       lat: entry.latitude, lon: entry.longitude, zone: entry.zone
     };
     placeInput.value = entry.placeLabel;
@@ -1036,7 +1051,7 @@
     document.getElementById('ayanamsa').value = state.ayanamsa;
     document.getElementById('node-type').value = state.trueNode ? 'true' : 'mean';
     selectedCity = state.place;
-    placeInput.value = [state.place.name, state.place.region, state.place.nation].filter(Boolean).join(', ');
+    placeInput.value = placeLabelOf(state.place);
     placeNote.textContent = state.place.lat.toFixed(4) + ', ' + state.place.lon.toFixed(4) +
       '  \u00b7  ' + state.place.zone;
     manualFields.hidden = true;
@@ -1073,7 +1088,7 @@
       't=' + String(state.h).padStart(2, '0') + ':' + String(state.mi).padStart(2, '0') +
         (state.time.second ? ':' + String(state.time.second).padStart(2, '0') : ''),
       'lat=' + p.lat.toFixed(4), 'lon=' + p.lon.toFixed(4), 'tz=' + encodeURIComponent(p.zone),
-      'place=' + encodeURIComponent(p.name)
+      'place=' + encodeURIComponent(placeLabelOf(p))
     ];
     if (state.standard === 'lmt') parts.push('std=lmt');
     parts.push('n=' + encodeURIComponent(state.name));
@@ -1095,7 +1110,9 @@
     document.getElementById('name').value = q.n || '';
     document.getElementById('time-standard').value = q.std === 'lmt' ? 'lmt' : 'zone';
     selectedCity = {
-      name: q.place || 'Saved location', region: '', nation: '',
+      name: (q.place || 'Saved location').split(',')[0],
+      region: '', nation: '',
+      label: q.place || 'Saved location',
       lat: +q.lat, lon: +q.lon, zone: q.tz
     };
     placeInput.value = q.place || (q.lat + ', ' + q.lon);

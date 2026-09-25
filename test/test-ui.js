@@ -454,6 +454,17 @@ ok('the ayanamsa a chart was cast with survives an edit',
    /document\.getElementById\('ayanamsa'\)\.value = state\.ayanamsa;/.test(appSrc));
 
 // Each saved row carries an edit and a delete, and delete asks first.
+// Reopening a chart must not shorten its place: the label is kept whole rather
+// than recomposed from parts that reopening had blanked.
+ok('the full place label survives a save, reopen and save',
+   /function placeLabelOf/.test(appSrc) &&
+   /placeLabel: placeLabelOf\(state\.place\)/.test(appSrc) &&
+   /label: entry\.placeLabel/.test(appSrc));
+ok('nothing composes a place label by hand any more',
+   (appSrc.match(/place\.name, place\.region, place\.nation/g) || []).length === 1);
+ok('the shareable link carries the whole label',
+   /'place=' \+ encodeURIComponent\(placeLabelOf\(p\)\)/.test(appSrc));
+
 ok('every saved row gets an edit and a delete control',
    /iconButton\('edit', 'Edit ' \+ entry\.name/.test(appSrc) &&
    /iconButton\('remove', 'Delete ' \+ entry\.name/.test(appSrc));
