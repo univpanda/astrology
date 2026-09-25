@@ -125,6 +125,79 @@ In rough order of size:
 - **The time actually used.** Zone time vs local mean time for pre-1900 births
   moves the ascendant by up to a degree per four minutes of difference.
 
+## The stored ephemeris
+
+Graha positions come from a table in Supabase rather than being computed in the
+browser, through a public endpoint:
+
+```sh
+curl -X POST https://deiefjnwbfcywsaaqqbs.supabase.co/functions/v1/chart \
+  -H 'Content-Type: application/json' -H 'x-region: us-east-1' \
+  -d '{"date":"1985-03-22","time":"10:55","tzOffsetMinutes":330,
+       "latitude":23.5158,"longitude":87.308}'
+```
+
+The page falls back to computing the chart in-page if the API is unreachable, and
+says which path produced the numbers. Both run the same `Astro.assembleChart`, so
+the fallback is the same arithmetic rather than a degraded approximation: only the
+source of the longitudes differs.
+
+### What is stored, and why it is not what you would guess
+
+**Mean tropical longitude** - no nutation, no ayanamsa. Both are cheap closed-form
+expressions, and baking either in would freeze a choice the caller should still
+make. A sidereal longitude is `stored - ayanamsa`, so all five ayanamsas work off
+one table.
+
+**Packed, not one row per sample.** 995,721 samples live in 279 rows, as base64
+Int32 arrays, one row per (decade, body). Postgres carries roughly 40 bytes of row
+header and index entry per row, so one row per sample would cost ~35 MB of
+bookkeeping to store 3.8 MB of numbers, and a chart would need 36 lookups instead
+of one query.
+
+Sample spacing is per body, from 0.25 days for the Moon to 32 for Rahu, each
+chosen so cubic interpolation costs well under half an arcsecond. Measuring that
+at a single epoch gave answers four times too optimistic: these are geocentric
+longitudes, so each planet's curve turns sharply at its retrograde stations, and
+a sample window that misses a station flatters the step size.
+
+The unit is 1e-5 degrees, not 1e-4. At 1e-4 the 0.36 arcsecond quantum was itself
+the dominant error, larger than the interpolation the step sizes were chosen to
+deliver. Int32 has the headroom, so the finer unit is free.
+
+| | |
+|---|---|
+| Table | `astro_ephemeris`, 279 rows, 9 MB |
+| Range | 1800-2100, two samples of padding past each decade boundary |
+| Agreement with the local engine | within 0.11 arcsec |
+
+### Interpolating in SQL, not over the wire
+
+`astro_positions(jd)` returns every graha's longitude at a moment, plus half a day
+later for speed, by decoding and interpolating inside Postgres. The first version
+of the edge function fetched the decade's packed rows and interpolated in
+JavaScript, which moved ~167 KB per request to extract eighteen numbers; doing it
+in SQL made the request a few hundred bytes and took the call from ~2s to ~0.5s.
+
+`astro_longitude(body, jd)` exposes one body for ad-hoc queries, which is what
+buys back the SQL-readability that packing costs:
+
+```sql
+select * from astro_positions(2446146.7256944445);
+select astro_longitude('mars', 2446146.7256944445);
+```
+
+The edge function is pinned to the database's region with `x-region`. Without it
+the function runs at the edge nearest the visitor and pays a cross-region round
+trip to Postgres: 300ms from India against 80ms pinned.
+
+### Costs
+
+The table is 9 MB against the 8 GB a Supabase Pro plan includes, and edge function
+invocations come out of the same plan, so this adds nothing to the bill. It lives
+in the shared PandaInUniv project under the `astro_` prefix, alongside the
+existing `pt_` and `gmat_` tables.
+
 ## Deployment
 
 Live on AWS Amplify Hosting: <https://main.d28kkscnmmgnma.amplifyapp.com>
@@ -166,6 +239,7 @@ that ever matters, the city table is the thing to shrink.
 ```
 node test/test.js      # ephemeris, ayanamsa, ascendant, panchang, dasha
 node test/test-ui.js   # place search, timezones, chart rendering, DOM contract
+DATABASE_URL=... node test/test-db.js   # the stored ephemeris and the API
 ```
 
 `test.js` checks against four independent kinds of reference: Meeus's worked
@@ -177,6 +251,12 @@ the reference values are baked in.
 SVG, and it cross-checks every element id `app.js` reaches for against
 `index.html`, so a renamed id fails a test rather than breaking silently.
 
+`test-db.js` needs a database and skips without one. It compares three
+implementations: the analytic engine, the JavaScript interpolator in
+`js/ephemeris.js`, and the SQL one in `astro_longitude()`. The last two are the
+same algorithm written twice, so they cross-check each other, and both are checked
+against the first.
+
 ## Files
 
 ```
@@ -185,11 +265,13 @@ css/styles.css          one committed dark theme, plus a light print stylesheet
 js/astro.js             the ephemeris and all the Vedic zodiac maths
 js/geo.js               place search, aliases, historical timezone offsets
 js/charts.js            North and South Indian kundli as inline SVG
+js/ephemeris.js         decode and interpolate stored ephemeris rows
 js/app.js               form handling, the combobox, rendering
 data/cities.js          69,752 places from GeoNames, loaded on first keystroke
 data/perturbations.js   residual corrections for Earth, Venus, Mars, Jupiter, Saturn
 scripts/                regenerate the data files, refit the ayanamsa, deploy
-test/                   the two suites above
+supabase/               ephemeris migrations and the chart edge function
+test/                   the three suites above
 ```
 
 `data/cities.js` is a 3 MB `.js` file rather than JSON, and it is fetched on the

@@ -7,3 +7,5 @@ vec-*.csv
 
 .DS_Store
 node_modules/
+supabase/functions/chart/_astro.mjs
+supabase/functions/chart/_ephemeris.mjs

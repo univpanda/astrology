@@ -17,6 +17,20 @@
   var errorBox = document.getElementById('form-error');
   var result = document.getElementById('result');
 
+  /*
+   * The chart is computed from the stored ephemeris in Supabase (astro_ephemeris
+   * via the chart edge function), falling back to the in-page engine if the API
+   * is unreachable. Both paths run the same Astro.assembleChart, so the fallback
+   * is the same arithmetic rather than a degraded approximation.
+   *
+   * x-region pins execution beside the database: without it the function runs at
+   * the edge nearest the visitor and pays a cross-region round trip to Postgres,
+   * which measured 300ms from India against 80ms pinned.
+   */
+  var CHART_API = 'https://deiefjnwbfcywsaaqqbs.supabase.co/functions/v1/chart';
+  var API_REGION = 'us-east-1';
+  var API_TIMEOUT_MS = 4000;
+
   var selectedCity = null;   // chosen from the dropdown
   var matches = [];
   var activeIndex = -1;
@@ -331,28 +345,71 @@
       }
     }
 
-    var jdUT = Astro.julianDay(y, mo, d, (h * 3600 + mi * 60 + time.second) / 3600 - offset / 60);
-    var chart = Astro.chart({
-      jdUT: jdUT,
+    var params = {
+      jdUT: Astro.julianDay(y, mo, d, (h * 3600 + mi * 60 + time.second) / 3600 - offset / 60),
+      date: dateValue,
+      time: String(h).padStart(2, '0') + ':' + String(mi).padStart(2, '0') +
+        ':' + String(time.second).padStart(2, '0'),
       latitude: place.lat,
       longitude: place.lon,
       ayanamsa: document.getElementById('ayanamsa').value,
       trueNode: document.getElementById('node-type').value === 'true',
       tzOffsetMinutes: offset
-    });
-
-    lastChart = {
-      chart: chart, place: place, offset: offset,
-      name: nameValue,
-      standard: standard,
-      time: time,
-      y: y, mo: mo, d: d, h: h, mi: mi
     };
-    render(lastChart);
-    writeHash(lastChart);
-    result.hidden = false;
-    result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    var button = form.querySelector('button.primary');
+    button.disabled = true;
+    computeChart(params, function (chart, source) {
+      button.disabled = false;
+      lastChart = {
+        chart: chart, place: place, offset: offset,
+        name: nameValue, standard: standard, time: time, source: source,
+        y: y, mo: mo, d: d, h: h, mi: mi
+      };
+      render(lastChart);
+      writeHash(lastChart);
+      result.hidden = false;
+      result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   });
+
+  /**
+   * Ask the API for the chart, and compute it here if that does not work out.
+   * The callback always fires: an unreachable database must not mean no chart.
+   */
+  function computeChart(params, done) {
+    var settled = false;
+    var finish = function (chart, source) {
+      if (settled) return;
+      settled = true;
+      done(chart, source);
+    };
+    var local = function (why) {
+      finish(Astro.chart(params), why);
+    };
+
+    if (!window.fetch || !CHART_API) return local('computed in your browser');
+
+    var timer = setTimeout(function () { local('computed in your browser (the service did not answer)'); }, API_TIMEOUT_MS);
+
+    fetch(CHART_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-region': API_REGION },
+      body: JSON.stringify(params)
+    }).then(function (res) {
+      return res.ok ? res.json() : res.json().then(function (body) {
+        throw new Error(body && body.error ? body.error : 'HTTP ' + res.status);
+      });
+    }).then(function (payload) {
+      clearTimeout(timer);
+      if (!payload || !payload.chart) throw new Error('empty response');
+      finish(payload.chart, 'stored ephemeris' +
+        (payload.timing ? ' (' + payload.timing.totalMs + ' ms)' : ''));
+    }).catch(function () {
+      clearTimeout(timer);
+      local('computed in your browser (the service was unavailable)');
+    });
+  }
 
   function fail(message) {
     errorBox.textContent = message;
@@ -483,6 +540,10 @@
     fact(list, 'True obliquity', dms(c.obliquity));
     fact(list, 'Midheaven (sidereal)', Astro.SIGNS[c.midheaven.sign] + ' ' +
       dms(c.midheaven.longitude - c.midheaven.sign * 30));
+    fact(list, 'Positions from', state.source || 'computed in your browser',
+      state.source && state.source.indexOf('stored') === 0
+        ? 'astro_ephemeris, interpolated in Postgres'
+        : 'analytical theories, in this page');
     fact(list, 'House system', 'Whole sign (Parashari)');
     fact(list, 'Time standard', state.standard === 'lmt'
       ? 'Local mean time from longitude' : 'Zone time from ' + state.place.zone,

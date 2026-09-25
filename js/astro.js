@@ -551,7 +551,29 @@ var Astro = (function () {
    * @param {boolean} [o.trueNode=false]  mean node by default: that is what
    *        Indian panchangs and the Lahiri ephemeris publish for Rahu/Ketu.
    */
-  function chart(o) {
+  /**
+   * Mean tropical longitude of a body at a Julian Day: the position this engine
+   * computes analytically, with nutation removed so it is measured from the mean
+   * equinox. Identical in meaning to what astro_ephemeris stores, which is what
+   * lets a database-backed chart and a locally computed one agree.
+   */
+  function meanTropicalOf(body, jdUT, trueNode) {
+    var T = (jdUT + deltaT(jdUT) / 86400 - 2451545.0) / 36525;
+    var n = nutation(T);
+    if (body === 'moon') return norm360(moonLongitude(T));
+    if (body === 'rahu') return norm360(lunarNode(T, trueNode === true));
+    return norm360(apparentLongitude(body, T, n).lon - n.dpsi);
+  }
+
+  /**
+   * Compute a chart from any source of mean tropical longitudes.
+   *
+   * `sample(bodyKey, jdUT)` returns that body's mean tropical longitude. The
+   * analytic engine and the stored ephemeris differ only in this function, so
+   * everything downstream - ascendant, houses, nakshatras, panchang, dashas - is
+   * one implementation rather than two that can drift apart.
+   */
+  function assembleChart(sample, o) {
     var jdUT = o.jdUT;
     var jdTT = jdUT + deltaT(jdUT) / 86400;
     var T = (jdTT - 2451545.0) / 36525;
@@ -568,18 +590,8 @@ var Astro = (function () {
      * body alike or the grahas drift against the nodes.
      */
     var ayanTrue = ayan + nut.dpsi;
-    var sidereal = function (tropicalApparent) { return norm360(tropicalApparent - ayanTrue); };
-
-    // Tropical longitudes first, plus the same a day-fraction later so we can
-    // report speed and retrogression.
-    var dt = 0.5 / 36525;
-    function tropicalOf(body, Tx) {
-      var n = nutation(Tx);
-      if (body === 'moon') return moonLongitude(Tx) + n.dpsi;
-      if (body === 'rahu') return lunarNode(Tx, o.trueNode === true) + n.dpsi;
-      return apparentLongitude(body, Tx, n).lon;
-    }
-
+    // Grahas arrive as mean tropical longitudes, so they take the plain ayanamsa;
+    // the ascendant below is an apparent (true equinox) angle and takes ayanTrue.
     var bodies = [
       { key: 'sun', name: 'Sun' }, { key: 'moon', name: 'Moon' },
       { key: 'mercury', name: 'Mercury' }, { key: 'venus', name: 'Venus' },
@@ -592,16 +604,17 @@ var Astro = (function () {
     var lst = norm360(gast + o.longitude);
     var ascTropical = norm360(atan2d(cos(lst), -(sin(lst) * cos(eps) + tan(o.latitude) * sin(eps))));
     var mcTropical = norm360(atan2d(sin(lst), cos(lst) * cos(eps)));
-    var asc = sidereal(ascTropical);
+    var asc = norm360(ascTropical - ayanTrue);
     var ascSign = signOf(asc);
 
     var planets = [];
     for (var i = 0; i < bodies.length; i++) {
       var b = bodies[i];
-      var lonT = tropicalOf(b.key, T);
-      var lonT2 = tropicalOf(b.key, T + dt);
+      // Sampled again half a day on, to report speed and retrogression.
+      var lonT = sample(b.key, jdUT);
+      var lonT2 = sample(b.key, jdUT + 0.5);
       var speed = norm180(lonT2 - lonT) / 0.5; // degrees per day
-      var lon = sidereal(lonT);
+      var lon = norm360(lonT - ayan);
       planets.push(makePlanet(b.name, lon, speed, ascSign));
       if (b.key === 'rahu') {
         planets.push(makePlanet('Ketu', norm360(lon + 180), speed, ascSign));
@@ -626,11 +639,21 @@ var Astro = (function () {
         degreeInSign: asc - ascSign * 30,
         nakshatra: nakshatraOf(asc)
       },
-      midheaven: { longitude: sidereal(mcTropical), sign: signOf(sidereal(mcTropical)) },
+      midheaven: {
+        longitude: norm360(mcTropical - ayanTrue),
+        sign: signOf(norm360(mcTropical - ayanTrue))
+      },
       planets: planets,
       panchang: panchang(sunLon, moonLon, jdUT, o.tzOffsetMinutes || 0),
       dashas: vimshottari(moonLon, jdUT)
     };
+  }
+
+  /** Compute a chart from the built-in analytical theories. */
+  function chart(o) {
+    return assembleChart(function (body, jdUT) {
+      return meanTropicalOf(body, jdUT, o.trueNode);
+    }, o);
   }
 
   function makePlanet(name, lon, speed, ascSign) {
@@ -717,6 +740,8 @@ var Astro = (function () {
     AYANAMSA: AYANAMSA,
     precessFromJ2000: precessFromJ2000,
     chart: chart,
+    assembleChart: assembleChart,
+    meanTropicalOf: meanTropicalOf,
     nakshatraOf: nakshatraOf,
     navamsaSign: navamsaSign,
     houseOf: houseOf,
