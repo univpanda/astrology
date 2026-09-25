@@ -476,6 +476,46 @@
 
   /** Where is the birth? Either a chosen city or the manual coordinates. */
   /**
+   * Put a place's coordinates into the manual boxes.
+   *
+   * Reopening a saved chart filled in its name and its note but left these
+   * empty, so a custom place came back with nowhere to see its own coordinates,
+   * and opening the panel to change one meant retyping both from scratch. Worse,
+   * opening the panel drops the chosen city, so a saved chart reopened and
+   * submitted without retyping had no place at all.
+   *
+   * Stored coordinates are decimal, so the minutes and seconds here are derived
+   * rather than the ones originally typed. Seconds keep their fraction so the
+   * value round-trips to well under a milliarcsecond.
+   */
+  function writeCoords(lat, lon, zone) {
+    [['lat', lat, 'N', 'S'], ['lon', lon, 'E', 'W']].forEach(function (p) {
+      var which = p[0], signed = p[1], abs = Math.abs(signed);
+      var deg = Math.floor(abs);
+      var min = Math.floor((abs - deg) * 60);
+      var sec = Math.round(((abs - deg) * 60 - min) * 60 * 1e4) / 1e4;
+      if (sec >= 60) { sec -= 60; min += 1; }          // carry, so 59.99996" never shows as 60
+      if (min >= 60) { min -= 60; deg += 1; }
+      document.getElementById('manual-' + which + '-d').value = String(deg);
+      document.getElementById('manual-' + which + '-m').value = String(min);
+      document.getElementById('manual-' + which + '-s').value = sec ? String(sec) : '';
+      document.getElementById('manual-' + which + '-h').value = signed < 0 ? p[3] : p[2];
+      var echo = document.getElementById(which + '-decimal');
+      echo.textContent = signed.toFixed(4) + '\u00b0';
+      echo.className = 'dms-decimal';
+    });
+
+    // The saved zone may not be in the short list yet, the city table being lazy.
+    if (zone) {
+      var sel = document.getElementById('manual-zone');
+      var known = Array.prototype.some.call(sel.options, function (o) { return o.value === zone; });
+      if (!known) { var opt = el('option', null, zone); opt.value = zone; sel.appendChild(opt); }
+      sel.value = zone;
+    }
+    document.getElementById('zone-note').textContent = '';
+  }
+
+  /**
    * Where is the birth? A chosen city, or the manual coordinates.
    *
    * Typed coordinates count whether or not the panel happens to be open. It was
@@ -1598,6 +1638,7 @@
     };
     placeInput.value = entry.placeLabel;
     placeNote.textContent = entry.latitude.toFixed(4) + ', ' + entry.longitude.toFixed(4) + '  ·  ' + entry.zone;
+    writeCoords(entry.latitude, entry.longitude, entry.zone);
     manualFields.hidden = true;
   }
 
@@ -1728,6 +1769,7 @@
     placeInput.value = placeLabelOf(state.place);
     placeNote.textContent = state.place.lat.toFixed(4) + ', ' + state.place.lon.toFixed(4) +
       '  \u00b7  ' + state.place.zone;
+    writeCoords(state.place.lat, state.place.lon, state.place.zone);
     manualFields.hidden = true;
     manualToggle.setAttribute('aria-expanded', 'false');
     errorBox.textContent = '';

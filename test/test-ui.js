@@ -1044,6 +1044,77 @@ ok('the echo shows the reason too, not just that something is wrong',
  * carried step="1" and min="0", which blocked a decimal and a negative in the
  * browser before readDms could accept either, so the forgiving paths were dead.
  */
+console.log('\nReopening a saved chart');
+/*
+ * Reopening filled in the name and the note but left the coordinate boxes empty.
+ * A custom place came back with nowhere to see its own coordinates, changing one
+ * meant retyping both, and because opening the panel drops the chosen city, a
+ * reopened chart submitted without retyping had no place at all.
+ *
+ * Stored coordinates are decimal, so the minutes and seconds shown are derived.
+ * This runs writeCoords and readDms against each other to hold that conversion.
+ */
+(function () {
+  var src =
+    appSrc.slice(appSrc.indexOf('function readDms'), appSrc.indexOf('function showDecimal')) +
+    appSrc.slice(appSrc.indexOf('function writeCoords'), appSrc.indexOf('function resolvePlace'));
+  var fields = {};
+  var doc = {
+    getElementById: function (id) {
+      if (!fields[id]) fields[id] = { value: '', textContent: '', options: [], appendChild: function () {} };
+      return fields[id];
+    }
+  };
+  var mod = new Function('document', 'el',
+    src + '\nreturn { writeCoords: writeCoords, readDms: readDms };')(doc, function () {
+      return { value: '', textContent: '' };
+    });
+
+  var roundTrip = function (lat, lon) {
+    mod.writeCoords(lat, lon, null);
+    return { lat: mod.readDms('lat', 90), lon: mod.readDms('lon', 180) };
+  };
+
+  ok('a saved place comes back through the boxes unchanged', (function () {
+    var cases = [[22.88, 87.65], [23.5158, 87.308], [28.6139, 77.2090],
+                 [-33.8688, 151.2093], [40.7128, -74.0060], [51.5074, -0.1278],
+                 [0, 0], [-0.0001, 0.0001], [89.9999, 179.9999]];
+    return cases.every(function (c) {
+      var r = roundTrip(c[0], c[1]);
+      if (r.lat.error || r.lon.error) return false;
+      // under a milliarcsecond, which is a millimetre of ground
+      return Math.abs(r.lat.value - c[0]) < 3e-7 && Math.abs(r.lon.value - c[1]) < 3e-7;
+    });
+  })(), 'nine places, each within a milliarcsecond');
+
+  ok('southern and western places keep their side of the world', (function () {
+    mod.writeCoords(-33.8688, 151.2093, null);
+    var south = fields['manual-lat-h'].value === 'S' && fields['manual-lon-h'].value === 'E';
+    mod.writeCoords(40.7128, -74.0060, null);
+    return south && fields['manual-lat-h'].value === 'N' && fields['manual-lon-h'].value === 'W';
+  })());
+
+  ok('whole degrees leave the seconds box empty rather than showing a zero', (function () {
+    mod.writeCoords(23, 87, null);
+    return fields['manual-lat-s'].value === '' && fields['manual-lat-d'].value === '23' &&
+      fields['manual-lat-m'].value === '0';
+  })());
+
+  ok('and the decimal echo is filled in too, so the panel opens explained', (function () {
+    mod.writeCoords(22.88, 87.65, null);
+    return fields['lat-decimal'].textContent === '22.8800\u00b0' &&
+      fields['lon-decimal'].textContent === '87.6500\u00b0';
+  })());
+})();
+
+ok('both ways of reopening a chart fill the boxes',
+   (appSrc.match(/writeCoords\(/g) || []).length >= 3 &&
+   /writeCoords\(entry\.latitude, entry\.longitude, entry\.zone\)/.test(appSrc) &&
+   /writeCoords\(state\.place\.lat, state\.place\.lon, state\.place\.zone\)/.test(appSrc));
+ok('a saved zone missing from the short list is added rather than dropped',
+   /var known = Array\.prototype\.some\.call\(sel\.options/.test(appSrc) &&
+   /if \(!known\) \{ var opt = el\('option', null, zone\)/.test(appSrc));
+
 console.log('\nTimezone for typed coordinates');
 /*
  * The zone list came from Intl.supportedValuesOf('timeZone'), which current ICU
