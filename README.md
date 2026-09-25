@@ -125,6 +125,42 @@ In rough order of size:
 - **The time actually used.** Zone time vs local mean time for pre-1900 births
   moves the ascendant by up to a degree per four minutes of difference.
 
+## Deployment
+
+Live on AWS Amplify Hosting: <https://main.d28kkscnmmgnma.amplifyapp.com>
+
+```
+./scripts/deploy-aws.sh
+```
+
+It is a manual zip deployment rather than Amplify's GitHub integration, which
+suits a site with no build step: nothing needs building, so there is nothing to
+spend build minutes on, and the repo needs no OAuth app installed. What ships is
+the working tree, so push and deploy are separate acts. Only `index.html`,
+`css/`, `js/` and `data/` go into the bundle; tests and generator scripts stay
+out.
+
+| | |
+|---|---|
+| Account | 914979267255, us-east-1 |
+| App | `Astrology`, app id `d28kkscnmmgnma`, platform WEB |
+| Branch | `main` |
+
+This is a separate Amplify app from the PandaInUniv ones in the same account and
+shares nothing with them.
+
+Cache headers are set on the app rather than left to default, because the mirror
+of this site on GitHub Pages taught the lesson: Pages sends `max-age=600` on
+everything, so a deploy can pair new HTML with ten-minute-old JavaScript. Here
+`index.html`, `js/` and `css/` get 60 seconds and `data/` gets a week, which is
+safe because the data files are regenerated deliberately and never edited by
+hand.
+
+Worth knowing about cost: `data/cities.js` is 3 MB and Amplify bills roughly
+$0.15/GB served, so a thousand first-time visitors who touch the place field cost
+about fifty cents. The week-long cache header means they only pay it once. If
+that ever matters, the city table is the thing to shrink.
+
 ## Tests
 
 ```
@@ -152,7 +188,7 @@ js/charts.js            North and South Indian kundli as inline SVG
 js/app.js               form handling, the combobox, rendering
 data/cities.js          69,752 places from GeoNames, loaded on first keystroke
 data/perturbations.js   residual corrections for Earth, Venus, Mars, Jupiter, Saturn
-scripts/                regenerate the data files and refit the ayanamsa
+scripts/                regenerate the data files, refit the ayanamsa, deploy
 test/                   the two suites above
 ```
 
