@@ -842,6 +842,46 @@ console.log('\nAspects');
      rows.some(function (r) { return r.retrograde; }) &&
      !/retrograde/.test(Yogas.aspects.toString()));
 
+  /*
+   * K. N. Rao's rule, kept separate from the classical columns: a retrograde
+   * graha also acts from the sign behind it, within the first ten degrees.
+   */
+  ok('the rule reaches only retrograde grahas', rows.every(function (r) {
+    return r.retrograde || r.fromPreviousSign.length === 0;
+  }));
+  ok('it is not applied to the nodes, which are always retrograde',
+     byName.Rahu.fromPreviousSign.length === 0 && byName.Ketu.fromPreviousSign.length === 0);
+  ok('it stops after the tenth degree', (function () {
+    var deep = chart.planets.filter(function (p) {
+      return p.retrograde && p.degreeInSign >= Yogas.RAO_MAX_DEGREE &&
+             ['Rahu', 'Ketu'].indexOf(p.name) < 0;
+    });
+    if (!deep.length) return false;      // Venus at 27 degrees serves here
+    return deep.every(function (p) { return byName[p.name].fromPreviousSign.length === 0; });
+  })());
+  ok('it adds reach rather than restating it', rows.every(function (r) {
+    return r.fromPreviousSign.every(function (extra) {
+      return !r.casts.some(function (already) { return already.graha === extra.graha; });
+    });
+  }));
+  ok('what it adds really is aspected from the sign behind', (function () {
+    var saturn = chart.planets.filter(function (p) { return p.name === 'Saturn'; })[0];
+    if (!saturn.retrograde || saturn.degreeInSign >= Yogas.RAO_MAX_DEGREE) return true;
+    var behind = (saturn.sign + 11) % 12;
+    return byName.Saturn.fromPreviousSign.every(function (extra) {
+      var target = chart.planets.filter(function (p) { return p.name === extra.graha; })[0];
+      return Yogas.aspects('Saturn', behind, target.sign);
+    });
+  })());
+  ok('the classical columns are untouched by it', (function () {
+    // Removing the rule must not change what column two says.
+    return byName.Saturn.casts.every(function (x) {
+      var target = chart.planets.filter(function (p) { return p.name === x.graha; })[0];
+      var saturn = chart.planets.filter(function (p) { return p.name === 'Saturn'; })[0];
+      return Yogas.aspects('Saturn', saturn.sign, target.sign);
+    });
+  })());
+
   // Every graha sees the seventh; only three have more.
   ok('each graha aspects the seventh from itself', Yogas.GRAHAS.every(function (g) {
     return Yogas.aspects(g, 0, 6);

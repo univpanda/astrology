@@ -724,6 +724,8 @@ td .retro-flag, td.retro-flag { color: var(--retro); }
 /* A yogakaraka is worth spotting at a glance; the bare house numbers beside it
    are not, so only the named case is picked out. */
 td.rulership { color: var(--ink-soft); }
+/* A named modern rule rather than a classical one, so it reads as an aside. */
+td.rao-aspects { color: var(--ink-soft); font-style: italic; }
 tr td.rulership:not(:empty) { white-space: nowrap; }
 /* The lagna heads the table but is not a graha, so it reads as a header row. */
 tr.ascendant-row { background: var(--green-soft); }

@@ -185,6 +185,47 @@ var Yogas = (function () {
     return n + suffix;
   }
 
+  /*
+   * K. N. Rao's rule for retrograde grahas: a retrograde graha also gives its
+   * results, and casts its aspects, from the sign behind the one it occupies -
+   * "Saturn retrograde is not merely in the 8th house, but giving results from
+   * the 7th house (because retrograde)".
+   *
+   * Two qualifications come with it. It applies while the graha is within the
+   * first ten degrees of its sign, that being as far back as retrogression
+   * could actually carry it; past ten degrees it stays where it is. And it is
+   * not applied to Rahu and Ketu, which are retrograde always and would
+   * otherwise pick up a second set of aspects permanently.
+   *
+   * Kept apart from the classical columns rather than folded into them. No
+   * Parashari text gives this rule, so it is reported as an addition, under the
+   * name of the astrologer who teaches it, for a reader to take or leave.
+   */
+  var RAO_MAX_DEGREE = 10;
+  var RAO_EXCLUDED = ['Rahu', 'Ketu'];
+
+  function raoRetrogradeAspects(source, all) {
+    if (!source.retrograde) return [];
+    if (RAO_EXCLUDED.indexOf(source.name) >= 0) return [];
+    if (source.degreeInSign >= RAO_MAX_DEGREE) return [];
+
+    var behind = (source.sign + 11) % 12;
+    var found = [];
+    all.forEach(function (other) {
+      if (other.name === source.name) return;
+      if (!aspects(source.name, behind, other.sign)) return;
+      // Skip what it already aspects from where it stands: the rule adds
+      // reach, it does not restate it.
+      if (aspects(source.name, source.sign, other.sign)) return;
+      found.push({
+        graha: other.name,
+        apart: ((other.sign - behind) % 12 + 12) % 12 + 1,
+        retrograde: other.retrograde
+      });
+    });
+    return found;
+  }
+
   /**
    * Who aspects whom, both ways round.
    *
@@ -199,7 +240,10 @@ var Yogas = (function () {
   function aspectTable(chart) {
     var rows = [];
     var bySign = chart.planets.map(function (p) {
-      return { name: p.name, sign: p.sign, retrograde: p.retrograde };
+      return {
+        name: p.name, sign: p.sign, retrograde: p.retrograde,
+        degreeInSign: p.degreeInSign
+      };
     });
 
     bySign.forEach(function (source) {
@@ -222,7 +266,8 @@ var Yogas = (function () {
       });
       rows.push({
         graha: source.name, retrograde: source.retrograde,
-        casts: casts, receives: receives
+        casts: casts, receives: receives,
+        fromPreviousSign: raoRetrogradeAspects(source, bySign)
       });
     });
     return rows;
@@ -241,6 +286,7 @@ var Yogas = (function () {
 
   return { detect: detect, parivartana: parivartana, neechaBhanga: neechaBhanga,
     aspectTable: aspectTable, aspects: aspects, ordinal: ordinal,
+    raoRetrogradeAspects: raoRetrogradeAspects, RAO_MAX_DEGREE: RAO_MAX_DEGREE,
     FULL_ASPECTS: FULL_ASPECTS, GRAHAS: GRAHAS };
 })();
 

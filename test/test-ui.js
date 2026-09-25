@@ -516,8 +516,17 @@ ok('both directions get a column', (function () {
   return head.indexOf('>Aspects<') >= 0 && head.indexOf('>Aspected by<') >= 0;
 })());
 ok('the note says aspect is not mutual', /Aspect is not mutual/.test(appSrc));
-ok('the note says retrogression does not change the aspect',
-   /Retrogression does not change/.test(appSrc) && /cheshta bala/.test(appSrc));
+ok('the note says retrogression does not change the classical aspect',
+   /Otherwise retrogression does not change/.test(appSrc) && /cheshta bala/.test(appSrc));
+ok('the Rao rule has a column of its own', (function () {
+  var head = html.slice(html.indexOf('id="aspect-table"'), html.indexOf('aspect-note'));
+  return head.indexOf('>From previous sign<') >= 0;
+})());
+ok('the note attributes the rule and says it is not classical',
+   /K\. N\. Rao/.test(appSrc) && /not a classical one/.test(appSrc) &&
+   /No Parashari text gives the rule/.test(appSrc));
+ok('the note gives the ten degree limit and the exclusion',
+   /within the first ten degrees/.test(appSrc) && /Rahu and Ketu are left out/.test(appSrc));
 ok('retrograde grahas are marked in the aspect table',
    /row\.retrograde \? ' \[R\]' : ''/.test(appSrc));
 ok('the note names the nodes as a modern convention',
