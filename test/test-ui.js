@@ -662,12 +662,55 @@ ok('the page carries a key for both flags', (function () {
 })());
 
 console.log('\nShodasavarga panel');
-ok('the columns are exactly the sixteen Shodasavarga divisions, in order', (function () {
+/*
+ * The headings are built in code now, from the same list the cells come from, so
+ * the markup carries an empty row rather than sixteen divisions typed a second
+ * time. This checks the builder walks the engine's list in order.
+ */
+ok('the columns are built from the engine\'s own list of sixteen, in order', (function () {
   var head = html.slice(html.indexOf('id="shodasavarga-table"'));
   head = head.slice(0, head.indexOf('</thead>'));
-  var cols = (head.match(/<th scope="col">D(\d+)<\/th>/g) || [])
-    .map(function (m) { return m.replace(/\D/g, ''); }).join(' ');
-  return cols === Astro.SHODASAVARGA.join(' ');
+  return !/<th scope="col">D\d+<\/th>/.test(head) &&
+    /Astro\.SHODASAVARGA\.forEach\(function \(division\) \{/.test(appSrc) &&
+    /el\('th', null, 'D' \+ division\)/.test(appSrc);
+})());
+
+/*
+ * Each division's share of the twenty vimsopaka points, under its heading. The
+ * two schemes disagree about nearly every division - Shashtiamsa is 5 across the
+ * ten and 4 across the sixteen - which is where a total that will not reconcile
+ * usually comes from, so both are held here.
+ */
+ok('both vimsopaka schemes total twenty exactly', (function () {
+  var sum = function (m) {
+    return Object.keys(m).reduce(function (t, k) { return t + m[k]; }, 0);
+  };
+  return sum(Astro.VIMSOPAKA_DASAVARGA) === 20 && sum(Astro.VIMSOPAKA_SHODASAVARGA) === 20;
+})());
+ok('each scheme weights exactly its own divisions, no more and no less', (function () {
+  var keys = function (m) { return Object.keys(m).map(Number).sort(function (a, b) { return a - b; }); };
+  return keys(Astro.VIMSOPAKA_DASAVARGA).join(' ') ===
+      Astro.DASAVARGA.slice().sort(function (a, b) { return a - b; }).join(' ') &&
+    keys(Astro.VIMSOPAKA_SHODASAVARGA).join(' ') ===
+      Astro.SHODASAVARGA.slice().sort(function (a, b) { return a - b; }).join(' ');
+})());
+ok('the figures are Parashara\'s, verses 20 and 21-25', (function () {
+  var ten = Astro.VIMSOPAKA_DASAVARGA, sixteen = Astro.VIMSOPAKA_SHODASAVARGA;
+  return ten[1] === 3 && ten[60] === 5 && ten[2] === 1.5 &&
+    sixteen[1] === 3.5 && sixteen[60] === 4 && sixteen[9] === 3 && sixteen[16] === 2 &&
+    sixteen[2] === 1 && sixteen[3] === 1 && sixteen[30] === 1 && sixteen[4] === 0.5;
+})());
+ok('Shashtiamsa is the division the two schemes most disagree on',
+   Astro.VIMSOPAKA_DASAVARGA[60] === 5 && Astro.VIMSOPAKA_SHODASAVARGA[60] === 4);
+ok('halves are written as halves, not decimals',
+   /function vimsopakaFigure/.test(appSrc) && /'\\u00bd'/.test(appSrc));
+ok('the heading says what the figure is, and what it would be across the ten',
+   /Worth ' \+ weight \+ ' of the twenty vimsopaka points across the sixteen/.test(appSrc) &&
+   /' across the ten\.'/.test(appSrc));
+ok('and the note gives the distribution in words', (function () {
+  var flat = appSrc.replace(/'\s*\+\s*'/g, '');
+  return /D1 3\\u00bd, D60 4, D9 3, D16 2/.test(flat) &&
+    /D60 is 5 there/.test(flat);
 })());
 
 ok('it renders whenever a chart does',

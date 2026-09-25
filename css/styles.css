@@ -872,6 +872,17 @@ td.varga-sign {
 /* Sixteen columns is a lot of table; let it breathe less than the others. */
 #shodasavarga-table th, #shodasavarga-table td { padding-left: 0.45rem; padding-right: 0.45rem; }
 #shodasavarga-table td.dig { font-size: 0.86rem; }
+/* The vimsopaka share sits under its division, lighter than the heading so the
+   column still reads as D9 first and "worth 3" second. */
+#shodasavarga-table th .varga-weight {
+  display: block;
+  font-weight: 400;
+  font-size: 0.8rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
 .flag-key { max-width: 60ch; margin: 0 auto 1rem; text-align: center; }
 /* A yogakaraka is worth spotting at a glance; the bare house numbers beside it
    are not, so only the named case is picked out. */

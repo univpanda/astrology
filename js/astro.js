@@ -871,6 +871,30 @@ var Astro = (function () {
   var SHODASAVARGA = VARGAS.map(function (v) { return v.division; });
 
   /*
+   * Vimsopaka weights: how the twenty points are shared out. Both schemes are
+   * here because they disagree about the same division, and the disagreement
+   * catches people out - Shashtiamsa is worth 5 across the ten and 4 across the
+   * sixteen, Rashi 3 and then 3.5.
+   *
+   * Chapter 7, verse 20, for the ten: "3 for Rashi, 5 for Shashtiamsa and for the
+   * other 8 divisions, 1 1/2 each."
+   *
+   * Verses 21-25, for the sixteen: "Hora 1, Trimsamsa 1, decanate 1, Shodashamsa
+   * 2, Navamsha 3, Rashi 3 1/2, Shashtiamsa 4, and the rest of the nine divisions
+   * each a half."
+   *
+   * Each totals twenty exactly, which is what the name means and what a test
+   * holds them to.
+   */
+  var VIMSOPAKA_DASAVARGA = {
+    1: 3, 2: 1.5, 3: 1.5, 7: 1.5, 9: 1.5, 10: 1.5, 12: 1.5, 16: 1.5, 30: 1.5, 60: 5
+  };
+  var VIMSOPAKA_SHODASAVARGA = {
+    1: 3.5, 2: 1, 3: 1, 4: 0.5, 7: 0.5, 9: 3, 10: 0.5, 12: 0.5, 16: 2,
+    20: 0.5, 24: 0.5, 27: 0.5, 30: 1, 40: 0.5, 45: 0.5, 60: 4
+  };
+
+  /*
    * Same passage, verse 16: "As for Trimsamsa effects the Sun is akin to Mars and
    * the Moon is akin to Venus. The effects applicable to Rashi will apply to
    * Trimsamsa."
@@ -1220,6 +1244,8 @@ var Astro = (function () {
     vargaDignity: vargaDignity,
     DASAVARGA: DASAVARGA,
     SHODASAVARGA: SHODASAVARGA,
+    VIMSOPAKA_DASAVARGA: VIMSOPAKA_DASAVARGA,
+    VIMSOPAKA_SHODASAVARGA: VIMSOPAKA_SHODASAVARGA,
     VARGA_DIGNITY_SHORT: VARGA_DIGNITY_SHORT,
     VARGA_DIGNITY_LABELS: VARGA_DIGNITY_LABELS,
     TRIMSAMSA_PROXY: TRIMSAMSA_PROXY,

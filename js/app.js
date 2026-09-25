@@ -1024,8 +1024,47 @@
     return text;
   }
 
+  /** Halves read better as halves: 3.5 is 3\u00bd, 0.5 is \u00bd. */
+  function vimsopakaFigure(weight) {
+    var whole = Math.floor(weight);
+    var half = weight - whole >= 0.5;
+    if (!half) return String(whole);
+    return (whole ? String(whole) : '') + '\u00bd';
+  }
+
+  /*
+   * The header carries each division's share of the twenty vimsopaka points, so
+   * the columns that decide the score are visible rather than having to be known.
+   * Built here because the divisions and the weights both live in the engine;
+   * repeating either in the markup would be a second place for them to drift.
+   */
+  function renderShodasavargaHead(table) {
+    var row = table.querySelector('thead tr');
+    row.innerHTML = '';
+    var first = el('th', null, 'Graha');
+    first.setAttribute('scope', 'col');
+    row.appendChild(first);
+
+    Astro.SHODASAVARGA.forEach(function (division) {
+      var weight = Astro.VIMSOPAKA_SHODASAVARGA[division];
+      var th = el('th', null, 'D' + division);
+      th.setAttribute('scope', 'col');
+      th.appendChild(el('span', 'varga-weight', vimsopakaFigure(weight)));
+      var varga = Astro.VARGAS.filter(function (v) { return v.division === division; })[0];
+      th.title = (varga ? varga.label + ', ' + varga.about + '. ' : '') +
+        'Worth ' + weight + ' of the twenty vimsopaka points across the sixteen' +
+        (Astro.VIMSOPAKA_DASAVARGA[division] !== undefined &&
+         Astro.VIMSOPAKA_DASAVARGA[division] !== weight
+          ? ', and ' + Astro.VIMSOPAKA_DASAVARGA[division] + ' across the ten.'
+          : '.');
+      row.appendChild(th);
+    });
+  }
+
   function renderShodasavarga(state) {
-    var tbody = document.querySelector('#shodasavarga-table tbody');
+    var table = document.getElementById('shodasavarga-table');
+    renderShodasavargaHead(table);
+    var tbody = table.querySelector('tbody');
     tbody.innerHTML = '';
 
     var positionsD1 = {};
@@ -1094,7 +1133,11 @@
       'great friend 18, friend 15, neutral 10, enemy 7, great enemy 5. Moolatrikona he does ' +
       'not rank apart from an own sign, and exaltation falls outside the six entirely, uchcha ' +
       'bala measuring that; both appear here regardless, as does debilitation. No luminary ' +
-      'rules a trimsamsa, so in D30 the Sun stands in as Mars and the Moon as Venus. Rahu and ' +
+      'rules a trimsamsa, so in D30 the Sun stands in as Mars and the Moon as Venus. The ' +
+      'figure under each heading is that division\u2019s share of the twenty: D1 3\u00bd, ' +
+      'D60 4, D9 3, D16 2, then D2, D3 and D30 at 1 and the remaining nine at a half. Across ' +
+      'the ten of the Dasavarga the shares differ \u2014 D60 is 5 there, D1 3 \u2014 which is ' +
+      'the usual source of a vimsopaka total that will not reconcile. Rahu and ' +
       'Ketu own no sign and keep no friendships, so they are left out.';
   }
 
