@@ -76,10 +76,28 @@ Deno.serve(async (req) => {
       if (!row.name || !row.place_label || !row.birth_date || !row.birth_time) {
         return json({ error: 'name, place, date and time are all required' }, 400);
       }
-      // The unique index is over lower(name) and lower(place_label), which
-      // on_conflict cannot name directly, so merge by hand: look, then patch or
-      // insert. Two tabs racing would collide on the index rather than
-      // duplicate, which is the failure worth having.
+      /*
+       * An edit names the row it is replacing, which is the only way a change of
+       * name or time can update that row instead of leaving the old one behind.
+       * The owner token is in the filter, so a caller cannot patch a row that is
+       * not theirs by guessing an id.
+       */
+      if (body.id) {
+        const patched = await fetch(
+          `${TABLE}?owner_token=eq.${encodeURIComponent(token)}&id=eq.${encodeURIComponent(String(body.id))}`,
+          { method: 'PATCH', headers: headers({ Prefer: 'return=representation' }), body: JSON.stringify(row) });
+        if (!patched.ok) return json({ error: await patched.text() }, 502);
+        const rows = await patched.json();
+        if (rows.length) {
+          const listed = await fetch(TABLE + query, { headers: headers() });
+          return json({ saved: true, updated: true, entries: listed.ok ? await listed.json() : [] });
+        }
+        // The id did not match anything of theirs; fall through and insert.
+      }
+
+      // Otherwise merge on the four keys. The unique index is over lower(name)
+      // and lower(place_label), which on_conflict cannot name directly, so look
+      // first, then patch or insert.
       const found = await fetch(
         `${TABLE}?owner_token=eq.${encodeURIComponent(token)}` +
         `&name=ilike.${encodeURIComponent(row.name)}` +

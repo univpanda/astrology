@@ -218,6 +218,29 @@ if (process.env.KUNDALI_API) {
        '-H', 'Content-Type: application/json', '-d', '{"ownerToken":"tiny","action":"list"}'],
        { encoding: 'utf8' })).error);
 
+  // Editing: the row is named by id, so a changed name or time updates it
+  // rather than leaving the old row behind beside a near-duplicate.
+  var beforeEdit = call({ action: 'list' }).entries.length;
+  var editId = first.entries[0].id;
+  var edited = call({ action: 'save', id: editId,
+    entry: Object.assign({}, entry, { name: 'Renamed Person', time: '11:30:00' }) });
+  ok('an edit updates the named row', edited.updated === true &&
+     edited.entries.length === beforeEdit, edited.entries.length + ' rows');
+  ok('the edited row kept its id and took the new values', (function () {
+    var row = edited.entries.filter(function (e) { return e.id === editId; })[0];
+    return row && row.name === 'Renamed Person' && String(row.birth_time).slice(0, 8) === '11:30:00';
+  })());
+  ok('another token cannot patch a row by naming its id', (function () {
+    JSON.parse(execFileSync('curl', ['-sS', '-X', 'POST', process.env.KUNDALI_API,
+      '-H', 'Content-Type: application/json',
+      '-d', JSON.stringify({ ownerToken: 'intruder-token-0123456789', action: 'save', id: editId,
+        entry: Object.assign({}, entry, { name: 'Hijacked' }) })], { encoding: 'utf8' }));
+    var mine = call({ action: 'list' }).entries.filter(function (e) { return e.id === editId; })[0];
+    return mine && mine.name === 'Renamed Person';
+  })());
+  // Put it back so the rest of the suite reads as before.
+  call({ action: 'save', id: editId, entry: entry });
+
   var removed = call({ action: 'delete', id: first.entries[0].id });
   ok('deleting removes only that row', removed.deleted === true && removed.entries.length === 1);
   call({ action: 'delete', id: removed.entries[0].id });

@@ -44,6 +44,13 @@
    */
   var reopeningSaved = false;
 
+  /*
+   * The saved row the chart on screen came from, if any. Editing keeps it, so
+   * changing a birth time updates that row rather than leaving the old one
+   * behind and adding a second, nearly identical entry to the list.
+   */
+  var currentEntry = null;
+
   /* ------------------------------------------------------------ formatting */
 
   var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -377,6 +384,7 @@
       lastChart = {
         chart: chart, place: place, offset: offset,
         name: nameValue, standard: standard, time: time, source: source,
+        ayanamsa: params.ayanamsa, trueNode: params.trueNode,
         y: y, mo: mo, d: d, h: h, mi: mi
       };
       render(lastChart);
@@ -770,6 +778,10 @@
         var removed = current.splice(index, 1)[0];
         writeSaved(current);
         renderSaved();
+        if (currentEntry && removed &&
+            (removed.id ? removed.id === currentEntry.id : keyOf(removed) === keyOf(currentEntry))) {
+          currentEntry = null;
+        }
         if (removed && removed.id) {
           callKundaliApi({ action: 'delete', id: removed.id }, function (entries) {
             if (entries) { writeSaved(entries.map(fromRow)); renderSaved(); }
@@ -805,13 +817,24 @@
       longitude: state.place.lon,
       zone: state.place.zone,
       standard: state.standard,
-      ayanamsa: document.getElementById('ayanamsa').value,
-      trueNode: document.getElementById('node-type').value === 'true'
+      ayanamsa: state.ayanamsa,
+      trueNode: state.trueNode
     };
 
+    /*
+     * Which row this replaces. When a chart came from the saved list, it is that
+     * row even if the name or the time has since been edited; otherwise it is
+     * whichever row carries the same four keys.
+     */
+    if (currentEntry && currentEntry.id) entry.id = currentEntry.id;
     var list = readSaved();
     var at = -1;
-    for (var i = 0; i < list.length; i++) if (keyOf(list[i]) === keyOf(entry)) at = i;
+    for (var i = 0; i < list.length; i++) {
+      var same = currentEntry
+        ? (currentEntry.id ? list[i].id === currentEntry.id : keyOf(list[i]) === keyOf(currentEntry))
+        : keyOf(list[i]) === keyOf(entry);
+      if (same) at = i;
+    }
     if (at >= 0) list[at] = entry; else list.unshift(entry);
 
     var storedLocally = writeSaved(list);
@@ -822,13 +845,18 @@
 
     // The local copy is written first so the panel updates immediately and keeps
     // working offline; the database is the shared copy, not the fast one.
-    callKundaliApi({ action: 'save', entry: entry }, function (entries) {
+    callKundaliApi({ action: 'save', entry: entry, id: entry.id }, function (entries) {
       if (entries) {
         writeSaved(entries.map(fromRow));
         renderSaved();
         savedNote.textContent = 'Saved to your kundalis and synced.';
+        // Remember which row this chart is now, so a later edit updates it.
+        currentEntry = entries.map(fromRow).filter(function (e) {
+          return keyOf(e) === keyOf(entry);
+        })[0] || currentEntry;
       } else {
         savedNote.textContent = 'Saved in this browser. Syncing was not possible.';
+        currentEntry = entry;
       }
     });
     if (!quiet) setTimeout(function () { saveFeedback.textContent = ''; }, 4000);
@@ -836,6 +864,7 @@
 
   /** Put a saved chart back into the form and cast it again. */
   function loadSaved(entry) {
+    currentEntry = entry;
     document.getElementById('name').value = entry.name;
     document.getElementById('date').value = entry.date;
     var t = entry.time.split(':').map(Number);
@@ -929,8 +958,31 @@
     errorBox.textContent = '';
   }
 
+  /** Put a chart's details back into the form, so they can be corrected. */
+  function fillForm(state) {
+    document.getElementById('name').value = state.name;
+    document.getElementById('date').value = state.y + '-' +
+      String(state.mo).padStart(2, '0') + '-' + String(state.d).padStart(2, '0');
+    writeTime(state.h, state.mi, state.time.second);
+    document.getElementById('time-standard').value = state.standard === 'lmt' ? 'lmt' : 'zone';
+    document.getElementById('ayanamsa').value = state.ayanamsa;
+    document.getElementById('node-type').value = state.trueNode ? 'true' : 'mean';
+    selectedCity = state.place;
+    placeInput.value = [state.place.name, state.place.region, state.place.nation].filter(Boolean).join(', ');
+    placeNote.textContent = state.place.lat.toFixed(4) + ', ' + state.place.lon.toFixed(4) +
+      '  \u00b7  ' + state.place.zone;
+    manualFields.hidden = true;
+    manualToggle.setAttribute('aria-expanded', 'false');
+    errorBox.textContent = '';
+  }
+
   function showForm(blank) {
-    if (blank) blankForm();
+    if (blank) {
+      blankForm();
+      currentEntry = null;   // a fresh form means a new chart, not an edit
+    } else if (lastChart) {
+      fillForm(lastChart);
+    }
     activateTab('add');
     document.getElementById('name').focus();
   }

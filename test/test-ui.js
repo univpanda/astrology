@@ -402,6 +402,24 @@ ok('entries are keyed on name, place, date and time',
    /entry\.name, entry\.placeLabel, entry\.date, entry\.time/.test(appSrc));
 ok('a local copy is written first so the panel works offline',
    /writeSaved\(list\)/.test(appSrc) && /localStorage/.test(appSrc));
+// Editing has to refill the form and then update the row it came from.
+ok('editing refills the form from the chart on screen',
+   /function fillForm/.test(appSrc) && /} else if \(lastChart\) \{\s*\n\s*fillForm\(lastChart\);/.test(appSrc));
+ok('a blank form means a new chart, not an edit',
+   /blankForm\(\);\s*\n\s*currentEntry = null;/.test(appSrc));
+ok('the row a chart came from is remembered',
+   /var currentEntry = null;/.test(appSrc) && /currentEntry = entry;/.test(appSrc));
+ok('saving an edit names the row it replaces',
+   /if \(currentEntry && currentEntry\.id\) entry\.id = currentEntry\.id;/.test(appSrc) &&
+   /action: 'save', entry: entry, id: entry\.id/.test(appSrc));
+ok('an edit replaces by id even when the four keys changed',
+   /currentEntry\.id \? list\[i\]\.id === currentEntry\.id/.test(appSrc));
+ok('deleting the chart on screen forgets the row',
+   /currentEntry = null;\s*\n\s*\}\s*\n\s*if \(removed && removed\.id\)/.test(appSrc));
+ok('the ayanamsa a chart was cast with survives an edit',
+   /ayanamsa: params\.ayanamsa, trueNode: params\.trueNode/.test(appSrc) &&
+   /document\.getElementById\('ayanamsa'\)\.value = state\.ayanamsa;/.test(appSrc));
+
 ok('a saved chart can be reopened and removed',
    /function loadSaved/.test(appSrc) && /saved-remove/.test(appSrc));
 ok('storage failure is handled rather than thrown',
