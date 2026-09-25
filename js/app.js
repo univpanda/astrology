@@ -1075,19 +1075,27 @@
       tbody.appendChild(dignityRow);
     });
 
+    /*
+     * Ordered as the table is actually read: what it shows, how to read it, what
+     * the readings are worth, then the two places the ordinary rule does not
+     * reach, then who is missing.
+     *
+     * The scoring had been stated as seven names against six figures. Those six
+     * are varga viswa, from verses 21-25, and their top category is an own sign -
+     * moolatrikona is not among them - so the two scales are now named apart
+     * rather than welded into one sentence that leaves a name without a number.
+     */
     document.getElementById('shodasavarga-note').textContent =
-      'Dignity in each of the sixteen Shodasavarga divisions, judged against the lord of ' +
-      'the sign that division gives. The classical scale runs Mooltrikona, own sign, great ' +
-      'friend, friend, neutral, enemy, great enemy, which Parashara scores as 20, 18, 15, 10, ' +
-      '7 and 5 out of twenty. Dignities are abbreviated - Exal, Mool, Own, Gt Fr, ' +
-      'Fr, Neut, Enm, Gt Enm, Deb - and signs are numbered 1 to 12 from Aries, as the chart ' +
-      'above numbers its boxes. Hover any cell for the words themselves. Exaltation is not one of those steps, being measured by uchcha bala ' +
-      'instead, but it is shown here when it falls, as is debilitation. No luminary rules a ' +
-      'trimsamsa, so in D30 the Sun stands in as Mars and the Moon as Venus, which is ' +
-      'Parashara\u2019s own remedy in chapter 7. Each graha takes two rows: the ' +
-      'sign the division puts it in, then how it stands there. Hover any cell for its lord ' +
-      'and the reading underneath. Grahas are listed as in the tables beside this one, and Rahu ' +
-      'and Ketu own no sign and keep no friendships, so they are left out.';
+      'Where each graha stands in all sixteen divisions, judged against the lord of the sign ' +
+      'each one gives. Every graha takes two rows: the sign, numbered 1 to 12 from Aries as ' +
+      'the chart above numbers its boxes, then its dignity there. Dignities shorten to Exal, ' +
+      'Mool, Own, Gt Fr, Fr, Neut, Enm, Gt Enm and Deb; hover a cell for the full words, the ' +
+      'sign and its lord. Parashara prices them as varga viswa, out of twenty: own sign 20, ' +
+      'great friend 18, friend 15, neutral 10, enemy 7, great enemy 5. Moolatrikona he does ' +
+      'not rank apart from an own sign, and exaltation falls outside the six entirely, uchcha ' +
+      'bala measuring that; both appear here regardless, as does debilitation. No luminary ' +
+      'rules a trimsamsa, so in D30 the Sun stands in as Mars and the Moon as Venus. Rahu and ' +
+      'Ketu own no sign and keep no friendships, so they are left out.';
   }
 
   /* --------------------------------------------------------------- yogas */

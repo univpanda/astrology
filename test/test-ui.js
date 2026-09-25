@@ -706,7 +706,14 @@ ok('every dignity has a short form, each distinct and short enough to fit', (fun
   return Astro.VARGA_DIGNITY_SHORT[k]; }).join(' '));
 ok('the note explains both abbreviations rather than leaving them to be guessed', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');
-  return /Dignities are abbreviated/.test(flat) && /signs are numbered 1 to 12 from Aries/.test(flat);
+  return /Dignities shorten to Exal, Mool, Own, Gt Fr, Fr, Neut, Enm, Gt Enm and Deb/.test(flat) &&
+    /numbered 1 to 12 from Aries/.test(flat);
+})());
+// It said "hover any cell" twice, once for the words and once for the lord.
+ok('and says it once, not twice', (function () {
+  var note = appSrc.slice(appSrc.indexOf("'Where each graha stands"));
+  note = note.slice(0, note.indexOf("left out.';"));
+  return (note.match(/hover a cell/gi) || []).length === 1;
 })());
 ok('and gives the seven-step reading when it differs from the label shown',
    /d\.relationLabel !== d\.label/.test(appSrc));
@@ -720,11 +727,27 @@ ok('every dignity tier has a colour, and no colour is orphaned', (function () {
     styled.every(function (k) { return keys.indexOf(k) >= 0; });
 })());
 
-ok('the note says exaltation is outside the classical steps',
-   /Exaltation is not one of those steps/.test(appSrc) && /uchcha bala/.test(appSrc));
-ok('and carries Parashara\'s own varga viswa figures',
-   /20, 18, 15, 10, 7 and \n?\s*'?5 out of twenty/.test(appSrc.replace(/\s+/g, ' ')) ||
-   /20, 18, 15, 10, 7 and 5 out of twenty/.test(appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ')));
+ok('the note says exaltation is outside the classical steps', (function () {
+  var flat = appSrc.replace(/'\s*\+\s*'/g, '');
+  return /exaltation falls outside the six entirely/.test(flat) && /uchcha bala/.test(flat);
+})());
+/*
+ * The figures are varga viswa, from verses 21-25, and there are six of them, not
+ * seven: the top category is an own sign and moolatrikona is not ranked apart.
+ * The note used to list seven dignities against six numbers, leaving one name
+ * without a figure and no hint which.
+ */
+ok('and carries Parashara\'s own varga viswa figures, all six of them', (function () {
+  var flat = appSrc.replace(/'\s*\+\s*'/g, '');
+  var pairs = ['own sign 20', 'great friend 18', 'friend 15', 'neutral 10',
+               'enemy 7', 'great enemy 5'];
+  return /varga viswa, out of twenty/.test(flat) &&
+    pairs.every(function (t) { return flat.indexOf(t) >= 0; });
+})());
+ok('and says outright that moolatrikona is not one of the six', (function () {
+  var flat = appSrc.replace(/'\s*\+\s*'/g, '');
+  return /Moolatrikona he does not rank apart from an own sign/.test(flat);
+})());
 ok('and says why the trimsamsa needs a stand-in',
    /No luminary rules a trimsamsa/.test(appSrc.replace(/'\s*\+\s*'/g, '')) &&
    /stands in as Mars and the Moon as Venus/.test(appSrc.replace(/'\s*\+\s*'/g, '')));
@@ -760,7 +783,7 @@ ok('the rule sits under the pair rather than between its halves', (function () {
     /td\.varga-sign/.test(css);
 })());
 ok('the note says the rows come in pairs',
-   /Each graha takes two rows/.test(appSrc.replace(/'\s*\+\s*'/g, '')));
+   /Every graha takes two rows/.test(appSrc.replace(/'\s*\+\s*'/g, '')));
 
 /*
  * The dispositor relation is asymmetric, so the cell has to say whose view it
