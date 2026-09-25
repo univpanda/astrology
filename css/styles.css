@@ -1,33 +1,34 @@
 /*
- * Jyotisha - warm paper and ink.
+ * Jyotisha - white and green.
  *
- * Light by default, with a dark variant for readers whose system asks for one.
- * The palette is deliberately warm (ivory, sand, marigold, terracotta) rather
- * than the clinical greys a chart tool usually gets: a kundli is a keepsake more
- * often than a dashboard.
+ * White surfaces on a faint green ground, with a single green accent doing the
+ * work of highlight, focus and emphasis. Retrograde is the one deliberate
+ * exception: it is marked in a warm red, because it must read as different
+ * rather than merely emphasised, and a second green would not.
+ *
+ * A dark variant follows the system setting; the print sheet stays on white.
  */
 
 :root {
-  --paper: #fdf8f1;
-  --paper-tint: #f7efe3;
-  --surface: #fffdfa;
-  --line: #e8dbc8;
-  --line-soft: #f0e6d7;
+  --paper: #f4faf6;
+  --paper-tint: #eaf5ee;
+  --surface: #ffffff;
+  --line: #d4e9dc;
+  --line-soft: #e4f1e9;
 
-  --ink: #372f2a;
-  --ink-soft: #6d6058;
-  --ink-faint: #9c8d80;
+  --ink: #21302a;
+  --ink-soft: #55645c;
+  --ink-faint: #87a095;
 
-  --marigold: #c9741a;
-  --marigold-soft: #f2dcbd;
-  --terracotta: #b4522f;
-  --plum: #6d4370;
-  --retro: #a8362c;
+  --green: #2f8f5f;
+  --green-deep: #1f6b47;
+  --green-soft: #dcefe4;
+  --retro: #b8483a;
 
   --radius: 16px;
   --radius-sm: 10px;
-  --shadow: 0 1px 2px rgba(80, 56, 32, 0.05), 0 8px 24px rgba(120, 85, 45, 0.07);
-  --shadow-lift: 0 2px 6px rgba(80, 56, 32, 0.07), 0 18px 40px rgba(120, 85, 45, 0.10);
+  --shadow: 0 1px 2px rgba(31, 84, 58, 0.05), 0 8px 24px rgba(31, 84, 58, 0.07);
+  --shadow-lift: 0 2px 6px rgba(31, 84, 58, 0.08), 0 18px 40px rgba(31, 84, 58, 0.12);
 
   --font: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
   --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
@@ -40,8 +41,8 @@ body {
   margin: 0;
   padding: 0 1.25rem 4rem;
   background:
-    radial-gradient(1100px 520px at 12% -8%, #fdeed8 0%, transparent 62%),
-    radial-gradient(900px 460px at 92% 2%, #f6e6ee 0%, transparent 58%),
+    radial-gradient(1100px 520px at 12% -8%, #ddf2e5 0%, transparent 62%),
+    radial-gradient(900px 460px at 92% 2%, #e6f5ec 0%, transparent 58%),
     var(--paper);
   background-attachment: fixed;
   color: var(--ink);
@@ -62,7 +63,7 @@ main, .site-header, .site-footer { max-width: 1060px; margin: 0 auto; }
   font-weight: 500;
   letter-spacing: 0.04em;
   margin: 0;
-  color: var(--terracotta);
+  color: var(--green-deep);
 }
 
 .tagline { color: var(--ink-soft); margin: 0.65rem auto 0; max-width: 46ch; }
@@ -84,7 +85,7 @@ main, .site-header, .site-footer { max-width: 1060px; margin: 0 auto; }
   font-size: 1.2rem;
   letter-spacing: 0.02em;
   margin: 0 0 1rem;
-  color: var(--plum);
+  color: var(--green-deep);
 }
 
 /* -------------------------------------------------------------------- form */
@@ -121,21 +122,21 @@ input, select {
   transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
 
-input:hover, select:hover { border-color: #dcc9ae; }
+input:hover, select:hover { border-color: #b8ddc8; }
 
 input:focus, select:focus {
   background: var(--surface);
-  border-color: var(--marigold);
-  box-shadow: 0 0 0 3px rgba(201, 116, 26, 0.14);
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(47, 143, 95, 0.16);
   outline: none;
 }
 
 input:focus-visible, select:focus-visible, button:focus-visible, summary:focus-visible {
-  outline: 2px solid var(--marigold);
+  outline: 2px solid var(--green);
   outline-offset: 2px;
 }
 
-input::placeholder { color: #bdae9d; }
+input::placeholder { color: #a9bdb2; }
 
 .time-field { border: none; margin: 0; padding: 0; min-width: 0; }
 .time-field legend { padding: 0; }
@@ -185,7 +186,7 @@ input::placeholder { color: #bdae9d; }
   letter-spacing: 0.1em;
   font-weight: 600;
 }
-.options summary:hover, .technical summary:hover { color: var(--marigold); }
+.options summary:hover, .technical summary:hover { color: var(--green); }
 .options-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
@@ -199,23 +200,23 @@ button.primary {
   font: inherit;
   font-weight: 600;
   letter-spacing: 0.01em;
-  color: #fffaf3;
-  background: linear-gradient(180deg, #d98026 0%, #c26a18 100%);
+  color: #ffffff;
+  background: linear-gradient(180deg, #35a06b 0%, #2a855a 100%);
   border: none;
   border-radius: var(--radius-sm);
   padding: 0.75rem 1.7rem;
   cursor: pointer;
-  box-shadow: 0 1px 2px rgba(150, 85, 20, 0.22), 0 6px 16px rgba(180, 105, 30, 0.20);
+  box-shadow: 0 1px 2px rgba(25, 90, 60, 0.22), 0 6px 16px rgba(40, 130, 88, 0.22);
   transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
 }
-button.primary:hover { filter: brightness(1.05); transform: translateY(-1px); }
+button.primary:hover { filter: brightness(1.06); transform: translateY(-1px); }
 button.primary:active { transform: translateY(0); }
 button.primary:disabled { opacity: 0.6; cursor: progress; transform: none; }
 
 .link-button {
   font: inherit;
   font-size: 0.875rem;
-  color: var(--marigold);
+  color: var(--green);
   background: none;
   border: none;
   padding: 0.35rem 0;
@@ -225,7 +226,7 @@ button.primary:disabled { opacity: 0.6; cursor: progress; transform: none; }
   text-decoration-thickness: 1px;
   align-self: flex-start;
 }
-.link-button:hover { color: var(--terracotta); }
+.link-button:hover { color: var(--green-deep); }
 
 .form-error { color: var(--retro); margin: 0; font-size: 0.9rem; }
 
@@ -256,7 +257,7 @@ button.primary:disabled { opacity: 0.6; cursor: progress; transform: none; }
   cursor: pointer;
   font-size: 0.93rem;
 }
-.combobox li[aria-selected="true"], .combobox li:hover { background: var(--marigold-soft); }
+.combobox li[aria-selected="true"], .combobox li:hover { background: var(--green-soft); }
 .combobox li .place-meta { color: var(--ink-faint); font-size: 0.85em; display: block; }
 .combobox li.empty { color: var(--ink-faint); cursor: default; }
 
@@ -267,7 +268,7 @@ button.primary:disabled { opacity: 0.6; cursor: progress; transform: none; }
   font-weight: 500;
   margin: 0 0 0.35rem;
   font-size: 1.7rem;
-  color: var(--plum);
+  color: var(--green-deep);
 }
 
 .birth-line { margin: 0 0 1.3rem; color: var(--ink-soft); font-size: 0.95rem; }
@@ -300,12 +301,11 @@ button.primary:disabled { opacity: 0.6; cursor: progress; transform: none; }
 }
 .chart-card {
   margin: 0 0 1.25rem;
-  background:
-    linear-gradient(180deg, var(--surface) 0%, #fffaf2 100%);
+  background: linear-gradient(180deg, var(--surface) 0%, #f7fcf9 100%);
 }
 .chart-card figcaption {
   font-family: var(--font-display);
-  color: var(--plum);
+  color: var(--green-deep);
   letter-spacing: 0.03em;
   font-size: 1.05rem;
   margin-bottom: 0.9rem;
@@ -316,15 +316,15 @@ svg.kundli { width: 100%; height: auto; display: block; }
 
 svg.kundli .frame, svg.kundli .cell {
   fill: none;
-  stroke: #d8b98c;
+  stroke: #a9d7bd;
   stroke-width: 1.1;
   stroke-linejoin: round;
 }
-svg.kundli .frame-outer { stroke: var(--marigold); stroke-width: 2; }
+svg.kundli .frame-outer { stroke: var(--green); stroke-width: 2; }
 svg.kundli .middle { fill: none; stroke: none; }
 
-svg.kundli .first-house .cell { fill: rgba(201, 116, 26, 0.09); }
-svg.kundli .lagna-mark { stroke: var(--terracotta); stroke-width: 2.6; stroke-linecap: round; }
+svg.kundli .first-house .cell { fill: rgba(47, 143, 95, 0.10); }
+svg.kundli .lagna-mark { stroke: var(--green-deep); stroke-width: 2.6; stroke-linecap: round; }
 
 svg.kundli text {
   font-family: var(--font);
@@ -339,7 +339,7 @@ svg.kundli .sign-num {
 }
 svg.kundli .planet { font-size: 15.5px; font-weight: 500; }
 svg.kundli .planet.retro { fill: var(--retro); }
-svg.kundli .planet.lagna { fill: var(--terracotta); font-weight: 700; }
+svg.kundli .planet.lagna { fill: var(--green-deep); font-weight: 700; }
 
 /* ------------------------------------------------------------------ tables */
 
@@ -366,11 +366,11 @@ th {
 }
 
 tbody tr:last-child td, tbody tr:last-child th { border-bottom: none; }
-tbody tr:hover { background: #fdf4e7; }
+tbody tr:hover { background: #f1f9f4; }
 td.numeric, .longitude { font-family: var(--font-mono); font-size: 0.87rem; }
 td .retro-flag, td.retro-flag { color: var(--retro); }
-tr.current-dasha { background: rgba(201, 116, 26, 0.10); }
-tr.current-dasha th:first-child { color: var(--terracotta); font-weight: 700; }
+tr.current-dasha { background: rgba(47, 143, 95, 0.11); }
+tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
 
 .technical { margin-top: 1.25rem; }
 .technical dl { margin-top: 1rem; }
@@ -384,36 +384,43 @@ tr.current-dasha th:first-child { color: var(--terracotta); font-weight: 700; }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --paper: #1b1714;
-    --paper-tint: #241f1a;
-    --surface: #221d19;
-    --line: #3d342c;
-    --line-soft: #332b25;
+    --paper: #121a16;
+    --paper-tint: #1a231e;
+    --surface: #18211c;
+    --line: #2b3a32;
+    --line-soft: #243029;
 
-    --ink: #f0e7dc;
-    --ink-soft: #bcaa99;
-    --ink-faint: #8e7e6f;
+    --ink: #e6efe9;
+    --ink-soft: #a6b8ae;
+    --ink-faint: #7b8f84;
 
-    --marigold: #e8a552;
-    --marigold-soft: #3a2c1a;
-    --terracotta: #e08a5f;
-    --plum: #c9a3cc;
-    --retro: #e78b7f;
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.3);
+    --green: #58c08a;
+    --green-deep: #7fd3a5;
+    --green-soft: #21362b;
+    --retro: #e8867a;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.32);
     --shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.35), 0 18px 40px rgba(0, 0, 0, 0.45);
   }
   body {
     background:
-      radial-gradient(1100px 520px at 12% -8%, #2c2218 0%, transparent 62%),
-      radial-gradient(900px 460px at 92% 2%, #291d26 0%, transparent 58%),
+      radial-gradient(1100px 520px at 12% -8%, #17271e 0%, transparent 62%),
+      radial-gradient(900px 460px at 92% 2%, #15231c 0%, transparent 58%),
       var(--paper);
   }
-  input::placeholder { color: #6f6153; }
-  input:hover, select:hover { border-color: #4d4237; }
-  button.primary { color: #23180c; background: linear-gradient(180deg, #e8a552 0%, #d08b35 100%); }
-  .chart-card { background: linear-gradient(180deg, var(--surface) 0%, #262019 100%); }
-  svg.kundli .frame, svg.kundli .cell { stroke: #5c4a35; }
-  tbody tr:hover { background: #2a231c; }
+  input::placeholder { color: #5f7268; }
+  input:hover, select:hover { border-color: #3b4f44; }
+  input:focus, select:focus { box-shadow: 0 0 0 3px rgba(88, 192, 138, 0.18); }
+  button.primary {
+    color: #08150e;
+    background: linear-gradient(180deg, #5cc48b 0%, #45a973 100%);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 16px rgba(0, 0, 0, 0.35);
+  }
+  .chart-card { background: linear-gradient(180deg, var(--surface) 0%, #1b241f 100%); }
+  svg.kundli .frame, svg.kundli .cell { stroke: #3b5a49; }
+  svg.kundli .first-house .cell { fill: rgba(88, 192, 138, 0.12); }
+  tbody tr:hover { background: #1d2822; }
+  tr.current-dasha { background: rgba(88, 192, 138, 0.13); }
 }
 
 /* ------------------------------------------------------------------- print */
@@ -423,7 +430,8 @@ tr.current-dasha th:first-child { color: var(--terracotta); font-weight: 700; }
     --paper: #fff; --paper-tint: #fff; --surface: #fff;
     --ink: #111; --ink-soft: #444; --ink-faint: #666;
     --line: #ccc; --line-soft: #ddd;
-    --marigold: #9a5a12; --terracotta: #9a4526; --plum: #4d3050;
+    --green: #1f6b47; --green-deep: #145336; --green-soft: #eef7f1;
+    --retro: #96382c;
     --shadow: none; --shadow-lift: none;
   }
   body { background: #fff; color: #111; padding: 0; }
@@ -432,10 +440,10 @@ tr.current-dasha th:first-child { color: var(--terracotta); font-weight: 700; }
   #birth-form, .site-footer, .print-button, .options { display: none; }
   .technical[open] summary { display: none; }
   svg.kundli text { fill: #111; }
-  svg.kundli .frame, svg.kundli .cell { stroke: #999; }
-  svg.kundli .frame-outer { stroke: #6b4a1e; }
-  svg.kundli .planet.retro { fill: #8f2f26; }
-  svg.kundli .planet.lagna { fill: #9a4526; }
+  svg.kundli .frame, svg.kundli .cell { stroke: #9bbcab; }
+  svg.kundli .frame-outer { stroke: #1f6b47; }
+  svg.kundli .planet.retro { fill: #96382c; }
+  svg.kundli .planet.lagna { fill: #145336; }
   tbody tr:hover { background: none; }
   th, td { border-bottom: 1px solid #ddd; }
 }
