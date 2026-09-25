@@ -450,8 +450,17 @@
       if (!city) return;
       fillZones(Geo.zones());
       document.getElementById('manual-zone').value = city.zone;
-      note.textContent = city.zone + ', from ' + Geo.label(city) +
-        ', ' + (city.km < 1 ? 'under a kilometre' : city.km.toFixed(0) + ' km') + ' away.';
+      /*
+       * Distance is the thing to say out loud. A near match is almost always
+       * right; a far one means the closest populated place may be across a
+       * border, which is the only way this guess goes wrong. A point just inside
+       * North Dakota takes its nearest town from Manitoba, 63 km off.
+       */
+      var far = city.km > 50;
+      note.textContent = city.zone + ', from ' + Geo.label(city) + ', ' +
+        (city.km < 1 ? 'under a kilometre' : city.km.toFixed(0) + ' km') + ' away.' +
+        (far ? ' That is far enough to be across a border, so check it.' : '');
+      note.className = 'dms-decimal' + (far ? ' dms-bad' : '');
     });
   }
 

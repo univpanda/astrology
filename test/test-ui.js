@@ -1096,6 +1096,29 @@ ok('longitude alone would not have done it', (function () {
 ok('the derived zone is shown with the place it came from',
    /note\.textContent = city\.zone \+ ', from ' \+ Geo\.label\(city\)/.test(appSrc) &&
    /id="zone-note"/.test(html));
+/*
+ * The guess has exactly one failure mode: near a border the closest populated
+ * place can be on the other side of it. Distance is what reveals that, so it is
+ * said in words rather than left as a number to interpret.
+ */
+ok('a far match is called out rather than just reported',
+   /var far = city\.km > 50;/.test(appSrc) &&
+   /far enough to be across a border, so check it/.test(appSrc));
+ok('nearby matches land on the right zone', (function () {
+  return [[27.00, 84.88, 'Asia/Kathmandu'], [26.70, 84.90, 'Asia/Kolkata'],
+          [43.80, 87.60, 'Asia/Urumqi'], [22.57, 88.36, 'Asia/Kolkata']].every(function (c) {
+    var n = Geo.nearest(c[0], c[1]);
+    return n.zone === c[2] && n.km < 20;
+  });
+})());
+ok('and the one that crosses a border is far enough to be flagged', (function () {
+  // Just inside North Dakota; the nearest populated place is in Manitoba.
+  var n = Geo.nearest(48.90, -97.20);
+  return n.km > 50;
+})(), 'the 50 km threshold catches it');
+ok('the field reads as answered rather than asked',
+   /Timezone <span class="hint">filled in from the coordinates<\/span>/.test(html));
+
 ok('a zone chosen by hand is never overwritten by the guess',
    /var zoneChosenByHand = false;/.test(appSrc) &&
    /if \(zoneChosenByHand\) return;/.test(appSrc) &&
