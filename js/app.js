@@ -446,7 +446,9 @@
   function render(state) {
     var c = state.chart, place = state.place;
 
-    document.getElementById('result-name').textContent = state.name + '\u2019s chart';
+    // Just the name. The page is a chart; saying so in the heading of one adds
+    // nothing, and a long name plus a possessive wraps on a phone.
+    document.getElementById('result-name').textContent = state.name;
 
     var placeLabel = [place.name, place.region, place.nation].filter(Boolean).join(', ');
     document.getElementById('result-birth').textContent =

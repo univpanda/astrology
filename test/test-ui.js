@@ -419,6 +419,10 @@ ok('entries are keyed on name, place, date and time',
 ok('a local copy is written first so the panel works offline',
    /writeSaved\(list\)/.test(appSrc) && /localStorage/.test(appSrc));
 // Editing has to refill the form and then update the row it came from.
+ok('the chart heading is the name alone',
+   /getElementById\('result-name'\)\.textContent = state\.name;/.test(appSrc) &&
+   !/s chart'/.test(appSrc));
+
 ok('editing refills the form from the chart on screen',
    /function fillForm/.test(appSrc) && /} else if \(lastChart\) \{\s*\n\s*fillForm\(lastChart\);/.test(appSrc));
 ok('a blank form means a new chart, not an edit',
