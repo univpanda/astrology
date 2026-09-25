@@ -327,27 +327,56 @@
    * minus is not a visible mistake: it silently moves the birth into the other
    * hemisphere and the chart still looks plausible. A letter cannot be dropped.
    *
-   * A decimal in the degrees box with the other two empty is still accepted,
-   * since that is how coordinates arrive from a map.
+   * Returns { value } or { error }. It returns a reason rather than just null
+   * because the caller used to collapse every failure into one generic sentence
+   * about picking a place, which told nobody which box was wrong.
    *
-   * Returns a signed decimal, or null if what is there cannot be read.
+   * Forgiving where forgiving is unambiguous: a decimal in the degrees box on its
+   * own is a coordinate off a map and is taken as one, and a negative degree is
+   * someone carrying over the old signed field, so the sign is moved into the
+   * hemisphere rather than thrown back at them.
    */
   function readDms(which, maxDegrees) {
-    var value = function (part) { return document.getElementById('manual-' + which + '-' + part).value.trim(); };
-    var degText = value('d'), minText = value('m'), secText = value('s');
-    if (degText === '') return null;
+    var name = which === 'lat' ? 'Latitude' : 'Longitude';
+    var box = function (part) { return document.getElementById('manual-' + which + '-' + part); };
+    var degText = box('d').value.trim(), minText = box('m').value.trim(), secText = box('s').value.trim();
+
+    if (degText === '') {
+      return { error: minText || secText
+        ? name + ' needs its degrees, not only minutes and seconds.'
+        : name + ' is empty. Type its degrees, and minutes and seconds if you have them.' };
+    }
 
     var deg = +degText, min = minText === '' ? 0 : +minText, sec = secText === '' ? 0 : +secText;
-    if (!isFinite(deg) || !isFinite(min) || !isFinite(sec)) return null;
-    if (deg < 0 || min < 0 || sec < 0) return null;         // the hemisphere carries the sign
-    if (min >= 60 || sec >= 60) return null;
-    // A decimal in the degrees box is only meaningful on its own.
-    if (deg % 1 !== 0 && (minText !== '' || secText !== '')) return null;
+    if (!isFinite(deg) || !isFinite(min) || !isFinite(sec)) {
+      return { error: name + ' has something in it that is not a number.' };
+    }
+    if (min < 0 || sec < 0) return { error: name + ' cannot have negative minutes or seconds.' };
+    if (min >= 60) return { error: name + ' minutes must be under 60.' };
+    if (sec >= 60) return { error: name + ' seconds must be under 60.' };
+
+    /*
+     * A minus here means the old signed field. Move it into the hemisphere and
+     * show that, rather than refusing something that was perfectly clear.
+     */
+    var hemisphereBox = box('h');
+    if (deg < 0) {
+      deg = -deg;
+      hemisphereBox.value = which === 'lat' ? 'S' : 'W';
+      box('d').value = String(deg);
+    }
+
+    if (deg % 1 !== 0 && (minText !== '' || secText !== '')) {
+      return { error: name + ' is part decimal and part minutes. Use whole degrees with ' +
+        'minutes and seconds, or a decimal on its own.' };
+    }
 
     var total = deg + min / 60 + sec / 3600;
-    if (total > maxDegrees) return null;
-    var hemisphere = document.getElementById('manual-' + which + '-h').value;
-    return hemisphere === 'S' || hemisphere === 'W' ? -total : total;
+    if (total > maxDegrees) {
+      return { error: name + ' cannot be more than ' + maxDegrees + '\u00b0.' };
+    }
+    var hemisphere = hemisphereBox.value;
+    return { value: hemisphere === 'S' || hemisphere === 'W' ? -total : total };
   }
 
   /*
@@ -360,11 +389,9 @@
       return document.getElementById('manual-' + which + '-' + part).value.trim();
     });
     if (parts[0] === '') { out.textContent = ''; return; }
-    var decimal = readDms(which, maxDegrees);
-    out.textContent = decimal === null
-      ? 'Not a coordinate that can be read.'
-      : decimal.toFixed(4) + '\u00b0';
-    out.className = 'dms-decimal' + (decimal === null ? ' dms-bad' : '');
+    var read = readDms(which, maxDegrees);
+    out.textContent = read.error ? read.error : read.value.toFixed(4) + '\u00b0';
+    out.className = 'dms-decimal' + (read.error ? ' dms-bad' : '');
   }
 
   ['lat', 'lon'].forEach(function (which) {
@@ -378,19 +405,39 @@
   });
 
   /** Where is the birth? Either a chosen city or the manual coordinates. */
+  /**
+   * Where is the birth? A chosen city, or the manual coordinates.
+   *
+   * Typed coordinates count whether or not the panel happens to be open. It was
+   * gated on the panel being visible, so collapsing it silently discarded what
+   * had been typed into it.
+   *
+   * Returns { place } or { error }, the error naming the box at fault.
+   */
   function resolvePlace() {
-    if (selectedCity) return selectedCity;
-    if (!manualFields.hidden) {
-      var lat = readDms('lat', 90);
-      var lon = readDms('lon', 180);
-      var zone = document.getElementById('manual-zone').value;
-      if (lat === null || lon === null) return null;
-      return {
-        name: placeInput.value.trim() || 'Custom location',
-        region: '', nation: '', lat: lat, lon: lon, zone: zone, manual: true
-      };
+    if (selectedCity) return { place: selectedCity };
+
+    var typed = ['lat', 'lon'].some(function (which) {
+      return ['d', 'm', 's'].some(function (part) {
+        return document.getElementById('manual-' + which + '-' + part).value.trim() !== '';
+      });
+    });
+    if (manualFields.hidden && !typed) {
+      return { error: 'Pick a place from the list, or open "Enter coordinates" and type ' +
+        'latitude and longitude.' };
     }
-    return null;
+
+    var lat = readDms('lat', 90);
+    if (lat.error) return { error: lat.error };
+    var lon = readDms('lon', 180);
+    if (lon.error) return { error: lon.error };
+
+    return { place: {
+      name: placeInput.value.trim() || 'Custom location',
+      region: '', nation: '',
+      lat: lat.value, lon: lon.value,
+      zone: document.getElementById('manual-zone').value, manual: true
+    } };
   }
 
   form.addEventListener('submit', function (e) {
@@ -401,13 +448,14 @@
     var genderValue = document.getElementById('gender').value;
     var dateValue = document.getElementById('date').value;
     var time = readTime();
-    var place = resolvePlace();
+    var resolved = resolvePlace();
+    var place = resolved.place;
 
     if (!nameValue) return fail('Enter the name this chart belongs to.');
     if (!genderValue) return fail('Choose a gender.');
     if (!dateValue) return fail('Enter a date of birth.');
     if (time.error) return fail(time.error);
-    if (!place) return fail('Pick a place from the list, or open "Enter coordinates" and type latitude and longitude.');
+    if (!place) return fail(resolved.error);
 
     var dateParts = dateValue.split('-').map(Number);
     var y = dateParts[0], mo = dateParts[1], d = dateParts[2];

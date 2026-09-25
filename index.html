@@ -117,7 +117,7 @@
             <span class="dms-label" id="lat-label">Latitude</span>
             <div class="dms-row" role="group" aria-labelledby="lat-label">
               <label class="visually-hidden" for="manual-lat-d">Latitude degrees</label>
-              <input type="number" id="manual-lat-d" min="0" max="90" step="1" placeholder="25"
+              <input type="number" id="manual-lat-d" min="-90" max="90" step="any" placeholder="25"
                      inputmode="decimal" aria-describedby="lat-decimal">
               <span class="dms-mark">&deg;</span>
               <label class="visually-hidden" for="manual-lat-m">Latitude minutes</label>
@@ -138,7 +138,7 @@
             <span class="dms-label" id="lon-label">Longitude</span>
             <div class="dms-row" role="group" aria-labelledby="lon-label">
               <label class="visually-hidden" for="manual-lon-d">Longitude degrees</label>
-              <input type="number" id="manual-lon-d" min="0" max="180" step="1" placeholder="82"
+              <input type="number" id="manual-lon-d" min="-180" max="180" step="any" placeholder="82"
                      inputmode="decimal" aria-describedby="lon-decimal">
               <span class="dms-mark">&deg;</span>
               <label class="visually-hidden" for="manual-lon-m">Longitude minutes</label>

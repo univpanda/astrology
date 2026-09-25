@@ -941,12 +941,21 @@ console.log('\nManual coordinates');
  * Coordinates arrive as degrees, minutes, seconds and a letter, from an atlas, a
  * panchang or a birth record. The parser is pulled out of app.js and run against
  * a stub document, so these are real conversions rather than a source grep.
+ *
+ * It returns { value } or { error }. Returning a reason is the point: every
+ * failure used to collapse into one sentence about picking a place, which named
+ * neither the box nor the problem.
  */
 (function () {
   var dmsSrc = appSrc.slice(appSrc.indexOf('function readDms'), appSrc.indexOf('function showDecimal'));
   var fields = {};
   var readDms = new Function('document',
-    dmsSrc + '\nreturn readDms;')({ getElementById: function (id) { return fields[id] || { value: '' }; } });
+    dmsSrc + '\nreturn readDms;')({
+      getElementById: function (id) {
+        if (!fields[id]) fields[id] = { value: '' };
+        return fields[id];
+      }
+    });
 
   var put = function (which, d, m, sec, h) {
     fields['manual-' + which + '-d'] = { value: String(d) };
@@ -954,16 +963,14 @@ console.log('\nManual coordinates');
     fields['manual-' + which + '-s'] = { value: String(sec) };
     fields['manual-' + which + '-h'] = { value: h };
   };
-  var near = function (a, b) { return a !== null && Math.abs(a - b) < 1e-9; };
+  var near = function (r, b) { return r.value !== undefined && Math.abs(r.value - b) < 1e-9; };
 
   put('lat', 25, 19, 3, 'N');
-  ok('degrees, minutes and seconds convert', near(readDms('lat', 90), 25 + 19 / 60 + 3 / 3600),
-     String(readDms('lat', 90)));
+  ok('degrees, minutes and seconds convert', near(readDms('lat', 90), 25 + 19 / 60 + 3 / 3600));
 
   /*
-   * The whole reason for the change. A dropped minus sign is invisible: the chart
-   * still draws, for a birth in the other hemisphere. A dropped letter cannot
-   * happen, because the select always holds one.
+   * The whole reason for the change. A dropped minus is invisible: the chart still
+   * draws, for a birth in the other hemisphere. A letter cannot go missing.
    */
   put('lat', 25, 19, 3, 'S');
   ok('S negates, N does not', near(readDms('lat', 90), -(25 + 19 / 60 + 3 / 3600)));
@@ -976,27 +983,84 @@ console.log('\nManual coordinates');
   ok('minutes and seconds may be left empty', near(readDms('lat', 90), 23));
   put('lat', 23.55, '', '', 'N');
   ok('a decimal in the degrees box on its own still works', near(readDms('lat', 90), 23.55));
-  put('lat', 23.55, 30, '', 'N');
-  ok('but a decimal mixed with minutes is refused rather than guessed',
-     readDms('lat', 90) === null);
 
+  /*
+   * The old field was a signed decimal labelled "north positive", so a minus is
+   * habit, not error. Refusing it was the bug: the sign moves into the hemisphere
+   * and the boxes are rewritten so the reading is visible rather than silent.
+   */
+  put('lat', -23.55, '', '', 'N');
+  var flipped = readDms('lat', 90);
+  ok('a negative degree moves its sign into the hemisphere instead of failing',
+     near(flipped, -23.55) && fields['manual-lat-h'].value === 'S' &&
+     fields['manual-lat-d'].value === '23.55');
+  put('lon', -87.32, '', '', 'E');
+  ok('and longitude the same way, to W',
+     near(readDms('lon', 180), -87.32) && fields['manual-lon-h'].value === 'W');
+
+  // Every refusal has to name the box and the problem.
+  var errs = function (which, max) { return (readDms(which, max) || {}).error || ''; };
+  put('lat', 23.55, 30, '', 'N');
+  ok('a decimal mixed with minutes is refused, and says so',
+     /Latitude is part decimal and part minutes/.test(errs('lat', 90)), errs('lat', 90));
   put('lat', '', '', '', 'N');
-  ok('nothing typed reads as nothing', readDms('lat', 90) === null);
+  ok('an empty coordinate says which one is empty',
+     /^Latitude is empty/.test(errs('lat', 90)), errs('lat', 90));
+  put('lat', '', 19, 3, 'N');
+  ok('minutes without degrees says exactly that',
+     /Latitude needs its degrees/.test(errs('lat', 90)), errs('lat', 90));
   put('lat', 25, 60, 0, 'N');
-  ok('sixty minutes is refused', readDms('lat', 90) === null);
+  ok('sixty minutes is refused by name',
+     /Latitude minutes must be under 60/.test(errs('lat', 90)), errs('lat', 90));
   put('lat', 25, 0, 60, 'N');
-  ok('sixty seconds too', readDms('lat', 90) === null);
-  put('lat', -25, 0, 0, 'N');
-  ok('a negative degree is refused, since the letter carries the sign',
-     readDms('lat', 90) === null);
+  ok('sixty seconds too', /Latitude seconds must be under 60/.test(errs('lat', 90)));
   put('lat', 90, 0, 1, 'N');
-  ok('past the pole is refused', readDms('lat', 90) === null);
+  ok('past the pole is refused with its limit',
+     /Latitude cannot be more than 90/.test(errs('lat', 90)), errs('lat', 90));
   put('lon', 180, 0, 1, 'E');
-  ok('and past the antimeridian', readDms('lon', 180) === null);
+  ok('and past the antimeridian', /Longitude cannot be more than 180/.test(errs('lon', 180)));
   put('lat', 90, 0, 0, 'S');
   ok('but the pole itself is fine', near(readDms('lat', 90), -90));
+  put('lon', 'abc', '', '', 'E');
+  ok('and something that is not a number says that',
+     /not a number/.test(errs('lon', 180)), errs('lon', 180));
 })();
 
+/*
+ * Typed coordinates must count whether or not the panel is open. Gating on the
+ * panel being visible meant collapsing it silently discarded what was in it.
+ */
+ok('coordinates already typed are used even if the panel is collapsed',
+   /if \(manualFields\.hidden && !typed\)/.test(appSrc) &&
+   /var typed = \['lat', 'lon'\]\.some/.test(appSrc));
+ok('and the submit error is the reason, not one sentence for every failure',
+   /return fail\(resolved\.error\);/.test(appSrc) &&
+   !/return fail\('Pick a place from the list/.test(appSrc));
+ok('the echo shows the reason too, not just that something is wrong',
+   /out\.textContent = read\.error \? read\.error : read\.value\.toFixed\(4\)/.test(appSrc));
+
+/*
+ * Native validation has to allow exactly what the parser allows. The degree boxes
+ * carried step="1" and min="0", which blocked a decimal and a negative in the
+ * browser before readDms could accept either, so the forgiving paths were dead.
+ */
+ok('the degree boxes allow the decimals and negatives the parser accepts', (function () {
+  var at = function (id) {
+    var i = html.indexOf('id="' + id + '"');
+    return html.slice(html.lastIndexOf('<input', i), html.indexOf('>', i) + 1);
+  };
+  return /step="any"/.test(at('manual-lat-d')) && /min="-90"/.test(at('manual-lat-d')) &&
+    /step="any"/.test(at('manual-lon-d')) && /min="-180"/.test(at('manual-lon-d'));
+})());
+ok('while minutes and seconds stay bounded where the parser bounds them', (function () {
+  var at = function (id) {
+    var i = html.indexOf('id="' + id + '"');
+    return html.slice(html.lastIndexOf('<input', i), html.indexOf('>', i) + 1);
+  };
+  return ['manual-lat-m', 'manual-lon-m'].every(function (id) {
+    return /min="0"/.test(at(id)) && /max="59"/.test(at(id));
+  });
+})());
 ok('the signed decimal boxes are gone, hints and all',
    !/id="manual-lat"/.test(html) && !/id="manual-lon"/.test(html) &&
    !/north positive/.test(html) && !/east positive/.test(html));
@@ -1011,9 +1075,9 @@ ok('latitude offers N and S, longitude E and W', (function () {
 })());
 ok('the converted decimal is echoed back rather than worked out silently',
    /id="lat-decimal"/.test(html) && /id="lon-decimal"/.test(html) &&
-   /function showDecimal/.test(appSrc) && /decimal\.toFixed\(4\)/.test(appSrc));
-ok('an unreadable coordinate says so instead of echoing a number',
-   /Not a coordinate that can be read/.test(appSrc) && /dms-bad/.test(appSrc));
+   /function showDecimal/.test(appSrc) && /read\.value\.toFixed\(4\)/.test(appSrc));
+ok('an unreadable coordinate is flagged, not echoed as a number',
+   /dms-bad/.test(appSrc));
 ok('resetting the form clears all six boxes and both hemispheres',
    /document\.getElementById\('manual-' \+ which \+ '-' \+ part\)\.value = '';/.test(appSrc) &&
    /which === 'lat' \? 'N' : 'E'/.test(appSrc));
