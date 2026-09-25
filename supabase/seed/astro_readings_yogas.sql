@@ -1,4 +1,9 @@
 -- Yoga passages. See supabase/seed/astro_readings.sql for the table's shape.
+--
+-- Maha, khala and dainya are not three yogas beside parivartana; they are the
+-- three kinds of it. So they are one subject in three conditions, which is the
+-- column that already exists for "the state the subject is in", rather than four
+-- sibling subjects that only look related because their names begin alike.
 
 insert into astro_readings (topic, subject, condition, heading, points, note, sort_order) values
 ('yoga', 'Parivartana', 'general',
@@ -10,9 +15,9 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'It is classified in three by which two houses are exchanged - not by everything the two grahas rule. A graha may own two houses, and only the house whose sign is part of the swap belongs to the yoga.',
    'Strength still matters. An exchange between two weak grahas promises more than it delivers, which is why it is read alongside Shadbala rather than instead of it.'
  ],
- 'The three kinds are Maha, Khala and Dainya. Each has its own entry.', 10),
+ 'The three kinds - maha, khala and dainya - follow below.', 10),
 
-('yoga', 'Parivartana Maha', 'general',
+('yoga', 'Parivartana', 'maha',
  'Maha parivartana - the auspicious exchange',
  array[
    'An exchange between the lords of the good houses: the 1st, 2nd, 4th, 5th, 7th, 9th, 10th and 11th.',
@@ -21,7 +26,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'Both grahas gain, since each is placed in a sign whose lord is working on its behalf.'
  ], null, 11),
 
-('yoga', 'Parivartana Khala', 'general',
+('yoga', 'Parivartana', 'khala',
  'Khala parivartana - the mixed exchange',
  array[
    'An exchange involving the lord of the 3rd house with the lord of one of the good houses.',
@@ -30,7 +35,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'Khala means mischievous or wicked, which overstates it: the classical sense is of a benefit that arrives awkwardly.'
  ], null, 12),
 
-('yoga', 'Parivartana Dainya', 'general',
+('yoga', 'Parivartana', 'dainya',
  'Dainya parivartana - the afflicted exchange',
  array[
    'An exchange involving the lord of a dusthana - the 6th, 8th or 12th.',

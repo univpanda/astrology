@@ -693,12 +693,14 @@
   var READINGS_API = 'https://deiefjnwbfcywsaaqqbs.supabase.co/functions/v1/readings';
 
   /** Render one passage from astro_readings as a block of prose. */
-  function passageBlock(passage) {
+  function passageBlock(passage, grouped) {
     var block = el('article', 'passage');
     block.appendChild(el('h4', 'passage-heading', passage.heading));
-    var meta = [passage.topic, passage.subject];
+    // Under a subject heading the topic and subject are already on screen; the
+    // condition is the only part that still distinguishes one passage.
+    var meta = grouped ? [] : [passage.topic, passage.subject];
     if (passage.condition && passage.condition !== 'general') meta.push(passage.condition);
-    block.appendChild(el('p', 'passage-meta', meta.join(' \u00b7 ')));
+    if (meta.length) block.appendChild(el('p', 'passage-meta', meta.join(' \u00b7 ')));
     var list = el('ol', 'passage-points');
     (passage.points || []).forEach(function (point) {
       list.appendChild(el('li', null, point));
@@ -730,7 +732,7 @@
 
     found.forEach(function (finding) {
       var card = el('div', 'yoga-finding');
-      card.appendChild(el('h4', 'yoga-name', finding.subject));
+      card.appendChild(el('h4', 'yoga-name', finding.title));
       card.appendChild(el('p', 'yoga-summary', finding.summary));
       card.appendChild(el('p', 'yoga-grahas',
         'Grahas: ' + finding.grahas.join(' and ') +
@@ -740,9 +742,10 @@
       list.appendChild(card);
 
       // The passage is fetched per finding, so a chart with none makes no call.
-      fetchPassages({ subjects: finding.subject }, function (passages) {
-        if (passages && passages.length) explanation.appendChild(passageBlock(passages[0]));
-      });
+      fetchPassages({ subjects: finding.subject, condition: finding.condition },
+        function (passages) {
+          if (passages && passages.length) explanation.appendChild(passageBlock(passages[0]));
+        });
     });
   }
 
@@ -796,6 +799,14 @@
     });
   }
 
+  /**
+   * Results grouped by subject, with the conditions beneath as subtopics.
+   *
+   * A subject is the thing being learned about and its conditions are the
+   * states of it: parivartana with its maha, khala and dainya; the Sun with its
+   * strong and weak. Listing all six flat would read as six unrelated passages
+   * rather than two topics with kinds under them.
+   */
   function renderLessons() {
     var q = lessonQuery.value.trim().toLowerCase();
     lessonResults.innerHTML = '';
@@ -815,7 +826,32 @@
     }
     lessonStatus.textContent = matches.length + ' of ' + lessonLibrary.length +
       (lessonLibrary.length === 1 ? ' passage' : ' passages');
-    matches.forEach(function (p) { lessonResults.appendChild(passageBlock(p)); });
+
+    var order = [], bySubject = {};
+    matches.forEach(function (p) {
+      var key = p.topic + '\u0000' + p.subject;
+      if (!bySubject[key]) { bySubject[key] = []; order.push(key); }
+      bySubject[key].push(p);
+    });
+
+    order.forEach(function (key) {
+      var group = bySubject[key];
+      var topic = key.split('\u0000')[0], subject = key.split('\u0000')[1];
+      var section = el('section', 'lesson-topic');
+      section.appendChild(el('h4', 'lesson-subject', subject));
+      section.appendChild(el('p', 'lesson-topic-name', topic));
+
+      // The general passage introduces the subject; the rest are its kinds.
+      group.sort(function (a, b) {
+        return (a.condition === 'general' ? -1 : 0) - (b.condition === 'general' ? -1 : 0);
+      });
+      group.forEach(function (p) {
+        var block = passageBlock(p, true);
+        if (p.condition !== 'general') block.className += ' passage-subtopic';
+        section.appendChild(block);
+      });
+      lessonResults.appendChild(section);
+    });
   }
 
   lessonQuery.addEventListener('input', function () {

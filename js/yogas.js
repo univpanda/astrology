@@ -47,7 +47,12 @@ var Yogas = (function () {
         found.push({
           yoga: 'Parivartana',
           kind: kind,
-          subject: 'Parivartana ' + kind.charAt(0).toUpperCase() + kind.slice(1),
+          // Subject and condition, the same pair astro_readings is keyed by, so
+          // a finding can ask the library for its own passage without either
+          // side knowing how the other spells things.
+          subject: 'Parivartana',
+          condition: kind,
+          title: 'Parivartana ' + kind.charAt(0).toUpperCase() + kind.slice(1),
           grahas: [a, b],
           houses: houses,
           summary: a + ' in ' + Astro.SIGNS[signOfA] + ' and ' + b + ' in ' +

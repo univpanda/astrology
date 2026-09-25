@@ -38,6 +38,9 @@ Deno.serve(async (req) => {
       // Exact subjects, which is how a chart asks for the yogas it found.
       const wanted = String(input.subjects).split(',').map((s: string) => `"${s.trim()}"`).join(',');
       filter = `&subject=in.(${wanted})`;
+      // A subject may hold several conditions - a yoga's three kinds, a graha's
+      // strong and weak - so a caller that wants one says which.
+      if (input.condition) filter += `&condition=eq.${encodeURIComponent(String(input.condition))}`;
     } else if (input.topic) {
       filter = `&topic=eq.${encodeURIComponent(String(input.topic))}`;
     }

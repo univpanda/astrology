@@ -476,8 +476,23 @@ ok('the library loads when the lesson tab is opened',
    /if \(name === 'lesson'\) loadLessons\(\);/.test(appSrc));
 ok('the library is fetched once and searched in the page',
    /if \(lessonLibrary\) return renderLessons\(\);/.test(appSrc));
-ok('a detected yoga asks the library for its own subject',
-   /fetchPassages\(\{ subjects: finding\.subject \}/.test(appSrc));
+ok('a detected yoga asks the library for its own subject and kind',
+   /fetchPassages\(\{ subjects: finding\.subject, condition: finding\.condition \}/.test(appSrc));
+ok('the three kinds are conditions of one subject, not four subjects', (function () {
+  var seed = fs.readFileSync(path.join(root, 'supabase/seed/astro_readings_yogas.sql'), 'utf8');
+  return /'yoga', 'Parivartana', 'general'/.test(seed) &&
+         /'yoga', 'Parivartana', 'maha'/.test(seed) &&
+         /'yoga', 'Parivartana', 'khala'/.test(seed) &&
+         /'yoga', 'Parivartana', 'dainya'/.test(seed) &&
+         !/'Parivartana Maha'/.test(seed);
+})());
+ok('lessons group by subject with the conditions beneath',
+   /var section = el\('section', 'lesson-topic'\)/.test(appSrc) &&
+   /passage-subtopic/.test(appSrc));
+ok('the general passage leads its group',
+   /a\.condition === 'general' \? -1 : 0/.test(appSrc));
+ok('a grouped passage does not repeat its own subject heading',
+   /var meta = grouped \? \[\] : \[passage\.topic, passage\.subject\]/.test(appSrc));
 ok('a chart with no yoga makes no request for one',
    /if \(!found\.length\) \{[\s\S]{0,260}return;/.test(appSrc));
 ok('the page says which yogas it does not yet look for',

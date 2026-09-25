@@ -626,6 +626,36 @@ svg.kundli .planet.retro { fill: var(--retro); }
 }
 .lesson-chip:hover { border-color: var(--green); }
 
+/* A subject and the conditions beneath it: parivartana with its three kinds,
+   the Sun with its strong and weak. */
+.lesson-topic {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 1.1rem 1.2rem;
+  margin-bottom: 1.1rem;
+}
+.lesson-subject {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.3rem;
+  color: var(--green-deep);
+  margin: 0;
+}
+.lesson-topic-name {
+  margin: 0.1rem 0 1rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+  color: var(--ink-faint);
+}
+.passage-subtopic {
+  margin-left: 1rem;
+  padding-left: 1rem;
+  border-left: 2px solid var(--green-soft);
+  border-top: none;
+}
+.passage-subtopic .passage-heading { font-size: 0.98rem; }
+
 .passage {
   border-top: 1px solid var(--line-soft);
   padding-top: 1.1rem;
