@@ -315,9 +315,9 @@ function stripHtml(label) {
   return at < 0 ? '' : html.slice(at, html.indexOf('</div>', at));
 }
 (function () {
-  var names = ['saved', 'add', 'chart'];
+  var names = ['saved', 'add', 'chart', 'lesson'];
   var strip = stripHtml('Sections');
-  ok('the section strip holds exactly three tabs', (strip.match(/role="tab"/g) || []).length === 3);
+  ok('the section strip holds four tabs', (strip.match(/role="tab"/g) || []).length === 4);
   ok('each tab has a panel, and each panel names its tab', names.every(function (n) {
     return new RegExp('id="tab-' + n + '"').test(html) &&
            new RegExp('id="panel-' + n + '"[^>]*aria-labelledby="tab-' + n + '"').test(html);
@@ -328,11 +328,11 @@ function stripHtml(label) {
   ok('"add a kundali" is the section selected on arrival',
      /id="tab-add"[\s\S]{0,140}aria-selected="true"/.test(strip) &&
      (strip.match(/aria-selected="true"/g) || []).length === 1);
-  ok('the other two panels start hidden',
+  ok('every panel but the form starts hidden',
      /id="panel-saved"[^>]*hidden/.test(html) && /id="panel-chart"[^>]*hidden/.test(html) &&
-     !/id="panel-add"[^>]*hidden/.test(html));
+     /id="panel-lesson"[^>]*hidden/.test(html) && !/id="panel-add"[^>]*hidden/.test(html));
   ok('only the selected section tab is reachable by tab key',
-     (strip.match(/tabindex="-1"/g) || []).length === 2);
+     (strip.match(/tabindex="-1"/g) || []).length === 3);
   ok('the tab strip is keyboard navigable',
      /ArrowRight/.test(appSrc) && /ArrowLeft/.test(appSrc) && /'Home'/.test(appSrc) && /'End'/.test(appSrc));
   ok('the chart tab has something to say when empty', /id="empty-chart"/.test(html));
@@ -357,11 +357,11 @@ function stripHtml(label) {
      /id="tab-shadbala"[\s\S]{0,140}aria-controls="panel-shadbala"/.test(html) &&
      html.indexOf('id="panel-shadbala"') > html.indexOf('id="panel-table-b"') &&
      html.indexOf('id="panel-shadbala"') < html.indexOf('class="two-col"'));
-  ok('the strip holds three tabs', (function () {
+  ok('the table strip holds four tabs', (function () {
     var strip = stripHtml('Graha tables');
-    return (strip.match(/role="tab"/g) || []).length === 3;
+    return (strip.match(/role="tab"/g) || []).length === 4;
   })());
-  ok('the table strip is a real tablist', ['table-a', 'table-b', 'shadbala'].every(function (n) {
+  ok('the table strip is a real tablist', ['table-a', 'table-b', 'shadbala', 'yogas'].every(function (n) {
     return new RegExp('id="tab-' + n + '"[\\s\\S]{0,140}aria-controls="panel-' + n + '"').test(html) &&
            new RegExp('id="panel-' + n + '"[^>]*aria-labelledby="tab-' + n + '"').test(html);
   }));
@@ -371,7 +371,7 @@ function stripHtml(label) {
   ok('one tab implementation still serves every strip',
      (appSrc.match(/function setupTabs/g) || []).length === 1 &&
      (appSrc.match(/setupTabs\(/g) || []).length === 3 &&
-     /setupTabs\(\['table-a', 'table-b', 'shadbala'\]/.test(appSrc));
+     /setupTabs\(\['table-a', 'table-b', 'shadbala', 'yogas'\]/.test(appSrc));
   ok('there are two chart slots, each with two selects', ['a', 'b'].every(function (slot) {
     return new RegExp('id="ref-' + slot + '"').test(html) &&
            new RegExp('id="varga-' + slot + '"').test(html) &&
@@ -465,6 +465,24 @@ ok('the ayanamsa a chart was cast with survives an edit',
    /document\.getElementById\('ayanamsa'\)\.value = state\.ayanamsa;/.test(appSrc));
 
 // Each saved row carries an edit and a delete, and delete asks first.
+// Yogas and the lesson library.
+ok('the page loads the yogas module', /<script src="js\/yogas\.js"><\/script>/.test(html));
+ok('yogas share the table strip', /id="tab-yogas"[\s\S]{0,140}aria-controls="panel-yogas"/.test(html));
+ok('the lesson tab is a section of its own',
+   /id="tab-lesson"[\s\S]{0,140}aria-controls="panel-lesson"/.test(html) &&
+   /id="panel-lesson"[^>]*aria-labelledby="tab-lesson"/.test(html));
+ok('the lesson search is labelled', /<label for="lesson-query"/.test(html));
+ok('the library loads when the lesson tab is opened',
+   /if \(name === 'lesson'\) loadLessons\(\);/.test(appSrc));
+ok('the library is fetched once and searched in the page',
+   /if \(lessonLibrary\) return renderLessons\(\);/.test(appSrc));
+ok('a detected yoga asks the library for its own subject',
+   /fetchPassages\(\{ subjects: finding\.subject \}/.test(appSrc));
+ok('a chart with no yoga makes no request for one',
+   /if \(!found\.length\) \{[\s\S]{0,260}return;/.test(appSrc));
+ok('the page says which yogas it does not yet look for',
+   /Only parivartana/.test(appSrc));
+
 // Shadbala: the breakdown, not just a total.
 ok('the page loads the shadbala module', /<script src="js\/shadbala\.js"><\/script>/.test(html));
 ok('shadbala no longer has a card to itself', !/<h3>Shadbala<\/h3>/.test(html));

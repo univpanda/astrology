@@ -589,6 +589,72 @@ svg.kundli .graha-lagna { fill: var(--green-deep); font-weight: 700; }
    fact, not a shade of the same one. */
 svg.kundli .planet.retro { fill: var(--retro); }
 
+/* ---------------------------------------------------- yogas and lessons */
+
+.yoga-finding {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.1rem;
+  margin-bottom: 1rem;
+  background: var(--paper-tint);
+}
+.yoga-name {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.05rem;
+  color: var(--green-deep);
+  margin: 0 0 0.3rem;
+}
+.yoga-summary { margin: 0 0 0.3rem; }
+.yoga-grahas { margin: 0; font-size: 0.85rem; color: var(--ink-faint); }
+.yoga-explanation { margin-top: 0.9rem; }
+
+.lesson-search { max-width: 34rem; margin-bottom: 0.9rem; }
+.lesson-filters { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1.2rem; }
+.lesson-chip {
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--green-deep);
+  background: var(--green-soft);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  cursor: pointer;
+}
+.lesson-chip:hover { border-color: var(--green); }
+
+.passage {
+  border-top: 1px solid var(--line-soft);
+  padding-top: 1.1rem;
+  margin-top: 1.1rem;
+}
+.passage:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+.passage-heading {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.05rem;
+  color: var(--green-deep);
+  margin: 0 0 0.2rem;
+}
+.passage-meta {
+  margin: 0 0 0.7rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--ink-faint);
+}
+.passage-points { margin: 0; padding-left: 1.4rem; max-width: 74ch; }
+.passage-points li { margin-bottom: 0.45rem; }
+.passage-note {
+  margin: 0.7rem 0 0;
+  font-size: 0.85rem;
+  color: var(--ink-faint);
+  max-width: 74ch;
+}
+
 /* ------------------------------------------------------------------ tables */
 
 .two-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem; }
@@ -716,11 +782,12 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
   .card { border: 1px solid #ddd; box-shadow: none; background: #fff; break-inside: avoid; }
   .chart-card { background: #fff; }
   .tabs, .site-footer, .result-actions, .options, .save-feedback { display: none; }
-  #panel-add, #panel-saved, .empty-chart { display: none; }
+  #panel-add, #panel-saved, #panel-lesson, .empty-chart { display: none; }
   #panel-chart[hidden] { display: block; }
   .chart-controls { display: none; }
   /* Paper has no tabs, so every panel prints, whichever was on screen. */
-  #panel-table-a[hidden], #panel-table-b[hidden], #panel-shadbala[hidden] { display: block; }
+  #panel-table-a[hidden], #panel-table-b[hidden], #panel-shadbala[hidden],
+  #panel-yogas[hidden] { display: block; }
   .technical[open] summary { display: none; }
   svg.kundli text { fill: #111; }
   svg.kundli .frame, svg.kundli .cell { stroke: #9bbcab; }

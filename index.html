@@ -24,6 +24,8 @@
             aria-controls="panel-add" aria-selected="true">Add a kundali</button>
     <button type="button" class="tab" role="tab" id="tab-chart"
             aria-controls="panel-chart" aria-selected="false" tabindex="-1">Kundali</button>
+    <button type="button" class="tab" role="tab" id="tab-lesson"
+            aria-controls="panel-lesson" aria-selected="false" tabindex="-1">Lesson</button>
   </div>
 
   <section class="panel" id="panel-saved" role="tabpanel" aria-labelledby="tab-saved" hidden>
@@ -209,6 +211,8 @@
                 aria-controls="panel-table-b" aria-selected="false" tabindex="-1"></button>
         <button type="button" class="tab" role="tab" id="tab-shadbala"
                 aria-controls="panel-shadbala" aria-selected="false" tabindex="-1">Shadbala</button>
+        <button type="button" class="tab" role="tab" id="tab-yogas"
+                aria-controls="panel-yogas" aria-selected="false" tabindex="-1">Yogas</button>
       </div>
 
       <div id="panel-table-a" role="tabpanel" aria-labelledby="tab-table-a">
@@ -266,6 +270,11 @@
         <p class="varga-note" id="shadbala-note"></p>
       </div>
 
+      <div id="panel-yogas" role="tabpanel" aria-labelledby="tab-yogas" hidden>
+        <div id="yoga-list"></div>
+        <p class="varga-note" id="yoga-note"></p>
+      </div>
+
     </div>
 
     <div class="two-col">
@@ -297,6 +306,20 @@
     </section>
   </section>
 
+  <section class="panel" id="panel-lesson" role="tabpanel" aria-labelledby="tab-lesson" hidden>
+    <div class="card">
+      <h3>Lesson</h3>
+      <div class="field lesson-search">
+        <label for="lesson-query">Search by topic</label>
+        <input type="search" id="lesson-query" autocomplete="off"
+               placeholder="parivartana, exchange, father, weak Sun&hellip;">
+        <p class="field-note" id="lesson-status"></p>
+      </div>
+      <div class="lesson-filters" id="lesson-filters"></div>
+      <div id="lesson-results"></div>
+    </div>
+  </section>
+
 </main>
 
 <footer class="site-footer">
@@ -313,6 +336,7 @@
 <script src="js/geo.js"></script>
 <script src="js/charts.js"></script>
 <script src="js/shadbala.js"></script>
+<script src="js/yogas.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

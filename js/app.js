@@ -481,6 +481,7 @@
      */
     drawCharts();
     renderShadbala(state);
+    renderYogas(state);
     renderPanchang(c);
     renderDashas(c, state.offset);
     renderTechnical(state);
@@ -686,6 +687,141 @@
       'this one. Hover the Sthana and Kala figures for their parts. Yuddha bala is not ' +
       'included, and Rahu and Ketu are outside Shadbala.';
   }
+
+  /* --------------------------------------------------------------- yogas */
+
+  var READINGS_API = 'https://deiefjnwbfcywsaaqqbs.supabase.co/functions/v1/readings';
+
+  /** Render one passage from astro_readings as a block of prose. */
+  function passageBlock(passage) {
+    var block = el('article', 'passage');
+    block.appendChild(el('h4', 'passage-heading', passage.heading));
+    var meta = [passage.topic, passage.subject];
+    if (passage.condition && passage.condition !== 'general') meta.push(passage.condition);
+    block.appendChild(el('p', 'passage-meta', meta.join(' \u00b7 ')));
+    var list = el('ol', 'passage-points');
+    (passage.points || []).forEach(function (point) {
+      list.appendChild(el('li', null, point));
+    });
+    block.appendChild(list);
+    if (passage.note) block.appendChild(el('p', 'passage-note', passage.note));
+    return block;
+  }
+
+  /**
+   * Yogas found in the chart, each with the passage that explains it.
+   *
+   * The detector names a subject, the library is asked for exactly that
+   * subject, and the two meet here. Neither knows about the other, so adding a
+   * yoga means a detector and a row, not a change to this function.
+   */
+  function renderYogas(state) {
+    var list = document.getElementById('yoga-list');
+    var note = document.getElementById('yoga-note');
+    list.innerHTML = '';
+
+    var found = Yogas.detect(state.chart);
+    if (!found.length) {
+      note.textContent = 'No yoga among those this page looks for is present in this chart. ' +
+        'Only parivartana - an exchange of signs - is checked so far.';
+      return;
+    }
+    note.textContent = 'Only parivartana is checked so far; more will follow.';
+
+    found.forEach(function (finding) {
+      var card = el('div', 'yoga-finding');
+      card.appendChild(el('h4', 'yoga-name', finding.subject));
+      card.appendChild(el('p', 'yoga-summary', finding.summary));
+      card.appendChild(el('p', 'yoga-grahas',
+        'Grahas: ' + finding.grahas.join(' and ') +
+        '   \u00b7   Houses: ' + finding.houses.join(' and ')));
+      var explanation = el('div', 'yoga-explanation');
+      card.appendChild(explanation);
+      list.appendChild(card);
+
+      // The passage is fetched per finding, so a chart with none makes no call.
+      fetchPassages({ subjects: finding.subject }, function (passages) {
+        if (passages && passages.length) explanation.appendChild(passageBlock(passages[0]));
+      });
+    });
+  }
+
+  function fetchPassages(query, done) {
+    if (!window.fetch) return done(null);
+    fetch(READINGS_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-region': API_REGION },
+      body: JSON.stringify(query)
+    }).then(function (res) { return res.ok ? res.json() : null; })
+      .then(function (body) { done(body && body.passages ? body.passages : null); })
+      .catch(function () { done(null); });
+  }
+
+  /* -------------------------------------------------------------- lesson */
+
+  var lessonQuery = document.getElementById('lesson-query');
+  var lessonResults = document.getElementById('lesson-results');
+  var lessonStatus = document.getElementById('lesson-status');
+  var lessonFilters = document.getElementById('lesson-filters');
+  var lessonLibrary = null;
+  var lessonTimer = null;
+
+  /** Fetch the library once, then search it in the page. */
+  function loadLessons() {
+    if (lessonLibrary) return renderLessons();
+    lessonStatus.textContent = 'Loading\u2026';
+    fetchPassages({}, function (passages) {
+      lessonLibrary = passages || [];
+      lessonStatus.textContent = passages ? '' : 'The lesson library could not be reached.';
+      renderTopicFilters();
+      renderLessons();
+    });
+  }
+
+  function renderTopicFilters() {
+    lessonFilters.innerHTML = '';
+    var topics = [];
+    lessonLibrary.forEach(function (p) {
+      if (topics.indexOf(p.topic) < 0) topics.push(p.topic);
+    });
+    if (topics.length < 2) return;
+    topics.forEach(function (topic) {
+      var chip = el('button', 'lesson-chip', topic);
+      chip.type = 'button';
+      chip.addEventListener('click', function () {
+        lessonQuery.value = topic;
+        renderLessons();
+      });
+      lessonFilters.appendChild(chip);
+    });
+  }
+
+  function renderLessons() {
+    var q = lessonQuery.value.trim().toLowerCase();
+    lessonResults.innerHTML = '';
+    var matches = (lessonLibrary || []).filter(function (p) {
+      if (!q) return true;
+      return [p.subject, p.heading, p.topic, p.condition, p.note]
+        .concat(p.points || [])
+        .filter(Boolean)
+        .some(function (field) { return String(field).toLowerCase().indexOf(q) >= 0; });
+    });
+
+    if (!matches.length) {
+      lessonStatus.textContent = lessonLibrary && lessonLibrary.length
+        ? 'Nothing on that yet. The library is being built up.'
+        : lessonStatus.textContent;
+      return;
+    }
+    lessonStatus.textContent = matches.length + ' of ' + lessonLibrary.length +
+      (lessonLibrary.length === 1 ? ' passage' : ' passages');
+    matches.forEach(function (p) { lessonResults.appendChild(passageBlock(p)); });
+  }
+
+  lessonQuery.addEventListener('input', function () {
+    clearTimeout(lessonTimer);
+    lessonTimer = setTimeout(renderLessons, 120);
+  });
 
   function renderPanchang(c) {
     var list = document.getElementById('panchang');
@@ -1099,15 +1235,17 @@
   var emptyChart = document.getElementById('empty-chart');
   var savedCount = document.getElementById('saved-count');
 
-  var sections = setupTabs(['saved', 'add', 'chart'],
-    document.querySelector('.tabs:not(.subtabs)'), { scrollToTop: true });
+  var sections = setupTabs(['saved', 'add', 'chart', 'lesson'],
+    document.querySelector('.tabs:not(.subtabs)'), { scrollToTop: true, onChange: function (name) {
+      if (name === 'lesson') loadLessons();
+    } });
 
   /*
    * The two graha tables share one strip, labelled from whichever divisions the
    * charts are set to. Fixed D1/D9 labels would have lied the moment either
    * select moved.
    */
-  var tableTabs = setupTabs(['table-a', 'table-b', 'shadbala'],
+  var tableTabs = setupTabs(['table-a', 'table-b', 'shadbala', 'yogas'],
     document.querySelector('.tabs.subtabs'));
 
   function activateTab(name, moveFocus) { sections.activate(name, moveFocus); }

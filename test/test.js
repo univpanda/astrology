@@ -9,6 +9,7 @@ global.PERTURBATIONS = require('../data/perturbations.js');
 var A = require('../js/astro.js');
 global.Astro = A;
 var Shadbala = require('../js/shadbala.js');
+var Yogas = require('../js/yogas.js');
 
 var pass = 0, fail = 0;
 function check(name, actual, expected, tol, unit) {
@@ -726,6 +727,65 @@ console.log('\nShadbala');
   ok('totals stay in the range practitioners see, over ' + charts + ' charts',
      lowest > 2 && highest < 14, lowest.toFixed(2) + ' to ' + highest.toFixed(2) + ' Rupas');
 })();
+
+console.log('\nParivartana yoga');
+/*
+ * An exchange is classified by the two signs being swapped, not by everything
+ * the two grahas own. Five of the seven rule a dusthana somewhere, so reading
+ * all their houses would make nearly every exchange a dainya.
+ */
+(function () {
+  var seen = {}, examples = {};
+  for (var y = 1975; y <= 2005 && Object.keys(seen).length < 3; y++) {
+    for (var d = 1; d <= 365; d += 1) {
+      var chart = A.chart({ jdUT: A.julianDay(y, 1, d, 6.0), latitude: 28.6139, longitude: 77.2090 });
+      Yogas.detect(chart).forEach(function (finding) {
+        if (!seen[finding.kind]) { seen[finding.kind] = true; examples[finding.kind] = { chart: chart, finding: finding }; }
+      });
+      if (Object.keys(seen).length >= 3) break;
+    }
+  }
+  ok('all three kinds occur and are told apart',
+     seen.maha && seen.khala && seen.dainya, Object.keys(seen).sort().join(', '));
+
+  Object.keys(examples).forEach(function (kind) {
+    var finding = examples[kind].finding, chart = examples[kind].chart;
+    var positions = {};
+    chart.planets.forEach(function (p) { positions[p.name] = p; });
+    var a = finding.grahas[0], b = finding.grahas[1];
+    ok(kind + ': each graha really is in the other\'s sign',
+       A.SIGN_LORDS[positions[a].sign] === b && A.SIGN_LORDS[positions[b].sign] === a,
+       finding.summary);
+    var houses = finding.houses;
+    var hasDusthana = houses.some(function (h) { return [6, 8, 12].indexOf(h) >= 0; });
+    var hasThird = houses.indexOf(3) >= 0;
+    ok(kind + ': the class matches the houses exchanged',
+       kind === 'dainya' ? hasDusthana
+       : kind === 'khala' ? (hasThird && !hasDusthana)
+       : (!hasThird && !hasDusthana), 'houses ' + houses.join(' and '));
+  });
+})();
+ok('a graha is never in parivartana with itself', (function () {
+  for (var y = 1990; y < 1992; y++) {
+    var chart = A.chart({ jdUT: A.julianDay(y, 6, 1, 6.0), latitude: 28.6139, longitude: 77.2090 });
+    var bad = Yogas.detect(chart).some(function (f) { return f.grahas[0] === f.grahas[1]; });
+    if (bad) return false;
+  }
+  return true;
+})());
+ok('the nodes are never involved, ruling no sign', (function () {
+  for (var d = 1; d <= 200; d += 7) {
+    var chart = A.chart({ jdUT: A.julianDay(1995, 1, d, 6.0), latitude: 28.6139, longitude: 77.2090 });
+    var bad = Yogas.detect(chart).some(function (f) {
+      return f.grahas.indexOf('Rahu') >= 0 || f.grahas.indexOf('Ketu') >= 0;
+    });
+    if (bad) return false;
+  }
+  return true;
+})());
+ok('ordinals read correctly', Yogas.ordinal(1) === '1st' && Yogas.ordinal(2) === '2nd' &&
+   Yogas.ordinal(3) === '3rd' && Yogas.ordinal(4) === '4th' && Yogas.ordinal(11) === '11th' &&
+   Yogas.ordinal(12) === '12th');
 
 console.log('\nYogakaraka');
 /*
