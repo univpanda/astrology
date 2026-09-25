@@ -765,6 +765,21 @@ ok('and the title breaks the score into its divisions',
 ok('the column has a heading that says what it is out of',
    /el\('th', null, 'Vimsopaka'\)/.test(appSrc) &&
    /el\('span', 'varga-weight', '\/ 20'\)/.test(appSrc));
+/*
+ * A number in a column invites being read as a verdict. Shadbala and vimsopaka
+ * both answer "how fully can this graha act" and neither answers "is that a good
+ * thing": a strong malefic aspecting a house it does not rule afflicts it the
+ * more surely for being strong. Parashara's own band label says "wholly
+ * favourable", which is exactly why the caveat has to sit next to it.
+ */
+ok('the note says the total is strength and not benefit', (function () {
+  var flat = appSrc.replace(/'\s*\+\s*'/g, '');
+  return /Read those as strength and not as benefit/.test(flat) &&
+    /A strong malefic aspecting a house it does not rule afflicts it the more surely for being strong/.test(flat);
+})());
+ok('and the column\'s own hover says it too, where the number is read',
+   /That is strength, not benefit: it says how fully ' \+ planet\.name/.test(appSrc));
+
 ok('the note explains the totalling and the four readings', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');
   return /The last column totals them, verses 26-27/.test(flat) &&

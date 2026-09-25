@@ -1126,7 +1126,10 @@
       'heading for its figure in each. The last column totals them, verses 26-27: ' +
       'each share scaled by what the graha keeps of it, own sign counting the full twenty and ' +
       'a great enemy five. Parashara reads below 5 as incapable of auspicious results, 5 to 10 ' +
-      'as some good, up to 15 as mediocre and above 15 as wholly favourable. No luminary ' +
+      'as some good, up to 15 as mediocre and above 15 as wholly favourable. Read those as ' +
+      'strength and not as benefit: the total says how fully a graha acts in its own nature, ' +
+      'not whether that is wanted. A strong malefic aspecting a house it does not rule ' +
+      'afflicts it the more surely for being strong. No luminary ' +
       'rules a trimsamsa, so in D30 the Sun ' +
       'stands in as Mars and the Moon as Venus. Rahu and Ketu own no sign and keep no ' +
       'friendships, so they are left out.';
@@ -1210,7 +1213,9 @@
       td.setAttribute('rowspan', '2');
       if (score) {
         td.title = planet.name + ' scores ' + score.total.toFixed(2) + ' of twenty across the ' +
-          scheme.label.toLowerCase() + ', which Parashara reads as ' + score.band.label + '. ' +
+          scheme.label.toLowerCase() + ', which Parashara reads as ' + score.band.label +
+          '. That is strength, not benefit: it says how fully ' + planet.name +
+          ' acts in its own nature. ' +
           score.parts.map(function (part) {
             return 'D' + part.division + ' ' + vimsopakaFigure(part.weight) + '\u00d7' +
               part.viswa + '/20';
