@@ -266,7 +266,7 @@ ok('the form gives way to the chart and can be brought back',
    /function showChart/.test(appSrc) && /function showForm/.test(appSrc) &&
    /addButton\.addEventListener/.test(appSrc) && /editButton\.addEventListener/.test(appSrc));
 ok('saved charts sync to the database as well as this browser',
-   /astro_kundali|functions\/v1\/kundalis/.test(appSrc) && /action: 'save'/.test(appSrc) &&
+   /astro_charts|functions\/v1\/kundalis/.test(appSrc) && /action: 'save'/.test(appSrc) &&
    /action: 'list'/.test(appSrc) && /action: 'delete'/.test(appSrc));
 ok('ownership is a minted token, not an account',
    /randomUUID/.test(appSrc) && /ownerToken/.test(appSrc));

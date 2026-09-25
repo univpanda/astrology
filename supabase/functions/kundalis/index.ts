@@ -2,14 +2,14 @@
  * POST /functions/v1/kundalis - list, save and delete saved charts.
  *
  * Ownership is a capability token the browser mints and keeps; this function
- * holds the service role and is the only thing that touches astro_kundali,
+ * holds the service role and is the only thing that touches astro_charts,
  * which has row level security on and no policy at all. So the token is checked
  * in exactly one place, and the table is unreachable through PostgREST even
  * with the public anon key.
  */
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const TABLE = `${SUPABASE_URL}/rest/v1/astro_kundali`;
+const TABLE = `${SUPABASE_URL}/rest/v1/astro_charts`;
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',

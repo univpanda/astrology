@@ -583,7 +583,7 @@
 
   /*
    * There are no accounts, so ownership is a capability: a random token minted
-   * once and kept in this browser. It is what scopes rows in astro_kundali, so
+   * once and kept in this browser. It is what scopes rows in astro_charts, so
    * clearing site data loses the link to them, and the same charts opened in
    * another browser are a different set.
    */
@@ -851,9 +851,30 @@
 
   populateSelects();
   renderSaved();
-  callKundaliApi({ action: 'list' }, function (entries) {
-    if (entries) { writeSaved(entries.map(fromRow)); renderSaved(); }
-  });
+  /*
+   * Charts saved before this browser could reach the database have no id. Push
+   * them up once, then take the server's list as the truth. Without this they
+   * would sit in localStorage forever, invisible from anywhere else, which is
+   * exactly what someone who pressed save would not expect.
+   */
+  (function syncSavedCharts() {
+    var local = readSaved();
+    var orphans = local.filter(function (entry) { return !entry.id; });
+    var remaining = orphans.length;
+
+    var listThenRender = function () {
+      callKundaliApi({ action: 'list' }, function (entries) {
+        if (entries) { writeSaved(entries.map(fromRow)); renderSaved(); }
+      });
+    };
+
+    if (!remaining) return listThenRender();
+    orphans.forEach(function (entry) {
+      callKundaliApi({ action: 'save', entry: entry }, function () {
+        if (--remaining === 0) listThenRender();
+      });
+    });
+  })();
   if (!Geo.historicalZonesSupported()) {
     placeNote.textContent = 'This browser lacks historical timezone data, so births before ' +
       '1970 may use a modern offset. Chrome, Safari and Firefox all handle it.';

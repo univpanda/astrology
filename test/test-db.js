@@ -224,10 +224,10 @@ if (process.env.KUNDALI_API) {
   ok('the token is left empty again', call({ action: 'list' }).entries.length === 0);
 
   // The table must be unreachable with the public key, not merely unadvertised.
-  ok('astro_kundali has no RLS policy, so PostgREST cannot read it',
-     +sql("select count(*) from pg_policies where tablename='astro_kundali';") === 0);
+  ok('astro_charts has no RLS policy, so PostgREST cannot read it',
+     +sql("select count(*) from pg_policies where tablename='astro_charts';") === 0);
   ok('row level security is enabled on it',
-     sql("select relrowsecurity::text from pg_class where relname='astro_kundali';") === 'true');
+     sql("select relrowsecurity::text from pg_class where relname='astro_charts';") === 'true');
 }
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
