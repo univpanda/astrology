@@ -449,9 +449,9 @@
 
     var facts = document.getElementById('key-facts');
     facts.innerHTML = '';
-    var asc = c.ascendant;
-    fact(facts, 'Lagna (ascendant)', asc.signName + ' ' + dms(asc.degreeInSign),
-      asc.signSanskrit + '  ·  lord ' + asc.lord);
+    // The lagna is the first row of the graha table rather than a tile up here:
+    // it has the same columns to fill as a graha, and repeating it twice only
+    // crowded the top of the page.
     var moon = planet(c, 'Moon'), sun = planet(c, 'Sun');
     fact(facts, 'Chandra rashi (moon sign)', moon.signName + ' ' + dms(moon.degreeInSign), moon.signSanskrit);
     fact(facts, 'Janma nakshatra', moon.nakshatra.name + ', pada ' + moon.nakshatra.pada,
@@ -484,7 +484,29 @@
   function renderPlanets(c) {
     var tbody = document.querySelector('#planet-table tbody');
     tbody.innerHTML = '';
-    c.planets.forEach(function (p) {
+
+    /*
+     * The ascendant is not a graha, so the columns that describe motion do not
+     * apply to it: it never turns retrograde and holds no dignity. It is always
+     * the first house by definition.
+     */
+    var asc = c.ascendant;
+    var ascNavamsa = Astro.navamsaSign(asc.longitude);
+    var rows = [{
+      name: 'Ascendant',
+      degreeInSign: asc.degreeInSign,
+      longitude: asc.longitude,
+      signName: asc.signName,
+      signSanskrit: asc.signSanskrit,
+      house: 1,
+      nakshatra: asc.nakshatra,
+      navamsaSignName: Astro.SIGNS[ascNavamsa],
+      retrograde: false,
+      dignity: '',
+      isAscendant: true
+    }].concat(c.planets);
+
+    rows.forEach(function (p) {
       var tr = document.createElement('tr');
       var cells = [
         [p.name, null],
@@ -495,9 +517,10 @@
         [String(p.nakshatra.pada), 'numeric'],
         [p.nakshatra.lord, null],
         [p.navamsaSignName, null],
-        [p.retrograde ? 'Retrograde' : 'Direct', null],
+        [p.isAscendant ? '\u2013' : (p.retrograde ? 'Retrograde' : 'Direct'), null],
         [p.dignity || '\u2013', null]
       ];
+      if (p.isAscendant) tr.className = 'ascendant-row';
       cells.forEach(function (cell, i) {
         var td = el(i === 0 ? 'th' : 'td', cell[1], cell[0]);
         if (i === 0) td.setAttribute('scope', 'row');
