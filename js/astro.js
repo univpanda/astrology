@@ -862,9 +862,13 @@ var Astro = (function () {
   }
 
   /*
-   * The ten vargas Parashara groups as the Dasavarga, in his order.
+   * The ten vargas Parashara groups as the Dasavarga, in his order, and the full
+   * sixteen of the Shodasavarga. The sixteen are simply every varga the module
+   * defines, so the list is derived rather than retyped and cannot fall out of
+   * step with VARGAS.
    */
   var DASAVARGA = [1, 2, 3, 7, 9, 10, 12, 16, 30, 60];
+  var SHODASAVARGA = VARGAS.map(function (v) { return v.division; });
 
   /*
    * Same passage, verse 16: "As for Trimsamsa effects the Sun is akin to Mars and
@@ -883,6 +887,18 @@ var Astro = (function () {
     exalted: 'Exalted', moolatrikona: 'Mooltrikona', own: 'Own sign',
     adhimitra: 'Great friend', mitra: 'Friend', sama: 'Neutral',
     shatru: 'Enemy', adhishatru: 'Great enemy', debilitated: 'Debilitated'
+  };
+
+  /*
+   * Sixteen columns will not carry "Great enemy" across a phone, so the grid
+   * abbreviates and the full word stays in the cell's title. Kept distinct
+   * enough to tell apart at a glance: Enm and Gt Enm never read as each other
+   * the way E and GE would.
+   */
+  var VARGA_DIGNITY_SHORT = {
+    exalted: 'Exal', moolatrikona: 'Mool', own: 'Own',
+    adhimitra: 'Gt Fr', mitra: 'Fr', sama: 'Neut',
+    shatru: 'Enm', adhishatru: 'Gt Enm', debilitated: 'Deb'
   };
 
   /**
@@ -1203,6 +1219,8 @@ var Astro = (function () {
     isVargottama: isVargottama,
     vargaDignity: vargaDignity,
     DASAVARGA: DASAVARGA,
+    SHODASAVARGA: SHODASAVARGA,
+    VARGA_DIGNITY_SHORT: VARGA_DIGNITY_SHORT,
     VARGA_DIGNITY_LABELS: VARGA_DIGNITY_LABELS,
     TRIMSAMSA_PROXY: TRIMSAMSA_PROXY,
     VARGAS: VARGAS,

@@ -854,13 +854,24 @@ td.dig-shatru { color: var(--ink-faint); }
 td.dig-adhishatru { color: var(--retro); }
 td.dig-debilitated { color: var(--retro); font-weight: 600; }
 
-/* Each graha in Dasavarga spans two rows, its sign above its dignity. The rule
+/* Each graha in Shodasavarga spans two rows, its sign above its dignity. The rule
    belongs under the pair rather than between its halves, so the sign row drops
    its own, and the name sits centred against both. */
-#dasavarga-table th[rowspan] { vertical-align: middle; }
-#dasavarga-table tr.varga-signs td { border-bottom: none; padding-bottom: 0; }
-#dasavarga-table tr.varga-dignities td { padding-top: 0.15rem; }
-td.varga-sign { color: var(--ink-soft); font-size: 0.85rem; }
+#shodasavarga-table th[rowspan] { vertical-align: middle; }
+#shodasavarga-table tr.varga-signs td { border-bottom: none; padding-bottom: 0; }
+#shodasavarga-table tr.varga-dignities td { padding-top: 0.15rem; }
+/* Sign numbers rather than names: sixteen columns of "Sagittarius" do not fit,
+   and the chart above already labels its boxes this way. Tabular figures so the
+   columns line up whatever the digits. */
+td.varga-sign {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+/* Sixteen columns is a lot of table; let it breathe less than the others. */
+#shodasavarga-table th, #shodasavarga-table td { padding-left: 0.45rem; padding-right: 0.45rem; }
+#shodasavarga-table td.dig { font-size: 0.86rem; }
 .flag-key { max-width: 60ch; margin: 0 auto 1rem; text-align: center; }
 /* A yogakaraka is worth spotting at a glance; the bare house numbers beside it
    are not, so only the named case is picked out. */

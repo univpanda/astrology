@@ -723,7 +723,7 @@
      */
     drawCharts();
     renderShadbala(state);
-    renderDasavarga(state);
+    renderShodasavarga(state);
     renderYogas(state);
     renderAspects(state);
     renderPanchang(c);
@@ -995,10 +995,10 @@
       'by a few virupas.';
   }
 
-  /* ----------------------------------------------------------- dasavarga */
+  /* ----------------------------------------------------------- shodasavarga */
 
   /**
-   * Where each graha stands in the ten vargas Parashara groups as the Dasavarga.
+   * Where each graha stands in the ten vargas Parashara groups as the Shodasavarga.
    *
    * The same seven-step scale the Dignity column uses, applied division by
    * division: the graha against the lord of whichever sign that division puts it
@@ -1011,8 +1011,9 @@
    * useful fact. The relation underneath is kept in the cell's title.
    */
   /** What one cell of the grid is saying, in full. */
-  function dasavargaDetail(d, division, graha) {
-    var text = 'D' + division + ': ' + Astro.SIGNS[d.sign] + ', ruled by ' + d.lord + '.';
+  function shodasavargaDetail(d, division, graha) {
+    var text = 'D' + division + ': ' + d.label + ' - ' + Astro.SIGNS[d.sign] +
+      ', ruled by ' + d.lord + '.';
     if (d.viaProxy) {
       text += ' Neither luminary rules a trimsamsa, so for this division ' + graha +
         ' stands in as ' + d.viaProxy + ', which is what lets it hold one of its own.';
@@ -1023,8 +1024,8 @@
     return text;
   }
 
-  function renderDasavarga(state) {
-    var tbody = document.querySelector('#dasavarga-table tbody');
+  function renderShodasavarga(state) {
+    var tbody = document.querySelector('#shodasavarga-table tbody');
     tbody.innerHTML = '';
 
     var positionsD1 = {};
@@ -1032,7 +1033,7 @@
 
     // Listed as in the graha tables, for reading across from one to the other.
     state.chart.planets.forEach(function (planet) {
-      var cells = Astro.DASAVARGA.map(function (division) {
+      var cells = Astro.SHODASAVARGA.map(function (division) {
         return Astro.vargaDignity(planet.name, planet.longitude, division, positionsD1);
       });
       if (cells.every(function (c) { return !c; })) return;   // Rahu and Ketu
@@ -1055,9 +1056,16 @@
       dignityRow.className = 'varga-dignities';
 
       cells.forEach(function (d, i) {
-        var detail = d ? dasavargaDetail(d, Astro.DASAVARGA[i], planet.name) : null;
-        var sign = el('td', 'varga-sign', d ? Astro.SIGNS[d.sign] : '\u2013');
-        var dignity = el('td', d ? 'dig dig-' + d.key : null, d ? d.label : '\u2013');
+        var detail = d ? shodasavargaDetail(d, Astro.SHODASAVARGA[i], planet.name) : null;
+        /*
+         * The sign as its number, 1 for Aries through 12 for Pisces, which is how
+         * the North Indian chart above already labels its boxes. Sixteen columns
+         * of names do not fit, and a number the reader already uses beats an
+         * abbreviation invented for this one table. The name is in the title.
+         */
+        var sign = el('td', 'varga-sign', d ? String(d.sign + 1) : '\u2013');
+        var dignity = el('td', d ? 'dig dig-' + d.key : null,
+          d ? Astro.VARGA_DIGNITY_SHORT[d.key] : '\u2013');
         if (detail) { sign.title = detail; dignity.title = detail; }
         signRow.appendChild(sign);
         dignityRow.appendChild(dignity);
@@ -1067,11 +1075,13 @@
       tbody.appendChild(dignityRow);
     });
 
-    document.getElementById('dasavarga-note').textContent =
-      'Dignity in each of the ten Dasavarga divisions, judged against the lord of the sign ' +
-      'that division gives. The classical scale runs Mooltrikona, own sign, great friend, ' +
-      'friend, neutral, enemy, great enemy, which Parashara scores as 20, 18, 15, 10, 7 and ' +
-      '5 out of twenty. Exaltation is not one of those steps, being measured by uchcha bala ' +
+    document.getElementById('shodasavarga-note').textContent =
+      'Dignity in each of the sixteen Shodasavarga divisions, judged against the lord of ' +
+      'the sign that division gives. The classical scale runs Mooltrikona, own sign, great ' +
+      'friend, friend, neutral, enemy, great enemy, which Parashara scores as 20, 18, 15, 10, ' +
+      '7 and 5 out of twenty. Dignities are abbreviated - Exal, Mool, Own, Gt Fr, ' +
+      'Fr, Neut, Enm, Gt Enm, Deb - and signs are numbered 1 to 12 from Aries, as the chart ' +
+      'above numbers its boxes. Hover any cell for the words themselves. Exaltation is not one of those steps, being measured by uchcha bala ' +
       'instead, but it is shown here when it falls, as is debilitation. No luminary rules a ' +
       'trimsamsa, so in D30 the Sun stands in as Mars and the Moon as Venus, which is ' +
       'Parashara\u2019s own remedy in chapter 7. Each graha takes two rows: the ' +
@@ -1747,7 +1757,7 @@
    * charts are set to. Fixed D1/D9 labels would have lied the moment either
    * select moved.
    */
-  var tableTabs = setupTabs(['table-a', 'table-b', 'shadbala', 'dasavarga', 'yogas', 'aspects'],
+  var tableTabs = setupTabs(['table-a', 'table-b', 'shadbala', 'shodasavarga', 'yogas', 'aspects'],
     document.querySelector('.tabs.subtabs'));
 
   function activateTab(name, moveFocus) { sections.activate(name, moveFocus); }

@@ -366,7 +366,7 @@ function stripHtml(label) {
     return (strip.match(/role="tab"/g) || []).length === 6;
   })());
   ok('the table strip is a real tablist',
-     ['table-a', 'table-b', 'shadbala', 'dasavarga', 'yogas', 'aspects'].every(function (n) {
+     ['table-a', 'table-b', 'shadbala', 'shodasavarga', 'yogas', 'aspects'].every(function (n) {
     return new RegExp('id="tab-' + n + '"[\\s\\S]{0,140}aria-controls="panel-' + n + '"').test(html) &&
            new RegExp('id="panel-' + n + '"[^>]*aria-labelledby="tab-' + n + '"').test(html);
   }));
@@ -376,7 +376,7 @@ function stripHtml(label) {
   ok('one tab implementation still serves every strip',
      (appSrc.match(/function setupTabs/g) || []).length === 1 &&
      (appSrc.match(/setupTabs\(/g) || []).length === 3 &&
-     /setupTabs\(\['table-a', 'table-b', 'shadbala', 'dasavarga', 'yogas', 'aspects'\]/.test(appSrc));
+     /setupTabs\(\['table-a', 'table-b', 'shadbala', 'shodasavarga', 'yogas', 'aspects'\]/.test(appSrc));
   ok('there are two chart slots, each with two selects', ['a', 'b'].every(function (slot) {
     return new RegExp('id="ref-' + slot + '"').test(html) &&
            new RegExp('id="varga-' + slot + '"').test(html) &&
@@ -658,27 +658,56 @@ ok('the page carries a key for both flags',
    /\[R\] is retrograde\. \[V\] is vargottama/.test(html) &&
    /measured against D9 whichever division is on screen/.test(html));
 
-console.log('\nDasavarga panel');
-ok('the columns are exactly the ten Dasavarga divisions, in order', (function () {
-  var head = html.slice(html.indexOf('id="dasavarga-table"'));
+console.log('\nShodasavarga panel');
+ok('the columns are exactly the sixteen Shodasavarga divisions, in order', (function () {
+  var head = html.slice(html.indexOf('id="shodasavarga-table"'));
   head = head.slice(0, head.indexOf('</thead>'));
   var cols = (head.match(/<th scope="col">D(\d+)<\/th>/g) || [])
     .map(function (m) { return m.replace(/\D/g, ''); }).join(' ');
-  return cols === Astro.DASAVARGA.join(' ');
+  return cols === Astro.SHODASAVARGA.join(' ');
 })());
 
 ok('it renders whenever a chart does',
-   /renderShadbala\(state\);\s*\n\s*renderDasavarga\(state\);/.test(appSrc));
+   /renderShadbala\(state\);\s*\n\s*renderShodasavarga\(state\);/.test(appSrc));
 ok('it reads the division list from the engine rather than repeating it',
-   /Astro\.DASAVARGA\.map\(function \(division\)/.test(appSrc) &&
-   !/\[1, 2, 3, 7, 9, 10, 12, 16, 30, 60\]/.test(appSrc));
+   (function () {
+     var code = appSrc.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+     return /Astro\.SHODASAVARGA\.map\(function \(division\)/.test(code) &&
+       !/\[1, 2, 3, 4, 7, 9, 10, 12, 16, 20, 24, 27, 30, 40, 45, 60\]/.test(code);
+   })());
+ok('and the sixteen are derived from VARGAS rather than retyped beside it', (function () {
+  var astroSrc = fs.readFileSync(path.join(root, 'js/astro.js'), 'utf8');
+  return /var SHODASAVARGA = VARGAS\.map\(function \(v\) \{ return v\.division; \}\);/.test(astroSrc) &&
+    Astro.SHODASAVARGA.join(' ') === '1 2 3 4 7 9 10 12 16 20 24 27 30 40 45 60';
+})());
 ok('grahas keep the order of the tables beside it',
-   /state\.chart\.planets\.forEach\(function \(planet\) \{[\s\S]{0,400}dasavarga-note/.test(appSrc) ||
+   /state\.chart\.planets\.forEach\(function \(planet\) \{[\s\S]{0,400}shodasavarga-note/.test(appSrc) ||
    /\/\/ Listed as in the graha tables/.test(appSrc));
 ok('a graha with no reading anywhere is dropped, not shown as a row of dashes',
    /if \(cells\.every\(function \(c\) \{ return !c; \}\)\) return;/.test(appSrc));
-ok('each cell says which sign and lord produced it',
-   /Astro\.SIGNS\[d\.sign\] \+ ', ruled by ' \+ d\.lord/.test(appSrc));
+ok('each cell gives its full dignity, sign and lord in the title',
+   /d\.label \+ ' - ' \+ Astro\.SIGNS\[d\.sign\] \+[\s\S]{0,40}', ruled by ' \+ d\.lord/.test(appSrc));
+
+/*
+ * Sixteen columns carry neither "Sagittarius" nor "Great enemy". Signs go as
+ * numbers, which the chart above already uses for its boxes, and dignities as
+ * short forms. Both words stay in the title, so nothing is lost, only shortened.
+ */
+ok('the sign row shows the sign number, 1 for Aries through 12 for Pisces',
+   /el\('td', 'varga-sign', d \? String\(d\.sign \+ 1\) : '\\u2013'\)/.test(appSrc));
+ok('the dignity row shows the short form',
+   /Astro\.VARGA_DIGNITY_SHORT\[d\.key\]/.test(appSrc));
+ok('every dignity has a short form, each distinct and short enough to fit', (function () {
+  var full = Object.keys(Astro.VARGA_DIGNITY_LABELS);
+  var brief = full.map(function (k) { return Astro.VARGA_DIGNITY_SHORT[k]; });
+  return brief.every(Boolean) && brief.length === 9 && new Set(brief).size === 9 &&
+    brief.every(function (t) { return t.length <= 6; });
+})(), Object.keys(Astro.VARGA_DIGNITY_SHORT).map(function (k) {
+  return Astro.VARGA_DIGNITY_SHORT[k]; }).join(' '));
+ok('the note explains both abbreviations rather than leaving them to be guessed', (function () {
+  var flat = appSrc.replace(/'\s*\+\s*'/g, '');
+  return /Dignities are abbreviated/.test(flat) && /signs are numbered 1 to 12 from Aries/.test(flat);
+})());
 ok('and gives the seven-step reading when it differs from the label shown',
    /d\.relationLabel !== d\.label/.test(appSrc));
 
@@ -718,16 +747,16 @@ ok('each graha takes two rows, its name spanning both',
    /tbody\.appendChild\(signRow\);\s*\n\s*tbody\.appendChild\(dignityRow\);/.test(appSrc));
 ok('the spanning name is a row-group header, not a plain cell',
    /th\.setAttribute\('scope', 'rowgroup'\)/.test(appSrc));
-ok('the sign row reads the same varga position the dignity does',
-   /el\('td', 'varga-sign', d \? Astro\.SIGNS\[d\.sign\] : '\\u2013'\)/.test(appSrc));
+ok('the sign row and the dignity row read one and the same varga position',
+   /var detail = d \? shodasavargaDetail\(d, Astro\.SHODASAVARGA\[i\], planet\.name\) : null;/.test(appSrc));
 ok('both halves of a pair carry the same hover',
    /if \(detail\) \{ sign\.title = detail; dignity\.title = detail; \}/.test(appSrc));
 ok('and a graha with no reading still contributes no rows at all',
    /if \(cells\.every\(function \(c\) \{ return !c; \}\)\) return;/.test(appSrc));
 ok('the rule sits under the pair rather than between its halves', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-  return /#dasavarga-table tr\.varga-signs td \{[^}]*border-bottom: none/.test(css) &&
-    /#dasavarga-table th\[rowspan\] \{[^}]*vertical-align: middle/.test(css) &&
+  return /#shodasavarga-table tr\.varga-signs td \{[^}]*border-bottom: none/.test(css) &&
+    /#shodasavarga-table th\[rowspan\] \{[^}]*vertical-align: middle/.test(css) &&
     /td\.varga-sign/.test(css);
 })());
 ok('the note says the rows come in pairs',

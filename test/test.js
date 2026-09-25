@@ -579,9 +579,39 @@ ok('D9 spans all twelve signs, unlike D2 and D30', (function () {
   return span(9) === 12 && span(2) === 2 && span(30) === 10;
 })());
 
-console.log('\nDasavarga');
-ok('the ten divisions are Parashara\'s, in his order',
+console.log('\nShodasavarga');
+/*
+ * Both groupings are kept. The grid shows the sixteen; the ten are Parashara's
+ * Dasavarga and the set vimsopaka bala is most often scored over, so the engine
+ * knows both and neither is inferred from the other.
+ */
+ok('the ten Dasavarga divisions are Parashara\'s, in his order',
    A.DASAVARGA.join(' ') === '1 2 3 7 9 10 12 16 30 60');
+ok('the sixteen are every varga the module defines, in the same order',
+   A.SHODASAVARGA.join(' ') === '1 2 3 4 7 9 10 12 16 20 24 27 30 40 45 60' &&
+   A.SHODASAVARGA.length === A.VARGAS.length &&
+   A.SHODASAVARGA.every(function (d, i) { return A.VARGAS[i].division === d; }));
+ok('and the ten are a subset of the sixteen',
+   A.SHODASAVARGA.every(function (d) { return A.SHODASAVARGA.indexOf(d) >= 0; }));
+
+/*
+ * Sixteen columns cannot carry "Great enemy", so the grid abbreviates. The short
+ * forms have to cover every reading and stay distinguishable: Enm and Gt Enm read
+ * apart at a glance where E and GE would not.
+ */
+ok('every dignity has a short form, each distinct', (function () {
+  var keys = Object.keys(A.VARGA_DIGNITY_LABELS);
+  var brief = keys.map(function (k) { return A.VARGA_DIGNITY_SHORT[k]; });
+  var seen = {};
+  brief.forEach(function (t) { seen[t] = 1; });
+  return keys.length === 9 && brief.every(Boolean) &&
+    Object.keys(seen).length === 9 && brief.every(function (t) { return t.length <= 6; });
+})(), Object.keys(A.VARGA_DIGNITY_SHORT).map(function (k) {
+  return A.VARGA_DIGNITY_SHORT[k]; }).join(' '));
+ok('and no short form has a key the full list does not',
+   Object.keys(A.VARGA_DIGNITY_SHORT).every(function (k) {
+     return A.VARGA_DIGNITY_LABELS[k] !== undefined;
+   }));
 
 (function () {
   var place = { latitude: 23.5158, longitude: 87.308, tzOffsetMinutes: 330 };
@@ -598,7 +628,7 @@ ok('the ten divisions are Parashara\'s, in his order',
   ok('every cell lands on one of the nine dignity labels', (function () {
     if (Object.keys(A.VARGA_DIGNITY_LABELS).length !== 9) return false;
     return Shadbala.GRAHAS.every(function (g) {
-      return A.DASAVARGA.every(function (d) {
+      return A.SHODASAVARGA.every(function (d) {
         var vd = A.vargaDignity(g, pos[g].longitude, d, pos);
         return vd && A.VARGA_DIGNITY_LABELS[vd.key] === vd.label;
       });
@@ -651,7 +681,7 @@ ok('the ten divisions are Parashara\'s, in his order',
 
   ok('the nodes own nothing and befriend nobody, so they get no reading',
      ['Rahu', 'Ketu'].every(function (n) {
-       return A.DASAVARGA.every(function (d) {
+       return A.SHODASAVARGA.every(function (d) {
          return A.vargaDignity(n, pos[n].longitude, d, pos) === null;
        });
      }));
