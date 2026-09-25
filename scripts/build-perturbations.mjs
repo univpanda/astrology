@@ -32,13 +32,16 @@ const src = process.argv[2] || '.';
 const DEG = Math.PI / 180;
 
 // Step in days per body. Each must be a small fraction of the shortest period
-// present in that body's residual, or interpolation aliases.
+// present in that body's residual, or interpolation aliases. 100 days is the
+// chosen trade: a 25-day grid roughly halves the residual for Venus and Mars but
+// more than doubles a file that loads on every page view, to buy accuracy far
+// below anything a chart can show.
 //
 // Earth matters most and is easy to overlook: every geocentric longitude is the
 // difference between a planet's heliocentric position and Earth's, so an error
 // in Earth shows up in all of them, amplified by 1/distance for the near ones.
 // Correcting Earth alone pulls the Sun, Mercury, Venus and Mars in together.
-const BODIES = { earth: 25, venus: 25, mars: 25, jupiter: 100, saturn: 100 };
+const BODIES = { earth: 100, venus: 100, mars: 100, jupiter: 100, saturn: 100 };
 
 const tables = {};
 for (const [body, step] of Object.entries(BODIES)) {

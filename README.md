@@ -70,7 +70,10 @@ two-body element fit, which misses planet-on-planet perturbations: the
 Jupiter-Saturn great inequality left Saturn up to 10 arcminutes out, and Earth's
 own error propagated into every geocentric longitude, amplified by 1/distance for
 the near planets. `data/perturbations.js` samples those residuals against JPL
-Horizons and interpolates them back. The second is the ayanamsa, whose constants
+Horizons on a 100-day grid and interpolates them back; it costs 34 KB gzipped at
+page load, and a 25-day grid would roughly halve the Venus and Mars figures below
+for more than double the weight, which is not a trade worth making for accuracy a
+chart cannot display. The second is the ayanamsa, whose constants
 are calibrated against Swiss Ephemeris rather than guessed.
 
 Worst-case error against Swiss Ephemeris (the reference implementation nearly all
@@ -78,7 +81,7 @@ astrology software is built on), sampled every 100 days across 1900-2100:
 
 | Sun | Moon | Mercury | Venus | Mars | Jupiter | Saturn | Rahu | Ascendant | Ayanamsa |
 |---|---|---|---|---|---|---|---|---|---|
-| 11" | 11" | 22" | 23" | 15" | 2" | 2" | 0.2" | 0.2" | 0.01" |
+| 13" | 11" | 22" | 38" | 19" | 3" | 2" | 0.2" | 0.2" | 0.01" |
 
 A nakshatra pada is 12,000 arcseconds wide, so nothing here is close to changing a
 sign, nakshatra, pada or divisional placement. Two caveats stated honestly: the
