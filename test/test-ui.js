@@ -476,6 +476,11 @@ ok('all six components have their own column', (function () {
 ok('sthana and kala expose their parts on hover',
    /Uchcha ' \+ n\(x\.sthana\.uchcha\)/.test(appSrc) &&
    /Nathonnatha ' \+ n\(x\.kala\.nathonnatha\)/.test(appSrc));
+ok('shadbala rows follow the graha order of the tables beside it',
+   /state\.chart\.planets\.forEach\(function \(planet\) \{/.test(appSrc) &&
+   !/result\.ranking\.forEach/.test(appSrc));
+ok('the nodes are skipped rather than shown blank',
+   /if \(!x\) return;\s*\/\/ Rahu and Ketu are outside Shadbala/.test(appSrc));
 ok('each graha is judged against its own minimum',
    /x\.strong \? 'Strong' : 'Weak'/.test(appSrc) && /String\(x\.required\)/.test(appSrc));
 ok('the note says what is left out rather than hiding it',

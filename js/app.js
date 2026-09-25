@@ -638,8 +638,17 @@
       tzOffsetMinutes: state.offset
     });
 
-    result.ranking.forEach(function (graha) {
+    /*
+     * Listed in the same order as the graha tables rather than strongest first.
+     * Reading across from one table to the other is the common move, and a list
+     * that reorders itself per chart makes that a search each time. The module
+     * still returns its ranking; the Rupas and Needs columns carry the same
+     * comparison for anyone who wants it.
+     */
+    state.chart.planets.forEach(function (planet) {
+      var graha = planet.name;
       var x = result.grahas[graha];
+      if (!x) return;         // Rahu and Ketu are outside Shadbala
       var tr = document.createElement('tr');
       if (!x.strong) tr.className = 'weak-graha';
       var n = function (v) { return v.toFixed(1); };
@@ -672,8 +681,9 @@
 
     document.getElementById('shadbala-note').textContent =
       'In shashtiamsas; sixty make one Rupa. A graha is strong when it meets the minimum ' +
-      'Parashara sets for it, which differs by graha, so the order above is by how far each ' +
-      'clears its own. Hover the Sthana and Kala figures for their parts. Yuddha bala is not ' +
+      'Parashara sets for it, which differs by graha, so compare each total against its own ' +
+      'requirement rather than against the others. Grahas are listed as in the tables beside ' +
+      'this one. Hover the Sthana and Kala figures for their parts. Yuddha bala is not ' +
       'included, and Rahu and Ketu are outside Shadbala.';
   }
 
