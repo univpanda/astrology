@@ -125,17 +125,38 @@
       ayan.appendChild(opt);
     });
 
+    fillZones(FALLBACK_ZONES);
+  }
+
+  /*
+   * Enough zones to be useful before the 3 MB city table has loaded. The full
+   * list replaces these the moment it is available.
+   */
+  var FALLBACK_ZONES = ['Asia/Kolkata', 'Asia/Karachi', 'Asia/Dhaka', 'Asia/Kathmandu',
+    'Asia/Colombo', 'Asia/Dubai', 'Asia/Singapore', 'Europe/London', 'Europe/Paris',
+    'America/New_York', 'America/Chicago', 'America/Los_Angeles', 'Australia/Sydney', 'UTC'];
+
+  /**
+   * Fill the timezone select, keeping whatever was already chosen.
+   *
+   * Intl.supportedValuesOf('timeZone') used to be the source, and it was the
+   * wrong one twice over. Current ICU builds still call the zone Asia/Calcutta,
+   * so "Asia/Kolkata" was not in the list at all and the line meant to preselect
+   * it never matched - which left the select sitting on its first entry,
+   * Africa/Abidjan. An Indian birth entered by coordinates was computed five and
+   * a half hours out, silently, with a chart that looked perfectly ordinary.
+   */
+  function fillZones(list) {
     var zoneSelect = document.getElementById('manual-zone');
-    var zones = [];
-    try { zones = Intl.supportedValuesOf('timeZone'); } catch (e) { zones = []; }
-    if (!zones.length) zones = ['Asia/Kolkata', 'Asia/Karachi', 'Asia/Dhaka', 'Asia/Kathmandu',
-      'Asia/Colombo', 'Asia/Dubai', 'Europe/London', 'America/New_York', 'America/Los_Angeles', 'UTC'];
-    zones.forEach(function (z) {
+    var keep = zoneSelect.value;
+    zoneSelect.innerHTML = '';
+    list.forEach(function (z) {
       var opt = el('option', null, z);
       opt.value = z;
-      if (z === 'Asia/Kolkata') opt.selected = true;
       zoneSelect.appendChild(opt);
     });
+    var wanted = list.indexOf(keep) >= 0 ? keep : 'Asia/Kolkata';
+    zoneSelect.value = list.indexOf(wanted) >= 0 ? wanted : list[0];
   }
 
   /* ------------------------------------------------------------- combobox */
@@ -247,7 +268,12 @@
     var show = manualFields.hidden;
     manualFields.hidden = !show;
     manualToggle.setAttribute('aria-expanded', String(show));
-    if (show) { selectedCity = null; document.getElementById('manual-lat-d').focus(); }
+    if (show) {
+      selectedCity = null;
+      document.getElementById('manual-lat-d').focus();
+      // Swap the placeholder list for every zone real places actually use.
+      Geo.ensure(function (err) { if (!err) fillZones(Geo.zones()); });
+    }
   });
 
   /* ------------------------------------------------------------ time field */
@@ -394,13 +420,48 @@
     out.className = 'dms-decimal' + (read.error ? ' dms-bad' : '');
   }
 
+  /*
+   * Once a zone has been chosen by hand it is never overwritten. Guessing over
+   * someone's deliberate choice is worse than not guessing.
+   */
+  var zoneChosenByHand = false;
+  document.getElementById('manual-zone').addEventListener('change', function () {
+    zoneChosenByHand = true;
+    document.getElementById('zone-note').textContent = '';
+  });
+
+  /**
+   * Name the timezone from the coordinates themselves.
+   *
+   * The question this answers is the one the form otherwise pushes back onto the
+   * reader: a clock time needs a UTC offset, and longitude cannot supply it
+   * because zones are political. But the city table already knows the zone of
+   * every populated place, so the nearest one answers it, and the place it came
+   * from is shown so a wrong guess is visible rather than buried.
+   */
+  function deriveZone() {
+    if (zoneChosenByHand) return;
+    var note = document.getElementById('zone-note');
+    var lat = readDms('lat', 90), lon = readDms('lon', 180);
+    if (lat.error || lon.error) { note.textContent = ''; return; }
+    Geo.ensure(function (err) {
+      if (err || zoneChosenByHand) return;
+      var city = Geo.nearest(lat.value, lon.value);
+      if (!city) return;
+      fillZones(Geo.zones());
+      document.getElementById('manual-zone').value = city.zone;
+      note.textContent = city.zone + ', from ' + Geo.label(city) +
+        ', ' + (city.km < 1 ? 'under a kilometre' : city.km.toFixed(0) + ' km') + ' away.';
+    });
+  }
+
   ['lat', 'lon'].forEach(function (which) {
     var max = which === 'lat' ? 90 : 180;
     ['d', 'm', 's', 'h'].forEach(function (part) {
-      document.getElementById('manual-' + which + '-' + part)
-        .addEventListener('input', function () { showDecimal(which, max); });
-      document.getElementById('manual-' + which + '-' + part)
-        .addEventListener('change', function () { showDecimal(which, max); });
+      ['input', 'change'].forEach(function (evt) {
+        document.getElementById('manual-' + which + '-' + part)
+          .addEventListener(evt, function () { showDecimal(which, max); deriveZone(); });
+      });
     });
   });
 
@@ -1634,6 +1695,8 @@
       document.getElementById('manual-' + which + '-h').value = which === 'lat' ? 'N' : 'E';
       document.getElementById(which + '-decimal').textContent = '';
     });
+    zoneChosenByHand = false;
+    document.getElementById('zone-note').textContent = '';
     manualFields.hidden = true;
     manualToggle.setAttribute('aria-expanded', 'false');
     errorBox.textContent = '';

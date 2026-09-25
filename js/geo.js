@@ -150,6 +150,47 @@ var Geo = (function () {
     return out.slice(0, limit).map(function (r) { return r.city; });
   }
 
+  /**
+   * Every timezone the city table actually uses, sorted.
+   *
+   * Preferred over Intl.supportedValuesOf('timeZone') for two reasons. That list
+   * is whatever the browser's ICU build calls canonical, which is still
+   * "Asia/Calcutta" in current builds even though the rest of the world writes
+   * Asia/Kolkata, so the name people look for is simply absent. And it is 417
+   * entries covering zones no populated place uses. This is the set of zones real
+   * births can have happened in, under the names the city list already reports.
+   */
+  function zones() {
+    if (typeof window === 'undefined' || !window.CITY_DB) return [];
+    return window.CITY_DB.zones.slice().filter(Boolean).sort();
+  }
+
+  /**
+   * The populated place nearest a point, so a typed coordinate can name its own
+   * timezone instead of asking someone to pick one from a list of hundreds.
+   *
+   * Equirectangular distance, which is wrong for a sphere over long ranges but
+   * exact enough to pick a neighbour, and the answer is only ever used to read
+   * off a timezone. Longitude is cosine-scaled so the comparison does not favour
+   * high latitudes.
+   */
+  function nearest(lat, lon) {
+    var list = load();
+    if (!list.length) return null;
+    var scale = Math.cos(lat * Math.PI / 180);
+    var best = null, bestD = Infinity;
+    for (var i = 0; i < list.length; i++) {
+      var c = list[i];
+      var dy = c.lat - lat;
+      var dx = (c.lon - lon) * scale;
+      var d = dy * dy + dx * dx;
+      if (d < bestD) { bestD = d; best = c; }
+    }
+    // Degrees back to kilometres, for saying how far off the match is.
+    best.km = Math.sqrt(bestD) * 111.195;
+    return best;
+  }
+
   function label(c) {
     return [c.name, c.region, c.nation].filter(Boolean).join(', ');
   }
@@ -233,6 +274,8 @@ var Geo = (function () {
     load: load,
     search: search,
     label: label,
+    zones: zones,
+    nearest: nearest,
     offsetMinutes: offsetMinutes,
     formatOffset: formatOffset,
     to24Hour: to24Hour,

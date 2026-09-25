@@ -1044,6 +1044,67 @@ ok('the echo shows the reason too, not just that something is wrong',
  * carried step="1" and min="0", which blocked a decimal and a negative in the
  * browser before readDms could accept either, so the forgiving paths were dead.
  */
+console.log('\nTimezone for typed coordinates');
+/*
+ * The zone list came from Intl.supportedValuesOf('timeZone'), which current ICU
+ * builds still head with the old spelling: Asia/Calcutta, not Asia/Kolkata. So
+ * the name was absent, the line meant to preselect it never matched, and the
+ * select sat on its first entry - Africa/Abidjan. An Indian birth typed as
+ * coordinates computed five and a half hours out, silently.
+ */
+ok('the bug is real: Intl does not list the name the world uses', (function () {
+  var intl = [];
+  try { intl = Intl.supportedValuesOf('timeZone'); } catch (e) { return true; }
+  return intl.indexOf('Asia/Kolkata') < 0 && intl.indexOf('Asia/Calcutta') >= 0;
+})());
+ok('so the list comes from the city table instead, under the names it reports', (function () {
+  var code = appSrc.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  return /fillZones\(Geo\.zones\(\)\)/.test(code) && !/Intl\.supportedValuesOf/.test(code);
+})());
+ok('and every zone offered is one a populated place actually uses', (function () {
+  var z = Geo.zones();
+  return z.length > 300 && z.indexOf('Asia/Kolkata') >= 0 && z.indexOf('Asia/Calcutta') < 0 &&
+    z.every(function (name, i) { return i === 0 || z[i - 1] <= name; });
+})());
+
+ok('a selection already made survives the list being refilled',
+   /var keep = zoneSelect\.value;/.test(appSrc) &&
+   /list\.indexOf\(keep\) >= 0 \? keep : 'Asia\/Kolkata'/.test(appSrc));
+ok('and the fallback list is usable before the city table loads', (function () {
+  var m = appSrc.match(/var FALLBACK_ZONES = \[([\s\S]*?)\];/);
+  return m && /'Asia\/Kolkata'/.test(m[1]) && m[1].split(',').length >= 10;
+})());
+
+/*
+ * Better than asking at all: the coordinates name their own zone. The city table
+ * holds one for every populated place, so the nearest answers it.
+ */
+ok('the nearest place gives the right zone, and says how far off it is', (function () {
+  var cases = [[23.55, 87.32, 'Asia/Kolkata'], [28.61, 77.21, 'Asia/Kolkata'],
+               [40.71, -74.01, 'America/New_York'], [51.51, -0.13, 'Europe/London'],
+               [-33.87, 151.21, 'Australia/Sydney'], [35.68, 139.69, 'Asia/Tokyo']];
+  return cases.every(function (c) {
+    var n = Geo.nearest(c[0], c[1]);
+    return n && n.zone === c[2] && n.km >= 0 && n.km < 30;
+  });
+}), 'six coordinates resolved');
+ok('longitude alone would not have done it', (function () {
+  // Urumqi sits at 87.6 E, the same meridian as Kolkata, in a different zone.
+  var urumqi = Geo.nearest(43.80, 87.60), kolkata = Geo.nearest(22.57, 88.36);
+  return urumqi.zone !== kolkata.zone;
+})());
+ok('the derived zone is shown with the place it came from',
+   /note\.textContent = city\.zone \+ ', from ' \+ Geo\.label\(city\)/.test(appSrc) &&
+   /id="zone-note"/.test(html));
+ok('a zone chosen by hand is never overwritten by the guess',
+   /var zoneChosenByHand = false;/.test(appSrc) &&
+   /if \(zoneChosenByHand\) return;/.test(appSrc) &&
+   /zoneChosenByHand = true;/.test(appSrc));
+ok('and resetting the form forgets that choice',
+   /zoneChosenByHand = false;\s*\n\s*document\.getElementById\('zone-note'\)\.textContent = '';/.test(appSrc));
+ok('deriving runs whenever a coordinate box changes',
+   /showDecimal\(which, max\); deriveZone\(\);/.test(appSrc));
+
 ok('the degree boxes allow the decimals and negatives the parser accepts', (function () {
   var at = function (id) {
     var i = html.indexOf('id="' + id + '"');
