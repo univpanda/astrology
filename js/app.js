@@ -494,6 +494,7 @@
      */
     drawCharts();
     renderShadbala(state);
+    renderDasavarga(state);
     renderYogas(state);
     renderAspects(state);
     renderPanchang(c);
@@ -754,6 +755,65 @@
       'requirement rather than against the others. Grahas are listed as in the tables beside ' +
       'this one. Hover the Sthana and Kala figures for their parts. Yuddha bala is not ' +
       'included, and Rahu and Ketu are outside Shadbala.';
+  }
+
+  /* ----------------------------------------------------------- dasavarga */
+
+  /**
+   * Where each graha stands in the ten vargas Parashara groups as the Dasavarga.
+   *
+   * The same seven-step scale the Dignity column uses, applied division by
+   * division: the graha against the lord of whichever sign that division puts it
+   * in. This is the ungraded form of what saptavargaja bala already scores, so it
+   * sits beside Shadbala rather than with the rashi tables.
+   *
+   * Exaltation and debilitation are shown where they fall even though the
+   * classical vimsopaka reckoning leaves exaltation out of its seven steps, since
+   * reporting an exalted graha as a great friend's guest would hide the more
+   * useful fact. The relation underneath is kept in the cell's title.
+   */
+  function renderDasavarga(state) {
+    var tbody = document.querySelector('#dasavarga-table tbody');
+    tbody.innerHTML = '';
+
+    var positionsD1 = {};
+    state.chart.planets.forEach(function (p) { positionsD1[p.name] = p; });
+
+    // Listed as in the graha tables, for reading across from one to the other.
+    state.chart.planets.forEach(function (planet) {
+      var cells = Astro.DASAVARGA.map(function (division) {
+        return Astro.vargaDignity(planet.name, planet.longitude, division, positionsD1);
+      });
+      if (cells.every(function (c) { return !c; })) return;   // Rahu and Ketu
+
+      var tr = document.createElement('tr');
+      var th = el('th', null, planet.name);
+      th.setAttribute('scope', 'row');
+      tr.appendChild(th);
+
+      cells.forEach(function (d, i) {
+        var td = el('td', d ? 'dig dig-' + d.key : null, d ? d.label : '\u2013');
+        if (d) {
+          var where = Astro.SIGNS[d.sign] + ', ruled by ' + d.lord;
+          td.title = 'D' + Astro.DASAVARGA[i] + ': ' + where +
+            (d.relationLabel && d.relationLabel !== d.label
+              ? '. On the seven-step varga scale that counts as ' + d.relationLabel.toLowerCase() + '.'
+              : '.');
+        }
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById('dasavarga-note').textContent =
+      'Dignity in each of the ten Dasavarga divisions, judged against the lord of the sign ' +
+      'that division gives. The classical scale runs Mooltrikona, own sign, great friend, ' +
+      'friend, neutral, enemy, great enemy, and vimsopaka bala scores it with D60 and D1 ' +
+      'weighted heaviest. Exaltation is not one of those seven steps, being measured by ' +
+      'uchcha bala instead, but it is shown here when it falls, as is debilitation; hover a ' +
+      'cell for the sign, its lord, and the seven-step reading underneath. Grahas are listed ' +
+      'as in the tables beside this one. Rahu and Ketu own no sign and keep no friendships, ' +
+      'so they are left out.';
   }
 
   /* --------------------------------------------------------------- yogas */
@@ -1422,7 +1482,7 @@
    * charts are set to. Fixed D1/D9 labels would have lied the moment either
    * select moved.
    */
-  var tableTabs = setupTabs(['table-a', 'table-b', 'shadbala', 'yogas', 'aspects'],
+  var tableTabs = setupTabs(['table-a', 'table-b', 'shadbala', 'dasavarga', 'yogas', 'aspects'],
     document.querySelector('.tabs.subtabs'));
 
   function activateTab(name, moveFocus) { sections.activate(name, moveFocus); }

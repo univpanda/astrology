@@ -579,6 +579,73 @@ ok('D9 spans all twelve signs, unlike D2 and D30', (function () {
   return span(9) === 12 && span(2) === 2 && span(30) === 10;
 })());
 
+console.log('\nDasavarga');
+ok('the ten divisions are Parashara\'s, in his order',
+   A.DASAVARGA.join(' ') === '1 2 3 7 9 10 12 16 30 60');
+
+(function () {
+  var place = { latitude: 23.5158, longitude: 87.308, tzOffsetMinutes: 330 };
+  var c = A.chart({ jdUT: 2446146.7256944445, latitude: place.latitude,
+                    longitude: place.longitude, tzOffsetMinutes: 330 });
+  var pos = {};
+  c.planets.forEach(function (p) { pos[p.name] = p; });
+
+  ok('every cell lands on one of the nine labels', (function () {
+    var allowed = Object.keys(A.VARGA_DIGNITY_LABELS).length === 9;
+    return allowed && Shadbala.GRAHAS.every(function (g) {
+      return A.DASAVARGA.every(function (d) {
+        var vd = A.vargaDignity(g, pos[g].longitude, d, pos);
+        return vd && A.VARGA_DIGNITY_LABELS[vd.key] === vd.label;
+      });
+    });
+  })());
+
+  ok('the nodes own nothing and befriend nobody, so they get no reading',
+     ['Rahu', 'Ketu'].every(function (n) {
+       return A.DASAVARGA.every(function (d) {
+         return A.vargaDignity(n, pos[n].longitude, d, pos) === null;
+       });
+     }));
+
+  /*
+   * The real guard. Shadbala classifies the same graha in the same division for
+   * its saptavargaja bala, by its own code written months earlier. The two must
+   * never drift apart, so the seven shared divisions are compared reading by
+   * reading rather than trusted to stay in step.
+   */
+  var detail = Shadbala.compute(c, place);
+  ok('the underlying relation agrees with saptavargaja bala, division by division',
+     Shadbala.GRAHAS.every(function (g) {
+       return detail.grahas[g].saptavargajaDetail.every(function (row) {
+         var vd = A.vargaDignity(g, pos[g].longitude, row.division, pos);
+         return vd && vd.relation === row.relation && vd.sign === row.sign && vd.lord === row.lord;
+       });
+     }));
+
+  /*
+   * Exaltation outranks the relation on display but must not erase it, because
+   * the seven-step reading is the one vimsopaka bala scores.
+   */
+  ok('exaltation is shown, with the seven-step reading kept underneath', (function () {
+    var sunInAries = A.vargaDignity('Sun', 2, 1, pos);          // Aries, ruled by Mars
+    return sunInAries.label === 'Exalted' && sunInAries.key === 'exalted' &&
+      sunInAries.lord === 'Mars' && ['adhimitra', 'mitra', 'sama'].indexOf(sunInAries.relation) >= 0;
+  })());
+
+  ok('debilitation likewise', (function () {
+    var sunInLibra = A.vargaDignity('Sun', 6 * 30 + 2, 1, pos);  // Libra, ruled by Venus
+    return sunInLibra.label === 'Debilitated' && sunInLibra.relation !== null;
+  })());
+
+  // A graha in its own varga sign reports moolatrikona or own, never a relation
+  // with itself, which compoundRelation has no answer for.
+  ok('a graha ruling its own varga sign reads as own or moolatrikona', (function () {
+    var leo = A.vargaDignity('Sun', 4 * 30 + 10, 1, pos);        // Leo 10, inside moolatrikona
+    var leoLate = A.vargaDignity('Sun', 4 * 30 + 25, 1, pos);    // Leo 25, past it
+    return leo.key === 'moolatrikona' && leoLate.key === 'own';
+  })());
+})();
+
 console.log('\nThe sixteen divisions');
 ok('all sixteen are defined', A.VARGAS.length === 16,
    A.VARGAS.map(function (v) { return v.name; }).join(' '));

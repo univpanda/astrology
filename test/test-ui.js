@@ -357,12 +357,12 @@ function stripHtml(label) {
      /id="tab-shadbala"[\s\S]{0,140}aria-controls="panel-shadbala"/.test(html) &&
      html.indexOf('id="panel-shadbala"') > html.indexOf('id="panel-table-b"') &&
      html.indexOf('id="panel-shadbala"') < html.indexOf('class="two-col"'));
-  ok('the table strip holds five tabs', (function () {
+  ok('the table strip holds six tabs', (function () {
     var strip = stripHtml('Graha tables');
-    return (strip.match(/role="tab"/g) || []).length === 5;
+    return (strip.match(/role="tab"/g) || []).length === 6;
   })());
   ok('the table strip is a real tablist',
-     ['table-a', 'table-b', 'shadbala', 'yogas', 'aspects'].every(function (n) {
+     ['table-a', 'table-b', 'shadbala', 'dasavarga', 'yogas', 'aspects'].every(function (n) {
     return new RegExp('id="tab-' + n + '"[\\s\\S]{0,140}aria-controls="panel-' + n + '"').test(html) &&
            new RegExp('id="panel-' + n + '"[^>]*aria-labelledby="tab-' + n + '"').test(html);
   }));
@@ -372,7 +372,7 @@ function stripHtml(label) {
   ok('one tab implementation still serves every strip',
      (appSrc.match(/function setupTabs/g) || []).length === 1 &&
      (appSrc.match(/setupTabs\(/g) || []).length === 3 &&
-     /setupTabs\(\['table-a', 'table-b', 'shadbala', 'yogas', 'aspects'\]/.test(appSrc));
+     /setupTabs\(\['table-a', 'table-b', 'shadbala', 'dasavarga', 'yogas', 'aspects'\]/.test(appSrc));
   ok('there are two chart slots, each with two selects', ['a', 'b'].every(function (slot) {
     return new RegExp('id="ref-' + slot + '"').test(html) &&
            new RegExp('id="varga-' + slot + '"').test(html) &&
@@ -631,6 +631,45 @@ ok('the table reads vargottama off the rashi longitude',
 ok('the page carries a key for both flags',
    /\[R\] is retrograde\. \[V\] is vargottama/.test(html) &&
    /measured against D9 whichever division is on screen/.test(html));
+
+console.log('\nDasavarga panel');
+ok('the columns are exactly the ten Dasavarga divisions, in order', (function () {
+  var head = html.slice(html.indexOf('id="dasavarga-table"'));
+  head = head.slice(0, head.indexOf('</thead>'));
+  var cols = (head.match(/<th scope="col">D(\d+)<\/th>/g) || [])
+    .map(function (m) { return m.replace(/\D/g, ''); }).join(' ');
+  return cols === Astro.DASAVARGA.join(' ');
+})());
+
+ok('it renders whenever a chart does',
+   /renderShadbala\(state\);\s*\n\s*renderDasavarga\(state\);/.test(appSrc));
+ok('it reads the division list from the engine rather than repeating it',
+   /Astro\.DASAVARGA\.map\(function \(division\)/.test(appSrc) &&
+   !/\[1, 2, 3, 7, 9, 10, 12, 16, 30, 60\]/.test(appSrc));
+ok('grahas keep the order of the tables beside it',
+   /state\.chart\.planets\.forEach\(function \(planet\) \{[\s\S]{0,400}dasavarga-note/.test(appSrc) ||
+   /\/\/ Listed as in the graha tables/.test(appSrc));
+ok('a graha with no reading anywhere is dropped, not shown as a row of dashes',
+   /if \(cells\.every\(function \(c\) \{ return !c; \}\)\) return;/.test(appSrc));
+ok('each cell says which sign and lord produced it',
+   /Astro\.SIGNS\[d\.sign\] \+ ', ruled by ' \+ d\.lord/.test(appSrc));
+ok('and gives the seven-step reading when it differs from the label shown',
+   /d\.relationLabel !== d\.label/.test(appSrc));
+
+ok('every dignity tier has a colour, and no colour is orphaned', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var keys = Object.keys(Astro.VARGA_DIGNITY_LABELS);
+  var styled = (css.match(/td\.dig-([a-z]+)/g) || [])
+    .map(function (m) { return m.replace('td.dig-', ''); });
+  return keys.every(function (k) { return styled.indexOf(k) >= 0; }) &&
+    styled.every(function (k) { return keys.indexOf(k) >= 0; });
+})());
+
+ok('the note says exaltation is outside the classical seven steps',
+   /exaltation is not one of those seven steps/i.test(appSrc) &&
+   /uchcha bala/.test(appSrc));
+ok('and that the nodes are left out',
+   /Rahu and Ketu own no sign and keep no friendships/.test(appSrc));
 
 /*
  * The dispositor relation is asymmetric, so the cell has to say whose view it

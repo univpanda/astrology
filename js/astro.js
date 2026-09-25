@@ -861,6 +861,64 @@ var Astro = (function () {
     return null;
   }
 
+  /*
+   * The ten vargas Parashara groups as the Dasavarga, in his order.
+   */
+  var DASAVARGA = [1, 2, 3, 7, 9, 10, 12, 16, 30, 60];
+
+  var VARGA_DIGNITY_LABELS = {
+    exalted: 'Exalted', moolatrikona: 'Mooltrikona', own: 'Own sign',
+    adhimitra: 'Great friend', mitra: 'Friend', sama: 'Neutral',
+    shatru: 'Enemy', adhishatru: 'Great enemy', debilitated: 'Debilitated'
+  };
+
+  /**
+   * How a graha stands in one division: its dignity in the sign that division
+   * puts it in, judged against that sign's lord.
+   *
+   * Two scales are really in play here and they do not agree. The classical
+   * vimsopaka reckoning ranks seven steps, moolatrikona down to great enemy, and
+   * deliberately leaves exaltation out: within a varga what counts is the
+   * relation to the lord, and exaltation is already measured elsewhere, by
+   * uchcha bala. But a graha standing in its exaltation sign in a division is a
+   * plain fact worth seeing, and reporting it as "great friend" would hide it.
+   * So exaltation and debilitation are reported when they occur, and `relation`
+   * always carries the seven-step answer underneath for anyone scoring it.
+   *
+   * Temporal friendship is counted in the rashi chart even when the sign being
+   * judged belongs to a division, which is where the classical rule puts it.
+   */
+  function vargaDignity(graha, longitude, division, positionsD1) {
+    var position = vargaPosition(longitude, division);
+    if (!position) return null;
+    var lord = SIGN_LORDS[position.sign];
+    var own = dignityOf(graha, position.sign, position.degreeInSign);
+
+    var relation = null;
+    if (lord === graha) {
+      relation = own === 'Mooltrikona' ? 'moolatrikona' : 'own';
+    } else if (positionsD1 && positionsD1[lord] && positionsD1[graha]) {
+      var apart = ((positionsD1[lord].sign - positionsD1[graha].sign) % 12 + 12) % 12 + 1;
+      relation = compoundRelation(graha, lord, apart);
+    }
+
+    // Exaltation and debilitation outrank the relation when the two disagree,
+    // which is the order they are usually recited in.
+    var key = own === 'Exalted' ? 'exalted'
+      : own === 'Debilitated' ? 'debilitated'
+      : relation;
+    if (!key) return null;                 // a node, which owns nothing and befriends nobody
+
+    return {
+      key: key,
+      label: VARGA_DIGNITY_LABELS[key],
+      sign: position.sign,
+      lord: lord,
+      relation: relation,
+      relationLabel: relation ? VARGA_DIGNITY_LABELS[relation] : null
+    };
+  }
+
   /**
    * Vargottama: the same sign in the rashi and in the navamsha.
    *
@@ -1126,6 +1184,9 @@ var Astro = (function () {
     navamsaSign: navamsaSign,
     vargaPosition: vargaPosition,
     isVargottama: isVargottama,
+    vargaDignity: vargaDignity,
+    DASAVARGA: DASAVARGA,
+    VARGA_DIGNITY_LABELS: VARGA_DIGNITY_LABELS,
     VARGAS: VARGAS,
     houseOf: houseOf,
     dignityOf: dignityOf,

@@ -814,6 +814,19 @@ td .retro-flag, td.retro-flag { color: var(--retro); }
 /* Vargottama is a fact about the graha rather than a verdict on it, so the flag
    is dimmed instead of being coloured good or bad. */
 th .flag { color: var(--ink-soft); font-weight: 400; }
+
+/* Ten columns of dignity words are read by scanning, not line by line, so the
+   tiers carry weight and colour. Kept to the page's two hues rather than a
+   red-to-green ramp: the scale is a ranking, not a verdict on the chart. */
+td.dig { white-space: nowrap; }
+td.dig-exalted, td.dig-moolatrikona { color: var(--green-deep); font-weight: 600; }
+td.dig-own { color: var(--green-deep); }
+td.dig-adhimitra { color: var(--green); }
+td.dig-mitra { color: var(--ink); }
+td.dig-sama { color: var(--ink-soft); }
+td.dig-shatru { color: var(--ink-faint); }
+td.dig-adhishatru { color: var(--retro); }
+td.dig-debilitated { color: var(--retro); font-weight: 600; }
 .flag-key { max-width: 60ch; margin: 0 auto 1rem; text-align: center; }
 /* A yogakaraka is worth spotting at a glance; the bare house numbers beside it
    are not, so only the named case is picked out. */
