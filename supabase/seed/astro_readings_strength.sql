@@ -18,7 +18,18 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'So a high total is never on its own a reason to expect good from a graha. It says the graha will act, fully and in its own nature. Whether that is welcome is read from ownership, from the house, and from what else touches it.',
    'The same holds in reverse: a weak benefic may promise more than it can deliver, which is why a promising yoga is still read alongside a strength measure rather than instead of one.'
  ],
- 'The wording of the classical bands cuts against this, and is dealt with below.', 10),
+ 'What a high total does tell you follows below.', 10),
+
+('strength', 'Strength and influence', 'magnitude',
+ 'What a high total does tell you',
+ array[
+   'The natural significations of a graha with a high vimsopaka bala will normally flourish. Strength of this kind is the graha having the means to act on what it stands for, and in the ordinary case it does.',
+   'Two things qualify that "normally": placement by house, and affliction. A graha poorly placed, or badly afflicted, can carry a high total and still deliver little of it, because the strength was never the obstacle.',
+   'Where a graha takes part in a favourable yoga, vimsopaka bala is the natural measure of how much to expect. A raja yoga gives position and a dhana yoga gives affluence; the strength of the grahas forming it is what says on what scale.',
+   'So it is better read as magnitude than as direction. It scales whatever the graha was going to do rather than deciding what that is, which is why the same figure means opposite things on a benefic ruling a trikona and on a malefic reaching a house it has no claim to.',
+   'That also explains why it is worth computing at all for a yoga that is already present. The yoga says what is promised and vimsopaka bala says how much of it the graha can actually carry.'
+ ],
+ null, 11),
 
 ('strength', 'Strength and influence', 'bands',
  'Why the classical bands say "favourable"',
@@ -29,7 +40,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'For a benefic ruling a good house those come to the same thing. For a malefic afflicting a house it does not own they do not, and the band label is the least useful part of the reading.',
    'This page prints Parashara''s words for the bands because they are his, and says here what they should not be taken to mean.'
  ],
- null, 11),
+ null, 12),
 
 ('strength', 'Vimsopaka Bala', 'reading',
  'Reading a vimsopaka total',
@@ -40,7 +51,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'The scheme has to be named alongside any figure. The same chart gives four different totals across the Shadvarga, Saptavarga, Dasavarga and Shodasavarga, because each shares the twenty points out differently, and a total quoted without its scheme cannot be checked.',
    'It measures dignity across divisions and nothing else. It does not know which houses the graha rules, where it sits, or what aspects it, so it is one input to a judgement rather than the judgement.'
  ],
- 'What a high total does not mean is set out under Strength and influence.', 12)
+ 'What a high total does and does not mean is set out under Strength and influence.', 13)
 
 on conflict (topic, subject, condition) do update set
   heading = excluded.heading,

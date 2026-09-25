@@ -1129,7 +1129,9 @@
       'as some good, up to 15 as mediocre and above 15 as wholly favourable. Read those as ' +
       'strength and not as benefit: the total says how fully a graha acts in its own nature, ' +
       'not whether that is wanted. A strong malefic aspecting a house it does not rule ' +
-      'afflicts it the more surely for being strong. No luminary ' +
+      'afflicts it the more surely for being strong. It measures magnitude rather than ' +
+      'direction, which is what makes it worth computing for a yoga already present: the yoga ' +
+      'says what is promised and this says how much of it the graha can carry. No luminary ' +
       'rules a trimsamsa, so in D30 the Sun ' +
       'stands in as Mars and the Moon as Venus. Rahu and Ketu own no sign and keep no ' +
       'friendships, so they are left out.';

@@ -779,6 +779,16 @@ ok('the note says the total is strength and not benefit', (function () {
 })());
 ok('and the column\'s own hover says it too, where the number is read',
    /That is strength, not benefit: it says how fully ' \+ planet\.name/.test(appSrc));
+/*
+ * The other half of the same point. A high total is not a verdict, but it is not
+ * nothing either: it scales whatever the graha was going to do, which is what
+ * makes it the right measure for how much a raja or dhana yoga delivers.
+ */
+ok('and that it measures magnitude rather than direction', (function () {
+  var flat = appSrc.replace(/'\s*\+\s*'/g, '');
+  return /It measures magnitude rather than direction/.test(flat) &&
+    /the yoga says what is promised and this says how much of it the graha can carry/.test(flat);
+})());
 
 ok('the note explains the totalling and the four readings', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');
