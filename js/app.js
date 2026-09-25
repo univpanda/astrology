@@ -559,22 +559,6 @@
   }
 
   /**
-   * What a graha rules, from the same reference the table counts houses from.
-   *
-   * A yogakaraka rules both a kendra and a trikona, which happens for only six
-   * of the twelve ascendants and is the single most consequential thing a
-   * rulership column can say - so it is named rather than left for the reader
-   * to work out from the house numbers beside it.
-   */
-  function rulership(row, referenceSign) {
-    if (row.isAscendant) return '\u2013';
-    var houses = Astro.housesOwned(row.name, referenceSign);
-    if (!houses.length) return '\u2013';   // Rahu and Ketu rule no sign
-    var owns = houses.join(', ');
-    return Astro.isYogakaraka(row.name, referenceSign) ? owns + ' \u00b7 yogakaraka' : owns;
-  }
-
-  /**
    * The graha that rules the sign this one sits in, and how the two stand.
    *
    * The relation is the compound one - natural and temporal together - which is
@@ -604,11 +588,6 @@
     tbody.innerHTML = '';
 
     var positionOf = function (longitude) { return Astro.vargaPosition(longitude, set.division); };
-    var firstSign = positionOf(c.ascendant.longitude).sign;
-    if (set.reference !== 'Ascendant') {
-      var anchor = c.planets.filter(function (p) { return p.name === set.reference; })[0];
-      if (anchor) firstSign = positionOf(anchor.longitude).sign;
-    }
 
     var positionsD1 = {};
     c.planets.forEach(function (p) { positionsD1[p.name] = p; });
@@ -623,22 +602,24 @@
       var nak = Astro.nakshatraOf(v.longitude);
       var tr = document.createElement('tr');
       if (r.isAscendant) tr.className = 'ascendant-row';
+      /*
+       * What a graha is comes before where it is: motion, sign, dignity and
+       * dispositor first, then the position that produced them.
+       */
       [[r.name, null],
-       [dms(v.degreeInSign), 'longitude'],
+       [r.isAscendant ? '\u2013' : (r.retrograde ? 'Retrograde' : 'Direct'), null],
        [Astro.SIGNS[v.sign] + ' (' + Astro.SIGNS_SA[v.sign] + ')', null],
-       [String(((v.sign - firstSign) % 12 + 12) % 12 + 1), 'numeric'],
+       [(r.isAscendant ? '' : Astro.dignityOf(r.name, v.sign, v.degreeInSign)) || '\u2013', null],
+       [r.isAscendant ? Astro.SIGN_LORDS[v.sign] : dispositorOf(r.name, v.sign, positionsD1), 'dispositor'],
+       [dms(v.degreeInSign), 'longitude'],
        [nak.name, null],
        [String(nak.pada), 'numeric'],
-       [nak.lord + ' / ' + nak.subLord, null],
-       [r.isAscendant ? Astro.SIGN_LORDS[v.sign] : dispositorOf(r.name, v.sign, positionsD1), 'dispositor'],
-       [r.isAscendant ? '\u2013' : (r.retrograde ? 'Retrograde' : 'Direct'), null],
-       [(r.isAscendant ? '' : Astro.dignityOf(r.name, v.sign, v.degreeInSign)) || '\u2013', null],
-       [rulership(r, firstSign), 'rulership']
+       [nak.lord + ' / ' + nak.subLord, null]
       ].forEach(function (cell, i) {
         var td = el(i === 0 ? 'th' : 'td', cell[1], cell[0]);
         if (i === 0) td.setAttribute('scope', 'row');
-        if (i === 1) td.title = 'Longitude ' + v.longitude.toFixed(4) + '\u00b0';
-        if (i === 8 && r.retrograde) td.className = 'retro-flag';
+        if (i === 1 && r.retrograde) td.className = 'retro-flag';
+        if (i === 5) td.title = 'Longitude ' + v.longitude.toFixed(4) + '\u00b0';
         tr.appendChild(td);
       });
       tbody.appendChild(tr);

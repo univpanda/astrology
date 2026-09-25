@@ -401,8 +401,17 @@ function stripHtml(label) {
      /if \(i === data\.ascSign\) \{/.test(chartsSrc));
   ok('the rotation anchor is read in the chosen division',
      /signOfBody\(anchor\.longitude\)/.test(chartsSrc));
-  ok('the table counts houses from the same reference as its chart',
-     /if \(set\.reference !== 'Ascendant'\)/.test(appSrc) && /\(v\.sign - firstSign\)/.test(appSrc));
+  /*
+   * Rotation now shows only in the chart. The table lost its house column, and
+   * every other column it carries is independent of where house 1 is put, so
+   * there is nothing left there for the reference select to change.
+   */
+  ok('rotation still moves the chart', (function () {
+    var chartsSrc = fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8');
+    return /data\.firstSign/.test(chartsSrc) && /signOfBody\(anchor\.longitude\)/.test(chartsSrc);
+  })());
+  ok('the table no longer depends on which sign leads',
+     !/firstSign/.test(appSrc) && !/<th scope="col">House<\/th>/.test(html));
 })();
 
 // Saved kundalis: the list, and the four keys that identify an entry.
@@ -576,15 +585,29 @@ ok('friendship is defined once, in the engine', (function () {
   return /var NATURAL_FRIENDS = \{/.test(astroSrc) && !/NATURAL_FRIENDS = \{/.test(shadSrc);
 })());
 
-ok('both tables carry a rulership column',
-   (html.match(/<th scope="col">Rules<\/th>/g) || []).length === 2);
-ok('rulership is counted from the same reference as the houses',
-   /rulership\(r, firstSign\)/.test(appSrc));
-ok('a yogakaraka is named, not left to be inferred',
-   /yogakaraka/.test(appSrc) && /Astro\.isYogakaraka\(row\.name, referenceSign\)/.test(appSrc));
-ok('the ascendant and the nodes show a dash there',
-   /if \(row\.isAscendant\) return '\\u2013';/.test(appSrc) &&
-   /if \(!houses\.length\) return '\\u2013';/.test(appSrc));
+// The columns, in the order they read.
+ok('both tables carry the same nine columns, in order', (function () {
+  var wanted = ['Graha', 'Motion', 'Rashi', 'Dignity', 'Dispositor', 'Longitude',
+                'Nakshatra', 'Pada', 'Lord / sub lord'];
+  return ['table-a', 'table-b'].every(function (id) {
+    var at = html.indexOf('id="' + id + '"');
+    var head = html.slice(at, html.indexOf('</thead>', at));
+    var found = (head.match(/<th scope="col">([^<]+)<\/th>/g) || [])
+      .map(function (t) { return t.replace(/<[^>]+>/g, ''); });
+    return found.join('|') === wanted.join('|');
+  });
+})());
+ok('house and rules are gone from the tables',
+   !/<th scope="col">House<\/th>/.test(html) && !/<th scope="col">Rules<\/th>/.test(html) &&
+   !/function rulership/.test(appSrc));
+ok('what a graha is comes before where it is', (function () {
+  var at = html.indexOf('id="table-a"');
+  var head = html.slice(at, html.indexOf('</thead>', at));
+  return head.indexOf('>Motion<') < head.indexOf('>Longitude<') &&
+         head.indexOf('>Dignity<') < head.indexOf('>Longitude<');
+})());
+ok('the retrograde flag follows the motion column to its new place',
+   /if \(i === 1 && r\.retrograde\) td\.className = 'retro-flag';/.test(appSrc));
 
 // Reopening a chart must not shorten its place: the label is kept whole rather
 // than recomposed from parts that reopening had blanked.
