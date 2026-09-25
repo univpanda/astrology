@@ -495,8 +495,10 @@ ok('a grouped passage does not repeat its own subject heading',
    /var meta = grouped \? \[\] : \[passage\.topic, passage\.subject\]/.test(appSrc));
 ok('a chart with no yoga makes no request for one',
    /if \(!found\.length\) \{[\s\S]{0,260}return;/.test(appSrc));
-ok('the page says which yogas it does not yet look for',
-   /Only parivartana/.test(appSrc));
+ok('the page says which yogas it looks for',
+   /Parivartana and neecha bhanga are checked so far/.test(appSrc));
+ok('a yoga resting on several conditions names the ones that applied',
+   /finding\.reasons && finding\.reasons\.length/.test(appSrc) && /yoga-reasons/.test(appSrc));
 
 // Shadbala: the breakdown, not just a total.
 ok('the page loads the shadbala module', /<script src="js\/shadbala\.js"><\/script>/.test(html));

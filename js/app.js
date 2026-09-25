@@ -725,7 +725,7 @@
     var found = Yogas.detect(state.chart);
     if (!found.length) {
       note.textContent = 'No yoga among those this page looks for is present in this chart. ' +
-        'Only parivartana - an exchange of signs - is checked so far.';
+        'Parivartana and neecha bhanga are checked so far.';
       return;
     }
     note.textContent = 'Only parivartana is checked so far; more will follow.';
@@ -735,8 +735,18 @@
       card.appendChild(el('h4', 'yoga-name', finding.title));
       card.appendChild(el('p', 'yoga-summary', finding.summary));
       card.appendChild(el('p', 'yoga-grahas',
-        'Grahas: ' + finding.grahas.join(' and ') +
-        '   \u00b7   Houses: ' + finding.houses.join(' and ')));
+        (finding.grahas.length > 1 ? 'Grahas: ' : 'Graha: ') + finding.grahas.join(' and ') +
+        '   \u00b7   ' + (finding.houses.length > 1 ? 'Houses: ' : 'House: ') +
+        finding.houses.join(' and ')));
+
+      // Where a yoga rests on several conditions, name the ones that applied:
+      // they are not equally persuasive, and a bare verdict hides which did the
+      // work.
+      if (finding.reasons && finding.reasons.length) {
+        var why = el('ul', 'yoga-reasons');
+        finding.reasons.forEach(function (reason) { why.appendChild(el('li', null, reason)); });
+        card.appendChild(why);
+      }
       var explanation = el('div', 'yoga-explanation');
       card.appendChild(explanation);
       list.appendChild(card);

@@ -607,6 +607,13 @@ svg.kundli .planet.retro { fill: var(--retro); }
 }
 .yoga-summary { margin: 0 0 0.3rem; }
 .yoga-grahas { margin: 0; font-size: 0.85rem; color: var(--ink-faint); }
+.yoga-reasons {
+  margin: 0.6rem 0 0;
+  padding-left: 1.2rem;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+.yoga-reasons li { margin-bottom: 0.2rem; }
 .yoga-explanation { margin-top: 0.9rem; }
 
 .lesson-search { max-width: 34rem; margin-bottom: 0.9rem; }

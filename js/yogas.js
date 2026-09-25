@@ -64,6 +64,115 @@ var Yogas = (function () {
     return found;
   }
 
+  /*
+   * Which house-distances a graha aspects fully. Every graha sees the 7th;
+   * Mars, Jupiter and Saturn have their own besides. Partial aspects are not
+   * used here - for cancelling a debilitation the classical texts speak of
+   * being aspected, not of being aspected a quarter.
+   */
+  var FULL_ASPECTS = { Mars: [4, 7, 8], Jupiter: [5, 7, 9], Saturn: [3, 7, 10] };
+  function aspects(graha, fromSign, toSign) {
+    var apart = ((toSign - fromSign) % 12 + 12) % 12 + 1;
+    return (FULL_ASPECTS[graha] || [7]).indexOf(apart) >= 0;
+  }
+
+  var KENDRA_HOUSES = [1, 4, 7, 10];
+  var TRIKONA_HOUSES = [1, 5, 9];
+
+  /**
+   * Neecha bhanga: a debilitation cancelled.
+   *
+   * Authorities list different cancellations and few list all of them, so each
+   * is checked separately and the ones that fired are reported. A single
+   * yes-or-no would hide which rule did the work, and the rules are not equally
+   * persuasive - a debilitated graha exalted in navamsa is a stronger claim than
+   * its dispositor merely sitting in a kendra.
+   *
+   * The raja yoga part is the stricter reading: a cancelled debilitation is
+   * called a raja yoga when the graha also sits in a kendra or a trikona, where
+   * it has the standing to act on what the cancellation gives it. Cancellations
+   * without that placement are reported as neecha bhanga alone.
+   */
+  function neechaBhanga(chart) {
+    var positions = {};
+    chart.planets.forEach(function (p) { positions[p.name] = p; });
+    var lagna = Astro.signOf(chart.ascendant.longitude);
+    var moonSign = positions.Moon ? positions.Moon.sign : null;
+
+    var houseFrom = function (sign, from) { return ((sign - from) % 12 + 12) % 12 + 1; };
+    var inKendraFromEither = function (sign) {
+      if (KENDRA_HOUSES.indexOf(houseFrom(sign, lagna)) >= 0) return 'the lagna';
+      if (moonSign !== null && KENDRA_HOUSES.indexOf(houseFrom(sign, moonSign)) >= 0) return 'the Moon';
+      return null;
+    };
+
+    var found = [];
+    GRAHAS.forEach(function (graha) {
+      var p = positions[graha];
+      if (!p) return;
+      var dignity = Astro.DIGNITY[graha];
+      if (!dignity || p.sign !== dignity.debil) return;      // not debilitated
+
+      var dispositor = Astro.SIGN_LORDS[p.sign];
+      // Whichever graha is exalted in the sign this one is debilitated in.
+      var exaltedHere = null;
+      Object.keys(Astro.DIGNITY).forEach(function (other) {
+        if (Astro.DIGNITY[other].exalt.sign === p.sign) exaltedHere = other;
+      });
+
+      var reasons = [];
+      var from;
+
+      if ((from = inKendraFromEither(positions[dispositor] ? positions[dispositor].sign : -1))) {
+        reasons.push('its dispositor ' + dispositor + ' is in a kendra from ' + from);
+      }
+      if (exaltedHere && positions[exaltedHere] &&
+          (from = inKendraFromEither(positions[exaltedHere].sign))) {
+        reasons.push(exaltedHere + ', exalted in this sign, is in a kendra from ' + from);
+      }
+      if (positions[dispositor] && positions[dispositor].sign === p.sign) {
+        reasons.push('it is conjunct its dispositor ' + dispositor);
+      }
+      if (positions[dispositor] &&
+          aspects(dispositor, positions[dispositor].sign, p.sign)) {
+        reasons.push('its dispositor ' + dispositor + ' aspects it');
+      }
+      if (exaltedHere && positions[exaltedHere] &&
+          aspects(exaltedHere, positions[exaltedHere].sign, p.sign)) {
+        reasons.push(exaltedHere + ', exalted in this sign, aspects it');
+      }
+      if (positions[dispositor] &&
+          Astro.SIGN_LORDS[positions[dispositor].sign] === graha) {
+        reasons.push('it exchanges signs with its dispositor ' + dispositor);
+      }
+      if (Astro.vargaPosition(p.longitude, 9).sign === dignity.exalt.sign) {
+        reasons.push('it is exalted in navamsa');
+      }
+      if ((from = inKendraFromEither(p.sign))) {
+        reasons.push('it stands in a kendra from ' + from);
+      }
+
+      if (!reasons.length) return;
+
+      var house = houseFrom(p.sign, lagna);
+      var royal = KENDRA_HOUSES.indexOf(house) >= 0 || TRIKONA_HOUSES.indexOf(house) >= 0;
+      found.push({
+        yoga: 'Neecha Bhanga',
+        kind: royal ? 'raja' : 'plain',
+        subject: 'Neecha Bhanga Raja Yoga',
+        condition: royal ? 'raja' : 'general',
+        title: royal ? 'Neecha bhanga raja yoga' : 'Neecha bhanga',
+        grahas: [graha],
+        houses: [house],
+        reasons: reasons,
+        summary: graha + ' is debilitated in ' + Astro.SIGNS[p.sign] + ', in the ' +
+          ordinal(house) + ', and the debilitation is cancelled because ' +
+          reasons.join('; and ') + '.'
+      });
+    });
+    return found;
+  }
+
   function ordinal(n) {
     var suffix = (n % 10 === 1 && n !== 11) ? 'st'
       : (n % 10 === 2 && n !== 12) ? 'nd'
@@ -71,7 +180,7 @@ var Yogas = (function () {
     return n + suffix;
   }
 
-  var DETECTORS = [parivartana];
+  var DETECTORS = [parivartana, neechaBhanga];
 
   /** Every yoga this module knows how to look for, in one pass. */
   function detect(chart) {
@@ -82,7 +191,8 @@ var Yogas = (function () {
     return all;
   }
 
-  return { detect: detect, parivartana: parivartana, ordinal: ordinal, GRAHAS: GRAHAS };
+  return { detect: detect, parivartana: parivartana, neechaBhanga: neechaBhanga,
+    aspects: aspects, ordinal: ordinal, GRAHAS: GRAHAS };
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = Yogas;

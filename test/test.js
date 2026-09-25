@@ -739,7 +739,7 @@ console.log('\nParivartana yoga');
   for (var y = 1975; y <= 2005 && Object.keys(seen).length < 3; y++) {
     for (var d = 1; d <= 365; d += 1) {
       var chart = A.chart({ jdUT: A.julianDay(y, 1, d, 6.0), latitude: 28.6139, longitude: 77.2090 });
-      Yogas.detect(chart).forEach(function (finding) {
+      Yogas.parivartana(chart).forEach(function (finding) {
         if (!seen[finding.kind]) { seen[finding.kind] = true; examples[finding.kind] = { chart: chart, finding: finding }; }
       });
       if (Object.keys(seen).length >= 3) break;
@@ -768,7 +768,7 @@ console.log('\nParivartana yoga');
 ok('a graha is never in parivartana with itself', (function () {
   for (var y = 1990; y < 1992; y++) {
     var chart = A.chart({ jdUT: A.julianDay(y, 6, 1, 6.0), latitude: 28.6139, longitude: 77.2090 });
-    var bad = Yogas.detect(chart).some(function (f) { return f.grahas[0] === f.grahas[1]; });
+    var bad = Yogas.parivartana(chart).some(function (f) { return f.grahas[0] === f.grahas[1]; });
     if (bad) return false;
   }
   return true;
@@ -776,7 +776,7 @@ ok('a graha is never in parivartana with itself', (function () {
 ok('the nodes are never involved, ruling no sign', (function () {
   for (var d = 1; d <= 200; d += 7) {
     var chart = A.chart({ jdUT: A.julianDay(1995, 1, d, 6.0), latitude: 28.6139, longitude: 77.2090 });
-    var bad = Yogas.detect(chart).some(function (f) {
+    var bad = Yogas.parivartana(chart).some(function (f) {
       return f.grahas.indexOf('Rahu') >= 0 || f.grahas.indexOf('Ketu') >= 0;
     });
     if (bad) return false;
@@ -786,6 +786,65 @@ ok('the nodes are never involved, ruling no sign', (function () {
 ok('ordinals read correctly', Yogas.ordinal(1) === '1st' && Yogas.ordinal(2) === '2nd' &&
    Yogas.ordinal(3) === '3rd' && Yogas.ordinal(4) === '4th' && Yogas.ordinal(11) === '11th' &&
    Yogas.ordinal(12) === '12th');
+
+ok('detect gathers from every detector', (function () {
+  var chart = A.chart({ jdUT: 2446146.7256944445, latitude: 23.5158, longitude: 87.308 });
+  var all = Yogas.detect(chart);
+  var direct = Yogas.parivartana(chart).length + Yogas.neechaBhanga(chart).length;
+  return all.length === direct && all.length > 0;
+})());
+
+console.log('\nNeecha bhanga');
+(function () {
+  // Only a debilitated graha can have its debilitation cancelled.
+  ok('only debilitated grahas are ever reported', (function () {
+    for (var d = 1; d <= 300; d += 11) {
+      var chart = A.chart({ jdUT: A.julianDay(1992, 1, d, 6.0), latitude: 28.6139, longitude: 77.2090 });
+      var positions = {};
+      chart.planets.forEach(function (p) { positions[p.name] = p; });
+      var wrong = Yogas.neechaBhanga(chart).some(function (f) {
+        var g = f.grahas[0];
+        return positions[g].sign !== A.DIGNITY[g].debil;
+      });
+      if (wrong) return false;
+    }
+    return true;
+  })());
+
+  // A cancellation must name at least one reason, and the raja form must sit in
+  // a kendra or a trikona.
+  var rajaSeen = false, plainSeen = false;
+  for (var d = 1; d <= 365; d += 3) {
+    var chart = A.chart({ jdUT: A.julianDay(1988, 1, d, 6.0), latitude: 28.6139, longitude: 77.2090 });
+    var findings = Yogas.neechaBhanga(chart);
+    for (var i = 0; i < findings.length; i++) {
+      var f = findings[i];
+      if (!f.reasons.length) { ok('every cancellation names a reason', false); return; }
+      var good = [1, 4, 5, 7, 9, 10].indexOf(f.houses[0]) >= 0;
+      if (f.kind === 'raja') { rajaSeen = true; if (!good) { ok('raja form sits in a kendra or trikona', false, 'house ' + f.houses[0]); return; } }
+      else { plainSeen = true; if (good) { ok('plain form sits outside them', false, 'house ' + f.houses[0]); return; } }
+    }
+  }
+  ok('every cancellation names a reason', true);
+  ok('both forms occur, and each sits where its name says',
+     rajaSeen && plainSeen, 'raja ' + rajaSeen + ', plain ' + plainSeen);
+
+  // The reference chart has one of each, which is the distinction in miniature.
+  var durgapur = A.chart({ jdUT: 2446146.7256944445, latitude: 23.5158, longitude: 87.308 });
+  var both = Yogas.neechaBhanga(durgapur);
+  ok('the reference chart shows both forms', both.length === 2 &&
+     both.some(function (f) { return f.grahas[0] === 'Mercury' && f.kind === 'raja'; }) &&
+     both.some(function (f) { return f.grahas[0] === 'Jupiter' && f.kind === 'plain'; }),
+     both.map(function (f) { return f.grahas[0] + ':' + f.kind; }).join(', '));
+})();
+
+ok('a graha aspects the seventh from itself, always',
+   Yogas.aspects('Venus', 0, 6) && Yogas.aspects('Saturn', 0, 6) && !Yogas.aspects('Venus', 0, 2));
+ok('mars, jupiter and saturn keep their own aspects',
+   Yogas.aspects('Mars', 0, 3) && Yogas.aspects('Mars', 0, 7) &&
+   Yogas.aspects('Jupiter', 0, 4) && Yogas.aspects('Jupiter', 0, 8) &&
+   Yogas.aspects('Saturn', 0, 2) && Yogas.aspects('Saturn', 0, 9) &&
+   !Yogas.aspects('Venus', 0, 3));
 
 console.log('\nYogakaraka');
 /*

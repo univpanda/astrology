@@ -50,3 +50,31 @@ on conflict (topic, subject, condition) do update set
   note = excluded.note,
   sort_order = excluded.sort_order,
   updated_at = now();
+
+insert into astro_readings (topic, subject, condition, heading, points, note, sort_order) values
+('yoga', 'Neecha Bhanga Raja Yoga', 'general',
+ 'Neecha bhanga - a debilitation cancelled',
+ array[
+   'A graha in its sign of debilitation is at its weakest, but the weakness can be lifted by the company it keeps. That lifting is neecha bhanga.',
+   'The cancellations the texts give are several, and few authorities list them all. The usual ones: the lord of the sign the graha sits in is in a kendra from the lagna or the Moon; the graha that would be exalted in that sign is in a kendra from either; the debilitated graha is conjunct or aspected by its dispositor; the two exchange signs; the debilitated graha is exalted in navamsa; or it stands in a kendra itself.',
+   'They are not equally persuasive. A debilitated graha exalted in navamsa is a stronger claim than its dispositor merely occupying a kendra, which is why the cancellations that apply are worth naming rather than counting.',
+   'What a cancellation gives is not the same as exaltation. The classical sense is of a fall arrested: the graha recovers its footing, often after an early period in which the debilitation is felt plainly.',
+   'A debilitated graha with no cancellation at all is read as it stands, and its dasha is usually where the difficulty shows.'
+ ],
+ 'Becomes a raja yoga under the condition below.', 20),
+
+('yoga', 'Neecha Bhanga Raja Yoga', 'raja',
+ 'When the cancellation makes a raja yoga',
+ array[
+   'The stricter reading: a cancelled debilitation is a raja yoga when the graha also stands in a kendra or a trikona - the 1st, 4th, 5th, 7th, 9th or 10th.',
+   'The reasoning is that a cancellation restores the graha''s strength, but only an angle or a trine gives it the standing to act on that strength. A debilitation cancelled in the 6th or the 8th is still cancelled; it simply has less to work with.',
+   'Where it applies, the classical promise is of rise from low beginnings - standing, authority and recognition arriving after a start that did not suggest them.',
+   'Looser readings call any neecha bhanga a raja yoga. The distinction is kept here because a chart usually has one or two cancellations and rarely has one in a kendra or trikona, and treating those alike would make the yoga mean very little.'
+ ], null, 21)
+
+on conflict (topic, subject, condition) do update set
+  heading = excluded.heading,
+  points = excluded.points,
+  note = excluded.note,
+  sort_order = excluded.sort_order,
+  updated_at = now();
