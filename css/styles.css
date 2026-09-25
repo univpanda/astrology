@@ -10,6 +10,11 @@
  */
 
 :root {
+  /* Without this, scrollbars, date pickers and select arrows keep their light
+     styling on a dark page: browser chrome follows this property, not the
+     colours below it. */
+  color-scheme: light;
+
   --paper: #f4faf6;
   --paper-tint: #eaf5ee;
   --surface: #ffffff;
@@ -55,12 +60,18 @@ main, .site-header, .site-footer { max-width: 1120px; margin: 0 auto; }
 
 /* ------------------------------------------------------------------ tabs */
 
+/*
+ * Wraps rather than scrolls. It used to say overflow-x: auto, and setting one
+ * axis to anything but visible promotes the other from visible to auto - so the
+ * -1px margin that laps the tabs over the border was one pixel of vertical
+ * overflow, and the browser drew a vertical scrollbar for it.
+ */
 .tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.35rem;
   margin-bottom: 1.25rem;
   border-bottom: 1px solid var(--line);
-  overflow-x: auto;
 }
 
 .tab {
@@ -376,6 +387,7 @@ button.primary:disabled { opacity: 0.6; cursor: progress; transform: none; }
   right: 0;
   max-height: 300px;
   overflow-y: auto;
+  overflow-x: hidden;   /* long place names wrap; they must not scroll sideways */
   margin: 0;
   padding: 0.3rem;
   list-style: none;
@@ -531,7 +543,9 @@ svg.kundli .planet.retro { fill: var(--retro); }
 .two-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem; }
 .two-col > .card { margin-bottom: 0; }
 
-.table-scroll { overflow-x: auto; }
+/* Ten columns need sideways room; overflow-y is pinned so the promotion
+   described above cannot add a vertical bar here either. */
+.table-scroll { overflow-x: auto; overflow-y: hidden; }
 
 table { width: 100%; border-collapse: collapse; font-size: 0.93rem; }
 
@@ -573,6 +587,8 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
 
 @media (prefers-color-scheme: dark) {
   :root {
+    color-scheme: dark;
+
     --paper: #121a16;
     --paper-tint: #1a231e;
     --surface: #18211c;

@@ -217,6 +217,36 @@ console.log('\nHistorical reference chart');
 
 /* ------------------------------------------------ app.js <-> index.html */
 
+console.log('\nStylesheet traps');
+(function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+
+  ok('the colour scheme is declared, not just reacted to',
+     /(^|[^-])color-scheme:\s*light/.test(css) && /color-scheme:\s*dark/.test(css));
+
+  /*
+   * Setting one overflow axis to anything but visible promotes the other from
+   * visible to auto. A rule that scrolls sideways and leaves the other axis
+   * alone will grow a vertical scrollbar the moment anything overflows by a
+   * pixel, which is exactly how one appeared over the tab strip.
+   */
+  var offenders = [];
+  css.replace(/([^{}]+)\{([^}]*)\}/g, function (all, selector, body) {
+    // The other axis need only be stated; hidden is as good an answer as auto.
+    var scrollsX = /overflow-x:\s*(auto|scroll)/.test(body);
+    var scrollsY = /overflow-y:\s*(auto|scroll)/.test(body);
+    var saysX = /overflow-x:/.test(body);
+    var saysY = /overflow-y:/.test(body);
+    var saysBoth = /(^|[^-])overflow:\s*/.test(body);
+    if (!saysBoth && ((scrollsX && !saysY) || (scrollsY && !saysX))) {
+      offenders.push(selector.trim().split('\n').pop());
+    }
+    return all;
+  });
+  ok('no rule scrolls one axis while leaving the other implicit',
+     offenders.length === 0, offenders.join(' | ') || 'none');
+})();
+
 console.log('\nDOM contract between app.js and index.html');
 var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 var appSrc = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
