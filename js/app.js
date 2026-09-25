@@ -705,25 +705,9 @@
         return { name: p.name, longitude: p.longitude, retrograde: p.retrograde };
       }));
 
-    /*
-     * House 1 is whatever the chart beside this table is rotated onto, worked out
-     * in the division on show so the two always agree. Counting from the
-     * ascendant while the chart is rotated onto the Moon would put every number
-     * in this column at odds with the picture above it.
-     */
-    var firstSign = positionOf(c.ascendant.longitude).sign;
-    if (set.reference && set.reference !== 'Ascendant') {
-      var anchor = c.planets.filter(function (p) { return p.name === set.reference; })[0];
-      if (anchor) firstSign = positionOf(anchor.longitude).sign;
-    }
-
     rows.forEach(function (r) {
       var v = positionOf(r.longitude);
       var nak = Astro.nakshatraOf(v.longitude);
-      var house = ((v.sign - firstSign) % 12 + 12) % 12 + 1;
-      // Always D1 against D9, so this column alone does not move when the
-      // division dropdown does, unlike every other column here.
-      var vargottama = Astro.isVargottama(r.longitude);
       var tr = document.createElement('tr');
       if (r.isAscendant) tr.className = 'ascendant-row';
 
@@ -732,25 +716,14 @@
        * column was added, and inserting one in the middle silently moved the
        * titles onto the wrong cells.
        *
-       * What a graha is comes before where it is: motion, sign, house, dignity
-       * and dispositor first, then the position that produced them.
+       * What a graha is comes before where it is: motion, sign, dignity and
+       * dispositor first, then the position that produced them.
        */
       [{ text: r.name, header: true },
        { text: r.isAscendant ? '\u2013' : (r.retrograde ? 'Retrograde' : 'Direct'),
          cls: r.retrograde ? 'retro-flag' : null },
        { text: Astro.SIGNS[v.sign] + ' (' + Astro.SIGNS_SA[v.sign] + ')' },
-       { text: String(house), cls: 'numeric',
-         title: 'Whole sign house, counted from ' +
-           (set.reference === 'Ascendant' ? 'the ascendant' : set.reference) +
-           ' in ' + (Astro.VARGAS.filter(function (x) { return x.division === set.division; })[0] || {}).name + '.' },
        { text: (r.isAscendant ? '' : Astro.dignityOf(r.name, v.sign, v.degreeInSign)) || '\u2013' },
-       { text: vargottama ? 'Yes' : '\u2013',
-         cls: vargottama ? 'vargottama-yes' : null,
-         title: vargottama
-           ? r.name + ' holds the same sign in the rashi and in the navamsha, so it is ' +
-             'vargottama. Measured against D9 whatever division is on show, and it sharpens ' +
-             'whatever it already is rather than improving it.'
-           : r.name + ' sits in different signs in the rashi and the navamsha.' },
        { text: r.isAscendant ? Astro.SIGN_LORDS[v.sign] : dispositorOf(r.name, v.sign, positionsD1),
          cls: 'dispositor',
          title: r.isAscendant ? null : dispositorDetail(r.name, v.sign, positionsD1) },
@@ -835,8 +808,7 @@
       'included, and Rahu and Ketu are outside Shadbala. Saptavargaja uses the ladder in ' +
       'Santhanam\u2019s chapter 27 \u2014 45, 30, 20, 15, 10, 4, 2 \u2014 rather than the ' +
       'halving series some calculators use, which is why totals here can differ from theirs ' +
-      'by a few virupas. The hora counts by the ordinary relation there, as that chapter ' +
-      'directs, not by the rule the Dasavarga tab follows.';
+      'by a few virupas.';
   }
 
   /* ----------------------------------------------------------- dasavarga */
@@ -854,22 +826,8 @@
    * reporting an exalted graha as a great friend's guest would hide the more
    * useful fact. The relation underneath is kept in the cell's title.
    */
-  /**
-   * What one cell of the grid is saying, in full.
-   *
-   * The hora answers to a different rule and so needs a different sentence: what
-   * the ordinary scale would call a great friend's sign is not the question there.
-   */
+  /** What one cell of the grid is saying, in full. */
   function dasavargaDetail(d, division, graha) {
-    if (division === 2) {
-      return graha + ' is in the ' + d.hora + '\u2019s hora, ' + Astro.SIGNS[d.sign] + '. ' +
-        'Parashara names Jupiter, the Sun and Mars as pronounced in the Sun\u2019s hora, and ' +
-        'the Moon, Venus and Saturn in the Moon\u2019s, with Mercury telling in both. ' +
-        'The Sun\u2019s hora tells in an odd rashi and the Moon\u2019s in an even one, ' +
-        'making this the ' + (d.strongerHalf ? 'telling' : 'weaker') + ' hora here. It is the ' +
-        ['first', 'second', 'third'][d.third] + ' third of the hora, where Parashara puts the ' +
-        'effect at ' + ['full', 'medium', 'nil'][d.third] + '.';
-    }
     var text = 'D' + division + ': ' + Astro.SIGNS[d.sign] + ', ruled by ' + d.lord + '.';
     if (d.viaProxy) {
       text += ' Neither luminary rules a trimsamsa, so for this division ' + graha +
@@ -895,17 +853,34 @@
       });
       if (cells.every(function (c) { return !c; })) return;   // Rahu and Ketu
 
-      var tr = document.createElement('tr');
+      /*
+       * Each graha takes two rows, its sign above its dignity, with the name
+       * spanning both so the pair reads as one entry. The dignity is the answer
+       * and the sign is the working behind it, and keeping the working in a hover
+       * meant the one question the grid raises - which sign is that? - could only
+       * be answered one cell at a time.
+       */
+      var signRow = document.createElement('tr');
+      signRow.className = 'varga-signs';
       var th = el('th', null, planet.name);
-      th.setAttribute('scope', 'row');
-      tr.appendChild(th);
+      th.setAttribute('scope', 'rowgroup');
+      th.setAttribute('rowspan', '2');
+      signRow.appendChild(th);
+
+      var dignityRow = document.createElement('tr');
+      dignityRow.className = 'varga-dignities';
 
       cells.forEach(function (d, i) {
-        var td = el('td', d ? 'dig dig-' + d.key : null, d ? d.label : '\u2013');
-        if (d) td.title = dasavargaDetail(d, Astro.DASAVARGA[i], planet.name);
-        tr.appendChild(td);
+        var detail = d ? dasavargaDetail(d, Astro.DASAVARGA[i], planet.name) : null;
+        var sign = el('td', 'varga-sign', d ? Astro.SIGNS[d.sign] : '\u2013');
+        var dignity = el('td', d ? 'dig dig-' + d.key : null, d ? d.label : '\u2013');
+        if (detail) { sign.title = detail; dignity.title = detail; }
+        signRow.appendChild(sign);
+        dignityRow.appendChild(dignity);
       });
-      tbody.appendChild(tr);
+
+      tbody.appendChild(signRow);
+      tbody.appendChild(dignityRow);
     });
 
     document.getElementById('dasavarga-note').textContent =
@@ -913,12 +888,11 @@
       'that division gives. The classical scale runs Mooltrikona, own sign, great friend, ' +
       'friend, neutral, enemy, great enemy, which Parashara scores as 20, 18, 15, 10, 7 and ' +
       '5 out of twenty. Exaltation is not one of those steps, being measured by uchcha bala ' +
-      'instead, but it is shown here when it falls, as is debilitation. Two divisions cannot ' +
-      'take that scale at all and Parashara supplies his own rules, in chapter 7. The hora ' +
-      'yields only Cancer and Leo, so it is read by his list of which grahas tell in which ' +
-      'hora rather than by ownership. No luminary rules a trimsamsa, so in D30 the Sun ' +
-      'stands in as Mars and the Moon as Venus. Hover any cell for the sign, its lord and ' +
-      'the reading underneath. Grahas are listed as in the tables beside this one, and Rahu ' +
+      'instead, but it is shown here when it falls, as is debilitation. No luminary rules a ' +
+      'trimsamsa, so in D30 the Sun stands in as Mars and the Moon as Venus, which is ' +
+      'Parashara\u2019s own remedy in chapter 7. Each graha takes two rows: the ' +
+      'sign the division puts it in, then how it stands there. Hover any cell for its lord ' +
+      'and the reading underneath. Grahas are listed as in the tables beside this one, and Rahu ' +
       'and Ketu own no sign and keep no friendships, so they are left out.';
   }
 

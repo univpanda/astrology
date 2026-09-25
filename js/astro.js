@@ -867,23 +867,6 @@ var Astro = (function () {
   var DASAVARGA = [1, 2, 3, 7, 9, 10, 12, 16, 30, 60];
 
   /*
-   * Chapter 7, verses 13-16, Santhanam: "Jupiter, the Sun and Mars give
-   * (pronounced) effects in the Hora of the Sun. The Moon, Venus and Saturn do so
-   * when in Moon's Hora. Mercury is effective in both the Horas."
-   *
-   * The hora needs its own rule because the ordinary scale degenerates there.
-   * D2 yields only Cancer and Leo, so own sign is reachable by the Moon and the
-   * Sun alone, exaltation by Jupiter alone, debilitation by Mars alone, and the
-   * other grahas are left permanently as somebody's guest. Parashara answers the
-   * problem directly rather than leaving it to be inferred.
-   */
-  var HORA_STRONG = {
-    Moon: ['Moon', 'Venus', 'Saturn', 'Mercury'],
-    Sun: ['Sun', 'Jupiter', 'Mars', 'Mercury']
-  };
-  var HORA_LABELS = { pronounced: 'Pronounced', muted: 'Muted' };
-
-  /*
    * Same passage, verse 16: "As for Trimsamsa effects the Sun is akin to Mars and
    * the Moon is akin to Venus. The effects applicable to Rashi will apply to
    * Trimsamsa."
@@ -922,21 +905,6 @@ var Astro = (function () {
     var position = vargaPosition(longitude, division);
     if (!position) return null;
     var lord = SIGN_LORDS[position.sign];
-
-    // The hora is judged by Parashara's own rule, not by the seven steps.
-    if (division === 2) {
-      if (!HORA_STRONG[lord] || !DIGNITY[graha]) return null;
-      var pronounced = HORA_STRONG[lord].indexOf(graha) >= 0;
-      var key = pronounced ? 'pronounced' : 'muted';
-      return {
-        key: key, label: HORA_LABELS[key], sign: position.sign, lord: lord,
-        relation: null, relationLabel: null, hora: lord,
-        // Verse 14: the Sun's hora tells in an odd rashi, the Moon's in an even one.
-        strongerHalf: (signOf(longitude) % 2 === 0) === (lord === 'Sun'),
-        // Verse 15: full, medium and nil across the three parts of a hora.
-        third: Math.min(2, Math.floor(position.degreeInSign / 10))
-      };
-    }
 
     var own = dignityOf(graha, position.sign, position.degreeInSign);
     var ownsIt = lord === graha ||
@@ -1236,8 +1204,6 @@ var Astro = (function () {
     vargaDignity: vargaDignity,
     DASAVARGA: DASAVARGA,
     VARGA_DIGNITY_LABELS: VARGA_DIGNITY_LABELS,
-    HORA_LABELS: HORA_LABELS,
-    HORA_STRONG: HORA_STRONG,
     TRIMSAMSA_PROXY: TRIMSAMSA_PROXY,
     VARGAS: VARGAS,
     houseOf: houseOf,

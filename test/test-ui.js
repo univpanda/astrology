@@ -410,10 +410,8 @@ function stripHtml(label) {
     var chartsSrc = fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8');
     return /data\.firstSign/.test(chartsSrc) && /signOfBody\(anchor\.longitude\)/.test(chartsSrc);
   })());
-  ok('houses are counted from whatever the chart beside the table is rotated onto',
-     /var firstSign = positionOf\(c\.ascendant\.longitude\)\.sign;/.test(appSrc) &&
-     /set\.reference !== 'Ascendant'/.test(appSrc) &&
-     /<th scope="col">House<\/th>/.test(html));
+  ok('the table no longer depends on which sign leads',
+     !/firstSign/.test(appSrc) && !/<th scope="col">House<\/th>/.test(html));
 })();
 
 // Saved kundalis: the list, and the four keys that identify an entry.
@@ -572,8 +570,6 @@ ok('each graha is judged against its own minimum',
 ok('the shadbala note names the ladder it uses, since totals differ between readings',
    /45, 30, 20, 15, 10, 4, 2/.test(appSrc.replace(/'\s*\+\s*'/g, '')) &&
    /halving series some calculators use/.test(appSrc.replace(/'\s*\+\s*'/g, '')));
-ok('and says the hora is counted differently there than in Dasavarga',
-   /not by the rule the Dasavarga tab follows/.test(appSrc.replace(/'\s*\+\s*'/g, '')));
 ok('the note says what is left out rather than hiding it',
    /Yuddha bala is not ' \+\s*\n?\s*'included/.test(appSrc) || /Yuddha bala is not/.test(appSrc));
 
@@ -630,14 +626,14 @@ ok('the ascendant is eligible for the flag too', (function () {
   return /As \[V\]/.test(serialise(box));
 })());
 
-ok('the table gives it a column of its own rather than a flag on the name',
-   /<th scope="col">Vargottama<\/th>/.test(html) &&
+/*
+ * Vargottama lives on the chart, not in the table: the [V] flag beside the graha
+ * in the kundli. The table carried it twice over at one point, as a column and as
+ * a flag on the name, and now carries it neither way.
+ */
+ok('the table leaves vargottama to the chart',
+   !/<th scope="col">Vargottama<\/th>/.test(html) &&
    !/el\('span', 'flag', ' \[V\]'\)/.test(appSrc));
-ok('and explains it on hover, both ways round',
-   /it sharpens \nwhatever it already is|it sharpens /.test(appSrc) &&
-   /sits in different signs in the rashi and the navamsha/.test(appSrc));
-ok('the table reads vargottama off the rashi longitude',
-   /var vargottama = Astro\.isVargottama\(r\.longitude\);/.test(appSrc));
 ok('the page carries a key for both flags',
    /\[R\] is retrograde\. \[V\] is vargottama/.test(html) &&
    /measured against D9 whichever division is on screen/.test(html));
@@ -666,9 +662,9 @@ ok('each cell says which sign and lord produced it',
 ok('and gives the seven-step reading when it differs from the label shown',
    /d\.relationLabel !== d\.label/.test(appSrc));
 
-ok('every reading has a colour, on both scales, and no colour is orphaned', (function () {
+ok('every dignity tier has a colour, and no colour is orphaned', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-  var keys = Object.keys(Astro.VARGA_DIGNITY_LABELS).concat(Object.keys(Astro.HORA_LABELS));
+  var keys = Object.keys(Astro.VARGA_DIGNITY_LABELS);
   var styled = (css.match(/td\.dig-([a-z]+)/g) || [])
     .map(function (m) { return m.replace('td.dig-', ''); });
   return keys.every(function (k) { return styled.indexOf(k) >= 0; }) &&
@@ -680,21 +676,42 @@ ok('the note says exaltation is outside the classical steps',
 ok('and carries Parashara\'s own varga viswa figures',
    /20, 18, 15, 10, 7 and \n?\s*'?5 out of twenty/.test(appSrc.replace(/\s+/g, ' ')) ||
    /20, 18, 15, 10, 7 and 5 out of twenty/.test(appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ')));
-ok('and says why the hora and the trimsamsa are read differently',
-   /yields only Cancer and Leo/.test(appSrc.replace(/'\s*\+\s*'/g, '')) &&
-   /the Sun \nstands in as Mars|stands in as Mars/.test(appSrc));
+ok('and says why the trimsamsa needs a stand-in',
+   /No luminary rules a trimsamsa/.test(appSrc.replace(/'\s*\+\s*'/g, '')) &&
+   /stands in as Mars and the Moon as Venus/.test(appSrc.replace(/'\s*\+\s*'/g, '')));
 ok('and that the nodes are left out',
    /Rahu \n?\s*'?and Ketu own no sign and keep no friendships/.test(appSrc) ||
    /Rahu and Ketu own no sign and keep no friendships/.test(appSrc.replace(/'\s*\+\s*'/g, '')));
 
-// The hora cell must explain itself by Parashara's rule, not by ownership.
-ok('the hora cell quotes the rule it is following',
-   /Parashara names Jupiter, the Sun and Mars as pronounced/.test(appSrc.replace(/'\s*\+\s*'/g, '')));
-ok('and reports the parity and the third it falls in',
-   /hora tells in an odd rashi/.test(appSrc.replace(/'\s*\+\s*'/g, '')) &&
-   /\['full', 'medium', 'nil'\]\[d\.third\]/.test(appSrc));
 ok('the trimsamsa stand-in is explained where it fires',
    /stands in as ' \+ d\.viaProxy/.test(appSrc));
+
+/*
+ * Each graha spans two rows, its sign above its dignity. The sign was only in a
+ * hover before, which made the grid's most obvious question - which sign is that?
+ * - answerable one cell at a time.
+ */
+ok('each graha takes two rows, its name spanning both',
+   /signRow\.className = 'varga-signs'/.test(appSrc) &&
+   /dignityRow\.className = 'varga-dignities'/.test(appSrc) &&
+   /th\.setAttribute\('rowspan', '2'\)/.test(appSrc) &&
+   /tbody\.appendChild\(signRow\);\s*\n\s*tbody\.appendChild\(dignityRow\);/.test(appSrc));
+ok('the spanning name is a row-group header, not a plain cell',
+   /th\.setAttribute\('scope', 'rowgroup'\)/.test(appSrc));
+ok('the sign row reads the same varga position the dignity does',
+   /el\('td', 'varga-sign', d \? Astro\.SIGNS\[d\.sign\] : '\\u2013'\)/.test(appSrc));
+ok('both halves of a pair carry the same hover',
+   /if \(detail\) \{ sign\.title = detail; dignity\.title = detail; \}/.test(appSrc));
+ok('and a graha with no reading still contributes no rows at all',
+   /if \(cells\.every\(function \(c\) \{ return !c; \}\)\) return;/.test(appSrc));
+ok('the rule sits under the pair rather than between its halves', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  return /#dasavarga-table tr\.varga-signs td \{[^}]*border-bottom: none/.test(css) &&
+    /#dasavarga-table th\[rowspan\] \{[^}]*vertical-align: middle/.test(css) &&
+    /td\.varga-sign/.test(css);
+})());
+ok('the note says the rows come in pairs',
+   /Each graha takes two rows/.test(appSrc.replace(/'\s*\+\s*'/g, '')));
 
 /*
  * The dispositor relation is asymmetric, so the cell has to say whose view it
@@ -745,9 +762,9 @@ ok('friendship is defined once, in the engine', (function () {
 })());
 
 // The columns, in the order they read.
-ok('both tables carry the same eleven columns, in order', (function () {
-  var wanted = ['Graha', 'Motion', 'Rashi', 'House', 'Dignity', 'Vargottama',
-                'Dispositor', 'Longitude', 'Nakshatra', 'Pada', 'Lord / sub lord'];
+ok('both tables carry the same nine columns, in order', (function () {
+  var wanted = ['Graha', 'Motion', 'Rashi', 'Dignity', 'Dispositor', 'Longitude',
+                'Nakshatra', 'Pada', 'Lord / sub lord'];
   return ['table-a', 'table-b'].every(function (id) {
     var at = html.indexOf('id="' + id + '"');
     var head = html.slice(at, html.indexOf('</thead>', at));
@@ -756,8 +773,9 @@ ok('both tables carry the same eleven columns, in order', (function () {
     return found.join('|') === wanted.join('|');
   });
 })());
-ok('the rules column stayed gone when house came back',
-   !/<th scope="col">Rules<\/th>/.test(html) && !/function rulership/.test(appSrc));
+ok('house and rules are gone from the tables',
+   !/<th scope="col">House<\/th>/.test(html) && !/<th scope="col">Rules<\/th>/.test(html) &&
+   !/function rulership/.test(appSrc));
 ok('what a graha is comes before where it is', (function () {
   var at = html.indexOf('id="table-a"');
   var head = html.slice(at, html.indexOf('</thead>', at));
