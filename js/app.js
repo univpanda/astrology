@@ -589,6 +589,43 @@
     return relation ? lord + ' \u00b7 ' + Astro.RELATION_LABELS[relation] : lord;
   }
 
+  /** "great friend" reads as "a great friend"; "neutral" takes no article. */
+  function withArticle(label) {
+    if (label === 'neutral') return 'neutral';
+    return (label.charAt(0) === 'e' ? 'an ' : 'a ') + label;
+  }
+
+  /**
+   * The same pair read both ways round, for the cell's title.
+   *
+   * Natural friendship is not mutual: eleven of the twenty-one pairs disagree,
+   * so "great friend" alone does not say whose opinion it is. The graha's own
+   * view of its dispositor is the one that governs its dignity and its
+   * saptavargaja bala, so that is what the cell shows. Where the dispositor
+   * takes a different view, it is worth saying so rather than leaving the
+   * asymmetry to be discovered.
+   */
+  function dispositorDetail(graha, sign, positionsD1) {
+    var lord = Astro.SIGN_LORDS[sign];
+    var signName = Astro.SIGNS[sign];
+    if (lord === graha) return graha + ' rules ' + signName + ', so this is its own sign.';
+    if (!positionsD1[lord] || !positionsD1[graha]) return lord + ' rules ' + signName + '.';
+    var apart = function (from, to) {
+      return ((positionsD1[to].sign - positionsD1[from].sign) % 12 + 12) % 12 + 1;
+    };
+    var out = Astro.compoundRelation(graha, lord, apart(graha, lord));
+    var back = Astro.compoundRelation(lord, graha, apart(lord, graha));
+    // Rahu and Ketu rule nothing and keep no friendships, so there is no pair to read.
+    if (!out) return lord + ' rules ' + signName + '. ' + graha + ' keeps no friendships.';
+    var text = signName + ' belongs to ' + lord + ', and ' + graha + ' regards ' + lord +
+      ' as ' + withArticle(Astro.RELATION_LABELS[out]) + '. This is the direction shown.';
+    if (back && back !== out) {
+      text += ' Read the other way it differs: ' + lord + ' regards ' + graha + ' as ' +
+        withArticle(Astro.RELATION_LABELS[back]) + '.';
+    }
+    return text;
+  }
+
   /**
    * One table per chart, in whichever division that chart is showing.
    *
@@ -632,6 +669,7 @@
         var td = el(i === 0 ? 'th' : 'td', cell[1], cell[0]);
         if (i === 0) td.setAttribute('scope', 'row');
         if (i === 1 && r.retrograde) td.className = 'retro-flag';
+        if (i === 4 && !r.isAscendant) td.title = dispositorDetail(r.name, v.sign, positionsD1);
         if (i === 5) td.title = 'Longitude ' + v.longitude.toFixed(4) + '\u00b0';
         tr.appendChild(td);
       });

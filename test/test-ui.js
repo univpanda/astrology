@@ -578,6 +578,49 @@ ok('the dispositor is the lord of the sign shown in that table',
 ok('its relation is the compound one, counted in the rashi chart',
    /Astro\.compoundRelation\(graha, lord,/.test(appSrc) && /positionsD1\[lord\]\.sign/.test(appSrc));
 ok('a graha in its own sign disposits itself', /if \(lord === graha\) return 'itself';/.test(appSrc));
+
+/*
+ * The dispositor relation is asymmetric, so the cell has to say whose view it
+ * shows. These pull the two helpers straight out of app.js and run them, rather
+ * than only checking that the source mentions them.
+ */
+var dispSrc = appSrc.slice(appSrc.indexOf('function withArticle'),
+                           appSrc.indexOf('function renderSlotTable'));
+var Disp = new Function('Astro', dispSrc +
+  '\nreturn { withArticle: withArticle, detail: dispositorDetail };')(Astro);
+
+ok('the article agrees with the label',
+   Disp.withArticle('great friend') === 'a great friend' &&
+   Disp.withArticle('enemy') === 'an enemy' &&
+   Disp.withArticle('great enemy') === 'a great enemy' &&
+   Disp.withArticle('neutral') === 'neutral');
+
+// Moon and Mercury together in Virgo: the Moon counts Mercury a friend, and
+// Mercury counts the Moon an enemy. The starkest disagreement in the table.
+var conjunct = { Moon: { sign: 5 }, Mercury: { sign: 5 } };
+var moonInVirgo = Disp.detail('Moon', 5, conjunct);
+ok('the title names the direction it is showing',
+   /Virgo belongs to Mercury/.test(moonInVirgo) &&
+   /Moon regards Mercury as/.test(moonInVirgo) &&
+   /This is the direction shown\./.test(moonInVirgo), moonInVirgo);
+ok('and gives the reverse when the two disagree',
+   /Read the other way it differs: Mercury regards Moon as a great enemy\./.test(moonInVirgo),
+   moonInVirgo);
+
+// Sun and Mars together in Aries: friends in both directions, so nothing to add.
+var sunInAries = Disp.detail('Sun', 0, { Sun: { sign: 0 }, Mars: { sign: 0 } });
+ok('but stays quiet when they agree',
+   /Sun regards Mars as neutral/.test(sunInAries) && !/other way/.test(sunInAries), sunInAries);
+
+ok('an own sign is explained as one', /rules Leo, so this is its own sign/.test(
+   Disp.detail('Sun', 4, { Sun: { sign: 4 } })));
+ok('a node is said to keep no friendships', /Rahu keeps no friendships/.test(
+   Disp.detail('Rahu', 5, { Rahu: { sign: 5 }, Mercury: { sign: 5 } })));
+
+ok('the dispositor cell carries that title, and the ascendant row does not',
+   /i === 4 && !r\.isAscendant\) td\.title = dispositorDetail\(r\.name, v\.sign, positionsD1\)/.test(appSrc));
+ok('both tables state the direction in view, not only on hover',
+   (html.match(/the graha's own view of the lord whose sign it occupies/g) || []).length === 2);
 ok('friendship is defined once, in the engine', (function () {
   var astroSrc = fs.readFileSync(path.join(root, 'js/astro.js'), 'utf8');
   var shadSrc = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8');

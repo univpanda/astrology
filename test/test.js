@@ -1079,6 +1079,31 @@ console.log('\nGraha friendship');
      [2, 3, 4, 10, 11, 12].every(function (h) { return A.temporalRelation(h) === 1; }) &&
      [1, 5, 6, 7, 8, 9].every(function (h) { return A.temporalRelation(h) === -1; }));
 
+  /*
+   * How asymmetric the natural table is, held to a number. The dispositor
+   * column reads the pair in one direction only, so this is what makes the
+   * direction worth stating rather than a pedantic detail.
+   */
+  var disagree = 0;
+  for (var gi = 0; gi < G.length; gi++) {
+    for (var gj = gi + 1; gj < G.length; gj++) {
+      if (A.naturalRelation(G[gi], G[gj]) !== A.naturalRelation(G[gj], G[gi])) disagree++;
+    }
+  }
+  ok('eleven of the twenty-one natural pairs disagree', disagree === 11, disagree + ' of 21');
+
+  /*
+   * Temporal friendship, by contrast, needs no direction: if one graha is in
+   * the 3rd from another then the other is in the 11th from it, and the six
+   * friendly houses pair up 2-12, 3-11, 4-10 with the six hostile ones 1-1,
+   * 5-9, 6-8, 7-7. So any asymmetry in a compound relation came from the
+   * natural layer alone.
+   */
+  ok('temporal friendship reads the same both ways',
+     [1,2,3,4,5,6,7,8,9,10,11,12].every(function (h) {
+       return A.temporalRelation(h) === A.temporalRelation((14 - h) % 12 || 12);
+     }));
+
   // The compound of every pairing must land in the five-step scale.
   ok('the compound is one of the five grades', (function () {
     var grades = ['adhimitra', 'mitra', 'sama', 'shatru', 'adhishatru'];
