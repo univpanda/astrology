@@ -627,6 +627,10 @@ tr td.rulership:not(:empty) { white-space: nowrap; }
 tr.ascendant-row { background: var(--green-soft); }
 tr.ascendant-row th:first-child { color: var(--green-deep); font-weight: 700; }
 
+tr.weak-graha { background: rgba(184, 72, 58, 0.06); }
+td.strong-flag { color: var(--green-deep); font-weight: 600; }
+td.weak-flag { color: var(--retro); font-weight: 600; }
+
 tr.current-dasha { background: rgba(47, 143, 95, 0.11); }
 tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
 
@@ -694,6 +698,7 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
   tbody tr:hover { background: #1d2822; }
   tr.current-dasha { background: rgba(88, 192, 138, 0.13); }
   tr.ascendant-row { background: rgba(88, 192, 138, 0.10); }
+  tr.weak-graha { background: rgba(232, 134, 122, 0.08); }
 }
 
 /* ------------------------------------------------------------------- print */

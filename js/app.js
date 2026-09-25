@@ -480,6 +480,7 @@
      * screen.
      */
     drawCharts();
+    renderShadbala(state);
     renderPanchang(c);
     renderDashas(c, state.offset);
     renderTechnical(state);
@@ -618,6 +619,62 @@
       });
       tbody.appendChild(tr);
     });
+  }
+
+  /**
+   * Shadbala, component by component.
+   *
+   * The breakdown is shown rather than a single number because Shadbala cannot
+   * be checked against a reference implementation the way the ephemeris can, and
+   * a total nobody can take apart is a total nobody can disagree with. Ranking
+   * is by how far each graha clears its own minimum, since the minimums differ.
+   */
+  function renderShadbala(state) {
+    var tbody = document.querySelector('#shadbala-table tbody');
+    tbody.innerHTML = '';
+    var result = Shadbala.compute(state.chart, {
+      latitude: state.place.lat,
+      longitude: state.place.lon,
+      tzOffsetMinutes: state.offset
+    });
+
+    result.ranking.forEach(function (graha) {
+      var x = result.grahas[graha];
+      var tr = document.createElement('tr');
+      if (!x.strong) tr.className = 'weak-graha';
+      var n = function (v) { return v.toFixed(1); };
+      [[graha, null],
+       [n(x.sthana.total), 'numeric'], [n(x.dig), 'numeric'],
+       [n(x.kala.total), 'numeric'], [n(x.cheshta), 'numeric'],
+       [n(x.naisargika), 'numeric'], [n(x.drik), 'numeric'],
+       [x.totalShashtiamsa.toFixed(0), 'numeric'],
+       [x.rupas.toFixed(2), 'numeric'],
+       [String(x.required), 'numeric'],
+       [x.strong ? 'Strong' : 'Weak', x.strong ? 'strong-flag' : 'weak-flag']
+      ].forEach(function (cell, i) {
+        var td = el(i === 0 ? 'th' : 'td', cell[1], cell[0]);
+        if (i === 0) td.setAttribute('scope', 'row');
+        if (i === 1) {
+          td.title = 'Uchcha ' + n(x.sthana.uchcha) + ', saptavargaja ' + n(x.sthana.saptavargaja) +
+            ', ojhayugma ' + n(x.sthana.ojhayugma) + ', kendradi ' + n(x.sthana.kendradi) +
+            ', drekkana ' + n(x.sthana.drekkana);
+        }
+        if (i === 3) {
+          td.title = 'Nathonnatha ' + n(x.kala.nathonnatha) + ', paksha ' + n(x.kala.paksha) +
+            ', tribhaga ' + n(x.kala.tribhaga) + ', abda ' + n(x.kala.abda) +
+            ', masa ' + n(x.kala.masa) + ', vara ' + n(x.kala.vara) +
+            ', hora ' + n(x.kala.hora) + ', ayana ' + n(x.kala.ayana);
+        }
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById('shadbala-note').textContent =
+      'In shashtiamsas; sixty make one Rupa. A graha is strong when it meets the minimum ' +
+      'Parashara sets for it, which differs by graha, so the order above is by how far each ' +
+      'clears its own. Hover the Sthana and Kala figures for their parts. Yuddha bala is not ' +
+      'included, and Rahu and Ketu are outside Shadbala.';
   }
 
   function renderPanchang(c) {

@@ -295,6 +295,92 @@ var Astro = (function () {
     return norm360(Lp + sum / 1000000);
   }
 
+  /*
+   * Meeus table 47.B, the leading terms of the Moon's ecliptic latitude, in
+   * units of 1e-6 degree. Needed because declination decides Ayana Bala, and the
+   * Moon wanders up to 5 degrees off the ecliptic - enough to move that bala by
+   * six shashtiamsas if taken as zero.
+   */
+  var MOON_LAT = [
+    [0, 0, 0, 1, 5128122], [0, 0, 1, 1, 280602], [0, 0, 1, -1, 277693],
+    [2, 0, 0, -1, 173237], [2, 0, -1, 1, 55413], [2, 0, -1, -1, 46271],
+    [2, 0, 0, 1, 32573], [0, 0, 2, 1, 17198], [2, 0, 1, -1, 9266],
+    [0, 0, 2, -1, 8822], [2, -1, 0, -1, 8216], [2, 0, -2, -1, 4324],
+    [2, 0, 1, 1, 4200], [2, 1, 0, -1, -3359], [2, -1, -1, 1, 2463],
+    [2, -1, 0, 1, 2211], [2, -1, -1, -1, 2065], [0, -1, -1, 1, -1870],
+    [4, 0, -1, -1, 1828], [0, 1, 0, 1, -1794], [0, 0, 0, 3, -1749],
+    [0, -1, 1, 1, -1565], [1, 0, 0, 1, -1491], [0, 1, 1, 1, -1475],
+    [0, 1, 1, -1, -1410], [0, 1, 0, -1, -1344], [1, 0, 0, -1, -1335],
+    [0, 0, 3, 1, 1107], [4, 0, 0, -1, 1021], [4, 0, -1, 1, 833]
+  ];
+
+  /** Geocentric ecliptic latitude of the Moon, degrees. */
+  function moonLatitude(T) {
+    var Lp = 218.3164477 + 481267.88123421 * T - 0.0015786 * T * T;
+    var D = 297.8501921 + 445267.1114034 * T - 0.0018819 * T * T;
+    var M = 357.5291092 + 35999.0502909 * T - 0.0001536 * T * T;
+    var Mp = 134.9633964 + 477198.8675055 * T + 0.0087414 * T * T;
+    var F = 93.2720950 + 483202.0175233 * T - 0.0036539 * T * T;
+    var A1 = 119.75 + 131.849 * T;
+    var A3 = 313.45 + 481266.484 * T;
+    var E = 1 - 0.002516 * T - 0.0000074 * T * T;
+
+    var sum = 0;
+    for (var i = 0; i < MOON_LAT.length; i++) {
+      var t = MOON_LAT[i];
+      var arg = t[0] * D + t[1] * M + t[2] * Mp + t[3] * F;
+      var ecc = Math.abs(t[1]) === 1 ? E : (Math.abs(t[1]) === 2 ? E * E : 1);
+      sum += t[4] * ecc * sin(arg);
+    }
+    sum += -2235 * sin(Lp) + 382 * sin(A3) + 175 * sin(A1 - F) +
+      175 * sin(A1 + F) + 127 * sin(Lp - Mp) - 115 * sin(Lp + Mp);
+    return sum / 1000000;
+  }
+
+  /** Declination from ecliptic longitude and latitude, degrees. */
+  function declination(lon, lat, eps) {
+    return asind(sin(lat) * cos(eps) + cos(lat) * sin(eps) * sin(lon));
+  }
+
+  /**
+   * Sunrise or sunset as a Julian Day, or null on a day that has neither.
+   *
+   * Solved by bisection on the Sun's altitude rather than from a closed form,
+   * because the same apparent position this engine already computes then decides
+   * it, and the polar cases fall out as "no crossing" instead of as a domain
+   * error in an arccosine.
+   */
+  function sunriseSunset(jdUT, latitude, longitude, wantSunset) {
+    var ALTITUDE = -0.8333;   // refraction at the horizon plus the Sun's radius
+    var altitudeAt = function (jd) {
+      var T = (jd + deltaT(jd) / 86400 - 2451545.0) / 36525;
+      var nut = nutation(T);
+      var eps = meanObliquity(T) + nut.deps;
+      var sun = apparentLongitude('sun', T, nut);
+      var ra = atan2d(sin(sun.lon) * cos(eps) - tan(sun.lat) * sin(eps), cos(sun.lon));
+      var dec = declination(sun.lon, sun.lat, eps);
+      var ha = norm360(apparentSiderealTime(jdUT, T, nut, eps) +
+        (jd - jdUT) * 360.98564736629 + longitude - ra);
+      return asind(sin(latitude) * sin(dec) + cos(latitude) * cos(dec) * cos(ha));
+    };
+
+    var midnight = Math.floor(jdUT - longitude / 360 - 0.5) + 0.5 + longitude / -360;
+    var start = midnight, step = 1 / 48;
+    for (var i = 0; i < 48; i++) {
+      var a = start + i * step, b = a + step;
+      var rising = altitudeAt(a) < ALTITUDE && altitudeAt(b) >= ALTITUDE;
+      var setting = altitudeAt(a) >= ALTITUDE && altitudeAt(b) < ALTITUDE;
+      if (wantSunset ? setting : rising) {
+        for (var k = 0; k < 40; k++) {
+          var mid = (a + b) / 2;
+          if ((altitudeAt(mid) < ALTITUDE) === !wantSunset) a = mid; else b = mid;
+        }
+        return (a + b) / 2;
+      }
+    }
+    return null;   // the Sun neither rose nor set here today
+  }
+
   /** Lunar ascending node (Rahu), mean or true, mean equinox of date. */
   function lunarNode(T, trueNode) {
     var omega = 125.0445479 - 1934.1362891 * T + 0.0020754 * T * T +
@@ -947,6 +1033,9 @@ var Astro = (function () {
     meanObliquity: meanObliquity,
     apparentSiderealTime: apparentSiderealTime,
     moonLongitude: moonLongitude,
+    moonLatitude: moonLatitude,
+    declination: declination,
+    sunriseSunset: sunriseSunset,
     lunarNode: lunarNode,
     heliocentric: heliocentric,
     perturbation: perturbation,

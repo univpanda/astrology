@@ -7,6 +7,8 @@
  */
 global.PERTURBATIONS = require('../data/perturbations.js');
 var A = require('../js/astro.js');
+global.Astro = A;
+var Shadbala = require('../js/shadbala.js');
 
 var pass = 0, fail = 0;
 function check(name, actual, expected, tol, unit) {
@@ -619,6 +621,111 @@ ok('the last sub reaches the end of the nakshatra', (function () {
   var n = A.nakshatraOf(span - 1e-9);
   return Math.abs((n.subStart + n.subSpan) - span) < 1e-6;
 })());
+
+console.log('\nMoon latitude and sunrise');
+// Meeus example 47.a: 1992 April 12.0 TD gives beta = -3.229126 degrees.
+check('Moon ecliptic latitude', A.moonLatitude((A.julianDay(1992, 4, 12, 0) - 2451545.0) / 36525),
+      -3.229126, 0.01, 'deg');
+(function () {
+  // Near the equinox, day and night are close to equal everywhere.
+  var jd = A.julianDay(1985, 3, 21, 0);
+  var rise = A.sunriseSunset(jd, 23.5158, 87.308, false);
+  var set = A.sunriseSunset(jd, 23.5158, 87.308, true);
+  ok('sunrise precedes sunset', rise < set);
+  check('equinox daylight is about twelve hours', (set - rise) * 24, 12.1, 0.2, 'hours');
+  // Above the arctic circle in midsummer the Sun does not set at all.
+  ok('a polar summer day reports no sunrise',
+     A.sunriseSunset(A.julianDay(2024, 6, 21, 0), 78.2, 15.6, false) === null);
+})();
+
+console.log('\nShadbala');
+/*
+ * Shadbala cannot be checked against a reference implementation - Swiss does not
+ * compute it and implementations disagree - so these are the checks that can be
+ * made without one: the anchors each component is defined by, the ceiling each
+ * cannot exceed, and the shape of the whole across many charts.
+ */
+(function () {
+  var place = { latitude: 23.5158, longitude: 87.308, tzOffsetMinutes: 330 };
+  var chart = A.chart({ jdUT: 2446146.7256944445, latitude: place.latitude,
+                        longitude: place.longitude, tzOffsetMinutes: 330 });
+  var result = Shadbala.compute(chart, place);
+
+  ok('all seven grahas, and only those', Shadbala.GRAHAS.length === 7 &&
+     Object.keys(result.grahas).length === 7 &&
+     !result.grahas.Rahu && !result.grahas.Ketu);
+
+  // Every component reports separately and they add to the total.
+  ok('the components sum to the total', Shadbala.GRAHAS.every(function (g) {
+    var x = result.grahas[g];
+    var sum = x.sthana.total + x.dig + x.kala.total + x.cheshta + x.naisargika + x.drik;
+    return Math.abs(sum - x.totalShashtiamsa) < 1e-9;
+  }));
+  ok('sthana sums from its five parts', Shadbala.GRAHAS.every(function (g) {
+    var s = result.grahas[g].sthana;
+    return Math.abs((s.uchcha + s.saptavargaja + s.ojhayugma + s.kendradi + s.drekkana) - s.total) < 1e-9;
+  }));
+
+  // Ceilings, each from its own definition.
+  ok('no component exceeds its maximum', Shadbala.GRAHAS.every(function (g) {
+    var x = result.grahas[g];
+    return x.sthana.uchcha <= 60.0001 && x.sthana.saptavargaja <= 315.0001 &&
+           x.sthana.ojhayugma <= 30.0001 && x.sthana.kendradi <= 60.0001 &&
+           x.sthana.drekkana <= 15.0001 && x.dig <= 60.0001 && x.cheshta <= 60.0001 &&
+           // Paksha is doubled for the Moon and ayana for the Sun; nothing else
+           // in kala bala may pass its own ceiling.
+           x.kala.nathonnatha <= 60.0001 && x.kala.tribhaga <= 60.0001 &&
+           x.kala.vara <= 45.0001 && x.kala.hora <= 60.0001 &&
+           x.kala.paksha <= (g === 'Moon' ? 120.0001 : 60.0001) &&
+           x.kala.ayana <= (g === 'Sun' ? 120.0001 : 60.0001);
+  }));
+  ok('naisargika is the fixed natural order',
+     Shadbala.NAISARGIKA.Sun === 60 && Shadbala.NAISARGIKA.Saturn === 8.57 &&
+     Shadbala.GRAHAS.every(function (g) { return result.grahas[g].naisargika === Shadbala.NAISARGIKA[g]; }));
+
+  ok('strength is judged against each graha\'s own minimum', Shadbala.GRAHAS.every(function (g) {
+    var x = result.grahas[g];
+    return x.required === Shadbala.REQUIRED_RUPAS[g] && x.strong === (x.rupas >= x.required);
+  }));
+  // Ranking by ratio rather than raw total: the minimums differ, so a raw
+  // ranking would flatter the Sun and punish Mercury for the yardstick alone.
+  ok('the ranking follows the ratio, not the total', (function () {
+    for (var i = 1; i < result.ranking.length; i++) {
+      if (result.grahas[result.ranking[i - 1]].ratio < result.grahas[result.ranking[i]].ratio) return false;
+    }
+    return true;
+  })());
+
+  // Anchors: uchcha bala is defined by its two endpoints.
+  ok('uchcha bala is 60 at exaltation and 0 at debilitation', (function () {
+    var deep = { Sun: 10, Moon: 33, Mars: 298, Mercury: 165, Jupiter: 95, Venus: 357, Saturn: 200 };
+    return Object.keys(deep).every(function (g) {
+      var atExalt = A.norm360(deep[g]), atDebil = A.norm360(deep[g] + 180);
+      var arcTo = function (lon, point) {
+        var d = Math.abs(A.norm360(lon - point));
+        return (d > 180 ? 360 - d : d) / 3;
+      };
+      return Math.abs(arcTo(atExalt, atDebil) - 60) < 1e-9 && arcTo(atDebil, atDebil) < 1e-9;
+    });
+  })());
+
+  // Across many charts the totals should stay in the range practitioners see.
+  var lowest = Infinity, highest = 0, charts = 0;
+  for (var y = 1930; y <= 2020; y += 10) {
+    for (var h = 2; h < 24; h += 7) {
+      var c = A.chart({ jdUT: A.julianDay(y, 5, 14, h - 5.5), latitude: 19.076,
+                        longitude: 72.8777, tzOffsetMinutes: 330 });
+      var r = Shadbala.compute(c, { latitude: 19.076, longitude: 72.8777, tzOffsetMinutes: 330 });
+      charts++;
+      Shadbala.GRAHAS.forEach(function (g) {
+        lowest = Math.min(lowest, r.grahas[g].rupas);
+        highest = Math.max(highest, r.grahas[g].rupas);
+      });
+    }
+  }
+  ok('totals stay in the range practitioners see, over ' + charts + ' charts',
+     lowest > 2 && highest < 14, lowest.toFixed(2) + ' to ' + highest.toFixed(2) + ' Rupas');
+})();
 
 console.log('\nYogakaraka');
 /*

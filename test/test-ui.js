@@ -454,6 +454,21 @@ ok('the ayanamsa a chart was cast with survives an edit',
    /document\.getElementById\('ayanamsa'\)\.value = state\.ayanamsa;/.test(appSrc));
 
 // Each saved row carries an edit and a delete, and delete asks first.
+// Shadbala: the breakdown, not just a total.
+ok('the page loads the shadbala module', /<script src="js\/shadbala\.js"><\/script>/.test(html));
+ok('all six components have their own column', (function () {
+  var head = html.slice(html.indexOf('id="shadbala-table"'), html.indexOf('shadbala-note'));
+  return ['Sthana', 'Dig', 'Kala', 'Cheshta', 'Naisargika', 'Drik', 'Total', 'Rupas', 'Needs']
+    .every(function (c) { return head.indexOf('>' + c + '<') >= 0; });
+})());
+ok('sthana and kala expose their parts on hover',
+   /Uchcha ' \+ n\(x\.sthana\.uchcha\)/.test(appSrc) &&
+   /Nathonnatha ' \+ n\(x\.kala\.nathonnatha\)/.test(appSrc));
+ok('each graha is judged against its own minimum',
+   /x\.strong \? 'Strong' : 'Weak'/.test(appSrc) && /String\(x\.required\)/.test(appSrc));
+ok('the note says what is left out rather than hiding it',
+   /Yuddha bala is not ' \+\s*\n?\s*'included/.test(appSrc) || /Yuddha bala is not/.test(appSrc));
+
 // What each graha rules, with the yogakaraka named.
 ok('both tables carry a rulership column',
    (html.match(/<th scope="col">Rules<\/th>/g) || []).length === 2);
