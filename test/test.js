@@ -787,12 +787,20 @@ ok('ordinals read correctly', Yogas.ordinal(1) === '1st' && Yogas.ordinal(2) ===
    Yogas.ordinal(3) === '3rd' && Yogas.ordinal(4) === '4th' && Yogas.ordinal(11) === '11th' &&
    Yogas.ordinal(12) === '12th');
 
-ok('detect gathers from every detector', (function () {
+(function () {
+  // Every detector the module has must be named here. The count assertion is
+  // what makes adding one without listing it a failing test rather than a
+  // quietly incomplete check.
+  var detectors = [Yogas.parivartana, Yogas.neechaBhanga, Yogas.vipareeta];
+  ok('every detector is covered by this test', detectors.length === Yogas.DETECTOR_COUNT,
+     detectors.length + ' named, ' + Yogas.DETECTOR_COUNT + ' in the module');
+
   var chart = A.chart({ jdUT: 2446146.7256944445, latitude: 23.5158, longitude: 87.308 });
-  var all = Yogas.detect(chart);
-  var direct = Yogas.parivartana(chart).length + Yogas.neechaBhanga(chart).length;
-  return all.length === direct && all.length > 0;
-})());
+  var direct = detectors.reduce(function (n, fn) { return n + fn(chart).length; }, 0);
+  ok('detect gathers from every detector',
+     Yogas.detect(chart).length === direct && direct > 0,
+     direct + ' findings');
+})();
 
 console.log('\nAspects');
 (function () {
@@ -898,6 +906,56 @@ console.log('\nAspects');
   ok('Rahu and Ketu always aspect each other',
      byName.Rahu.casts.some(function (x) { return x.graha === 'Ketu'; }) &&
      byName.Ketu.casts.some(function (x) { return x.graha === 'Rahu'; }));
+})();
+
+console.log('\nVipareeta raja yoga');
+(function () {
+  var DUSTHANA = [6, 8, 12];
+  var names = { 6: 'harsha', 8: 'sarala', 12: 'vimala' };
+
+  // No graha owns two dusthanas: the sign gaps do not allow it, which is why
+  // the three forms can never collide over one graha.
+  ok('no graha can own two dusthanas', Object.keys(A.DIGNITY).every(function (g) {
+    for (var lagna = 0; lagna < 12; lagna++) {
+      var owned = A.housesOwned(g, lagna).filter(function (h) { return DUSTHANA.indexOf(h) >= 0; });
+      if (owned.length > 1) return false;
+    }
+    return true;
+  }));
+
+  var seen = {}, checked = 0;
+  for (var d = 1; d <= 365; d += 2) {
+    var chart = A.chart({ jdUT: A.julianDay(1991, 1, d, 6.0), latitude: 28.6139, longitude: 77.2090 });
+    var lagna = A.signOf(chart.ascendant.longitude);
+    var positions = {};
+    chart.planets.forEach(function (p) { positions[p.name] = p; });
+
+    Yogas.vipareeta(chart).forEach(function (f) {
+      checked++;
+      seen[f.kind] = true;
+      var owner = f.houses[0], sits = f.houses[1];
+      // The lord named must really rule that dusthana and really sit in one.
+      var signOfHouse = (lagna + owner - 1) % 12;
+      if (A.SIGN_LORDS[signOfHouse] !== f.grahas[0]) { ok('the lord named rules that house', false); throw 0; }
+      if (positions[f.grahas[0]].house !== sits) { ok('the lord sits where reported', false); throw 0; }
+      if (DUSTHANA.indexOf(owner) < 0 || DUSTHANA.indexOf(sits) < 0) { ok('both houses are dusthanas', false); throw 0; }
+      if (f.kind !== names[owner]) { ok('the form is named for the house owned', false, f.kind); throw 0; }
+    });
+  }
+  ok('the lord named rules that house, sits where reported, and both are dusthanas',
+     checked > 0, checked + ' findings checked');
+  ok('all three forms occur', seen.harsha && seen.sarala && seen.vimala,
+     Object.keys(seen).sort().join(', '));
+
+  // The reference chart's one finding, and the caveat firing with it.
+  var durgapur = A.chart({ jdUT: 2446146.7256944445, latitude: 23.5158, longitude: 87.308 });
+  var found = Yogas.vipareeta(durgapur);
+  ok('the reference chart shows sarala from Saturn',
+     found.length === 1 && found[0].kind === 'sarala' && found[0].grahas[0] === 'Saturn',
+     found.map(function (f) { return f.kind + ':' + f.grahas[0]; }).join(', '));
+  ok('it reports the good house the same graha owns',
+     found[0].reasons.some(function (r) { return /also owns the 9th/.test(r); }),
+     found[0].reasons[found[0].reasons.length - 1]);
 })();
 
 console.log('\nNeecha bhanga');

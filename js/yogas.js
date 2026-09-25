@@ -273,7 +273,68 @@ var Yogas = (function () {
     return rows;
   }
 
-  var DETECTORS = [parivartana, neechaBhanga];
+  /**
+   * Vipareeta raja yoga: a dusthana lord placed in a dusthana.
+   *
+   * The reasoning is that a lord in a house harms it, so the lord of a house of
+   * difficulty placed in another house of difficulty damages that difficulty -
+   * the enemy of an enemy. Hence reverse, and hence the good result from an
+   * arrangement that reads badly.
+   *
+   * Named for the house whose lord it is: harsha from the 6th, sarala from the
+   * 8th, vimala from the 12th. No graha owns two dusthanas - the sign gaps do
+   * not allow it - so the three never collide.
+   *
+   * One caveat is reported rather than judged. A dusthana lord often owns a good
+   * house too, and placing it in a dusthana damages that house along with the
+   * bad one. Whether that spoils the yoga is disputed, so the fact is given and
+   * the conclusion left.
+   */
+  var VIPAREETA_NAMES = { 6: 'Harsha', 8: 'Sarala', 12: 'Vimala' };
+  var DUSTHANA_HOUSES = [6, 8, 12];
+
+  function vipareeta(chart) {
+    var positions = {};
+    chart.planets.forEach(function (p) { positions[p.name] = p; });
+    var lagna = Astro.signOf(chart.ascendant.longitude);
+
+    var found = [];
+    DUSTHANA_HOUSES.forEach(function (house) {
+      var sign = (lagna + house - 1) % 12;
+      var lord = Astro.SIGN_LORDS[sign];
+      var placed = positions[lord];
+      if (!placed || DUSTHANA_HOUSES.indexOf(placed.house) < 0) return;
+
+      var name = VIPAREETA_NAMES[house];
+      var alsoOwns = Astro.housesOwned(lord, lagna).filter(function (h) {
+        return DUSTHANA_HOUSES.indexOf(h) < 0;
+      });
+
+      var summary = lord + ', lord of the ' + ordinal(house) + ', is placed in the ' +
+        ordinal(placed.house) + (placed.house === house ? ' - its own house' : '') + '.';
+      var reasons = ['a lord in a house harms it, so the ' + ordinal(house) +
+        ' lord in the ' + ordinal(placed.house) + ' damages a house of difficulty'];
+      if (alsoOwns.length) {
+        reasons.push(lord + ' also owns the ' + alsoOwns.map(ordinal).join(' and the ') +
+          ', which the same placement damages - some authorities count this against the yoga');
+      }
+
+      found.push({
+        yoga: 'Vipareeta Raja Yoga',
+        kind: name.toLowerCase(),
+        subject: 'Vipareeta Raja Yoga',
+        condition: name.toLowerCase(),
+        title: name + ' yoga',
+        grahas: [lord],
+        houses: [house, placed.house],
+        reasons: reasons,
+        summary: summary
+      });
+    });
+    return found;
+  }
+
+  var DETECTORS = [parivartana, neechaBhanga, vipareeta];
 
   /** Every yoga this module knows how to look for, in one pass. */
   function detect(chart) {
@@ -285,6 +346,10 @@ var Yogas = (function () {
   }
 
   return { detect: detect, parivartana: parivartana, neechaBhanga: neechaBhanga,
+    vipareeta: vipareeta, VIPAREETA_NAMES: VIPAREETA_NAMES,
+    // Exposed so a test can notice a detector being added without being wired
+    // into the test that checks detect() gathers from all of them.
+    DETECTOR_COUNT: DETECTORS.length,
     aspectTable: aspectTable, aspects: aspects, ordinal: ordinal,
     raoRetrogradeAspects: raoRetrogradeAspects, RAO_MAX_DEGREE: RAO_MAX_DEGREE,
     FULL_ASPECTS: FULL_ASPECTS, GRAHAS: GRAHAS };

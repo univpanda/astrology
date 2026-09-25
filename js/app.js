@@ -727,11 +727,12 @@
     var found = Yogas.detect(state.chart);
     if (!found.length) {
       note.textContent = 'No yoga among those this page looks for is present in this chart. ' +
-        'Parivartana and neecha bhanga are checked so far; the Lesson tab explains both.';
+        'Parivartana, neecha bhanga and vipareeta raja yoga are checked so far; ' +
+        'the Lesson tab explains each.';
       return;
     }
-    note.textContent = 'Parivartana and neecha bhanga are checked so far; more will follow. ' +
-      'The Lesson tab explains what each one means.';
+    note.textContent = 'Parivartana, neecha bhanga and vipareeta raja yoga are checked so far; ' +
+      'more will follow. The Lesson tab explains what each one means.';
 
     found.forEach(function (finding) {
       var card = el('div', 'yoga-finding');

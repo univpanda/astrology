@@ -503,7 +503,7 @@ ok('a grouped passage does not repeat its own subject heading',
 ok('a chart with no yoga makes no request for one',
    /if \(!found\.length\) \{[\s\S]{0,260}return;/.test(appSrc));
 ok('the page says which yogas it looks for',
-   /Parivartana and neecha bhanga are checked so far/.test(appSrc));
+   /Parivartana, neecha bhanga and vipareeta raja yoga are checked so far/.test(appSrc));
 ok('a yoga resting on several conditions names the ones that applied',
    /finding\.reasons && finding\.reasons\.length/.test(appSrc) && /yoga-reasons/.test(appSrc));
 
