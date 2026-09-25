@@ -153,24 +153,32 @@ body {
 }
 .saved-remove:hover { color: var(--retro); }
 
-/* ------------------------------------------------------------- save bar */
+/* ------------------------------------------------- add, and save status */
 
-.chart-actions { display: flex; align-items: center; gap: 0.9rem; margin-bottom: 0.9rem; flex-wrap: wrap; }
-
-.save-bar {
+.add-kundali {
   font: inherit;
   font-weight: 600;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
+  width: 100%;
+  margin-top: 0.85rem;
   color: var(--green-deep);
   background: var(--green-soft);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  padding: 0.6rem 1.2rem;
+  padding: 0.6rem 0.9rem;
   cursor: pointer;
   transition: background 0.12s ease, border-color 0.12s ease;
 }
-.save-bar:hover { background: #cfe9da; border-color: var(--green); }
-.save-feedback { font-size: 0.86rem; color: var(--green-deep); }
+.add-kundali:hover { background: #cfe9da; border-color: var(--green); }
+
+.save-feedback {
+  margin: 0 0 0.9rem;
+  font-size: 0.86rem;
+  color: var(--green-deep);
+  min-height: 1.2em;
+}
+.result-actions { display: flex; gap: 1.25rem; flex-wrap: wrap; margin-top: 0.25rem; }
+.result-actions .link-button { margin-top: 0; }
 
 /* ------------------------------------------------------------------ header */
 
@@ -563,8 +571,8 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
   svg.kundli .graha-rahu { fill: #b9bcc4; }
   svg.kundli .graha-ketu { fill: #d9a066; }
   .saved-item:hover { background: #21362b; }
-  .save-bar { background: #21362b; color: var(--green-deep); }
-  .save-bar:hover { background: #2a4435; }
+  .add-kundali { background: #21362b; color: var(--green-deep); }
+  .add-kundali:hover { background: #2a4435; }
   tbody tr:hover { background: #1d2822; }
   tr.current-dasha { background: rgba(88, 192, 138, 0.13); }
 }
@@ -583,7 +591,8 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
   body { background: #fff; color: #111; padding: 0; }
   .card { border: 1px solid #ddd; box-shadow: none; background: #fff; break-inside: avoid; }
   .chart-card { background: #fff; }
-  #birth-form, .site-footer, .print-button, .options { display: none; }
+  #birth-form, .site-footer, .result-actions, .options, .saved-panel, .save-feedback { display: none; }
+  .layout { display: block; }
   .technical[open] summary { display: none; }
   svg.kundli text { fill: #111; }
   svg.kundli .frame, svg.kundli .cell { stroke: #9bbcab; }

@@ -368,8 +368,8 @@
       };
       render(lastChart);
       writeHash(lastChart);
-      result.hidden = false;
-      result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      saveCurrent(true);
+      showChart();
     });
   });
 
@@ -571,10 +571,69 @@
    * near-duplicate nobody can tell apart in a list.
    */
   var STORAGE_KEY = 'jyotisha.saved.v1';
+  var TOKEN_KEY = 'jyotisha.owner.v1';
+  var KUNDALI_API = 'https://deiefjnwbfcywsaaqqbs.supabase.co/functions/v1/kundalis';
   var savedList = document.getElementById('saved-list');
   var savedEmpty = document.getElementById('saved-empty');
-  var saveButton = document.getElementById('save-button');
+  var savedNote = document.getElementById('saved-note');
   var saveFeedback = document.getElementById('save-feedback');
+  var addButton = document.getElementById('add-kundali');
+  var editButton = document.getElementById('edit-button');
+  var formCard = document.getElementById('birth-form');
+
+  /*
+   * There are no accounts, so ownership is a capability: a random token minted
+   * once and kept in this browser. It is what scopes rows in astro_kundali, so
+   * clearing site data loses the link to them, and the same charts opened in
+   * another browser are a different set.
+   */
+  function ownerToken() {
+    try {
+      var existing = window.localStorage.getItem(TOKEN_KEY);
+      if (existing) return existing;
+      var minted = (window.crypto && window.crypto.randomUUID)
+        ? window.crypto.randomUUID()
+        : 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 14);
+      window.localStorage.setItem(TOKEN_KEY, minted);
+      return minted;
+    } catch (e) {
+      return null; // private browsing: local only, no sync
+    }
+  }
+
+  /** Rows come back in the database's spelling; the page uses its own. */
+  function fromRow(row) {
+    return {
+      id: row.id,
+      name: row.name,
+      placeLabel: row.place_label,
+      latitude: row.latitude,
+      longitude: row.longitude,
+      zone: row.zone,
+      date: row.birth_date,
+      time: String(row.birth_time).slice(0, 8),
+      standard: row.time_standard,
+      ayanamsa: row.ayanamsa,
+      trueNode: row.true_node
+    };
+  }
+
+  /** Talk to the saved-charts API; resolves to null rather than throwing. */
+  function callKundaliApi(payload, done) {
+    var token = ownerToken();
+    if (!token || !window.fetch) return done(null);
+    payload.ownerToken = token;
+    var settled = false;
+    var finish = function (value) { if (!settled) { settled = true; done(value); } };
+    var timer = setTimeout(function () { finish(null); }, API_TIMEOUT_MS);
+    fetch(KUNDALI_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-region': API_REGION },
+      body: JSON.stringify(payload)
+    }).then(function (res) { return res.ok ? res.json() : null; })
+      .then(function (body) { clearTimeout(timer); finish(body && body.entries ? body.entries : null); })
+      .catch(function () { clearTimeout(timer); finish(null); });
+  }
 
   function readSaved() {
     try {
@@ -621,9 +680,14 @@
       remove.setAttribute('aria-label', 'Remove ' + entry.name);
       remove.addEventListener('click', function () {
         var current = readSaved();
-        current.splice(index, 1);
+        var removed = current.splice(index, 1)[0];
         writeSaved(current);
         renderSaved();
+        if (removed && removed.id) {
+          callKundaliApi({ action: 'delete', id: removed.id }, function (entries) {
+            if (entries) { writeSaved(entries.map(fromRow)); renderSaved(); }
+          });
+        }
       });
       li.appendChild(remove);
 
@@ -641,7 +705,7 @@
       (t[2] ? ':' + String(t[2]).padStart(2, '0') : '') + ' ' + clock.meridiem.toUpperCase();
   }
 
-  function saveCurrent() {
+  function saveCurrent(quiet) {
     if (!lastChart) return;
     var state = lastChart;
     var entry = {
@@ -663,13 +727,24 @@
     for (var i = 0; i < list.length; i++) if (keyOf(list[i]) === keyOf(entry)) at = i;
     if (at >= 0) list[at] = entry; else list.unshift(entry);
 
-    if (writeSaved(list)) {
-      renderSaved();
-      saveFeedback.textContent = at >= 0 ? 'Updated ' + entry.name : 'Saved ' + entry.name;
-    } else {
-      saveFeedback.textContent = 'This browser would not let the chart be saved.';
-    }
-    setTimeout(function () { saveFeedback.textContent = ''; }, 4000);
+    var storedLocally = writeSaved(list);
+    renderSaved();
+    saveFeedback.textContent = storedLocally
+      ? (at >= 0 ? 'Updated in your saved kundalis' : 'Saved to your kundalis')
+      : 'This browser would not let the chart be saved.';
+
+    // The local copy is written first so the panel updates immediately and keeps
+    // working offline; the database is the shared copy, not the fast one.
+    callKundaliApi({ action: 'save', entry: entry }, function (entries) {
+      if (entries) {
+        writeSaved(entries.map(fromRow));
+        renderSaved();
+        savedNote.textContent = 'Saved to your kundalis and synced.';
+      } else {
+        savedNote.textContent = 'Saved in this browser. Syncing was not possible.';
+      }
+    });
+    if (!quiet) setTimeout(function () { saveFeedback.textContent = ''; }, 4000);
   }
 
   /** Put a saved chart back into the form and cast it again. */
@@ -692,7 +767,42 @@
     form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit'));
   }
 
-  saveButton.addEventListener('click', saveCurrent);
+  /* ----------------------------------------------------- form or chart */
+
+  /*
+   * The page is either taking details or showing a chart, never both: once a
+   * chart exists the form is just a wall of inputs above the thing you came
+   * for. "Add a kundali" brings it back, empty.
+   */
+  function showForm(blank) {
+    if (blank) {
+      document.getElementById('name').value = '';
+      document.getElementById('date').value = '';
+      hourInput.value = ''; minuteInput.value = ''; secondInput.value = '';
+      meridiemSelect.value = 'am';
+      placeInput.value = '';
+      placeNote.textContent = '';
+      selectedCity = null;
+      manualFields.hidden = true;
+      manualToggle.setAttribute('aria-expanded', 'false');
+      lastChart = null;
+      history.replaceState(null, '', location.pathname + location.search);
+    }
+    errorBox.textContent = '';
+    formCard.hidden = false;
+    result.hidden = true;
+    document.getElementById('name').focus();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function showChart() {
+    formCard.hidden = true;
+    result.hidden = false;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  addButton.addEventListener('click', function () { showForm(true); });
+  editButton.addEventListener('click', function () { showForm(false); });
 
   /* ------------------------------------------- shareable URL for a chart */
 
@@ -741,6 +851,9 @@
 
   populateSelects();
   renderSaved();
+  callKundaliApi({ action: 'list' }, function (entries) {
+    if (entries) { writeSaved(entries.map(fromRow)); renderSaved(); }
+  });
   if (!Geo.historicalZonesSupported()) {
     placeNote.textContent = 'This browser lacks historical timezone data, so births before ' +
       '1970 may use a modern offset. Chrome, Safari and Firefox all handle it.';

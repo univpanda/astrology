@@ -22,7 +22,8 @@
       Nothing saved yet. Fill in the details, generate a chart, then save it here.
     </p>
     <ul class="saved-list" id="saved-list"></ul>
-    <p class="saved-note">Saved in this browser only. Nothing is uploaded.</p>
+    <button type="button" class="add-kundali" id="add-kundali">+ Add a kundali</button>
+    <p class="saved-note" id="saved-note">Charts are saved as soon as they are generated.</p>
   </aside>
 
   <main>
@@ -138,14 +139,11 @@
       <h2 id="result-name">Chart</h2>
       <p id="result-birth" class="birth-line"></p>
       <dl class="key-facts" id="key-facts"></dl>
-      <button type="button" class="link-button print-button" id="print-button">Print or save as PDF</button>
-    </div>
-
-    <div class="chart-actions">
-      <button type="button" class="save-bar" id="save-button">
-        <span aria-hidden="true">&#9733;</span> Save kundali
-      </button>
-      <span class="save-feedback" id="save-feedback" role="status"></span>
+      <p class="save-feedback" id="save-feedback" role="status"></p>
+      <div class="result-actions">
+        <button type="button" class="link-button" id="edit-button">Edit these details</button>
+        <button type="button" class="link-button print-button" id="print-button">Print or save as PDF</button>
+      </div>
     </div>
 
     <div class="chart-pair">

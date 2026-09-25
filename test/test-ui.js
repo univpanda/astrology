@@ -259,12 +259,21 @@ ok('the saved panel exists to the left of the form',
    html.indexOf('saved-panel') >= 0 && html.indexOf('saved-panel') < html.indexOf('id="birth-form"'));
 ok('the saved list and its empty state are both present',
    /id="saved-list"/.test(html) && /id="saved-empty"/.test(html));
-ok('a save control sits above the charts',
-   html.indexOf('id="save-button"') >= 0 && html.indexOf('id="save-button"') < html.indexOf('id="chart-d1"'));
+ok('an "add a kundali" button sits under the saved list',
+   html.indexOf('id="add-kundali"') > html.indexOf('id="saved-list"'));
+ok('generating saves without a separate button', /saveCurrent\(true\)/.test(appSrc) && !/id="save-button"/.test(html));
+ok('the form gives way to the chart and can be brought back',
+   /function showChart/.test(appSrc) && /function showForm/.test(appSrc) &&
+   /addButton\.addEventListener/.test(appSrc) && /editButton\.addEventListener/.test(appSrc));
+ok('saved charts sync to the database as well as this browser',
+   /astro_kundali|functions\/v1\/kundalis/.test(appSrc) && /action: 'save'/.test(appSrc) &&
+   /action: 'list'/.test(appSrc) && /action: 'delete'/.test(appSrc));
+ok('ownership is a minted token, not an account',
+   /randomUUID/.test(appSrc) && /ownerToken/.test(appSrc));
 ok('entries are keyed on name, place, date and time',
    /entry\.name, entry\.placeLabel, entry\.date, entry\.time/.test(appSrc));
-ok('saving stores to localStorage, not a server',
-   /localStorage/.test(appSrc) && !/fetch\([^)]*saved/.test(appSrc));
+ok('a local copy is written first so the panel works offline',
+   /writeSaved\(list\)/.test(appSrc) && /localStorage/.test(appSrc));
 ok('a saved chart can be reopened and removed',
    /function loadSaved/.test(appSrc) && /saved-remove/.test(appSrc));
 ok('storage failure is handled rather than thrown',

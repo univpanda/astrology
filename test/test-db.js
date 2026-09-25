@@ -177,5 +177,58 @@ if (process.env.CHART_API) {
   }
 }
 
+if (process.env.KUNDALI_API) {
+  console.log('\nSaved charts API');
+  // A throwaway token, so the suite never touches anyone's real saved charts.
+  var token = 'test-' + Date.now() + '-' + Math.random().toString(36).slice(2, 12);
+  var call = function (payload) {
+    return JSON.parse(execFileSync('curl', ['-sS', '-X', 'POST', process.env.KUNDALI_API,
+      '-H', 'Content-Type: application/json',
+      '-d', JSON.stringify(Object.assign({ ownerToken: token }, payload))], { encoding: 'utf8' }));
+  };
+  var entry = {
+    name: 'Test Person', placeLabel: 'Durgapur, West Bengal, India',
+    latitude: 23.5158, longitude: 87.308, zone: 'Asia/Kolkata',
+    date: '1985-03-22', time: '10:55:00', standard: 'zone', ayanamsa: 'lahiri', trueNode: false
+  };
+
+  ok('a new token starts with nothing', call({ action: 'list' }).entries.length === 0);
+  var first = call({ action: 'save', entry: entry });
+  ok('saving returns the entry', first.saved === true && first.entries.length === 1);
+  ok('the saved row keeps all four keys', (function () {
+    var e = first.entries[0];
+    return e.name === entry.name && e.place_label === entry.placeLabel &&
+           e.birth_date === entry.date && String(e.birth_time).slice(0, 8) === entry.time;
+  })());
+
+  var again = call({ action: 'save', entry: entry });
+  ok('re-saving the same four keys updates rather than duplicates',
+     again.updated === true && again.entries.length === 1);
+
+  var other = call({ action: 'save', entry: Object.assign({}, entry, { name: 'Someone Else' }) });
+  ok('a different name is a different chart', other.entries.length === 2);
+
+  ok('another token cannot see these rows', JSON.parse(execFileSync('curl',
+    ['-sS', '-X', 'POST', process.env.KUNDALI_API, '-H', 'Content-Type: application/json',
+     '-d', JSON.stringify({ ownerToken: 'unrelated-token-0123456789', action: 'list' })],
+    { encoding: 'utf8' })).entries.length === 0);
+
+  ok('a short token is refused', !!call({ action: 'list', ownerToken: 'tiny' }).entries === false ||
+     !!JSON.parse(execFileSync('curl', ['-sS', '-X', 'POST', process.env.KUNDALI_API,
+       '-H', 'Content-Type: application/json', '-d', '{"ownerToken":"tiny","action":"list"}'],
+       { encoding: 'utf8' })).error);
+
+  var removed = call({ action: 'delete', id: first.entries[0].id });
+  ok('deleting removes only that row', removed.deleted === true && removed.entries.length === 1);
+  call({ action: 'delete', id: removed.entries[0].id });
+  ok('the token is left empty again', call({ action: 'list' }).entries.length === 0);
+
+  // The table must be unreachable with the public key, not merely unadvertised.
+  ok('astro_kundali has no RLS policy, so PostgREST cannot read it',
+     +sql("select count(*) from pg_policies where tablename='astro_kundali';") === 0);
+  ok('row level security is enabled on it',
+     sql("select relrowsecurity::text from pg_class where relname='astro_kundali';") === 'true');
+}
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
