@@ -52,7 +52,15 @@ var Yogas = (function () {
           // side knowing how the other spells things.
           subject: 'Parivartana',
           condition: kind,
-          title: 'Parivartana ' + kind.charAt(0).toUpperCase() + kind.slice(1),
+          /*
+           * Maha, khala and dainya are adjectives on parivartana, so they read
+           * as one name: "maha parivartana yoga". Harsha, sarala and vimala are
+           * proper names in their own right, so those carry their family in
+           * parentheses instead. Same relationship, different grammar, and
+           * forcing one shape on both would misname one of them.
+           */
+          title: kind.charAt(0).toUpperCase() + kind.slice(1) + ' parivartana yoga',
+          family: 'Parivartana',
           grahas: [a, b],
           houses: houses,
           summary: a + ' in ' + Astro.SIGNS[signOfA] + ' and ' + b + ' in ' +
@@ -167,6 +175,13 @@ var Yogas = (function () {
         subject: 'Neecha Bhanga Raja Yoga',
         condition: royal ? 'raja' : 'general',
         title: royal ? 'Neecha bhanga raja yoga' : 'Neecha bhanga',
+        /*
+         * No family label here. Neecha bhanga is the base and the raja yoga is
+         * the special case of it, so both titles already say what they are -
+         * and calling the plain form "a neecha bhanga raja yoga" would deny the
+         * very distinction the kendra-or-trikona test draws.
+         */
+        family: null,
         grahas: [graha],
         houses: [house],
         reasons: reasons,
@@ -325,6 +340,7 @@ var Yogas = (function () {
         subject: 'Vipareeta Raja Yoga',
         condition: name.toLowerCase(),
         title: name + ' yoga',
+        family: 'Vipareeta raja yoga',
         grahas: [lord],
         houses: [house, placed.house],
         reasons: reasons,

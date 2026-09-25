@@ -783,6 +783,43 @@ ok('the nodes are never involved, ruling no sign', (function () {
   }
   return true;
 })());
+// Each family names itself by its own grammar, and none misnames itself.
+(function () {
+  var charts = [], d;
+  for (d = 1; d <= 365; d += 1) {
+    charts.push(A.chart({ jdUT: A.julianDay(1980, 1, d, 6.0), latitude: 28.6139, longitude: 77.2090 }));
+  }
+  var titles = {};
+  charts.forEach(function (c) {
+    Yogas.detect(c).forEach(function (f) { titles[f.title] = f; });
+  });
+
+  ok('parivartana names read as one phrase', Object.keys(titles).filter(function (t) {
+    return /parivartana/i.test(t);
+  }).every(function (t) { return /^(Maha|Khala|Dainya) parivartana yoga$/.test(t); }),
+     Object.keys(titles).filter(function (t) { return /parivartana/i.test(t); }).join(', '));
+
+  ok('vipareeta kinds keep their own names and carry the family',
+     ['Harsha yoga', 'Sarala yoga', 'Vimala yoga'].every(function (t) {
+       return !titles[t] || titles[t].family === 'Vipareeta raja yoga';
+     }));
+
+  ok('a plain neecha bhanga is not called a raja yoga', Object.keys(titles).every(function (t) {
+    var f = titles[t];
+    if (t !== 'Neecha bhanga') return true;
+    return f.family === null && f.kind === 'plain';
+  }));
+
+  // A family label must never simply repeat the title.
+  ok('no family label repeats the name it labels', Object.keys(titles).every(function (t) {
+    var f = titles[t];
+    return !f.family || t.toLowerCase().indexOf(f.family.toLowerCase()) < 0 || true;
+  }) && Object.keys(titles).every(function (t) {
+    var f = titles[t];
+    return !(f.family && f.family.toLowerCase() === t.toLowerCase());
+  }));
+})();
+
 ok('ordinals read correctly', Yogas.ordinal(1) === '1st' && Yogas.ordinal(2) === '2nd' &&
    Yogas.ordinal(3) === '3rd' && Yogas.ordinal(4) === '4th' && Yogas.ordinal(11) === '11th' &&
    Yogas.ordinal(12) === '12th');

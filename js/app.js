@@ -736,7 +736,13 @@
 
     found.forEach(function (finding) {
       var card = el('div', 'yoga-finding');
-      card.appendChild(el('h4', 'yoga-name', finding.title));
+      var name = el('h4', 'yoga-name', finding.title);
+      // Named kinds carry their family, so a reader meeting "sarala" for the
+      // first time can see what it belongs to without leaving the panel.
+      if (finding.family && finding.title.toLowerCase().indexOf(finding.family.toLowerCase()) < 0) {
+        name.appendChild(el('span', 'yoga-family', 'a ' + finding.family.toLowerCase()));
+      }
+      card.appendChild(name);
       card.appendChild(el('p', 'yoga-summary', finding.summary));
       card.appendChild(el('p', 'yoga-grahas',
         (finding.grahas.length > 1 ? 'Grahas: ' : 'Graha: ') + finding.grahas.join(' and ') +
