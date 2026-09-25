@@ -1254,6 +1254,70 @@ console.log('\nVipareeta raja yoga');
 })();
 
 console.log('\nNeecha bhanga');
+/*
+ * Every clause names its own subject. The clauses are joined with "; and " and
+ * several are about a different graha - the dispositor, or whoever is exalted in
+ * the sign - so a trailing "it" lands next to the wrong name: "Venus, exalted in
+ * this sign, is in a kendra; and it stands in a kendra" reads as Venus twice.
+ */
+(function () {
+  var place = { latitude: 23.5158, longitude: 87.308, tzOffsetMinutes: 330 };
+  var bare = [], vacuous = [], swept = 0;
+  for (var y = 1962; y < 2000; y += 3) {
+    for (var mo = 1; mo <= 12; mo += 3) {
+      for (var h = 1; h < 24; h += 5) {
+        swept++;
+        var c = A.chart({ jdUT: A.julianDay(y, mo, 12, h - 5.5), latitude: place.latitude,
+                          longitude: place.longitude, tzOffsetMinutes: 330 });
+        Yogas.neechaBhanga(c).forEach(function (f) {
+          f.reasons.forEach(function (r) {
+            if (/(^|\s)its?(\s|$)/.test(r)) bare.push(r);
+            if (/Moon itself stands in a kendra from the Moon/.test(r)) vacuous.push(r);
+          });
+        });
+      }
+    }
+  }
+  ok('no reason leaves the debilitated graha as a bare pronoun',
+     bare.length === 0, bare[0] || swept + ' charts swept, every clause named');
+
+  /*
+   * A graha is always in the 1st from itself, so "in a kendra from the Moon" says
+   * nothing at all when the graha is the Moon. Without the guard the Moon's
+   * debilitation cancelled itself in every chart, on a condition true by
+   * definition, and nothing in the suite noticed.
+   */
+  ok('and the Moon is never said to be in a kendra from itself',
+     vacuous.length === 0, vacuous[0] || swept + ' charts swept');
+})();
+
+ok('the Moon debilitated outside a kendra cancels on nothing self-referential', (function () {
+  var lagna = 0;                                   // Aries; Scorpio is the 8th
+  var chart = { ascendant: { longitude: 10 }, planets: [
+    { name: 'Moon', sign: 7, longitude: 7 * 30 + 10, house: 8 },
+    { name: 'Mars', sign: 2, longitude: 2 * 30 + 5, house: 3 }] };
+  return Yogas.neechaBhanga(chart).every(function (f) {
+    return f.reasons.every(function (r) { return !/from the Moon/.test(r); });
+  });
+})());
+
+/*
+ * Virgo is the one sign whose lord is also the graha exalted in it, so the two
+ * cancellation conditions land on one graha and read as a repetition if reported
+ * separately. They are still two conditions, so they are said as two in one clause.
+ */
+ok('where one graha both rules the sign and is exalted in it, it is said once', (function () {
+  var lagna = 0;
+  var chart = { ascendant: { longitude: 10 }, planets: [
+    { name: 'Venus', sign: 5, longitude: 5 * 30 + 10, house: 6 },     // debilitated in Virgo
+    { name: 'Mercury', sign: 3, longitude: 3 * 30 + 5, house: 4 }] }; // a kendra from the lagna
+  var f = Yogas.neechaBhanga(chart)[0];
+  if (!f) return false;
+  var merged = f.reasons.filter(function (r) { return /both rules this sign and is exalted/.test(r); });
+  var mercury = f.reasons.filter(function (r) { return /^Mercury/.test(r); });
+  return merged.length === 1 && mercury.length === 1 &&
+    A.SIGN_LORDS[5] === 'Mercury' && A.DIGNITY.Mercury.exalt.sign === 5;
+})());
 (function () {
   // Only a debilitated graha can have its debilitation cancelled.
   ok('only debilitated grahas are ever reported', (function () {

@@ -113,9 +113,16 @@ var Yogas = (function () {
     var moonSign = positions.Moon ? positions.Moon.sign : null;
 
     var houseFrom = function (sign, from) { return ((sign - from) % 12 + 12) % 12 + 1; };
-    var inKendraFromEither = function (sign) {
+    /*
+     * `whose` is the graha being measured. A graha is always in the 1st from
+     * itself, so "in a kendra from the Moon" says nothing whatever when the graha
+     * in question is the Moon - and without this the Moon's debilitation
+     * cancelled itself in every chart, on a condition that is true by definition.
+     */
+    var inKendraFromEither = function (sign, whose) {
       if (KENDRA_HOUSES.indexOf(houseFrom(sign, lagna)) >= 0) return 'the lagna';
-      if (moonSign !== null && KENDRA_HOUSES.indexOf(houseFrom(sign, moonSign)) >= 0) return 'the Moon';
+      if (whose !== 'Moon' && moonSign !== null &&
+          KENDRA_HOUSES.indexOf(houseFrom(sign, moonSign)) >= 0) return 'the Moon';
       return null;
     };
 
@@ -133,36 +140,56 @@ var Yogas = (function () {
         if (Astro.DIGNITY[other].exalt.sign === p.sign) exaltedHere = other;
       });
 
+      /*
+       * Every clause names its own subject. These are joined with "; and ", and
+       * several of them are about a different graha - the dispositor, or whoever
+       * is exalted in the sign - so a trailing "it" lands next to the wrong name.
+       * "Venus, exalted in this sign, is in a kendra; and it stands in a kendra"
+       * reads as Venus twice when the second clause is about the debilitated
+       * graha. Naming both ends costs a few words and removes the question.
+       */
       var reasons = [];
       var from;
+      var ruler = dispositor + ', the lord of this sign,';
 
-      if ((from = inKendraFromEither(positions[dispositor] ? positions[dispositor].sign : -1))) {
-        reasons.push('its dispositor ' + dispositor + ' is in a kendra from ' + from);
+      /*
+       * In Virgo the lord and the graha exalted there are both Mercury, so the two
+       * conditions land on one graha and reported separately they read as a
+       * repetition. They are still two conditions, so they are said as two, in one
+       * clause.
+       */
+      var bothRoles = exaltedHere === dispositor;
+      if ((from = inKendraFromEither(
+            positions[dispositor] ? positions[dispositor].sign : -1, dispositor))) {
+        reasons.push(bothRoles
+          ? dispositor + ', which both rules this sign and is exalted in it, is in a kendra ' +
+            'from ' + from
+          : ruler + ' is in a kendra from ' + from);
       }
-      if (exaltedHere && positions[exaltedHere] &&
-          (from = inKendraFromEither(positions[exaltedHere].sign))) {
+      if (!bothRoles && exaltedHere && positions[exaltedHere] &&
+          (from = inKendraFromEither(positions[exaltedHere].sign, exaltedHere))) {
         reasons.push(exaltedHere + ', exalted in this sign, is in a kendra from ' + from);
       }
       if (positions[dispositor] && positions[dispositor].sign === p.sign) {
-        reasons.push('it is conjunct its dispositor ' + dispositor);
+        reasons.push(graha + ' is conjunct ' + ruler.replace(/,$/, ''));
       }
       if (positions[dispositor] &&
           aspects(dispositor, positions[dispositor].sign, p.sign)) {
-        reasons.push('its dispositor ' + dispositor + ' aspects it');
+        reasons.push(ruler + ' aspects ' + graha);
       }
       if (exaltedHere && positions[exaltedHere] &&
           aspects(exaltedHere, positions[exaltedHere].sign, p.sign)) {
-        reasons.push(exaltedHere + ', exalted in this sign, aspects it');
+        reasons.push(exaltedHere + ', exalted in this sign, aspects ' + graha);
       }
       if (positions[dispositor] &&
           Astro.SIGN_LORDS[positions[dispositor].sign] === graha) {
-        reasons.push('it exchanges signs with its dispositor ' + dispositor);
+        reasons.push(graha + ' exchanges signs with ' + dispositor);
       }
       if (Astro.vargaPosition(p.longitude, 9).sign === dignity.exalt.sign) {
-        reasons.push('it is exalted in navamsa');
+        reasons.push(graha + ' is exalted in navamsa');
       }
-      if ((from = inKendraFromEither(p.sign))) {
-        reasons.push('it stands in a kendra from ' + from);
+      if ((from = inKendraFromEither(p.sign, graha))) {
+        reasons.push(graha + ' itself stands in a kendra from ' + from);
       }
 
       if (!reasons.length) return;
