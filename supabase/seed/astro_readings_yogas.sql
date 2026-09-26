@@ -275,7 +275,29 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'Placement still qualifies everything. Lords of an angle and a trine related inside a dusthana, or afflicted, promise more than they give, the strength never having been what stood in the way.',
    'Parashara reports the yoga and then grades it. The text is explicit that effects come "full, or a half or a quarter according to their strengths", which is the same thought: the combination decides what, the strength decides how much.'
  ],
- null, 701)
+ null, 701),
+
+('yoga', 'Raja Yoga', 'named-pairs',
+ 'Which pairings have names, and which do not',
+ array[
+   'Most do not. An angle lord related to a trine lord is a raja yoga and nothing more particular, so a chart showing the lagna lord conjunct the 9th lord has a raja yoga and no special name for it.',
+   'The one pairing the tradition singles out is the 9th lord with the 10th: dharma joined to karma, read as the strongest of them, and called Dharma Karmadhipati yoga. The 9th is fortune and purpose, the 10th is work and standing, and the combination ties what a person is for to what they actually do.',
+   'The name is not in Santhanam''s Parashara. He discusses the combination at length - "an exchange between Saturn and Jupiter in the 9th and 10th, or their placement in conjunction in the 9th/10th ... will prove a very favourable point" - without ever using the term, which comes from Uttara Kalamrita and general usage.',
+   'It is common enough to be worth keeping in proportion: across a sample of charts roughly a quarter of the raja yogas found are this pairing. Being named does not make it rare.',
+   'Where one graha owns both the 9th and the 10th there is no pairing at all, only a yogakaraka. From a Taurus lagna Saturn owns both, so the two lordships sit in one graha and no relationship is needed.'
+ ],
+ 'One name is commonly misapplied; see below.', 702),
+
+('yoga', 'Raja Yoga', 'misnamed',
+ 'A name worth not borrowing',
+ array[
+   'The 5th and 9th lords in combination are sometimes called Maha Bhagya yoga in modern writing. That is a borrowing, and the name already belongs to something else entirely.',
+   'Maha Bhagya yoga is about the time of birth and the parity of signs, not about lords at all: a male born in the daytime with the Sun, the Moon and the lagna in odd signs, a female born at night with the three in even signs.',
+   'So a chart can have the 5th and 9th lords related, which is a perfectly good raja yoga, and have no Maha Bhagya yoga whatever. Calling the first by the second''s name loses both.',
+   'The same caution applies to Gaja Kesari, which is routinely used for the weaker Kesari yoga, and to raja yoga itself, which is sometimes narrowed to mean Dharma Karmadhipati alone.',
+   'A yoga is worth reading by its conditions rather than by the grandeur of the name attached to it. This page reports the name where the conditions are met and no further.'
+ ],
+ null, 703)
 
 on conflict (topic, subject, condition) do update set
   heading = excluded.heading,

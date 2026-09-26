@@ -644,11 +644,31 @@ var Yogas = (function () {
         var houseList = function (hs) {
           return hs.map(ordinal).join(' and the ');
         };
+
+        /*
+         * One pair has a name of its own. Dharma joined to karma - the lord of
+         * the 9th with the lord of the 10th - is read as the strongest of these,
+         * and is the only pairing the tradition singles out this way. Every
+         * other combination of an angle lord and a trine lord is a raja yoga and
+         * nothing more particular, which is worth saying because the name is
+         * often stretched to cover any of them.
+         *
+         * The name is not in Santhanam, who discusses the combination at length
+         * without using it; it comes from Uttara Kalamrita and general usage.
+         */
+        var ninthLord = Astro.SIGN_LORDS[(lagna + 8) % 12];
+        var tenthLord = Astro.SIGN_LORDS[(lagna + 9) % 12];
+        var dharmaKarma = ninthLord !== tenthLord &&
+          ((a === ninthLord && b === tenthLord) || (a === tenthLord && b === ninthLord));
         var reasons = [
           angleLord + ' rules the ' + houseList(angles) + ', an angle, and ' +
             trineLord + ' the ' + houseList(trines) + ', a trine',
           relation
         ];
+        if (dharmaKarma) {
+          reasons.push('the 9th lord with the 10th is the one pairing the tradition ' +
+            'names, dharma joined to karma, and is read as the strongest of them');
+        }
         // A graha holding both on its own is the yogakaraka, a stronger thing
         // than the pairing and worth naming where it turns up inside one.
         [angleLord, trineLord].forEach(function (g) {
@@ -662,8 +682,8 @@ var Yogas = (function () {
           kind: relation.indexOf('exchange') >= 0 ? 'exchange'
             : relation.indexOf('conjunct') >= 0 ? 'conjunction' : 'aspect',
           subject: 'Raja Yoga',
-          condition: 'angle-trine',
-          title: 'Raja yoga',
+          condition: dharmaKarma ? 'dharma-karmadhipati' : 'angle-trine',
+          title: dharmaKarma ? 'Dharma Karmadhipati yoga' : 'Raja yoga',
           /*
            * No family label. A family groups variants under a shared name, as the
            * three vipareeta yogas are grouped; this yoga has one name, so a label

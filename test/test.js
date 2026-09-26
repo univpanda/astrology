@@ -2017,6 +2017,40 @@ console.log('\nRaja yoga, angle and trine');
     return f.length === 1;
   })());
 
+/*
+ * One pairing has a name of its own: the 9th lord with the 10th, dharma joined
+ * to karma. Every other angle-trine combination is a raja yoga and nothing more
+ * particular, which is worth holding because the name is often stretched to
+ * cover any of them.
+ */
+  ok('the 9th lord with the 10th is named Dharma Karmadhipati', (function () {
+    var asc = 0;                                   // Aries: 9th Sagittarius, 10th Capricorn
+    var h = function (sign) { return ((sign - asc) % 12 + 12) % 12 + 1; };
+    var c = { ascendant: { longitude: 10 }, planets: [
+      { name: 'Jupiter', sign: 2, longitude: 2 * 30 + 10, house: h(2) },
+      { name: 'Saturn', sign: 2, longitude: 2 * 30 + 12, house: h(2) }] };
+    var f = Yogas.rajaYoga(c);
+    return f.length === 1 && f[0].title === 'Dharma Karmadhipati yoga' &&
+      f[0].condition === 'dharma-karmadhipati' &&
+      f[0].reasons.some(function (r) { return /dharma joined to karma/.test(r); }) &&
+      // the pronoun guard applies here too, this clause being new
+      f[0].reasons.every(function (r) { return !/(^|\s)its?(\s|$)/.test(r); });
+  })());
+  ok('and every other pairing is left as a plain raja yoga', (function () {
+    var asc = 0;                                   // Mars rules the 1st, Sun the 5th
+    var h = function (sign) { return ((sign - asc) % 12 + 12) % 12 + 1; };
+    var c = { ascendant: { longitude: 10 }, planets: [
+      { name: 'Mars', sign: 2, longitude: 2 * 30 + 10, house: h(2) },
+      { name: 'Sun', sign: 2, longitude: 2 * 30 + 12, house: h(2) }] };
+    var f = Yogas.rajaYoga(c);
+    return f.length === 1 && f[0].title === 'Raja yoga' && f[0].condition === 'angle-trine';
+  })());
+  ok('a single graha owning both the 9th and the 10th is not a pairing at all', (function () {
+    // Taurus: Saturn owns the 9th and the 10th, so there is no second lord.
+    return A.SIGN_LORDS[(1 + 8) % 12] === 'Saturn' && A.SIGN_LORDS[(1 + 9) % 12] === 'Saturn' &&
+      A.isYogakaraka('Saturn', 1);
+  })());
+
   ok('a yogakaraka inside the pairing is named as one', (function () {
     var asc = 1;                                   // Taurus; Saturn rules the 9th and 10th
     var h = function (sign) { return ((sign - asc) % 12 + 12) % 12 + 1; };
