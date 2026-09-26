@@ -64,14 +64,14 @@ var Charts = (function () {
 
   /*
    * Flags ride together after the abbreviation, retrograde first: "Sa [R][V]".
-   * [V] is vargottama, which is D1 against D9. [Y] is yogakaraka, which is
-   * lordship from the rashi lagna. Neither changes when a different division is
-   * put on screen, or when the chart is rotated onto another graha: both are
-   * properties the graha carries, not of the view.
+   * [Y] is yogakaraka, lordship counted from house 1, so it follows the rotation.
+   * [C] is combustion, a real distance from the Sun and so fixed. Vargottama
+   * moved to the Vargas grid, where every division can show it at once rather
+   * than one flag standing for the navamsa alone.
    */
   function planetText(p) {
-    var flags = (p.retrograde ? '[R]' : '') + (p.vargottama ? '[V]' : '') +
-      (p.yogakaraka ? '[Y]' : '') + (p.combust ? '[C]' : '');
+    var flags = (p.retrograde ? '[R]' : '') + (p.yogakaraka ? '[Y]' : '') +
+      (p.combust ? '[C]' : '');
     return ABBR[p.name] + (flags ? ' ' + flags : '');
   }
 
@@ -132,7 +132,6 @@ var Charts = (function () {
     planets.forEach(function (p) {
       bySign[signOfBody(p.longitude)].push({
         name: p.name, retrograde: p.retrograde, longitude: p.longitude,
-        vargottama: Astro.isVargottama(p.longitude),
         /*
          * Owning both an angle and a trine, counted from whatever house 1 is in
          * this chart rather than fixed to the rashi lagna.
@@ -154,7 +153,7 @@ var Charts = (function () {
     // The lagna is a point, not a graha, so it owns nothing and is never one.
     bySign[ascSign].unshift({
       name: 'Ascendant', retrograde: false, longitude: ascLongitude,
-      vargottama: Astro.isVargottama(ascLongitude), yogakaraka: false, combust: false
+      yogakaraka: false, combust: false
     });
 
     return { bySign: bySign, ascSign: ascSign, firstSign: firstSign };

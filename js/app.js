@@ -915,11 +915,9 @@
       if (anchor) firstSign = positionOf(anchor.longitude).sign;
     }
     /*
-     * Vargottama is D1 against D9 and does not move. Yogakaraka is lordship
-     * counted from house 1, so it moves with the rotation exactly as the House
-     * column does: the two are the same question asked twice. The lagna is a
-     * point and owns nothing, so it is never a yogakaraka, but it can be
-     * vargottama.
+     * Yogakaraka is lordship counted from house 1, so it moves with the rotation
+     * exactly as the House column does: the two are the same question asked
+     * twice. The lagna is a point and owns nothing, so it is never one.
      */
 
     rows.forEach(function (r) {
@@ -939,7 +937,6 @@
       [{ text: r.name, header: true,
          flags: [
            r.retrograde ? 'R' : null,
-           Astro.isVargottama(r.longitude) ? 'V' : null,
            !r.isAscendant && Astro.isYogakaraka(r.name, firstSign) ? 'Y' : null,
            !r.isAscendant && sun && Astro.isCombust(r.name, r.longitude, sun.longitude,
              r.retrograde) ? 'C' : null
@@ -1166,6 +1163,9 @@
           'Enm, Gt Enm and Deb; hover a cell for the words themselves, and for the lord. '
         : 'then its dignity there. Hover a cell for the sign\u2019s lord and the reading ' +
           'behind it. ') +
+      'A sign marked [V] is one the division has landed the graha back in, the same sign it ' +
+      'holds in the rashi; in D9 that is vargottama proper, and D1 is left unmarked because ' +
+      'every cell in it would qualify. ' +
       'Parashara prices dignity as varga viswa, out of twenty: own sign 20, great friend 18, ' +
       'friend 15, neutral 10, enemy 7, great enemy 5. Moolatrikona he does not rank apart ' +
       'from an own sign, and exaltation falls outside the six entirely, uchcha bala measuring ' +
@@ -1243,7 +1243,8 @@
       dignityRow.className = 'varga-dignities';
 
       cells.forEach(function (d, i) {
-        var detail = d ? vargasDetail(d, scheme.divisions[i], planet.name) : null;
+        var division = scheme.divisions[i];
+        var detail = d ? vargasDetail(d, division, planet.name) : null;
         /*
          * Where a name will not fit, the sign goes as its number - 1 for Aries
          * through 12 for Pisces, which is how the chart above already labels its
@@ -1253,6 +1254,23 @@
          */
         var sign = el('td', 'varga-sign' + (brief ? ' varga-sign-number' : ''),
           d ? (brief ? String(d.sign + 1) : Astro.SIGNS[d.sign]) : '\u2013');
+
+        /*
+         * The division has landed the graha back in the sign it holds in the
+         * rashi. Marked here rather than as a flag on the graha, because it is a
+         * fact about one division and a flag would have to pick one to stand for.
+         *
+         * D1 is skipped: it is the rashi, so every cell in it would qualify and
+         * the mark would say nothing. The classical vargottama is this in the D9
+         * column; the other columns are the same comparison, which is computable
+         * everywhere but is not what the texts mean by the word.
+         */
+        if (d && division !== 1 && d.sign === Astro.signOf(planet.longitude)) {
+          sign.appendChild(el('span', 'flag flag-v', ' [V]'));
+          sign.title = planet.name + ' holds ' + Astro.SIGNS[d.sign] + ' in D' + division +
+            ' as well as in the rashi.' +
+            (division === 9 ? ' In D9 that is vargottama proper.' : '');
+        }
         var dignity = el('td', d ? 'dig dig-' + d.key : null,
           d ? (brief ? Astro.VARGA_DIGNITY_SHORT[d.key] : d.label) : '\u2013');
         if (detail) { sign.title = detail; dignity.title = detail; }

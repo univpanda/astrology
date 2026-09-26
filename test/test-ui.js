@@ -311,11 +311,11 @@ ok('the lagna is the first row of the table, not a summary tile',
  * the two say the same thing the same way. [R] keeps its red; [V] and [Y] stay
  * quiet, being facts rather than warnings.
  */
-ok('the table flags the graha [R][V][Y], as the chart does', (function () {
+ok('the table flags the graha [R][Y][C], as the chart does', (function () {
   var at = appSrc.indexOf('function renderSlotTable');
   var block = appSrc.slice(at, appSrc.indexOf('function renderShadbala'));
   return /r\.retrograde \? 'R' : null/.test(block) &&
-    /Astro\.isVargottama\(r\.longitude\) \? 'V' : null/.test(block) &&
+    !/'V' : null/.test(block) &&
     /Astro\.isYogakaraka\(r\.name, firstSign\) \? 'Y' : null/.test(block) &&
     /Astro\.isCombust\(r\.name, r\.longitude, sun\.longitude,/.test(block) &&
     /'\[' \+ f \+ '\]'/.test(block);
@@ -345,15 +345,13 @@ ok('the two new hues are defined in both palettes, not only the light one', (fun
   });
 })());
 /*
- * Vargottama is D1 against D9 and does not move. Yogakaraka is lordship counted
- * from house 1, so it moves with the rotation exactly as the House column does:
- * the two are the same question asked twice, and a flag that disagreed with the
- * column beside it would be answering about a chart nobody is looking at.
+ * Yogakaraka is lordship counted from house 1, so it moves with the rotation
+ * exactly as the House column does: the two are the same question asked twice,
+ * and a flag disagreeing with the column beside it would be answering about a
+ * chart nobody is looking at.
  */
-ok('vargottama is fixed to the rashi, yogakaraka follows house 1',
-   /Astro\.isVargottama\(r\.longitude\)/.test(appSrc) &&
-   /Astro\.isYogakaraka\(r\.name, firstSign\)/.test(appSrc) &&
-   !/rashiLagna/.test(appSrc));
+ok('yogakaraka follows house 1',
+   /Astro\.isYogakaraka\(r\.name, firstSign\)/.test(appSrc) && !/rashiLagna/.test(appSrc));
 ok('and the lagna is never flagged one, owning nothing',
    /!r\.isAscendant && Astro\.isYogakaraka/.test(appSrc));
 ok('and the flag alone takes the colour, not the name', (function () {
@@ -875,7 +873,7 @@ var renderIn = function (division) {
   return serialise(box);
 };
 
-ok('both flags ride together, retrograde first', /Ve \[R\]\[V\]/.test(renderIn(1)));
+ok('flags ride together, retrograde first', /Ve \[R\]/.test(renderIn(1)));
 
 /*
  * A yogakaraka owns both an angle and a trine from the lagna, which only six of
@@ -935,7 +933,7 @@ ok('and the default view is still the classical one, from the ascendant', (funct
 })());
 
 ok('the lagna itself is never one, owning nothing',
-   /name: 'Ascendant', retrograde: false, longitude: ascLongitude,\s*\n\s*vargottama: Astro\.isVargottama\(ascLongitude\), yogakaraka: false/
+   /yogakaraka: false, combust: false/
      .test(fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8')));
 
 ok('and the nodes are never one either, owning no sign',
@@ -978,36 +976,12 @@ ok('the key explains [Y], and says it moves with the rotation', (function () {
 ok('retrograde alone stays bare [R]', /Sa \[R\]<|Sa \[R\]\s/.test(renderIn(1)));
 ok('a graha with neither carries no brackets', /Ju<\/text>|>Ju</.test(renderIn(1)));
 
-/*
- * The point of the whole design: vargottama is D1 against D9, so putting another
- * division on screen must not move the flag. Narasimha Rao reads D4 and still
- * writes "vargottama in Navamsa".
- */
-ok('the flag does not change with the division shown',
-   [1, 3, 4, 9, 10, 12, 60].every(function (d) { return /Ve \[R\]\[V\]/.test(renderIn(d)); }));
-
-// A vargottama lagna is what Satabdika dasa turns on, so the ascendant is eligible.
-ok('the ascendant is eligible for the flag too', (function () {
-  var lon = 0.5;                                    // 1st navamsha of Aries
-  if (!Astro.isVargottama(lon)) return false;
-  var box = makeNode('div');
-  Charts.render(box, { style: 'north', division: 1, planets: [], ascendant: lon });
-  return /As \[V\]/.test(serialise(box));
-})());
-
-/*
- * Vargottama lives on the chart, not in the table: the [V] flag beside the graha
- * in the kundli. The table carried it twice over at one point, as a column and as
- * a flag on the name, and now carries it neither way.
- */
-ok('the table leaves vargottama to the chart',
-   !/<th scope="col">Vargottama<\/th>/.test(html) &&
-   !/el\('span', 'flag', ' \[V\]'\)/.test(appSrc));
-ok('the page carries a key for all three flags', (function () {
+ok('the key covers the flags drawn, and not the one that moved', (function () {
   // Collapsed, so re-wrapping the paragraph cannot fail this on whitespace alone.
   var flat = html.replace(/\s+/g, ' ');
-  return /\[R\] is retrograde/.test(flat) && /\[V\] is vargottama/.test(flat) &&
-    /\[Y\] is yogakaraka/.test(flat);
+  return /\[R\] is retrograde/.test(flat) && /\[Y\] is yogakaraka/.test(flat) &&
+    /\[C\] is combust/.test(flat) && !/\[V\] is vargottama/.test(flat) &&
+    /Vargottama is in the Vargas tab/.test(flat);
 })());
 
 console.log('\nVargas panel');
@@ -1367,7 +1341,30 @@ ok('each graha takes two rows, its name spanning both',
 ok('the spanning name is a row-group header, not a plain cell',
    /th\.setAttribute\('scope', 'rowgroup'\)/.test(appSrc));
 ok('the sign row and the dignity row read one and the same varga position',
-   /var detail = d \? vargasDetail\(d, scheme\.divisions\[i\], planet\.name\) : null;/.test(appSrc));
+   /var division = scheme\.divisions\[i\];/.test(appSrc) &&
+   /var detail = d \? vargasDetail\(d, division, planet\.name\) : null;/.test(appSrc));
+
+/*
+ * Vargottama moved here from the graha flags. A flag on the graha had to stand
+ * for one division, so it stood for the navamsa; the grid marks every division
+ * at once, which is the comparison the column is already showing.
+ */
+ok('the grid marks a division that repeats the rashi sign',
+   /d\.sign === Astro\.signOf\(planet\.longitude\)/.test(appSrc) &&
+   /el\('span', 'flag flag-v', ' \[V\]'\)/.test(appSrc));
+ok('but not D1, where every cell would qualify and the mark say nothing',
+   /division !== 1 && d\.sign === Astro\.signOf/.test(appSrc));
+ok('the note explains the mark', (function () {
+  var flat = appSrc.replace(/'\s*\+\s*'/g, '');
+  return /A sign marked \[V\] is one the division has landed the graha back in/.test(flat) &&
+    /D1 is left unmarked because every cell in it would qualify/.test(flat);
+})());
+ok('and the D9 case is named as vargottama proper',
+   /division === 9 \? ' In D9 that is vargottama proper\.' : ''/.test(appSrc));
+ok('the graha flags no longer carry it', (function () {
+  var charts = fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8');
+  return !/vargottama/.test(charts) && !/'V' : null/.test(appSrc);
+})());
 ok('both halves of a pair carry the same hover',
    /if \(detail\) \{ sign\.title = detail; dignity\.title = detail; \}/.test(appSrc));
 ok('and a graha with no reading still contributes no rows at all',
