@@ -498,6 +498,18 @@ ok('and a separator keeps the place and the moment from reading as one phrase', 
   return /\.saved-when::before \{[^}]*content: '\\00b7'/.test(css);
 })());
 
+/*
+ * The badge is drawn twice, on the saved row and on the chart heading, and the
+ * two had drifted: "study" in one and "public figure" in the other, each being
+ * half of the form's own label. One constant now.
+ */
+ok('the celebrity badge reads the same in both places',
+   /var CELEBRITY_MARK = 'public figure';/.test(appSrc) &&
+   (appSrc.match(/el\('span', 'celebrity-mark', CELEBRITY_MARK\)/g) || []).length === 2 &&
+   !/'celebrity-mark', 'study'/.test(appSrc));
+ok('and it matches what the form asks',
+   /A public figure, kept for study/.test(html));
+
 // Saved kundalis: the list, and the four keys that identify an entry.
 ok('the saved list and its empty state are both present',
    /id="saved-list"/.test(html) && /id="saved-empty"/.test(html));

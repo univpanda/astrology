@@ -716,7 +716,7 @@
     // nothing, and a long name plus a possessive wraps on a phone.
     var heading = document.getElementById('result-name');
     heading.textContent = state.name;
-    if (state.celebrity) heading.appendChild(el('span', 'celebrity-mark', 'public figure'));
+    if (state.celebrity) heading.appendChild(el('span', 'celebrity-mark', CELEBRITY_MARK));
 
     var noteLine = document.getElementById('result-note');
     noteLine.textContent = state.note || '';
@@ -1876,7 +1876,7 @@
       var open = el('button', 'saved-open');
       open.type = 'button';
       var savedName = el('span', 'saved-name', entry.name);
-      if (entry.celebrity) savedName.appendChild(el('span', 'celebrity-mark', 'study'));
+      if (entry.celebrity) savedName.appendChild(el('span', 'celebrity-mark', CELEBRITY_MARK));
       open.appendChild(savedName);
       // The place gives way first when the row is short of room; the moment is
       // what tells two charts of the same person apart, so it keeps its width.
@@ -2099,6 +2099,13 @@
 
     return { activate: activate, current: function () { return active; } };
   }
+
+  /*
+   * The word for the celebrity flag, in one place. The list said "study" and the
+   * chart heading said "public figure", both being halves of the form's own
+   * label, and each read as a different thing about the same tick.
+   */
+  var CELEBRITY_MARK = 'public figure';
 
   var emptyChart = document.getElementById('empty-chart');
   var savedCount = document.getElementById('saved-count');
