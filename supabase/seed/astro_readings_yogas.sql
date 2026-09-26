@@ -250,3 +250,36 @@ on conflict (topic, subject, condition) do update set
   note = excluded.note,
   sort_order = excluded.sort_order,
   updated_at = now();
+
+-- Raja yoga proper: an angle lord related to a trine lord. One name and no
+-- variants, so one passage on the rule and one on how to weigh it.
+
+insert into astro_readings (topic, subject, condition, heading, points, note, sort_order) values
+('yoga', 'Raja Yoga', 'general',
+ 'Raja yoga - an angle lord related to a trine lord',
+ array[
+   'Chapter 41, verse 28: "The angles are known as Vishnu sthaanas while the trines are called Lakshmi sthaanas. If the lord of an angle establishes relationship with a trinal lord, a Raja-yoga will obtain."',
+   'The angles are the 1st, 4th, 7th and 10th. The trines here are the 5th and the 9th: the 1st is counted among the angles and not among the trines, so the lagna lord pairs with the 5th or 9th lord rather than with itself.',
+   'Santhanam lists three relationships that qualify: an exchange between the two lords, mutual aspects between them, or their conjunction.',
+   'Mutual is the word that matters in the second of those. The special aspects run one way - Jupiter''s 5th and 9th, Mars''s 4th and 8th, Saturn''s 3rd and 10th - so one graha reaching another is not the two reaching each other, and only the second is this yoga.',
+   'The reasoning behind the names is given in the text: Vishnu''s houses and Lakshmi''s, and a relationship between their lords read as the blessing of both together.'
+ ],
+ 'How much such a yoga is worth is a separate question; see below.', 5),
+
+('yoga', 'Raja Yoga', 'weighing',
+ 'What an angle-trine raja yoga is worth',
+ array[
+   'It is common. A typical lagna has four grahas ruling angles and two ruling trines, and three ways of relating count, so some pairing qualifies in roughly three charts out of four. A chart having a raja yoga is therefore not by itself remarkable.',
+   'That is why it is read alongside the strength of the grahas forming it rather than on its own. The yoga says what is promised; vimsopaka bala and Shadbala say how much of it those grahas can actually carry.',
+   'Where one graha rules both an angle and a trine by itself it is a yogakaraka, and that is the stronger case: no relationship is needed, the two lordships already sitting in one graha. Such a graha is named in the finding wherever it takes part in a pairing.',
+   'Placement still qualifies everything. Lords of an angle and a trine related inside a dusthana, or afflicted, promise more than they give, the strength never having been what stood in the way.',
+   'Parashara reports the yoga and then grades it. The text is explicit that effects come "full, or a half or a quarter according to their strengths", which is the same thought: the combination decides what, the strength decides how much.'
+ ],
+ null, 6)
+
+on conflict (topic, subject, condition) do update set
+  heading = excluded.heading,
+  points = excluded.points,
+  note = excluded.note,
+  sort_order = excluded.sort_order,
+  updated_at = now();

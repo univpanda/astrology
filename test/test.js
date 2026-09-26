@@ -1079,7 +1079,7 @@ ok('ordinals read correctly', Yogas.ordinal(1) === '1st' && Yogas.ordinal(2) ===
   // what makes adding one without listing it a failing test rather than a
   // quietly incomplete check.
   var detectors = [Yogas.parivartana, Yogas.neechaBhanga, Yogas.vipareeta, Yogas.lakshmi,
-                   Yogas.mahapurusha];
+                   Yogas.mahapurusha, Yogas.rajaYoga];
   ok('every detector is covered by this test', detectors.length === Yogas.DETECTOR_COUNT,
      detectors.length + ' named, ' + Yogas.DETECTOR_COUNT + ' in the module');
 
@@ -1881,6 +1881,97 @@ console.log('\nVimsopaka bala');
     return b.length === 4 && b[0].below === 5 && b[1].below === 10 &&
       b[3].below === Infinity &&
       b.map(function (x) { return x.key; }).join(',') === 'poor,some,mediocre,strong';
+  })());
+})();
+
+console.log('\nRaja yoga, angle and trine');
+/*
+ * Chapter 41, verse 28: "The angles are known as Vishnu sthaanas while the trines
+ * are called Lakshmi sthaanas. If the lord of an angle establishes relationship
+ * with a trinal lord, a Raja-yoga will obtain."
+ */
+(function () {
+  var lagna = 0;                                   // Aries: 9th Sagittarius, 10th Capricorn
+  var body = function (name, sign) {
+    return { name: name, sign: sign, longitude: sign * 30 + 10,
+             house: ((sign - lagna) % 12 + 12) % 12 + 1 };
+  };
+  var chartOf = function (planets) {
+    return { ascendant: { longitude: lagna * 30 + 10 }, planets: planets };
+  };
+
+  ok('the house sets are Parashara\'s, the 1st an angle and not a trine',
+     Yogas.VISHNU_HOUSES.join(',') === '1,4,7,10' &&
+     Yogas.LAKSHMI_HOUSES.join(',') === '5,9' &&
+     Yogas.LAKSHMI_HOUSES.indexOf(1) < 0);
+
+  // Jupiter rules the 9th from Aries, Saturn the 10th.
+  ok('conjunction of an angle lord and a trine lord is raja yoga', (function () {
+    var f = Yogas.rajaYoga(chartOf([body('Jupiter', 2), body('Saturn', 2)]));
+    return f.length === 1 && f[0].kind === 'conjunction' && f[0].yoga === 'Raja Yoga' &&
+      f[0].grahas.sort().join(',') === 'Jupiter,Saturn';
+  })());
+
+  ok('an exchange between them likewise', (function () {
+    // Jupiter in Capricorn (Saturn's), Saturn in Sagittarius (Jupiter's)
+    var f = Yogas.rajaYoga(chartOf([body('Jupiter', 9), body('Saturn', 8)]));
+    return f.length === 1 && f[0].kind === 'exchange';
+  })());
+
+  /*
+   * "Mutual aspects between these two lords." The special aspects are one-way, so
+   * one graha reaching another is not the two reaching each other, and only the
+   * second is this yoga. Jupiter in Aries casts its 5th onto Leo; Saturn in Leo
+   * casts its 3rd, 7th and 10th onto Libra, Aquarius and Taurus, and never back.
+   */
+  ok('a one-way aspect is not enough', (function () {
+    return Yogas.rajaYoga(chartOf([body('Jupiter', 0), body('Saturn', 4)])).length === 0;
+  })());
+  ok('but a mutual one is', (function () {
+    // Opposition: every graha aspects the 7th, so this one is mutual.
+    var f = Yogas.rajaYoga(chartOf([body('Jupiter', 0), body('Saturn', 6)]));
+    return f.length === 1 && f[0].kind === 'aspect';
+  })());
+
+  ok('two angle lords alone form nothing, and two trine lords likewise', (function () {
+    // Moon rules the 4th, Venus the 7th - both angles, no trine between them.
+    var angles = Yogas.rajaYoga(chartOf([body('Moon', 2), body('Venus', 2)]));
+    // Sun rules the 5th, Jupiter the 9th - both trines.
+    var trines = Yogas.rajaYoga(chartOf([body('Sun', 2), body('Jupiter', 2)]));
+    return angles.length === 0 && trines.length === 0;
+  })());
+
+  ok('the nodes rule nothing, so they enter no pairing',
+     Yogas.rajaYoga(chartOf([body('Rahu', 2), body('Jupiter', 2), body('Ketu', 8)]))
+       .every(function (f) {
+         return f.grahas.indexOf('Rahu') < 0 && f.grahas.indexOf('Ketu') < 0;
+       }));
+
+  ok('a pair is reported once, not once per direction', (function () {
+    // Taurus lagna: Saturn rules the 9th and the 10th, so it holds both sets.
+    var asc = 1;
+    var h = function (sign) { return ((sign - asc) % 12 + 12) % 12 + 1; };
+    var c = { ascendant: { longitude: asc * 30 + 10 }, planets: [
+      { name: 'Saturn', sign: 5, longitude: 5 * 30, house: h(5) },
+      { name: 'Mercury', sign: 5, longitude: 5 * 30 + 5, house: h(5) }] };
+    var f = Yogas.rajaYoga(c);
+    return f.length === 1;
+  })());
+
+  ok('a yogakaraka inside the pairing is named as one', (function () {
+    var asc = 1;                                   // Taurus; Saturn rules the 9th and 10th
+    var h = function (sign) { return ((sign - asc) % 12 + 12) % 12 + 1; };
+    var c = { ascendant: { longitude: asc * 30 + 10 }, planets: [
+      { name: 'Saturn', sign: 5, longitude: 5 * 30, house: h(5) },
+      { name: 'Mercury', sign: 5, longitude: 5 * 30 + 5, house: h(5) }] };
+    var f = Yogas.rajaYoga(c)[0];
+    return A.isYogakaraka('Saturn', asc) &&
+      f.reasons.some(function (r) { return /Saturn holds an angle and a trine by itself/.test(r); });
+  })());
+
+  ok('no clause leaves a graha as a bare pronoun', (function () {
+    var f = Yogas.rajaYoga(chartOf([body('Jupiter', 2), body('Saturn', 2)]))[0];
+    return f.reasons.every(function (r) { return !/(^|\s)its?(\s|$)/.test(r); });
   })());
 })();
 

@@ -512,8 +512,17 @@ ok('the general passage leads its group',
    /a\.condition === 'general' \? -1 : 0/.test(appSrc));
 ok('a grouped passage does not repeat its own subject heading',
    /var meta = grouped \? \[\] : \[passage\.topic, passage\.subject\]/.test(appSrc));
-ok('a chart with no yoga makes no request for one',
-   /if \(!found\.length\) \{[\s\S]{0,260}return;/.test(appSrc));
+/*
+ * Tests the intent rather than a character count: the early return used to be
+ * pinned by how long the note inside it was, so lengthening that sentence failed
+ * a test about network requests.
+ */
+ok('a chart with no yoga makes no request for one', (function () {
+  var at = appSrc.indexOf('if (!found.length) {');
+  if (at < 0) return false;
+  var block = appSrc.slice(at, appSrc.indexOf('return;', at));
+  return block.length > 0 && block.indexOf('READINGS_API') < 0 && block.indexOf('fetch(') < 0;
+})());
 /*
  * The note lists what is checked, so it has to be kept in step with the module.
  * This counts the detectors rather than trusting the sentence, since a detector
@@ -521,9 +530,10 @@ ok('a chart with no yoga makes no request for one',
  */
 ok('the page says which yogas it looks for, and the list is current', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');
-  var named = ['Parivartana', 'neecha bhanga', 'vipareeta raja', 'Lakshmi', 'Mahapurusha'];
+  var named = ['Raja yoga', 'parivartana', 'neecha bhanga', 'vipareeta raja', 'Lakshmi',
+               'Mahapurusha'];
   return named.every(function (n) { return flat.indexOf(n) >= 0; }) &&
-    /Parivartana, neecha bhanga, vipareeta raja, Lakshmi and the five Mahapurusha yogas are checked/.test(flat) &&
+    /Raja yoga, parivartana, neecha bhanga, vipareeta raja, Lakshmi and the five Mahapurusha yogas are checked/.test(flat) &&
     named.length === Yogas.DETECTOR_COUNT;
 })(), Yogas.DETECTOR_COUNT + ' detectors');
 ok('and the yoga check is handed the strengths it needs',

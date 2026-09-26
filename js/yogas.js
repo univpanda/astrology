@@ -565,7 +565,107 @@ var Yogas = (function () {
     return found;
   }
 
-  var DETECTORS = [parivartana, neechaBhanga, vipareeta, lakshmi, mahapurusha];
+  /*
+   * Chapter 41, verse 28: "The angles are known as Vishnu sthaanas while the
+   * trines are called Lakshmi sthaanas. If the lord of an angle establishes
+   * relationship with a trinal lord, a Raja-yoga will obtain."
+   *
+   * Santhanam's note fixes both sets and the relationships: "The 4 houses, viz.
+   * the 1st, 4th, 7th and 10th are known as Vishnu sthaanas while the 5th and 9th
+   * are Lakshmi sthaanas", and "The kinds of relationship between planets that
+   * will be favourable are: 1. An exchange between these two lords. 2. Mutual
+   * aspects between these two lords. 3. Conjunction of these two lords."
+   *
+   * Two details in that are easy to lose. The 1st counts as an angle and not as a
+   * trine, so the lagna lord pairs with the 5th or 9th lord rather than with
+   * itself. And the aspect has to be MUTUAL: the special aspects are one-way, so
+   * Jupiter reaching Saturn by its 5th is not the same as the two reaching each
+   * other, and only the second is this yoga.
+   */
+  var VISHNU_HOUSES = [1, 4, 7, 10];
+  var LAKSHMI_HOUSES = [5, 9];
+
+  function rajaYoga(chart) {
+    var positions = {};
+    chart.planets.forEach(function (p) { positions[p.name] = p; });
+    var lagna = Astro.signOf(chart.ascendant.longitude);
+
+    var lords = Object.keys(positions).filter(function (g) {
+      return Astro.DIGNITY[g];                     // the nodes rule nothing
+    });
+    var ownedIn = function (graha, set) {
+      return Astro.housesOwned(graha, lagna).filter(function (h) {
+        return set.indexOf(h) >= 0;
+      });
+    };
+
+    var found = [];
+    for (var i = 0; i < lords.length; i++) {
+      for (var j = i + 1; j < lords.length; j++) {
+        var a = lords[i], b = lords[j];
+        var pa = positions[a], pb = positions[b];
+
+        // Either way round: whichever of the two holds the angle.
+        var angles = ownedIn(a, VISHNU_HOUSES), trines = ownedIn(b, LAKSHMI_HOUSES);
+        var angleLord = a, trineLord = b;
+        if (!angles.length || !trines.length) {
+          angles = ownedIn(b, VISHNU_HOUSES);
+          trines = ownedIn(a, LAKSHMI_HOUSES);
+          angleLord = b; trineLord = a;
+        }
+        if (!angles.length || !trines.length) continue;
+
+        var relation = null;
+        if (Astro.SIGN_LORDS[pa.sign] === b && Astro.SIGN_LORDS[pb.sign] === a) {
+          relation = 'they exchange signs, each sitting in one the other rules';
+        } else if (pa.sign === pb.sign) {
+          relation = 'they are conjunct in ' + Astro.SIGNS[pa.sign];
+        } else if (aspects(a, pa.sign, pb.sign) && aspects(b, pb.sign, pa.sign)) {
+          relation = 'they aspect each other';
+        }
+        if (!relation) continue;
+
+        var houseList = function (hs) {
+          return hs.map(ordinal).join(' and the ');
+        };
+        var reasons = [
+          angleLord + ' rules the ' + houseList(angles) + ', an angle, and ' +
+            trineLord + ' the ' + houseList(trines) + ', a trine',
+          relation
+        ];
+        // A graha holding both on its own is the yogakaraka, a stronger thing
+        // than the pairing and worth naming where it turns up inside one.
+        [angleLord, trineLord].forEach(function (g) {
+          if (Astro.isYogakaraka(g, lagna)) {
+            reasons.push(g + ' holds an angle and a trine by itself, so it is a yogakaraka');
+          }
+        });
+
+        found.push({
+          yoga: 'Raja Yoga',
+          kind: relation.indexOf('exchange') >= 0 ? 'exchange'
+            : relation.indexOf('conjunct') >= 0 ? 'conjunction' : 'aspect',
+          subject: 'Raja Yoga',
+          condition: 'angle-trine',
+          title: 'Raja yoga',
+          /*
+           * No family label. A family groups variants under a shared name, as the
+           * three vipareeta yogas are grouped; this yoga has one name, so a label
+           * repeating it would only say "Raja yoga" twice.
+           */
+          family: null,
+          grahas: [angleLord, trineLord],
+          houses: angles.concat(trines),
+          reasons: reasons,
+          summary: angleLord + ', lord of the ' + houseList(angles) + ', and ' + trineLord +
+            ', lord of the ' + houseList(trines) + ', are related: ' + relation + '.'
+        });
+      }
+    }
+    return found;
+  }
+
+  var DETECTORS = [parivartana, neechaBhanga, vipareeta, lakshmi, mahapurusha, rajaYoga];
 
   /**
    * Every yoga this module knows how to look for, in one pass.
@@ -584,6 +684,7 @@ var Yogas = (function () {
 
   return { detect: detect, parivartana: parivartana, neechaBhanga: neechaBhanga,
     vipareeta: vipareeta, lakshmi: lakshmi, mahapurusha: mahapurusha,
+    rajaYoga: rajaYoga, VISHNU_HOUSES: VISHNU_HOUSES, LAKSHMI_HOUSES: LAKSHMI_HOUSES,
     VIPAREETA_NAMES: VIPAREETA_NAMES, MAHAPURUSHA: MAHAPURUSHA,
     KENDRAS: KENDRAS,
     // Exposed so a test can notice a detector being added without being wired
