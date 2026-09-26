@@ -71,7 +71,7 @@ var Charts = (function () {
    */
   function planetText(p) {
     var flags = (p.retrograde ? '[R]' : '') + (p.vargottama ? '[V]' : '') +
-      (p.yogakaraka ? '[Y]' : '');
+      (p.yogakaraka ? '[Y]' : '') + (p.combust ? '[C]' : '');
     return ABBR[p.name] + (flags ? ' ' + flags : '');
   }
 
@@ -114,6 +114,9 @@ var Charts = (function () {
       return Astro.vargaPosition(longitude, division || 1).sign;
     };
     var ascSign = signOfBody(ascLongitude);
+    // Longitudes here are the rashi ones; the varga is applied for the picture
+    // only, so combustion is measured on the real distance from the Sun.
+    var sun = planets.filter(function (p) { return p.name === 'Sun'; })[0];
 
     /*
      * Whatever house 1 actually is in the chart being drawn: the ascendant, or
@@ -143,13 +146,15 @@ var Charts = (function () {
          * looking at. On the default view, house 1 is the ascendant and this is
          * the classical yogakaraka.
          */
-        yogakaraka: Astro.isYogakaraka(p.name, firstSign)
+        yogakaraka: Astro.isYogakaraka(p.name, firstSign),
+        // Burnt by the Sun, within the orb chapter 4 gives for that graha.
+        combust: !!sun && Astro.isCombust(p.name, p.longitude, sun.longitude, p.retrograde)
       });
     });
     // The lagna is a point, not a graha, so it owns nothing and is never one.
     bySign[ascSign].unshift({
       name: 'Ascendant', retrograde: false, longitude: ascLongitude,
-      vargottama: Astro.isVargottama(ascLongitude), yogakaraka: false
+      vargottama: Astro.isVargottama(ascLongitude), yogakaraka: false, combust: false
     });
 
     return { bySign: bySign, ascSign: ascSign, firstSign: firstSign };

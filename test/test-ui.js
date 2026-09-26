@@ -317,6 +317,7 @@ ok('the table flags the graha [R][V][Y], as the chart does', (function () {
   return /r\.retrograde \? 'R' : null/.test(block) &&
     /Astro\.isVargottama\(r\.longitude\) \? 'V' : null/.test(block) &&
     /Astro\.isYogakaraka\(r\.name, firstSign\) \? 'Y' : null/.test(block) &&
+    /Astro\.isCombust\(r\.name, r\.longitude, sun\.longitude,/.test(block) &&
     /'\[' \+ f \+ '\]'/.test(block);
 })());
 /*
@@ -325,20 +326,21 @@ ok('the table flags the graha [R][V][Y], as the chart does', (function () {
  */
 ok('each flag gets a class of its own',
    /el\('span', 'flag flag-' \+ f\.toLowerCase\(\)/.test(appSrc));
-ok('and each class a colour of its own, all three distinct', (function () {
+ok('and each class a colour of its own, all four distinct', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
   var colourOf = function (cls) {
     var m = css.match(new RegExp('th \\.' + cls + ' \\{ color: ([^;]+);'));
     return m && m[1].trim();
   };
-  var r = colourOf('flag-r'), v = colourOf('flag-v'), y = colourOf('flag-y');
-  return r && v && y && r !== v && v !== y && r !== y;
+  var seen = ['flag-r', 'flag-v', 'flag-y', 'flag-c'].map(colourOf);
+  if (seen.some(function (c) { return !c; })) return false;
+  return seen.every(function (c, i) { return seen.indexOf(c) === i; });
 })());
 ok('the two new hues are defined in both palettes, not only the light one', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
   var at = css.indexOf('@media (prefers-color-scheme: dark)');
   var light = css.slice(0, at), dark = css.slice(at);
-  return ['--flag-vargottama', '--flag-yogakaraka'].every(function (name) {
+  return ['--flag-vargottama', '--flag-yogakaraka', '--flag-combust'].every(function (name) {
     return light.indexOf(name + ':') >= 0 && dark.indexOf(name + ':') >= 0;
   });
 })());
@@ -941,6 +943,32 @@ ok('and the nodes are never one either, owning no sign',
      for (var l = 0; l < 12; l++) if (Astro.isYogakaraka(n, l)) return false;
      return true;
    }));
+
+/*
+ * Combustion is the fourth flag, and the only one marking something done to a
+ * graha rather than something it has. The nodes are exempt, Parashara being
+ * explicit that they are points and cannot be burnt, and a chart with Rahu two
+ * degrees from the Sun would otherwise flag it.
+ */
+ok('the chart and the table both flag combustion',
+   /\(p\.combust \? '\[C\]' : ''\)/.test(fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8')) &&
+   /Astro\.isCombust\(r\.name, r\.longitude/.test(appSrc));
+ok('measured from the Sun, and on the rashi longitudes',
+   /combust: !!sun && Astro\.isCombust\(p\.name, p\.longitude, sun\.longitude, p\.retrograde\)/
+     .test(fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8')) &&
+   /Combustion is the real distance from the Sun/.test(appSrc));
+ok('the nodes are never flagged, being points', (function () {
+  // Rahu sits 2.2 degrees from the Sun in one of the saved charts and must stay clean.
+  return !Astro.isCombust('Rahu', 2, 0, true) && !Astro.isCombust('Ketu', 182, 0, true) &&
+    Astro.COMBUSTION.Rahu === undefined && Astro.COMBUSTION.Ketu === undefined;
+})());
+ok('and neither is the lagna, nor the Sun itself',
+   !Astro.isCombust('Sun', 0, 0, false) && Astro.COMBUSTION.Sun === undefined &&
+   /yogakaraka: false, combust: false/.test(fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8')));
+ok('the key explains [C] too', (function () {
+  var flat = html.replace(/\s+/g, ' ');
+  return /\[C\] is combust, burnt by being too near the Sun/.test(flat);
+})());
 
 ok('the key explains [Y], and says it moves with the rotation', (function () {
   var flat = html.replace(/\s+/g, ' ');

@@ -894,6 +894,9 @@
 
     var positionsD1 = {};
     c.planets.forEach(function (p) { positionsD1[p.name] = p; });
+    // Combustion is the real distance from the Sun, so it is read off the rashi
+    // longitudes whatever division the table is showing.
+    var sun = positionsD1.Sun;
 
     var rows = [{ name: 'Ascendant', longitude: c.ascendant.longitude, isAscendant: true }]
       .concat(c.planets.map(function (p) {
@@ -937,7 +940,9 @@
          flags: [
            r.retrograde ? 'R' : null,
            Astro.isVargottama(r.longitude) ? 'V' : null,
-           !r.isAscendant && Astro.isYogakaraka(r.name, firstSign) ? 'Y' : null
+           !r.isAscendant && Astro.isYogakaraka(r.name, firstSign) ? 'Y' : null,
+           !r.isAscendant && sun && Astro.isCombust(r.name, r.longitude, sun.longitude,
+             r.retrograde) ? 'C' : null
          ].filter(Boolean) },
        { text: Astro.SIGNS[v.sign] },
        { text: (r.isAscendant ? '' : Astro.dignityOf(r.name, v.sign, v.degreeInSign)) || '\u2013' },

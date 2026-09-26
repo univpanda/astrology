@@ -31,6 +31,7 @@
   --retro: #b8483a;
   --flag-vargottama: #6d4aa8;
   --flag-yogakaraka: #a8710c;
+  --flag-combust: #7a8a99;
 
   --radius: 16px;
   --radius-sm: 10px;
@@ -849,6 +850,10 @@ th .flag { font-weight: 600; font-size: 0.9em; }
 th .flag-r { color: var(--retro); }
 th .flag-v { color: var(--flag-vargottama); }
 th .flag-y { color: var(--flag-yogakaraka); }
+/* Combustion is the odd one out: the other three mark something a graha has,
+   this marks something done to it. So it is dimmed rather than given a fourth
+   accent, which is also what a burnt graha is. */
+th .flag-c { color: var(--flag-combust); }
 
 /* Ten columns of dignity words are read by scanning, not line by line, so the
    tiers carry weight and colour. Kept to the page's two hues rather than a
@@ -964,6 +969,7 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
     /* Both flag hues need lifting off a dark ground, as the graha colours do. */
     --flag-vargottama: #b69ae0;
     --flag-yogakaraka: #e0b563;
+    --flag-combust: #8fa0ad;
 
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.32);
     --shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.35), 0 18px 40px rgba(0, 0, 0, 0.45);
