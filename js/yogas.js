@@ -209,7 +209,13 @@ var Yogas = (function () {
           Astro.SIGN_LORDS[positions[dispositor].sign] === graha) {
         reasons.push(graha + ' exchanges signs with ' + dispositor);
       }
-      if (Astro.vargaPosition(p.longitude, 9).sign === dignity.exalt.sign) {
+      /*
+       * Only in the rashi chart. Inside a division this longitude is already a
+       * stretched varga longitude, so taking its navamsha would be the navamsha
+       * of a tenth of a sign, which answers no question anyone asks. The clause
+       * is dropped there rather than computed into nonsense.
+       */
+      if (!chart.division && Astro.vargaPosition(p.longitude, 9).sign === dignity.exalt.sign) {
         reasons.push(graha + ' is exalted in navamsa');
       }
       if ((from = inKendraFromEither(p.sign, graha))) {

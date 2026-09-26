@@ -392,8 +392,19 @@ function stripHtml(label) {
   }));
   ok('the pair opens on rashi beside navamsa',
      /varga\.value = i === 0 \? '1' : '9'/.test(appSrc));
-  ok('changing either select redraws only that chart',
-     /control\.addEventListener\('change', function \(\) \{ if \(lastChart\) drawSlot\(slot\); \}\)/.test(appSrc));
+/*
+ * Rotation redraws one chart; changing the division redraws the yogas and the
+ * aspects too, since both are read from whichever divisions are on screen.
+ */
+  ok('rotating redraws only that chart',
+     /ref\.addEventListener\('change', function \(\) \{ if \(lastChart\) drawSlot\(slot\); \}\)/.test(appSrc));
+  ok('but changing the division redraws what is read from it', (function () {
+    var at = appSrc.indexOf("varga.addEventListener('change'");
+    if (at < 0) return false;
+    var block = appSrc.slice(at, at + 400);
+    return /drawSlot\(slot\);/.test(block) && /renderYogas\(lastChart\);/.test(block) &&
+      /renderAspects\(lastChart\);/.test(block);
+  })());
 
   // Rotation: house 1 moves to the chosen graha's sign, in the chosen division.
   ok('all ten reference points are offered',
@@ -655,7 +666,7 @@ ok('the page says which yogas it looks for, and the list is current', (function 
     named.length === Yogas.DETECTOR_COUNT;
 })(), Yogas.DETECTOR_COUNT + ' detectors');
 ok('and the yoga check is handed the strengths it needs',
-   /Yogas\.detect\(state\.chart, strengthsFor\(state\)\.grahas\)/.test(appSrc) &&
+   /Yogas\.detect\(Astro\.chartInDivision\(state\.chart, d\.division\), strengths\)/.test(appSrc) &&
    /function strengthsFor/.test(appSrc));
 ok('shadbala is computed once per chart, so the tab and the yoga agree',
    /if \(!state\.shadbala\)/.test(appSrc) &&
@@ -667,25 +678,63 @@ ok('a yoga resting on several conditions names the ones that applied',
 ok('aspects have a subtab of their own',
    /id="tab-aspects"[\s\S]{0,140}aria-controls="panel-aspects"/.test(html) &&
    /id="panel-aspects"[^>]*hidden/.test(html));
+/*
+ * The aspect tables are built in code now, one per division on screen, so the
+ * column names live in an array rather than in the markup.
+ */
 ok('both directions get a column', (function () {
-  var head = html.slice(html.indexOf('id="aspect-table"'), html.indexOf('aspect-note'));
-  return head.indexOf('>Aspects<') >= 0 && head.indexOf('>Aspected by<') >= 0;
+  var m = appSrc.match(/\['Graha', 'Aspects', 'Also aspects, from previous sign', 'Aspected by'\]/);
+  return !!m;
 })());
 ok('the columns a graha casts sit together, receiving last', (function () {
-  var head = html.slice(html.indexOf('id="aspect-table"'), html.indexOf('aspect-note'));
-  return head.indexOf('>Aspects<') < head.indexOf('>Also aspects, from previous sign<') &&
-         head.indexOf('>Also aspects, from previous sign<') < head.indexOf('>Aspected by<');
+  var m = appSrc.match(/\[('Graha'[^\]]*)\]\s*\n?\s*\.forEach\(function \(h\)/);
+  if (!m) return false;
+  var cols = m[1];
+  return cols.indexOf("'Aspects'") < cols.indexOf("'Also aspects, from previous sign'") &&
+    cols.indexOf("'Also aspects, from previous sign'") < cols.indexOf("'Aspected by'");
 })());
+/*
+ * Yogas and aspects follow the two charts rather than the rashi alone. Not all
+ * sixteen divisions at once, which would bury the rashi under findings nobody
+ * asked for: whichever two are on screen.
+ */
+ok('the divisions read are the ones the charts are set to',
+   /function divisionsOnScreen/.test(appSrc) &&
+   /\+document\.getElementById\('varga-' \+ slot\)\.value/.test(appSrc));
+ok('and a division shown twice is read once', (function () {
+  var at = appSrc.indexOf('function divisionsOnScreen');
+  var block = appSrc.slice(at, at + 600);
+  return /if \(seen\.indexOf\(division\) >= 0\) return;/.test(block);
+})());
+ok('each group is headed by the division it belongs to, only when there are two',
+   /if \(perDivision\.length > 1\)/.test(appSrc) &&
+   /function divisionHeading/.test(appSrc) &&
+   /if \(divisions\.length > 1\) host\.appendChild\(divisionHeading\(d\)\)/.test(appSrc));
+ok('a division with no yoga says so rather than vanishing',
+   /No yoga among those checked is present here/.test(appSrc) &&
+   /division-empty/.test(appSrc));
+ok('the aspect tables are built per division, not read from the markup',
+   /id="aspect-host"/.test(html) &&
+   !/<table id="aspect-table">/.test(html) &&
+   /Yogas\.aspectTable\(Astro\.chartInDivision\(state\.chart, d\.division\)\)/.test(appSrc));
+ok('both notes say the reading follows the charts above', (function () {
+  var flat = appSrc.replace(/'\s*\+\s*'/g, '');
+  return /Yogas are read in whichever divisions the two charts above are set to/.test(flat) &&
+    /counted whole-sign in whichever divisions the two charts above are set to/.test(flat);
+})());
+ok('the heading is styled so an empty division reads as empty', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  return /\.division-heading \{/.test(css) && /\.division-heading\.division-empty/.test(css);
+})());
+
 ok('the note says aspect is not mutual', /Aspect is not mutual/.test(appSrc));
 ok('the note says retrogression does not change the classical aspect',
    /Otherwise retrogression does not change/.test(appSrc) && /cheshta bala/.test(appSrc));
 // The header must say which way the aspect runs; "From previous sign" beside
 // "Aspected by" read as the graha being aspected from there.
-ok('the Rao column says the graha is the one aspecting', (function () {
-  var head = html.slice(html.indexOf('id="aspect-table"'), html.indexOf('aspect-note'));
-  return head.indexOf('>Also aspects, from previous sign<') >= 0 &&
-         head.indexOf('>From previous sign<') < 0;
-})());
+ok('the Rao column says the graha is the one aspecting',
+   appSrc.indexOf("'Also aspects, from previous sign'") >= 0 &&
+   appSrc.indexOf("'From previous sign'") < 0);
 ok('the note attributes the rule and says it is not classical',
    /K\. N\. Rao/.test(appSrc) && /not a classical one/.test(appSrc) &&
    /No Parashari text gives the rule/.test(appSrc));

@@ -2034,5 +2034,97 @@ console.log('\nRaja yoga, angle and trine');
   })());
 })();
 
+console.log('\nYogas and aspects inside a division');
+/*
+ * A parivartana between two grahas in D10 is as real as one in D1, and was going
+ * unreported because the only chart the detectors ever saw was the rashi.
+ * chartInDivision recasts the nativity so that anything reading a chart reads a
+ * divisional chart without knowing the difference.
+ */
+(function () {
+  var place = { latitude: 23.5158, longitude: 87.308, tzOffsetMinutes: 330 };
+  var c = A.chart({ jdUT: 2446146.7256944445, latitude: place.latitude,
+                    longitude: place.longitude, tzOffsetMinutes: 330 });
+  var strengths = Shadbala.compute(c, place).grahas;
+
+  ok('the rashi is returned as itself, not copied', A.chartInDivision(c, 1) === c &&
+     A.chartInDivision(c, undefined) === c);
+
+  ok('a division carries every graha, with its own houses', (function () {
+    return A.SHODASAVARGA.every(function (d) {
+      var dc = A.chartInDivision(c, d);
+      return dc.planets.length === c.planets.length &&
+        dc.planets.every(function (p) {
+          return p.house >= 1 && p.house <= 12 && p.sign >= 0 && p.sign < 12 &&
+            A.signOf(p.longitude) === p.sign;
+        });
+    });
+  })());
+
+  ok('houses are counted from the division\'s own ascendant', (function () {
+    var dc = A.chartInDivision(c, 10);
+    var lagna = A.signOf(dc.ascendant.longitude);
+    return dc.planets.every(function (p) {
+      return p.house === ((p.sign - lagna) % 12 + 12) % 12 + 1;
+    });
+  })());
+
+  // Retrogression belongs to the graha, not to a view of it.
+  ok('retrogression and speed carry over unchanged', (function () {
+    var dc = A.chartInDivision(c, 9);
+    return dc.planets.every(function (p, i) {
+      return p.retrograde === c.planets[i].retrograde && p.speed === c.planets[i].speed;
+    });
+  })());
+
+  ok('the rashi longitude is kept, for rules that are about the nativity', (function () {
+    var dc = A.chartInDivision(c, 60);
+    return dc.planets.every(function (p, i) { return p.rashiLongitude === c.planets[i].longitude; });
+  })());
+
+  /*
+   * The point of the change. Yogas found in a division are not the rashi's yogas
+   * relabelled: different lagna, different lords, different findings.
+   */
+  ok('yogas differ by division, which is why they are worth computing', (function () {
+    var d1 = Yogas.detect(A.chartInDivision(c, 1), strengths).map(function (f) { return f.title; });
+    var d10 = Yogas.detect(A.chartInDivision(c, 10), strengths).map(function (f) { return f.title; });
+    return d1.length > 0 && d10.length > 0 && d1.join() !== d10.join();
+  })());
+
+  ok('every division yields findings that hold together', (function () {
+    return A.SHODASAVARGA.every(function (d) {
+      return Yogas.detect(A.chartInDivision(c, d), strengths).every(function (f) {
+        return f.title && f.summary && f.grahas.length &&
+          f.houses.every(function (h) { return h >= 1 && h <= 12; });
+      });
+    });
+  })());
+
+  /*
+   * One clause cannot travel. Inside a division the longitude is already a
+   * stretched varga longitude, so its navamsha would be the navamsha of a tenth
+   * of a sign. It is dropped there rather than computed into nonsense.
+   */
+  ok('the navamsa clause of neecha bhanga is rashi-only', (function () {
+    var inDivision = A.SHODASAVARGA.filter(function (d) { return d !== 1; })
+      .some(function (d) {
+        return Yogas.neechaBhanga(A.chartInDivision(c, d)).some(function (f) {
+          return f.reasons.some(function (r) { return /exalted in navamsa/.test(r); });
+        });
+      });
+    return !inDivision;
+  })());
+
+  ok('and aspects are computed per division too', (function () {
+    var d1 = Yogas.aspectTable(A.chartInDivision(c, 1));
+    var d10 = Yogas.aspectTable(A.chartInDivision(c, 10));
+    var shape = function (t) {
+      return t.map(function (r) { return r.graha + ':' + r.casts.length; }).join();
+    };
+    return d1.length === d10.length && d1.length > 0 && shape(d1) !== shape(d10);
+  })());
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

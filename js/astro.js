@@ -1102,6 +1102,45 @@ var Astro = (function () {
   }
 
   /**
+   * The same nativity recast into one division.
+   *
+   * Returns a chart shaped like the rashi one - an ascendant and a list of
+   * planets with sign, house and longitude - so that anything which reads a
+   * chart reads a divisional chart without knowing the difference. Yogas and
+   * aspects are the reason it exists: a parivartana between two grahas in D10 is
+   * as real as one in D1, and was going unreported because the only chart the
+   * detectors ever saw was the rashi.
+   *
+   * Houses are counted from the division's own ascendant, which is the point of
+   * the exercise. Retrogression and speed belong to the graha rather than to a
+   * view of it, so they carry over unchanged.
+   *
+   * The rashi longitude is kept on each planet as `rashiLongitude`, because a
+   * few rules are about the nativity rather than about the division and need the
+   * original: vargottama is one, being D1 against D9 whatever else is on screen.
+   */
+  function chartInDivision(chart, division) {
+    if (!division || division === 1) return chart;
+    var asc = vargaPosition(chart.ascendant.longitude, division);
+    return {
+      division: division,
+      ascendant: { longitude: asc.longitude, sign: asc.sign },
+      planets: chart.planets.map(function (p) {
+        var v = vargaPosition(p.longitude, division);
+        return {
+          name: p.name,
+          longitude: v.longitude,
+          sign: v.sign,
+          house: ((v.sign - asc.sign) % 12 + 12) % 12 + 1,
+          retrograde: p.retrograde,
+          speed: p.speed,
+          rashiLongitude: p.longitude
+        };
+      })
+    };
+  }
+
+  /**
    * Vargottama: the same sign in the rashi and in the navamsha.
    *
    * Always D1 against D9, whatever division is being looked at. Narasimha Rao
@@ -1365,6 +1404,7 @@ var Astro = (function () {
     nakshatraOf: nakshatraOf,
     navamsaSign: navamsaSign,
     vargaPosition: vargaPosition,
+    chartInDivision: chartInDivision,
     isVargottama: isVargottama,
     vargaDignity: vargaDignity,
     DASAVARGA: DASAVARGA,
