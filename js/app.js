@@ -1114,7 +1114,12 @@
 
     scheme.divisions.forEach(function (division) {
       var weight = scheme.weights[division];
-      var th = el('th', null, 'D' + division);
+      /*
+       * The navamsha is picked out of the row. It is the one division read beside
+       * the rashi as a matter of course, and it is the column where [V] means
+       * vargottama in the sense the texts use the word.
+       */
+      var th = el('th', division === 9 ? 'varga-d9' : null, 'D' + division);
       th.setAttribute('scope', 'col');
       th.appendChild(el('span', 'varga-weight', vimsopakaFigure(weight)));
       var varga = Astro.VARGAS.filter(function (v) { return v.division === division; })[0];
@@ -1255,7 +1260,8 @@
          * abbreviation invented for this table. Both words stay in the title
          * either way.
          */
-        var sign = el('td', 'varga-sign' + (brief ? ' varga-sign-number' : ''),
+        var sign = el('td', 'varga-sign' + (brief ? ' varga-sign-number' : '') +
+          (division === 9 ? ' varga-d9' : ''),
           d ? (brief ? String(d.sign + 1) : Astro.SIGNS[d.sign]) : '\u2013');
 
         /*
@@ -1274,7 +1280,8 @@
             ' as well as in the rashi.' +
             (division === 9 ? ' In D9 that is vargottama proper.' : '');
         }
-        var dignity = el('td', d ? 'dig dig-' + d.key : null,
+        var dignity = el('td', (d ? 'dig dig-' + d.key : '') +
+          (division === 9 ? ' varga-d9' : ''),
           d ? (brief ? Astro.VARGA_DIGNITY_SHORT[d.key] : d.label) : '\u2013');
         if (detail) { sign.title = detail; dignity.title = detail; }
         signRow.appendChild(sign);

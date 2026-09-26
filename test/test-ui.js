@@ -1029,7 +1029,7 @@ ok('the columns are built from whichever scheme is chosen, in its own order', (f
   head = head.slice(0, head.indexOf('</thead>'));
   return !/<th scope="col">D\d+<\/th>/.test(head) &&
     /scheme\.divisions\.forEach\(function \(division\) \{/.test(appSrc) &&
-    /el\('th', null, 'D' \+ division\)/.test(appSrc);
+    /el\('th', division === 9 \? 'varga-d9' : null, 'D' \+ division\)/.test(appSrc);
 })());
 
 /*
@@ -1388,6 +1388,27 @@ ok('the grid marks a division that repeats the rashi sign',
    /el\('span', 'flag flag-v', ' \[V\]'\)/.test(appSrc));
 ok('but not D1, where every cell would qualify and the mark say nothing',
    /division !== 1 && d\.sign === Astro\.signOf/.test(appSrc));
+/*
+ * The navamsha is picked out of the row: it is the division read beside the
+ * rashi as a matter of course, and the column where [V] carries the classical
+ * meaning rather than the widened one.
+ */
+ok('the D9 column is marked out, in the header and in both its rows',
+   /el\('th', division === 9 \? 'varga-d9' : null, 'D' \+ division\)/.test(appSrc) &&
+   /\(division === 9 \? ' varga-d9' : ''\)/.test(appSrc) &&
+   (appSrc.match(/division === 9 \? ' varga-d9' : ''/g) || []).length === 2);
+ok('and it is there to mark whichever scheme is chosen', (function () {
+  return Astro.VARGA_SCHEME_ORDER.every(function (k) {
+    return Astro.VARGA_SCHEMES[k].divisions.indexOf(9) >= 0;
+  });
+})());
+ok('the mark is a tint rather than a colour, so it does not fight the dignities',
+   (function () {
+     var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+     var block = css.slice(css.indexOf('#vargas-table .varga-d9'), css.indexOf('#vargas-table th.varga-d9'));
+     return /background: var\(--green-soft\)/.test(block) && !/(^|[^-])color:/.test(block);
+   })());
+
 ok('the note explains the mark', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');
   return /A sign marked \[V\] is one the division has landed the graha back in/.test(flat) &&
