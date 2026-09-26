@@ -505,6 +505,108 @@ ok('the three kinds are conditions of one subject, not four subjects', (function
          /'yoga', 'Parivartana', 'dainya'/.test(seed) &&
          !/'Parivartana Maha'/.test(seed);
 })());
+console.log('\nLesson library');
+/*
+ * The library is a syllabus, not a pile. It is read as topic, then subject, then
+ * the conditions under it, and sort_order decides both the order the topic chips
+ * appear in and the order groups appear within one. That ordering is applied
+ * globally, so two topics numbering from 1 interleave, which is why each topic
+ * gets a band of its own.
+ */
+(function () {
+  var files = fs.readdirSync(path.join(root, 'supabase/seed'))
+    .filter(function (f) { return /^astro_readings.*\.sql$/.test(f); });
+  var rows = [], unbalanced = [];
+  files.forEach(function (f) {
+    var src = fs.readFileSync(path.join(root, 'supabase/seed', f), 'utf8');
+    var inserts = (src.match(/insert into astro_readings/g) || []).length;
+    var conflicts = (src.match(/on conflict/g) || []).length;
+    if (inserts !== conflicts || !inserts) unbalanced.push(f);
+    var keys = src.match(/^\('([a-z]+)', '([^']+)', '([^']+)',/gm) || [];
+    var orders = src.match(/,\s*(\d+)\)(?:,|\s*\n\s*\n\s*on conflict)/g) || [];
+    keys.forEach(function (k, i) {
+      var m = k.match(/^\('([a-z]+)', '([^']+)', '([^']+)',/);
+      var o = orders[i] && orders[i].match(/(\d+)\)/);
+      rows.push({ file: f, topic: m[1], subject: m[2], condition: m[3],
+                  order: o ? +o[1] : null });
+    });
+  });
+
+  ok('every seed file upserts rather than inserting blind',
+     unbalanced.length === 0, unbalanced.join(', ') || files.length + ' files');
+  ok('the library has grown past the yogas it started as',
+     rows.length >= 40, rows.length + ' passages');
+
+  ok('every passage has a sort order', rows.every(function (r) { return r.order !== null; }));
+
+  ok('no two passages share a key', (function () {
+    var seen = {}, dupe = null;
+    rows.forEach(function (r) {
+      var k = [r.topic, r.subject, r.condition].join('/');
+      if (seen[k]) dupe = k; else seen[k] = 1;
+    });
+    return !dupe;
+  })());
+
+  /*
+   * A shared sort_order is not an error the database would catch, and the symptom
+   * is subtle: two topics quietly interleaving in the chip row.
+   */
+  ok('and no two share a sort order', (function () {
+    var seen = {}, dupe = null;
+    rows.forEach(function (r) { if (seen[r.order]) dupe = r.order; else seen[r.order] = 1; });
+    return !dupe;
+  })(), rows.length + ' distinct');
+
+  ok('each topic keeps to a band of its own, so the chips do not interleave', (function () {
+    var bands = {};
+    return rows.every(function (r) {
+      var band = Math.floor(r.order / 100);
+      if (bands[r.topic] === undefined) bands[r.topic] = band;
+      if (bands[r.topic] !== band) return false;
+      return Object.keys(bands).every(function (t) {
+        return t === r.topic || bands[t] !== band;
+      });
+    });
+  })());
+
+  /*
+   * The point of the restructure. Every yoga passage leans on words the library
+   * never defined, so a reader arriving at Vipareeta Raja Yoga had nowhere to
+   * start. Each of these must now be explained somewhere outside the yogas.
+   */
+  ok('the vocabulary the yogas use is defined outside them', (function () {
+    var groundwork = rows.filter(function (r) { return r.topic !== 'yoga'; })
+      .map(function (r) { return r.file; });
+    var text = groundwork.filter(function (f, i) { return groundwork.indexOf(f) === i; })
+      .map(function (f) { return fs.readFileSync(path.join(root, 'supabase/seed', f), 'utf8'); })
+      .join(' ').toLowerCase();
+    return ['kendra', 'trikona', 'dusthana', 'upachaya', 'dispositor', 'lagna',
+            'navamsha', 'moolatrikona', 'exalt', 'debilitat', 'karaka', 'varga']
+      .every(function (term) { return text.indexOf(term) >= 0; });
+  })());
+
+  ok('a reader meets the foundations before the yogas', (function () {
+    var first = function (topic) {
+      return Math.min.apply(null, rows.filter(function (r) { return r.topic === topic; })
+        .map(function (r) { return r.order; }));
+    };
+    return first('basics') < first('house') && first('house') < first('dignity') &&
+      first('dignity') < first('varga') && first('varga') < first('strength') &&
+      first('strength') < first('yoga');
+  })());
+
+  ok('no one topic is more than half the library', (function () {
+    var counts = {};
+    rows.forEach(function (r) { counts[r.topic] = (counts[r.topic] || 0) + 1; });
+    return Object.keys(counts).every(function (t) { return counts[t] <= rows.length / 2; });
+  })(), (function () {
+    var counts = {};
+    rows.forEach(function (r) { counts[r.topic] = (counts[r.topic] || 0) + 1; });
+    return Object.keys(counts).map(function (t) { return t + ' ' + counts[t]; }).join(', ');
+  })());
+})();
+
 ok('lessons group by subject with the conditions beneath',
    /var section = el\('section', 'lesson-topic'\)/.test(appSrc) &&
    /passage-subtopic/.test(appSrc));

@@ -20,7 +20,7 @@ insert into astro_readings (topic, subject, condition, heading, points, sort_ord
    'Sun is signification for soul. It helps to seek enlightenment and ultimate truth.',
    'Fame, high rank and good relations with government and bosses. Good for politicians, high ranking government officers, diplomats, surgeons, doctors and scientists.',
    'A strong but afflicted with malefic, Sun makes one tyrant, arrogant, short of temper and impatient.'
- ], 1),
+ ], 500),
 
 ('graha', 'Sun', 'weak',
  'A weak Sun in the horoscope gives',
@@ -31,7 +31,7 @@ insert into astro_readings (topic, subject, condition, heading, points, sort_ord
    'Loss of money afflicted with Mars having ownership of 6, 8 and 12 houses will give major accident. Afflicted with Saturn loss, misery misunderstanding with father and superiors, ill fame, set back in profession, false pride, flattery, egotist, overbearing, vainglorious, weak and vacillating.',
    'Clash with bosses and government, defalcation and trouble with customs, income tax etc.',
    'Sun afflicted in signs of Mercury and Jupiter gives diseases related to lungs, consumption. Afflicted in sign Cancer makes one sick with defective eyesight. In 6th from Moon and afflicted could mean trouble with intestines and digestive organs. Afflicted by Mars and Saturn mean operation for appendicitis. In the sixth it causes digestive and intestine problem. Afflicted in 4th or 5th house could cause heart problem.'
- ], 2)
+ ], 501)
 
 on conflict (topic, subject, condition) do update set
   heading = excluded.heading,

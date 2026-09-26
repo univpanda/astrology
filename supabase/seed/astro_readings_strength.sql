@@ -18,7 +18,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'So a high total is never on its own a reason to expect good from a graha. It says the graha will act, fully and in its own nature. Whether that is welcome is read from ownership, from the house, and from what else touches it.',
    'The same holds in reverse: a weak benefic may promise more than it can deliver, which is why a promising yoga is still read alongside a strength measure rather than instead of one.'
  ],
- 'What a high total does tell you follows below.', 10),
+ 'What a high total does tell you follows below.', 600),
 
 ('strength', 'Strength and influence', 'magnitude',
  'What a high total does tell you',
@@ -29,7 +29,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'So it is better read as magnitude than as direction. It scales whatever the graha was going to do rather than deciding what that is, which is why the same figure means opposite things on a benefic ruling a trikona and on a malefic reaching a house it has no claim to.',
    'That also explains why it is worth computing at all for a yoga that is already present. The yoga says what is promised and vimsopaka bala says how much of it the graha can actually carry.'
  ],
- null, 11),
+ null, 601),
 
 ('strength', 'Strength and influence', 'bands',
  'Why the classical bands say "favourable"',
@@ -40,7 +40,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'For a benefic ruling a good house those come to the same thing. For a malefic afflicting a house it does not own they do not, and the band label is the least useful part of the reading.',
    'This page prints Parashara''s words for the bands because they are his, and says here what they should not be taken to mean.'
  ],
- null, 12),
+ null, 602),
 
 ('strength', 'Vimsopaka Bala', 'reading',
  'Reading a vimsopaka total',
@@ -51,7 +51,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'The scheme has to be named alongside any figure. The same chart gives four different totals across the Shadvarga, Saptavarga, Dasavarga and Shodasavarga, because each shares the twenty points out differently, and a total quoted without its scheme cannot be checked.',
    'It measures dignity across divisions and nothing else. It does not know which houses the graha rules, where it sits, or what aspects it, so it is one input to a judgement rather than the judgement.'
  ],
- 'What a high total does and does not mean is set out under Strength and influence.', 13),
+ 'What a high total does and does not mean is set out under Strength and influence.', 603),
 
 ('strength', 'Vimsopaka Bala', 'limits',
  'What vimsopaka bala cannot see',
@@ -65,7 +65,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'None of these is an oversight to be patched into the total. They are separate measures, and the classical practice is to read them beside it rather than fold them in.',
    'On this page: vargottama is marked [V] beside the graha in the chart; an exchange and a cancelled debilitation are both reported among the yogas; and dig bala is a column of its own in Shadbala, which is the broader instrument and carries it as one of its six.'
  ],
- null, 14)
+ null, 604)
 
 on conflict (topic, subject, condition) do update set
   heading = excluded.heading,
