@@ -788,13 +788,7 @@
        * read from whatever is on screen. Rotation does not: which graha house 1
        * is counted from changes the picture, not the division being read.
        */
-      varga.addEventListener('change', function () {
-        if (!lastChart) return;
-        drawSlot(slot);
-        labelFollowOption();
-        renderYogas(lastChart);
-        renderAspects(lastChart);
-      });
+      varga.addEventListener('change', function () { if (lastChart) drawSlot(slot); });
     });
   }
 
@@ -1302,26 +1296,22 @@
    * charts now: whatever is on screen is what gets read. Not all sixteen at
    * once, which would bury the rashi under a hundred findings nobody asked for.
    */
-  /*
-   * Every division, plus a first entry that follows the two charts above. That
-   * entry is the default because the charts are what a reader is looking at, and
-   * the rest are there so a division can be inspected without having to put it on
-   * screen first: seeing what D24 makes of a chart should not cost you the D9 you
-   * were reading.
+  /**
+   * One division at a time, chosen here rather than taken from the charts above.
+   *
+   * It followed the two charts at first, which meant inspecting D24 cost you
+   * whichever chart you were reading, and showed two sets of findings at once.
+   * A picker of its own, like the Vargas scheme picker, reads one thing at a
+   * time and leaves the charts alone.
    */
-  var FOLLOW_CHARTS = 'screen';
-
   function fillDivisionPickers() {
     ['yoga-division', 'aspect-division'].forEach(function (id) {
       var select = document.getElementById(id);
       select.innerHTML = '';
-      var follow = el('option', null, '');
-      follow.value = FOLLOW_CHARTS;
-      follow.selected = true;
-      select.appendChild(follow);
       Astro.VARGAS.forEach(function (v) {
         var opt = el('option', null, v.name + ' \u00b7 ' + v.label);
         opt.value = String(v.division);
+        if (v.division === 1) opt.selected = true;
         select.appendChild(opt);
       });
       select.addEventListener('change', function () {
@@ -1329,48 +1319,14 @@
         if (id === 'yoga-division') renderYogas(lastChart); else renderAspects(lastChart);
       });
     });
-    labelFollowOption();
   }
 
-  /*
-   * The follow option names the divisions it would show, so the dropdown says
-   * what choosing it means rather than leaving it to be found out.
-   */
-  function labelFollowOption() {
-    var names = divisionsOnScreen().map(function (d) { return d.name; }).join(' and ');
-    ['yoga-division', 'aspect-division'].forEach(function (id) {
-      var option = document.getElementById(id).options[0];
-      if (option) option.textContent = 'As the charts above \u00b7 ' + names;
-    });
-  }
-
-  /** Which divisions a panel should read, given its own picker. */
-  function divisionsFor(pickerId) {
-    var chosen = document.getElementById(pickerId).value;
-    if (chosen === FOLLOW_CHARTS) return divisionsOnScreen();
-    var division = +chosen;
+  /** The division a panel is set to. */
+  function divisionFor(pickerId) {
+    var division = +document.getElementById(pickerId).value || 1;
     var varga = Astro.VARGAS.filter(function (v) { return v.division === division; })[0];
-    return [{ division: division, name: varga ? varga.name : 'D' + division,
-              label: varga ? varga.label : '' }];
-  }
-
-  function divisionsOnScreen() {
-    var seen = [], out = [];
-    ['a', 'b'].forEach(function (slot) {
-      var division = +document.getElementById('varga-' + slot).value;
-      if (seen.indexOf(division) >= 0) return;
-      seen.push(division);
-      var varga = Astro.VARGAS.filter(function (v) { return v.division === division; })[0];
-      out.push({ division: division, name: varga ? varga.name : 'D' + division,
-                 label: varga ? varga.label : '' });
-    });
-    return out;
-  }
-
-  /** A heading naming which chart the findings beneath belong to. */
-  function divisionHeading(d) {
-    var h = el('h4', 'division-heading', d.name + (d.label ? ' \u00b7 ' + d.label : ''));
-    return h;
+    return { division: division, name: varga ? varga.name : 'D' + division,
+             label: varga ? varga.label : '' };
   }
 
   function renderYogas(state) {
@@ -1379,14 +1335,11 @@
     list.innerHTML = '';
 
     var strengths = strengthsFor(state).grahas;
-    var divisions = divisionsFor('yoga-division');
-    var perDivision = divisions.map(function (d) {
-      return { d: d, found: Yogas.detect(Astro.chartInDivision(state.chart, d.division), strengths) };
-    });
-    var found = perDivision.reduce(function (n, x) { return n.concat(x.found); }, []);
+    var chosen = divisionFor('yoga-division');
+    var found = Yogas.detect(Astro.chartInDivision(state.chart, chosen.division), strengths);
     if (!found.length) {
       note.textContent = 'No yoga among those this page looks for is present in ' +
-        divisions.map(function (d) { return d.name; }).join(' or ') + '. ' +
+        chosen.name + '. ' +
         'Raja yoga, parivartana, neecha bhanga, vipareeta raja, Lakshmi and the five ' +
         'Mahapurusha yogas are checked so far; the Lesson tab explains each.';
       return;
@@ -1395,21 +1348,10 @@
       'five Mahapurusha yogas are checked so far; more will follow. An angle-trine raja yoga ' +
       'is common, present in roughly three charts in four, so it is read alongside the ' +
       'strength of the grahas forming it rather than on its own. The Lesson tab explains ' +
-      'what each one means. Yogas are read in whichever divisions the two charts ' +
-      'above are set to, so changing either chart changes what is looked at here.';
+      'what each one means. Yogas are read in the division chosen above, which is ' +
+      'independent of what the two charts are showing.';
 
-    perDivision.forEach(function (group) {
-      // Only worth naming the division when there is more than one to tell apart.
-      if (perDivision.length > 1) {
-        var heading = divisionHeading(group.d);
-        if (!group.found.length) heading.className += ' division-empty';
-        list.appendChild(heading);
-      }
-      if (!group.found.length) {
-        list.appendChild(el('p', 'yoga-none', 'No yoga among those checked is present here.'));
-        return;
-      }
-      group.found.forEach(function (finding) {
+    found.forEach(function (finding) {
       var card = el('div', 'yoga-finding');
       var name = el('h4', 'yoga-name', finding.title);
       // Named kinds carry their family, so a reader meeting "sarala" for the
@@ -1432,8 +1374,7 @@
         finding.reasons.forEach(function (reason) { why.appendChild(el('li', null, reason)); });
         card.appendChild(why);
       }
-        list.appendChild(card);
-      });
+      list.appendChild(card);
     });
   }
 
@@ -1457,63 +1398,58 @@
    */
   function renderAspects(state) {
     /*
-     * One table per division on screen, for the same reason the yogas are: an
-     * aspect in D10 is as real as one in D1 and was going unreported. The rashi
-     * table keeps its id so nothing else that reaches for it has to change;
-     * further divisions get a table built beside it.
+     * Built in code rather than sitting in the markup, because the table belongs
+     * to whichever division the picker is on: an aspect in D10 is as real as one
+     * in D1, and was going unreported while the rashi was the only chart the
+     * detectors ever saw.
      */
     var host = document.getElementById('aspect-host');
-    var divisions = divisionsFor('aspect-division');
+    var d = divisionFor('aspect-division');
     host.innerHTML = '';
 
-    divisions.forEach(function (d) {
-      if (divisions.length > 1) host.appendChild(divisionHeading(d));
-
-      var scroll = el('div', 'table-scroll');
-      var table = el('table', 'aspect-table');
-      var head = document.createElement('thead');
-      var headRow = document.createElement('tr');
-      ['Graha', 'Aspects', 'Also aspects, from previous sign', 'Aspected by']
-        .forEach(function (h) {
-          var th = el('th', null, h);
-          th.setAttribute('scope', 'col');
-          headRow.appendChild(th);
-        });
-      head.appendChild(headRow);
-      table.appendChild(head);
-      var tbody = document.createElement('tbody');
-      table.appendChild(tbody);
-      scroll.appendChild(table);
-      host.appendChild(scroll);
-
-      var rows = Yogas.aspectTable(Astro.chartInDivision(state.chart, d.division));
-      rows.forEach(function (row) {
-        var tr = document.createElement('tr');
-        var named = function (list) {
-          if (!list.length) return '\u2013';
-          return list.map(function (x) {
-            return x.graha + (x.retrograde ? ' [R]' : '') + ' (' + Yogas.ordinal(x.apart) + ')';
-          }).join(', ');
-        };
-        // The two casting columns sit together: what it aspects from where it
-        // stands, then what the retrograde rule adds. "Aspected by" last, so the
-        // change of direction happens once rather than twice.
-        [[row.graha + (row.retrograde ? ' [R]' : ''), null],
-         [named(row.casts), null],
-         [named(row.fromPreviousSign), 'rao-aspects'],
-         [named(row.receives), null]]
-          .forEach(function (cell, i) {
-            var td = el(i === 0 ? 'th' : 'td', cell[1], cell[0]);
-            if (i === 0) td.setAttribute('scope', 'row');
-            tr.appendChild(td);
-          });
-        tbody.appendChild(tr);
+    var scroll = el('div', 'table-scroll');
+    var table = el('table', 'aspect-table');
+    var head = document.createElement('thead');
+    var headRow = document.createElement('tr');
+    ['Graha', 'Aspects', 'Also aspects, from previous sign', 'Aspected by']
+      .forEach(function (h) {
+        var th = el('th', null, h);
+        th.setAttribute('scope', 'col');
+        headRow.appendChild(th);
       });
+    head.appendChild(headRow);
+    table.appendChild(head);
+    var tbody = document.createElement('tbody');
+    table.appendChild(tbody);
+    scroll.appendChild(table);
+    host.appendChild(scroll);
+
+    Yogas.aspectTable(Astro.chartInDivision(state.chart, d.division)).forEach(function (row) {
+      var tr = document.createElement('tr');
+      var named = function (list) {
+        if (!list.length) return '\u2013';
+        return list.map(function (x) {
+          return x.graha + (x.retrograde ? ' [R]' : '') + ' (' + Yogas.ordinal(x.apart) + ')';
+        }).join(', ');
+      };
+      // The two casting columns sit together: what it aspects from where it
+      // stands, then what the retrograde rule adds. "Aspected by" last, so the
+      // change of direction happens once rather than twice.
+      [[row.graha + (row.retrograde ? ' [R]' : ''), null],
+       [named(row.casts), null],
+       [named(row.fromPreviousSign), 'rao-aspects'],
+       [named(row.receives), null]]
+        .forEach(function (cell, i) {
+          var td = el(i === 0 ? 'th' : 'td', cell[1], cell[0]);
+          if (i === 0) td.setAttribute('scope', 'row');
+          tr.appendChild(td);
+        });
+      tbody.appendChild(tr);
     });
 
     document.getElementById('aspect-note').textContent =
-      'Full Parashari aspects, counted whole-sign in whichever divisions the two charts above ' +
-      'are set to: every graha aspects the ' +
+      'Full Parashari aspects, counted whole-sign in the division chosen above: every graha ' +
+      'aspects the ' +
       '7th from itself, Mars the 4th and 8th besides, Jupiter the 5th and 9th, Saturn the 3rd ' +
       'and 10th. Aspect is not mutual, so the first two columns differ. ' +
       'The last column is K. N. Rao\u2019s rule, not a classical one: a retrograde graha also ' +

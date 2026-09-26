@@ -411,13 +411,7 @@ function stripHtml(label) {
  */
   ok('rotating redraws only that chart',
      /ref\.addEventListener\('change', function \(\) \{ if \(lastChart\) drawSlot\(slot\); \}\)/.test(appSrc));
-  ok('but changing the division redraws what is read from it', (function () {
-    var at = appSrc.indexOf("varga.addEventListener('change'");
-    if (at < 0) return false;
-    var block = appSrc.slice(at, at + 400);
-    return /drawSlot\(slot\);/.test(block) && /renderYogas\(lastChart\);/.test(block) &&
-      /renderAspects\(lastChart\);/.test(block);
-  })());
+
 
   // Rotation: house 1 moves to the chosen graha's sign, in the chosen division.
   ok('all ten reference points are offered',
@@ -679,7 +673,7 @@ ok('the page says which yogas it looks for, and the list is current', (function 
     named.length === Yogas.DETECTOR_COUNT;
 })(), Yogas.DETECTOR_COUNT + ' detectors');
 ok('and the yoga check is handed the strengths it needs',
-   /Yogas\.detect\(Astro\.chartInDivision\(state\.chart, d\.division\), strengths\)/.test(appSrc) &&
+   /Yogas\.detect\(Astro\.chartInDivision\(state\.chart, chosen\.division\), strengths\)/.test(appSrc) &&
    /function strengthsFor/.test(appSrc));
 ok('shadbala is computed once per chart, so the tab and the yoga agree',
    /if \(!state\.shadbala\)/.test(appSrc) &&
@@ -712,34 +706,27 @@ ok('the columns a graha casts sit together, receiving last', (function () {
  * asked for: whichever two are on screen.
  */
 /*
- * Each panel gets its own chart picker, the same shape as the Vargas scheme
- * picker. The first entry follows the two charts above and is the default,
- * because that is what a reader is looking at; the rest are there so a division
- * can be inspected without having to put it on screen first, which would cost
- * you whichever chart you were already reading.
+ * Each panel reads one division at a time, chosen by its own picker, the same
+ * shape as the Vargas scheme picker. It followed the two charts at first, which
+ * showed two sets of findings at once and meant inspecting D24 cost you whichever
+ * chart you were reading.
  */
 ok('both panels have a chart picker',
    /id="yoga-division"/.test(html) && /id="aspect-division"/.test(html) &&
    /function fillDivisionPickers/.test(appSrc));
-ok('it offers every division, plus the follow entry', (function () {
+ok('it offers every division and starts on the rashi', (function () {
   var at = appSrc.indexOf('function fillDivisionPickers');
   var block = appSrc.slice(at, at + 900);
-  return /follow\.value = FOLLOW_CHARTS;/.test(block) && /follow\.selected = true;/.test(block) &&
-    /Astro\.VARGAS\.forEach\(function \(v\)/.test(block);
+  return /Astro\.VARGAS\.forEach\(function \(v\)/.test(block) &&
+    /if \(v\.division === 1\) opt\.selected = true;/.test(block);
 })());
-ok('the follow entry names the divisions it would show, rather than leaving it vague',
-   /function labelFollowOption/.test(appSrc) &&
-   /'As the charts above \\u00b7 ' \+ names/.test(appSrc));
-ok('and is relabelled when a chart division changes', (function () {
-  var at = appSrc.indexOf("varga.addEventListener('change'");
-  var block = appSrc.slice(at, at + 400);
-  return /labelFollowOption\(\);/.test(block);
-})());
-ok('choosing a division reads that one alone', (function () {
-  var at = appSrc.indexOf('function divisionsFor');
-  var block = appSrc.slice(at, at + 500);
-  return /if \(chosen === FOLLOW_CHARTS\) return divisionsOnScreen\(\);/.test(block) &&
-    /return \[\{ division: division/.test(block);
+ok('exactly one division is read, never two',
+   /function divisionFor/.test(appSrc) &&
+   /return \{ division: division, name: varga \? varga\.name/.test(appSrc) &&
+   !/divisionsOnScreen/.test(appSrc) && !/divisionHeading/.test(appSrc));
+ok('so the panels no longer need to name which chart a finding belongs to', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  return !/division-heading/.test(css) && !/yoga-none/.test(css);
 })());
 ok('each picker redraws only its own panel', (function () {
   var at = appSrc.indexOf('function fillDivisionPickers');
@@ -747,34 +734,26 @@ ok('each picker redraws only its own panel', (function () {
   return /if \(id === 'yoga-division'\) renderYogas\(lastChart\); else renderAspects\(lastChart\);/
     .test(block);
 })());
-
-ok('the follow entry reads the divisions the charts are set to',
-   /function divisionsOnScreen/.test(appSrc) &&
-   /\+document\.getElementById\('varga-' \+ slot\)\.value/.test(appSrc));
-ok('and a division shown twice is read once', (function () {
-  var at = appSrc.indexOf('function divisionsOnScreen');
-  var block = appSrc.slice(at, at + 600);
-  return /if \(seen\.indexOf\(division\) >= 0\) return;/.test(block);
+/*
+ * And the charts above no longer drive them. Changing a chart's division redraws
+ * that chart and nothing else, the panels having a division of their own.
+ */
+ok('changing a chart division redraws only that chart',
+   /varga\.addEventListener\('change', function \(\) \{ if \(lastChart\) drawSlot\(slot\); \}\)/
+     .test(appSrc));
+ok('an empty division says which one it was', (function () {
+  var flat = appSrc.replace(/'\s*\+\s*'/g, '');
+  return /No yoga among those this page looks for is present in / .test(flat) &&
+    /chosen\.name/.test(appSrc);
 })());
-ok('each group is headed by the division it belongs to, only when there are two',
-   /if \(perDivision\.length > 1\)/.test(appSrc) &&
-   /function divisionHeading/.test(appSrc) &&
-   /if \(divisions\.length > 1\) host\.appendChild\(divisionHeading\(d\)\)/.test(appSrc));
-ok('a division with no yoga says so rather than vanishing',
-   /No yoga among those checked is present here/.test(appSrc) &&
-   /division-empty/.test(appSrc));
-ok('the aspect tables are built per division, not read from the markup',
+ok('the aspect table is built for the chosen division, not read from the markup',
    /id="aspect-host"/.test(html) &&
    !/<table id="aspect-table">/.test(html) &&
    /Yogas\.aspectTable\(Astro\.chartInDivision\(state\.chart, d\.division\)\)/.test(appSrc));
-ok('both notes say the reading follows the charts above', (function () {
+ok('both notes say which division is being read', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');
-  return /Yogas are read in whichever divisions the two charts above are set to/.test(flat) &&
-    /counted whole-sign in whichever divisions the two charts above are set to/.test(flat);
-})());
-ok('the heading is styled so an empty division reads as empty', (function () {
-  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-  return /\.division-heading \{/.test(css) && /\.division-heading\.division-empty/.test(css);
+  return /Yogas are read in the division chosen above/.test(flat) &&
+    /counted whole-sign in the division chosen above/.test(flat);
 })());
 
 ok('the note says aspect is not mutual', /Aspect is not mutual/.test(appSrc));
