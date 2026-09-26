@@ -311,11 +311,11 @@ ok('the lagna is the first row of the table, not a summary tile',
  * the two say the same thing the same way. [R] keeps its red; [V] and [Y] stay
  * quiet, being facts rather than warnings.
  */
-ok('the table flags the graha [R][Y][C], as the chart does', (function () {
+ok('the table flags the graha [R][V][Y][C], as the chart does', (function () {
   var at = appSrc.indexOf('function renderSlotTable');
   var block = appSrc.slice(at, appSrc.indexOf('function renderShadbala'));
   return /r\.retrograde \? 'R' : null/.test(block) &&
-    !/'V' : null/.test(block) &&
+    /set\.division !== 1 && v\.sign === Astro\.signOf\(r\.longitude\) \? 'V' : null/.test(block) &&
     /Astro\.isYogakaraka\(r\.name, firstSign\) \? 'Y' : null/.test(block) &&
     /Astro\.isCombust\(r\.name, r\.longitude, sun\.longitude,/.test(block) &&
     /'\[' \+ f \+ '\]'/.test(block);
@@ -976,12 +976,14 @@ ok('the key explains [Y], and says it moves with the rotation', (function () {
 ok('retrograde alone stays bare [R]', /Sa \[R\]<|Sa \[R\]\s/.test(renderIn(1)));
 ok('a graha with neither carries no brackets', /Ju<\/text>|>Ju</.test(renderIn(1)));
 
-ok('the key covers the flags drawn, and not the one that moved', (function () {
+ok('the key covers all four flags', (function () {
   // Collapsed, so re-wrapping the paragraph cannot fail this on whitespace alone.
   var flat = html.replace(/\s+/g, ' ');
   return /\[R\] is retrograde/.test(flat) && /\[Y\] is yogakaraka/.test(flat) &&
-    /\[C\] is combust/.test(flat) && !/\[V\] is vargottama/.test(flat) &&
-    /Vargottama is in the Vargas tab/.test(flat);
+    /\[C\] is combust/.test(flat) &&
+    /\[V\] marks a division that has landed the graha back in the sign it holds in the rashi/
+      .test(flat) &&
+    /never appears on D1; in D9 it is vargottama proper/.test(flat);
 })());
 
 console.log('\nVargas panel');
@@ -1361,9 +1363,44 @@ ok('the note explains the mark', (function () {
 })());
 ok('and the D9 case is named as vargottama proper',
    /division === 9 \? ' In D9 that is vargottama proper\.' : ''/.test(appSrc));
-ok('the graha flags no longer carry it', (function () {
+/*
+ * The same question the grid asks, asked of whichever division is drawn. Never
+ * of D1, where every graha repeats its own sign by definition.
+ */
+ok('the chart asks it of the division on screen, and never of D1', (function () {
   var charts = fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8');
-  return !/vargottama/.test(charts) && !/'V' : null/.test(appSrc);
+  return /!!division && division !== 1 &&\s*\n\s*signOfBody\(longitude\) === Astro\.signOf\(longitude\)/
+    .test(charts) && /vargottama: repeatsRashi\(p\.longitude\)/.test(charts);
+})());
+ok('the lagna is eligible for it, being a position like any other',
+   /vargottama: repeatsRashi\(ascLongitude\)/
+     .test(fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8')));
+ok('D1 draws no [V] at all, and the divisions do', (function () {
+  var c = Astro.chart({ jdUT: Astro.julianDay(1985, 3, 22, 10 + 55 / 60 - 5.5),
+                        latitude: 23.55, longitude: 87.32, tzOffsetMinutes: 330 });
+  var drawn = function (division) {
+    var box = makeNode('div');
+    Charts.render(box, { style: 'north', division: division,
+      planets: c.planets, ascendant: c.ascendant.longitude });
+    return (serialise(box).match(/\[V\]/g) || []).length;
+  };
+  return drawn(1) === 0 && drawn(9) > 0 && drawn(3) > 0;
+})());
+ok('and the chart agrees with the Vargas grid, being the same comparison', (function () {
+  var c = Astro.chart({ jdUT: Astro.julianDay(1985, 3, 22, 10 + 55 / 60 - 5.5),
+                        latitude: 23.55, longitude: 87.32, tzOffsetMinutes: 330 });
+  return [3, 7, 9, 27, 30].every(function (division) {
+    var box = makeNode('div');
+    Charts.render(box, { style: 'north', division: division,
+      planets: c.planets, ascendant: c.ascendant.longitude });
+    var svg = serialise(box);
+    return c.planets.every(function (p) {
+      var repeats = Astro.vargaPosition(p.longitude, division).sign === Astro.signOf(p.longitude);
+      var abbr = Charts.ABBR[p.name];
+      var flagged = new RegExp('>' + abbr + ' \\[[RVYC\\]\\[]*V').test(svg);
+      return repeats === flagged;
+    });
+  });
 })());
 ok('both halves of a pair carry the same hover',
    /if \(detail\) \{ sign\.title = detail; dignity\.title = detail; \}/.test(appSrc));

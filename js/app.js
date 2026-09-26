@@ -937,6 +937,9 @@
       [{ text: r.name, header: true,
          flags: [
            r.retrograde ? 'R' : null,
+           // This division has landed it back in its rashi sign. Never on D1,
+           // where every graha qualifies and the mark says nothing.
+           set.division !== 1 && v.sign === Astro.signOf(r.longitude) ? 'V' : null,
            !r.isAscendant && Astro.isYogakaraka(r.name, firstSign) ? 'Y' : null,
            !r.isAscendant && sun && Astro.isCombust(r.name, r.longitude, sun.longitude,
              r.retrograde) ? 'C' : null
