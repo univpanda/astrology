@@ -595,8 +595,37 @@ var Astro = (function () {
     Mercury: { exalt: { sign: 5, to: 15, deep: 15 }, debil: 11, own: [2, 5], mool: { sign: 5, from: 15, to: 20 } },
     Jupiter: { exalt: { sign: 3, to: 30, deep: 5 }, debil: 9, own: [8, 11], mool: { sign: 8, from: 0, to: 10 } },
     Venus: { exalt: { sign: 11, to: 30, deep: 27 }, debil: 5, own: [1, 6], mool: { sign: 6, from: 0, to: 15 } },
-    Saturn: { exalt: { sign: 6, to: 30, deep: 20 }, debil: 0, own: [9, 10], mool: { sign: 10, from: 0, to: 20 } }
+    Saturn: { exalt: { sign: 6, to: 30, deep: 20 }, debil: 0, own: [9, 10], mool: { sign: 10, from: 0, to: 20 } },
+
+    /*
+     * The nodes, following B.V. Raman: Rahu exalts in Taurus and Ketu in
+     * Scorpio, the deep points at 20 degrees of each, and debilitation opposite
+     * as it is for everyone else.
+     *
+     * Raman gives them neither a moolatrikona nor an own sign, holding that the
+     * nodes are aprakasha grahas which give the results of the lord of the house
+     * they occupy. So `mool` is null and `own` is empty, and that is a position
+     * rather than an omission: what a node is doing is read from its dispositor.
+     *
+     * BPHS goes further in the Rahu dasha chapter, verses 34-39, giving
+     * moolatrikona as Gemini and Sagittarius and own signs as Aquarius and
+     * Scorpio, then undercutting the last in the next breath - "Some learned have
+     * expressed the view that Virgo is the own sign of Rahu and Pisces is the own
+     * sign of Ketu." Ownership is not followed from either direction: Aquarius
+     * and Scorpio already have lords, and a second claimant would corrupt every
+     * dispositor, lordship and raja yoga reading in the app, all of which resolve
+     * a sign to exactly one graha.
+     *
+     * The exaltation signs are contested too. A second school exalts Rahu in
+     * Gemini, and the Saptarishis tradition puts both nodes in Scorpio. Taurus
+     * and Scorpio are the majority and are what Raman and BPHS agree on.
+     */
+    Rahu: { exalt: { sign: 1, to: 30, deep: 20 }, debil: 7, own: [], mool: null },
+    Ketu: { exalt: { sign: 7, to: 30, deep: 20 }, debil: 1, own: [], mool: null }
   };
+
+  /* Owning no sign is what separates these two from the rest of the table. */
+  var NODES = ['Rahu', 'Ketu'];
 
   function signOf(lon) { return Math.floor(norm360(lon) / 30); }
 
@@ -1032,6 +1061,14 @@ var Astro = (function () {
   function vargaDignity(graha, longitude, division, positionsD1) {
     var position = vargaPosition(longitude, division);
     if (!position) return null;
+    /*
+     * The nodes are excluded here even though they now carry an exaltation. This
+     * grid is scored on varga viswa, which is a relation to the lord of the sign,
+     * and a graha that keeps no friendships has no relation to report. Letting
+     * them in would draw a row that was empty in fourteen columns out of sixteen
+     * and scored in none.
+     */
+    if (NODES.indexOf(graha) >= 0) return null;
     var lord = SIGN_LORDS[position.sign];
 
     var own = dignityOf(graha, position.sign, position.degreeInSign);
@@ -1353,6 +1390,7 @@ var Astro = (function () {
     RELATION_LABELS: RELATION_LABELS,
     isYogakaraka: isYogakaraka,
     DIGNITY: DIGNITY,
+    NODES: NODES,
     signOf: signOf,
     norm360: norm360,
     SIGNS: SIGNS,

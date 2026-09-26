@@ -1554,25 +1554,84 @@ console.log('\nDignities');
   ok(t[0] + ' at ' + A.SIGNS[t[1]] + ' ' + t[2] + ' is ' + t[3], got === t[3], got || '(none)');
 });
 ok('an ordinary placement has no dignity', A.dignityOf('Sun', 2, 15) === '', A.dignityOf('Sun', 2, 15) || '(none)');
-ok('the nodes are left without one', A.dignityOf('Rahu', 1, 10) === '' && A.dignityOf('Ketu', 7, 10) === '');
+/*
+ * The nodes, following B.V. Raman: exalted in Taurus and Scorpio, debilitated
+ * opposite, with the deep points at 20 degrees. He gives them no moolatrikona
+ * and no own sign, holding that a node gives the results of the lord of the
+ * house it occupies, so the ladder stops there for them.
+ */
+ok('Rahu is exalted in Taurus and debilitated in Scorpio',
+   A.dignityOf('Rahu', 1, 10) === 'Exalted' && A.dignityOf('Rahu', 7, 10) === 'Debilitated');
+ok('and Ketu the other way round',
+   A.dignityOf('Ketu', 7, 10) === 'Exalted' && A.dignityOf('Ketu', 1, 10) === 'Debilitated');
+ok('the deep points are Raman\'s 20 degrees',
+   A.DIGNITY.Rahu.exalt.deep === 20 && A.DIGNITY.Ketu.exalt.deep === 20);
+ok('the nodes reach no other rung, having neither moolatrikona nor an own sign',
+   A.NODES.every(function (n) {
+     return A.DIGNITY[n].mool === null && A.DIGNITY[n].own.length === 0 &&
+       A.dignityOf(n, 2, 10) === '' && A.dignityOf(n, 8, 10) === '';
+   }));
+
+/*
+ * Ownership is the part that would do damage. Every dispositor, lordship and
+ * raja yoga reading resolves a sign to exactly one graha, so a node claiming
+ * Aquarius or Scorpio would quietly break all three.
+ */
+ok('and owning nothing, they never appear as anyone\'s lord',
+   A.NODES.every(function (n) { return A.housesOwned(n, 0).length === 0; }) &&
+   A.SIGN_LORDS.indexOf('Rahu') < 0 && A.SIGN_LORDS.indexOf('Ketu') < 0);
 // Exaltation and debilitation always sit opposite each other.
 ok('every debilitation faces its exaltation', Object.keys(A.DIGNITY).every(function (graha) {
   var d = A.DIGNITY[graha];
   return (d.exalt.sign + 6) % 12 === d.debil;
 }));
-// A graha's Mooltrikona sign is always one it owns, except the Moon's.
+// A graha's Mooltrikona sign is always one it owns, except the Moon's. The nodes
+// have none at all, which is Raman's position rather than a gap in the table.
 ok('Mooltrikona falls in a sign the graha owns, the Moon excepted',
    Object.keys(A.DIGNITY).every(function (graha) {
      var d = A.DIGNITY[graha];
+     if (!d.mool) return A.NODES.indexOf(graha) >= 0;
      return graha === 'Moon' || d.own.indexOf(d.mool.sign) >= 0;
    }));
 // Every graha reports each of the four dignities somewhere in the zodiac.
-ok('all four dignities are reachable for every graha', Object.keys(A.DIGNITY).every(function (graha) {
+/*
+ * Every one of the seven reaches all four rungs somewhere in the zodiac. The two
+ * nodes reach exactly two, exaltation and debilitation, and reaching a third
+ * would mean ownership or moolatrikona had crept back in.
+ */
+ok('all four dignities are reachable for each of the seven', Object.keys(A.DIGNITY).every(function (graha) {
+  if (A.NODES.indexOf(graha) >= 0) return true;
   var seen = {};
   for (var sign = 0; sign < 12; sign++) {
     for (var deg = 0; deg < 30; deg++) seen[A.dignityOf(graha, sign, deg)] = true;
   }
   return seen.Exalted && seen.Debilitated && seen.Mooltrikona && seen['Own sign'];
+}));
+/*
+ * The nodes are always opposite each other, and Raman's exaltation signs are
+ * opposite too, so the two are never in different states: either Rahu is in
+ * Taurus and Ketu in Scorpio and both are exalted, or the reverse and both are
+ * debilitated. That is a property of the scheme rather than a coincidence, and
+ * it is the reason a chart never shows one node dignified and the other not.
+ */
+ok('the nodes are always in the same state as each other', (function () {
+  for (var sign = 0; sign < 12; sign++) {
+    var rahu = A.dignityOf('Rahu', sign, 15);
+    var ketu = A.dignityOf('Ketu', (sign + 6) % 12, 15);
+    if (rahu !== ketu) return false;
+  }
+  return true;
+})());
+
+ok('and exactly two for each node', A.NODES.every(function (node) {
+  var seen = {};
+  for (var sign = 0; sign < 12; sign++) {
+    for (var deg = 0; deg < 30; deg++) {
+      var d = A.dignityOf(node, sign, deg);
+      if (d) seen[d] = true;
+    }
+  }
+  return Object.keys(seen).sort().join(',') === 'Debilitated,Exalted';
 }));
 
 console.log('\nZodiac helpers');

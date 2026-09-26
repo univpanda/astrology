@@ -25,6 +25,18 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
  ],
  null, 301),
 
+('dignity', 'Dignity', 'nodes',
+ 'Rahu and Ketu',
+ array[
+   'The nodes are the one place the dignity ladder does not apply whole, and the sources disagree about how much of it they get.',
+   'This page follows B.V. Raman: Rahu is exalted in Taurus and Ketu in Scorpio, the deep points at 20 degrees of each, and each is debilitated in the sign opposite.',
+   'Raman gives them no moolatrikona and no own sign, holding that the nodes are aprakasha grahas, lustreless, and that they give the results of the lord of the house they occupy. So what a node is doing is read from its dispositor and from what aspects it, not from a lordship of its own.',
+   'BPHS goes further, in the Rahu dasha chapter: it gives moolatrikona as Gemini and Sagittarius and own signs as Aquarius and Scorpio, then adds that "some learned have expressed the view that Virgo is the own sign of Rahu and Pisces is the own sign of Ketu". Ownership is not followed here from either direction, since every sign already has one lord and a second claimant would change every dispositor reading in the chart.',
+   'Even the exaltation signs are contested. A second school exalts Rahu in Gemini and debilitates it in Sagittarius; the Saptarishis tradition places both nodes in Scorpio. Taurus and Scorpio are the majority and are what Raman and BPHS agree on.',
+   'One consequence follows from the geometry. The nodes are always exactly opposite each other and their exaltation signs are opposite too, so they are never in different states: either both are exalted or both are debilitated.'
+ ],
+ 'The nodes are left out of vimsopaka bala and Shadbala, both of which are scored on friendship, which the nodes do not keep.', 302),
+
 ('dignity', 'Dignity', 'moolatrikona',
  'Moolatrikona',
  array[
@@ -33,7 +45,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'For six of the seven the moolatrikona lies inside a sign the graha already owns. The Moon is the exception, its moolatrikona being Taurus, which it does not own.',
    'It is scored separately from an own sign in some measures and not in others. Saptavargaja bala gives moolatrikona 45 and an own sign 30; varga viswa, which vimsopaka uses, gives both the full twenty and does not separate them.'
  ],
- null, 302),
+ null, 303),
 
 ('dignity', 'Friendship', 'general',
  'Natural, temporal and compound friendship',
@@ -44,7 +56,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'Compound friendship adds the two. Friend and friend gives a great friend, friend and enemy gives neutral, enemy and enemy gives a great enemy. This five step scale is what is meant by great friend, friend, neutral, enemy and great enemy everywhere else in the library.',
    'Temporal friendship is judged in the rashi chart even when the sign being judged belongs to a divisional chart, which Santhanam states directly in the Shadbala chapter.'
  ],
- null, 303)
+ null, 304)
 
 on conflict (topic, subject, condition) do update set
   heading = excluded.heading,

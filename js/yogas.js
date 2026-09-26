@@ -137,6 +137,11 @@ var Yogas = (function () {
       // Whichever graha is exalted in the sign this one is debilitated in.
       var exaltedHere = null;
       Object.keys(Astro.DIGNITY).forEach(function (other) {
+        // Rahu exalts in Taurus and Ketu in Scorpio, so without this the node
+        // would displace the Moon and Mars as the graha exalted in those signs.
+        // The cancellation conditions speak of a graha that disposits or aspects,
+        // which a node does neither of.
+        if (Astro.NODES.indexOf(other) >= 0) return;
         if (Astro.DIGNITY[other].exalt.sign === p.sign) exaltedHere = other;
       });
 
@@ -590,8 +595,13 @@ var Yogas = (function () {
     chart.planets.forEach(function (p) { positions[p.name] = p; });
     var lagna = Astro.signOf(chart.ascendant.longitude);
 
+    /*
+     * Lordship, not dignity. The nodes have an exaltation of their own but own no
+     * sign, so they can never be the lord of an angle or a trine; testing for a
+     * dignity entry would now admit them.
+     */
     var lords = Object.keys(positions).filter(function (g) {
-      return Astro.DIGNITY[g];                     // the nodes rule nothing
+      return Astro.housesOwned(g, lagna).length > 0;
     });
     var ownedIn = function (graha, set) {
       return Astro.housesOwned(graha, lagna).filter(function (h) {
