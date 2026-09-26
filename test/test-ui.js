@@ -306,8 +306,21 @@ ok('the icons are inline svg, not an external font or image',
 ok('the lagna is the first row of the table, not a summary tile',
    /name: 'Ascendant'/.test(appSrc) && /ascendant-row/.test(appSrc) &&
    !/fact\(facts, 'Lagna/.test(appSrc));
-ok('the ascendant row leaves motion and dignity blank',
-   /r\.isAscendant \? '\\u2013'/.test(appSrc));
+/*
+ * Retrogression is a flag on the name now, the way the chart writes it, rather
+ * than a column spelling out Direct on eight rows to say Retrograde on one. The
+ * lagna is a point and has no motion to report, so nothing has to be blanked.
+ */
+ok('retrogression rides on the graha name as [R]',
+   /\{ text: r\.name, header: true, retrograde: r\.retrograde \}/.test(appSrc) &&
+   /if \(cell\.retrograde\) td\.appendChild\(el\('span', 'retro-flag', ' \[R\]'\)\)/.test(appSrc));
+ok('and the flag alone takes the colour, not the name', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  return /th \.retro-flag \{ color: var\(--retro\)/.test(css) ||
+    /th \.retro-flag/.test(css.slice(css.indexOf('retro-flag')));
+})());
+ok('the ascendant row still leaves dignity blank',
+   /\(r\.isAscendant \? '' : Astro\.dignityOf/.test(appSrc));
 
 ok('time standard select is wired', /id="time-standard"/.test(html) && /time-standard/.test(appSrc));
 
@@ -1355,8 +1368,8 @@ ok('friendship is defined once, in the engine', (function () {
 })());
 
 // The columns, in the order they read.
-ok('both tables carry the same nine columns, in order', (function () {
-  var wanted = ['Graha', 'Motion', 'Rashi', 'Dignity', 'Dispositor', 'Longitude',
+ok('both tables carry the same eight columns, in order', (function () {
+  var wanted = ['Graha', 'Rashi', 'Dignity', 'Dispositor', 'Longitude',
                 'Nakshatra', 'Pada', 'Lord / sub lord'];
   return ['table-a', 'table-b'].every(function (id) {
     var at = html.indexOf('id="' + id + '"');
@@ -1382,8 +1395,16 @@ ok('what a graha is comes before where it is', (function () {
  */
 ok('cells are named, not indexed, so a new column cannot shift the titles',
    !/if \(i === \d && /.test(appSrc.slice(appSrc.indexOf('function renderSlotTable'),
-                                        appSrc.indexOf('function renderShadbala'))) &&
-   /cls: r\.retrograde \? 'retro-flag' : null/.test(appSrc));
+                                        appSrc.indexOf('function renderShadbala'))));
+
+/*
+ * The Sanskrit name was a second label for the same thing in every row, and the
+ * column had to carry both. The English name alone is what the rest of the page
+ * uses.
+ */
+ok('the rashi column gives one name, not two',
+   /\{ text: Astro\.SIGNS\[v\.sign\] \}/.test(appSrc) &&
+   !/Astro\.SIGNS_SA\[v\.sign\]/.test(appSrc));
 
 // Reopening a chart must not shorten its place: the label is kept whole rather
 // than recomposed from parts that reopening had blanked.

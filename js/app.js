@@ -917,13 +917,11 @@
        * column was added, and inserting one in the middle silently moved the
        * titles onto the wrong cells.
        *
-       * What a graha is comes before where it is: motion, sign, dignity and
-       * dispositor first, then the position that produced them.
+       * What a graha is comes before where it is: sign, dignity and dispositor
+       * first, then the position that produced them.
        */
-      [{ text: r.name, header: true },
-       { text: r.isAscendant ? '\u2013' : (r.retrograde ? 'Retrograde' : 'Direct'),
-         cls: r.retrograde ? 'retro-flag' : null },
-       { text: Astro.SIGNS[v.sign] + ' (' + Astro.SIGNS_SA[v.sign] + ')' },
+      [{ text: r.name, header: true, retrograde: r.retrograde },
+       { text: Astro.SIGNS[v.sign] },
        { text: (r.isAscendant ? '' : Astro.dignityOf(r.name, v.sign, v.degreeInSign)) || '\u2013' },
        { text: r.isAscendant ? Astro.SIGN_LORDS[v.sign] : dispositorOf(r.name, v.sign, positionsD1),
          cls: 'dispositor',
@@ -936,6 +934,12 @@
       ].forEach(function (cell) {
         var td = el(cell.header ? 'th' : 'td', cell.cls, cell.text);
         if (cell.header) td.setAttribute('scope', 'row');
+        /*
+         * Retrogression rides on the name as [R], the way the chart writes it,
+         * rather than spelling out Direct on eight rows to say Retrograde on one.
+         * A span so the flag can take the colour without the name taking it.
+         */
+        if (cell.retrograde) td.appendChild(el('span', 'retro-flag', ' [R]'));
         if (cell.title) td.title = cell.title;
         tr.appendChild(td);
       });
