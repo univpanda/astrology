@@ -965,7 +965,7 @@
          */
         if (cell.flags) {
           cell.flags.forEach(function (f, i) {
-            td.appendChild(el('span', f === 'R' ? 'retro-flag' : 'flag',
+            td.appendChild(el('span', 'flag flag-' + f.toLowerCase(),
               (i === 0 ? ' ' : '') + '[' + f + ']'));
           });
         }

@@ -319,8 +319,29 @@ ok('the table flags the graha [R][V][Y], as the chart does', (function () {
     /Astro\.isYogakaraka\(r\.name, firstSign\) \? 'Y' : null/.test(block) &&
     /'\[' \+ f \+ '\]'/.test(block);
 })());
-ok('and only retrogression is coloured',
-   /el\('span', f === 'R' \? 'retro-flag' : 'flag'/.test(appSrc));
+/*
+ * Three tokens sitting together have to read as three different facts, so each
+ * takes its own colour rather than retrogression being the only one picked out.
+ */
+ok('each flag gets a class of its own',
+   /el\('span', 'flag flag-' \+ f\.toLowerCase\(\)/.test(appSrc));
+ok('and each class a colour of its own, all three distinct', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var colourOf = function (cls) {
+    var m = css.match(new RegExp('th \\.' + cls + ' \\{ color: ([^;]+);'));
+    return m && m[1].trim();
+  };
+  var r = colourOf('flag-r'), v = colourOf('flag-v'), y = colourOf('flag-y');
+  return r && v && y && r !== v && v !== y && r !== y;
+})());
+ok('the two new hues are defined in both palettes, not only the light one', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var at = css.indexOf('@media (prefers-color-scheme: dark)');
+  var light = css.slice(0, at), dark = css.slice(at);
+  return ['--flag-vargottama', '--flag-yogakaraka'].every(function (name) {
+    return light.indexOf(name + ':') >= 0 && dark.indexOf(name + ':') >= 0;
+  });
+})());
 /*
  * Vargottama is D1 against D9 and does not move. Yogakaraka is lordship counted
  * from house 1, so it moves with the rotation exactly as the House column does:
