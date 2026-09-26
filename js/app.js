@@ -900,6 +900,22 @@
         return { name: p.name, longitude: p.longitude, retrograde: p.retrograde };
       }));
 
+    /*
+     * House 1 is whatever the chart beside this table is rotated onto, worked out
+     * in the division on show so the two always agree. Counting from the
+     * ascendant while the chart is rotated onto the Moon would put every number
+     * in this column at odds with the picture above it.
+     */
+    var firstSign = positionOf(c.ascendant.longitude).sign;
+    if (set.reference && set.reference !== 'Ascendant') {
+      var anchor = c.planets.filter(function (p) { return p.name === set.reference; })[0];
+      if (anchor) firstSign = positionOf(anchor.longitude).sign;
+    }
+    // Vargottama and yogakaraka are both read from the rashi, so they do not move
+    // when the division does. The lagna is a point and owns nothing, so it is
+    // never a yogakaraka, but it can be vargottama.
+    var rashiLagna = Astro.signOf(c.ascendant.longitude);
+
     rows.forEach(function (r) {
       var v = positionOf(r.longitude);
       var nak = Astro.nakshatraOf(v.longitude);
@@ -914,9 +930,19 @@
        * What a graha is comes before where it is: sign, dignity and dispositor
        * first, then the position that produced them.
        */
-      [{ text: r.name, header: true, retrograde: r.retrograde },
+      [{ text: r.name, header: true,
+         flags: [
+           r.retrograde ? 'R' : null,
+           Astro.isVargottama(r.longitude) ? 'V' : null,
+           !r.isAscendant && Astro.isYogakaraka(r.name, rashiLagna) ? 'Y' : null
+         ].filter(Boolean) },
        { text: Astro.SIGNS[v.sign] },
        { text: (r.isAscendant ? '' : Astro.dignityOf(r.name, v.sign, v.degreeInSign)) || '\u2013' },
+       { text: String(((v.sign - firstSign) % 12 + 12) % 12 + 1), cls: 'numeric',
+         title: 'Whole sign house, counted from ' +
+           (set.reference === 'Ascendant' ? 'the ascendant' : set.reference) + ' in ' +
+           (Astro.VARGAS.filter(function (x) { return x.division === set.division; })[0] || {}).name +
+           ', as the chart beside this table is.' },
        { text: r.isAscendant ? Astro.SIGN_LORDS[v.sign] : dispositorOf(r.name, v.sign, positionsD1),
          cls: 'dispositor',
          title: r.isAscendant ? null : dispositorDetail(r.name, v.sign, positionsD1) },
@@ -929,11 +955,17 @@
         var td = el(cell.header ? 'th' : 'td', cell.cls, cell.text);
         if (cell.header) td.setAttribute('scope', 'row');
         /*
-         * Retrogression rides on the name as [R], the way the chart writes it,
-         * rather than spelling out Direct on eight rows to say Retrograde on one.
-         * A span so the flag can take the colour without the name taking it.
+         * The same three flags the chart writes, in the same order: [R][V][Y].
+         * Spans rather than text, so each can be coloured without the name
+         * taking the colour, and so retrogression keeps its red while the other
+         * two stay quiet.
          */
-        if (cell.retrograde) td.appendChild(el('span', 'retro-flag', ' [R]'));
+        if (cell.flags) {
+          cell.flags.forEach(function (f, i) {
+            td.appendChild(el('span', f === 'R' ? 'retro-flag' : 'flag',
+              (i === 0 ? ' ' : '') + '[' + f + ']'));
+          });
+        }
         if (cell.title) td.title = cell.title;
         tr.appendChild(td);
       });

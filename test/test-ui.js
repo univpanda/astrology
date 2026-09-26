@@ -307,13 +307,28 @@ ok('the lagna is the first row of the table, not a summary tile',
    /name: 'Ascendant'/.test(appSrc) && /ascendant-row/.test(appSrc) &&
    !/fact\(facts, 'Lagna/.test(appSrc));
 /*
- * Retrogression is a flag on the name now, the way the chart writes it, rather
- * than a column spelling out Direct on eight rows to say Retrograde on one. The
- * lagna is a point and has no motion to report, so nothing has to be blanked.
+ * The table carries the same three flags the chart does, in the same order, so
+ * the two say the same thing the same way. [R] keeps its red; [V] and [Y] stay
+ * quiet, being facts rather than warnings.
  */
-ok('retrogression rides on the graha name as [R]',
-   /\{ text: r\.name, header: true, retrograde: r\.retrograde \}/.test(appSrc) &&
-   /if \(cell\.retrograde\) td\.appendChild\(el\('span', 'retro-flag', ' \[R\]'\)\)/.test(appSrc));
+ok('the table flags the graha [R][V][Y], as the chart does', (function () {
+  var at = appSrc.indexOf('function renderSlotTable');
+  var block = appSrc.slice(at, appSrc.indexOf('function renderShadbala'));
+  return /r\.retrograde \? 'R' : null/.test(block) &&
+    /Astro\.isVargottama\(r\.longitude\) \? 'V' : null/.test(block) &&
+    /Astro\.isYogakaraka\(r\.name, rashiLagna\) \? 'Y' : null/.test(block) &&
+    /'\[' \+ f \+ '\]'/.test(block);
+})());
+ok('and only retrogression is coloured',
+   /el\('span', f === 'R' \? 'retro-flag' : 'flag'/.test(appSrc));
+/*
+ * Both are read from the rashi, so neither moves when the division does. The
+ * lagna is a point and owns nothing, so it is never a yogakaraka; it can be
+ * vargottama.
+ */
+ok('vargottama and yogakaraka are read from the rashi, not the division shown',
+   /var rashiLagna = Astro\.signOf\(c\.ascendant\.longitude\);/.test(appSrc) &&
+   /!r\.isAscendant && Astro\.isYogakaraka/.test(appSrc));
 ok('and the flag alone takes the colour, not the name', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
   return /th \.retro-flag \{ color: var\(--retro\)/.test(css) ||
@@ -432,8 +447,10 @@ function stripHtml(label) {
     var chartsSrc = fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8');
     return /data\.firstSign/.test(chartsSrc) && /signOfBody\(anchor\.longitude\)/.test(chartsSrc);
   })());
-  ok('the table no longer depends on which sign leads',
-     !/firstSign/.test(appSrc) && !/<th scope="col">House<\/th>/.test(html));
+  ok('houses are counted from whatever the chart beside the table is rotated onto',
+     /var firstSign = positionOf\(c\.ascendant\.longitude\)\.sign;/.test(appSrc) &&
+     /set\.reference !== 'Ascendant'/.test(appSrc) &&
+     /<th scope="col">House<\/th>/.test(html));
 })();
 
 // Saved kundalis: the list, and the four keys that identify an entry.
@@ -1347,8 +1364,8 @@ ok('friendship is defined once, in the engine', (function () {
 })());
 
 // The columns, in the order they read.
-ok('both tables carry the same eight columns, in order', (function () {
-  var wanted = ['Graha', 'Rashi', 'Dignity', 'Dispositor', 'Longitude',
+ok('both tables carry the same nine columns, in order', (function () {
+  var wanted = ['Graha', 'Rashi', 'Dignity', 'House', 'Dispositor', 'Longitude',
                 'Nakshatra', 'Pada', 'Lord / sub lord'];
   return ['table-a', 'table-b'].every(function (id) {
     var at = html.indexOf('id="' + id + '"');
@@ -1358,9 +1375,11 @@ ok('both tables carry the same eight columns, in order', (function () {
     return found.join('|') === wanted.join('|');
   });
 })());
-ok('house and rules are gone from the tables',
-   !/<th scope="col">House<\/th>/.test(html) && !/<th scope="col">Rules<\/th>/.test(html) &&
-   !/function rulership/.test(appSrc));
+ok('the rules column stayed gone when house came back',
+   !/<th scope="col">Rules<\/th>/.test(html) && !/function rulership/.test(appSrc));
+ok('the house column says what it is counted from',
+   /Whole sign house, counted from/.test(appSrc) &&
+   /as the chart beside this table is\./.test(appSrc));
 ok('what a graha is comes before where it is', (function () {
   var at = html.indexOf('id="table-a"');
   var head = html.slice(at, html.indexOf('</thead>', at));
