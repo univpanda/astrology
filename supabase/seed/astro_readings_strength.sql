@@ -51,7 +51,21 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'The scheme has to be named alongside any figure. The same chart gives four different totals across the Shadvarga, Saptavarga, Dasavarga and Shodasavarga, because each shares the twenty points out differently, and a total quoted without its scheme cannot be checked.',
    'It measures dignity across divisions and nothing else. It does not know which houses the graha rules, where it sits, or what aspects it, so it is one input to a judgement rather than the judgement.'
  ],
- 'What a high total does and does not mean is set out under Strength and influence.', 13)
+ 'What a high total does and does not mean is set out under Strength and influence.', 13),
+
+('strength', 'Vimsopaka Bala', 'limits',
+ 'What vimsopaka bala cannot see',
+ array[
+   'It is tempting to treat the total as a complete account of a graha''s strength, since it is a single number that looks like one. It is not. It counts dignity division by division and nothing else, and three things the tradition counts as strength fall outside it entirely.',
+   'Vargottama. The score reads each division on its own and never compares two, so a graha holding the same sign in the rashi and the navamsha is scored exactly as one holding two different signs of equal dignity. The repetition, which is the whole of what vargottama is, does not register.',
+   'Parivartana. The score judges a graha against the lord of the sign it occupies and never asks what that lord is doing. An exchange strengthens both grahas and leaves the total untouched.',
+   'Directional strength. Dig bala turns on which house a graha stands in - Jupiter and Mercury strongest on the ascendant, the Sun and Mars on the 10th, Saturn on the 7th, the Moon and Venus on the 4th - and vimsopaka never looks at houses at all.',
+   'Neecha bhanga. A debilitated graha scores near the floor, and rightly so where the debilitation stands. Where it is cancelled the graha is not weak at all, and the total says otherwise: this is the case where the score is not merely blind but actively lowest exactly where it matters most that it should not be.',
+   'The raja yoga form makes that sharper again. A cancelled debilitation in a kendra or a trikona is read as a strength that arrived by way of a weakness, and there is nothing in a division-by-division count of dignity that could ever express such a thing.',
+   'None of these is an oversight to be patched into the total. They are separate measures, and the classical practice is to read them beside it rather than fold them in.',
+   'On this page: vargottama is marked [V] beside the graha in the chart; an exchange and a cancelled debilitation are both reported among the yogas; and dig bala is a column of its own in Shadbala, which is the broader instrument and carries it as one of its six.'
+ ],
+ null, 14)
 
 on conflict (topic, subject, condition) do update set
   heading = excluded.heading,

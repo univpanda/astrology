@@ -1131,7 +1131,12 @@
       'not whether that is wanted. A strong malefic aspecting a house it does not rule ' +
       'afflicts it the more surely for being strong. It measures magnitude rather than ' +
       'direction, which is what makes it worth computing for a yoga already present: the yoga ' +
-      'says what is promised and this says how much of it the graha can carry. No luminary ' +
+      'says what is promised and this says how much of it the graha can carry. It is also not ' +
+      'the whole of strength: counting dignity division by division, it cannot see vargottama, ' +
+      'an exchange of signs, a cancelled debilitation or directional strength, which the ' +
+      'chart, the Yogas tab and Shadbala carry instead. A cancelled debilitation is the worst ' +
+      'of those, the total sitting near its floor exactly where the cancellation says it ' +
+      'should not. No luminary ' +
       'rules a trimsamsa, so in D30 the Sun ' +
       'stands in as Mars and the Moon as Venus. Rahu and Ketu own no sign and keep no ' +
       'friendships, so they are left out.';

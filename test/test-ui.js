@@ -794,6 +794,52 @@ ok('and the column\'s own hover says it too, where the number is read',
  * nothing either: it scales whatever the graha was going to do, which is what
  * makes it the right measure for how much a raja or dhana yoga delivers.
  */
+/*
+ * A single number that looks complete invites being treated as complete. It
+ * counts dignity division by division and nothing else, so vargottama, an
+ * exchange and dig bala all fall outside it - each of which this page does carry,
+ * elsewhere.
+ */
+ok('the note says what the total cannot see, and where those live instead', (function () {
+  var flat = appSrc.replace(/'\s*\+\s*'/g, '');
+  return /it cannot see vargottama, an exchange of signs, a cancelled debilitation or directional strength/.test(flat) &&
+    /the chart, the Yogas tab and Shadbala carry instead/.test(flat) &&
+    /the total sitting near its floor exactly where the cancellation says it should not/.test(flat);
+})());
+ok('and each of those four really is computed somewhere', (function () {
+  var shadbalaSrc = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8');
+  var yogaSrc = fs.readFileSync(path.join(root, 'js/yogas.js'), 'utf8');
+  return typeof Astro.isVargottama === 'function' &&
+    /function parivartana/.test(yogaSrc) &&
+    /function neechaBhanga/.test(yogaSrc) &&
+    /function digBala/.test(shadbalaSrc);
+})());
+
+/*
+ * The sharpest of the four. A debilitated graha scores near the floor, which is
+ * right where the debilitation stands and wrong where it is cancelled, so this is
+ * the case where the total is not merely blind but actively lowest exactly where
+ * it should not be.
+ */
+ok('a cancelled debilitation still scores near the floor, which is the point', (function () {
+  var place = { latitude: 23.5158, longitude: 87.308, tzOffsetMinutes: 330 };
+  var scheme = Astro.VARGA_SCHEMES.shodasavarga;
+  for (var y = 1970; y < 1990; y++) {
+    var c = Astro.chart({ jdUT: Astro.julianDay(y, 6, 12, 6), latitude: place.latitude,
+                          longitude: place.longitude, tzOffsetMinutes: 330 });
+    var pos = {};
+    c.planets.forEach(function (p) { pos[p.name] = p; });
+    var cancelled = Yogas.neechaBhanga(c);
+    if (!cancelled.length) continue;
+    var g = cancelled[0].grahas[0];
+    var v = Astro.vimsopaka(g, pos[g].longitude, scheme, pos);
+    // The score knows nothing of the cancellation: it is computed from dignity alone.
+    var d1 = Astro.vargaDignity(g, pos[g].longitude, 1, pos);
+    if (d1 && d1.key === 'debilitated' && v) return true;
+  }
+  return false;
+})());
+
 ok('and that it measures magnitude rather than direction', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');
   return /It measures magnitude rather than direction/.test(flat) &&
