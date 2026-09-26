@@ -911,10 +911,13 @@
       var anchor = c.planets.filter(function (p) { return p.name === set.reference; })[0];
       if (anchor) firstSign = positionOf(anchor.longitude).sign;
     }
-    // Vargottama and yogakaraka are both read from the rashi, so they do not move
-    // when the division does. The lagna is a point and owns nothing, so it is
-    // never a yogakaraka, but it can be vargottama.
-    var rashiLagna = Astro.signOf(c.ascendant.longitude);
+    /*
+     * Vargottama is D1 against D9 and does not move. Yogakaraka is lordship
+     * counted from house 1, so it moves with the rotation exactly as the House
+     * column does: the two are the same question asked twice. The lagna is a
+     * point and owns nothing, so it is never a yogakaraka, but it can be
+     * vargottama.
+     */
 
     rows.forEach(function (r) {
       var v = positionOf(r.longitude);
@@ -934,7 +937,7 @@
          flags: [
            r.retrograde ? 'R' : null,
            Astro.isVargottama(r.longitude) ? 'V' : null,
-           !r.isAscendant && Astro.isYogakaraka(r.name, rashiLagna) ? 'Y' : null
+           !r.isAscendant && Astro.isYogakaraka(r.name, firstSign) ? 'Y' : null
          ].filter(Boolean) },
        { text: Astro.SIGNS[v.sign] },
        { text: (r.isAscendant ? '' : Astro.dignityOf(r.name, v.sign, v.degreeInSign)) || '\u2013' },

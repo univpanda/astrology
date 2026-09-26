@@ -113,32 +113,45 @@ var Charts = (function () {
     var signOfBody = function (longitude) {
       return Astro.vargaPosition(longitude, division || 1).sign;
     };
+    var ascSign = signOfBody(ascLongitude);
+
+    /*
+     * Whatever house 1 actually is in the chart being drawn: the ascendant, or
+     * the sign of the graha it has been rotated onto, in the division on show.
+     * Worked out before the occupants because the yogakaraka flag depends on it.
+     */
+    var firstSign = ascSign;
+    if (reference && reference !== 'Ascendant') {
+      var anchor = planets.filter(function (p) { return p.name === reference; })[0];
+      if (anchor) firstSign = signOfBody(anchor.longitude);
+    }
 
     planets.forEach(function (p) {
       bySign[signOfBody(p.longitude)].push({
         name: p.name, retrograde: p.retrograde, longitude: p.longitude,
         vargottama: Astro.isVargottama(p.longitude),
         /*
-         * Owning both a kendra and a trikona, counted from the rashi lagna and
-         * not from whatever house 1 has been rotated onto. Which graha is a
-         * yogakaraka is a fact about the nativity; rotating the chart to read it
-         * from the Moon does not make a different graha one.
+         * Owning both an angle and a trine, counted from whatever house 1 is in
+         * this chart rather than fixed to the rashi lagna.
+         *
+         * The classical definition is from the ascendant, and chapter 34 words
+         * every example that way - "For Libra ascendant, Saturn ... owns the 4th
+         * (an angle) and the 5th (a trine)". Rotating is the deliberate act of
+         * reading the chart from somewhere else, though, and the houses, the
+         * lords and the House column all move when it happens. A flag that
+         * stayed put would be answering a question about a chart nobody is
+         * looking at. On the default view, house 1 is the ascendant and this is
+         * the classical yogakaraka.
          */
-        yogakaraka: Astro.isYogakaraka(p.name, Astro.signOf(ascLongitude))
+        yogakaraka: Astro.isYogakaraka(p.name, firstSign)
       });
     });
-    var ascSign = signOfBody(ascLongitude);
     // The lagna is a point, not a graha, so it owns nothing and is never one.
     bySign[ascSign].unshift({
       name: 'Ascendant', retrograde: false, longitude: ascLongitude,
       vargottama: Astro.isVargottama(ascLongitude), yogakaraka: false
     });
 
-    var firstSign = ascSign;
-    if (reference && reference !== 'Ascendant') {
-      var anchor = planets.filter(function (p) { return p.name === reference; })[0];
-      if (anchor) firstSign = signOfBody(anchor.longitude);
-    }
     return { bySign: bySign, ascSign: ascSign, firstSign: firstSign };
   }
 

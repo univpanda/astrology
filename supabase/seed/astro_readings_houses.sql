@@ -28,7 +28,9 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'The trines, a hundred and twenty degrees apart, called Lakshmi sthanas. They carry fortune, merit and what comes without being fought for.',
    'The 5th and 9th are the two that matter for most rules; the 1st counts as a trine in general talk but is treated as an angle where the two groups are being contrasted, as in raja yoga.',
    'Trikona lords are held to be unreservedly good, whatever their natural nature, which is the opposite of the caution attached to kendra lordship.',
-   'A relationship between an angle lord and a trine lord is the classical raja yoga, and a single graha owning one of each is a yogakaraka.'
+   'A relationship between an angle lord and a trine lord is the classical raja yoga, and a single graha owning one of each is a yogakaraka.',
+   'Only six of the twelve lagnas produce a yogakaraka at all: Mars for Cancer and Leo, Venus for Capricorn and Aquarius, Saturn for Taurus and Libra. The other six have none, which is worth knowing before hunting for one.',
+   'Chapter 34 words every example from the ascendant - "For Libra ascendant, Saturn is classified as unsullied yoga-karaka because he owns the 4th (an angle) and the 5th (a trine)". Counting from somewhere else, as one does when reading a chart from the Moon, gives a different answer, because the houses have moved and lordship is a statement about houses.'
  ],
  null, 202),
 

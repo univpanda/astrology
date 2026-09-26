@@ -316,18 +316,22 @@ ok('the table flags the graha [R][V][Y], as the chart does', (function () {
   var block = appSrc.slice(at, appSrc.indexOf('function renderShadbala'));
   return /r\.retrograde \? 'R' : null/.test(block) &&
     /Astro\.isVargottama\(r\.longitude\) \? 'V' : null/.test(block) &&
-    /Astro\.isYogakaraka\(r\.name, rashiLagna\) \? 'Y' : null/.test(block) &&
+    /Astro\.isYogakaraka\(r\.name, firstSign\) \? 'Y' : null/.test(block) &&
     /'\[' \+ f \+ '\]'/.test(block);
 })());
 ok('and only retrogression is coloured',
    /el\('span', f === 'R' \? 'retro-flag' : 'flag'/.test(appSrc));
 /*
- * Both are read from the rashi, so neither moves when the division does. The
- * lagna is a point and owns nothing, so it is never a yogakaraka; it can be
- * vargottama.
+ * Vargottama is D1 against D9 and does not move. Yogakaraka is lordship counted
+ * from house 1, so it moves with the rotation exactly as the House column does:
+ * the two are the same question asked twice, and a flag that disagreed with the
+ * column beside it would be answering about a chart nobody is looking at.
  */
-ok('vargottama and yogakaraka are read from the rashi, not the division shown',
-   /var rashiLagna = Astro\.signOf\(c\.ascendant\.longitude\);/.test(appSrc) &&
+ok('vargottama is fixed to the rashi, yogakaraka follows house 1',
+   /Astro\.isVargottama\(r\.longitude\)/.test(appSrc) &&
+   /Astro\.isYogakaraka\(r\.name, firstSign\)/.test(appSrc) &&
+   !/rashiLagna/.test(appSrc));
+ok('and the lagna is never flagged one, owning nothing',
    /!r\.isAscendant && Astro\.isYogakaraka/.test(appSrc));
 ok('and the flag alone takes the colour, not the name', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
@@ -879,19 +883,32 @@ ok('a yogakaraka is flagged [Y]', (function () {
 })());
 
 /*
- * Lordship is counted from the rashi lagna, not from whatever house 1 has been
- * rotated onto. Which graha is a yogakaraka is a fact about the nativity, and
- * reading the chart from the Moon does not make a different graha one.
+ * Lordship is counted from whatever house 1 is, so rotating the chart onto
+ * another graha changes who qualifies. Half the reference signs yield nobody at
+ * all: from Leo, Mars; from Sagittarius, none. The flag has to move with the
+ * House column beside it or the two contradict each other.
  */
-ok('and stays flagged whatever division or rotation is on screen', (function () {
-  var asc = 4 * 30 + 7;
-  return [1, 9, 10, 60].every(function (d) {
-    var box = makeNode('div');
-    Charts.render(box, { style: 'north', division: d, ascendant: asc, reference: 'Moon',
-      planets: [{ name: 'Mars', longitude: 4 * 30 + 4, retrograde: false },
-                { name: 'Moon', longitude: 8 * 30 + 4, retrograde: false }] });
-    return /Ma \[Y\]/.test(serialise(box));
-  });
+ok('it follows the rotation, as the houses do', (function () {
+  var body = function (name, sign) {
+    return { name: name, longitude: sign * 30 + 4, retrograde: false };
+  };
+  // Leo ascendant, so Mars is the yogakaraka while house 1 is the ascendant.
+  var opts = function (reference) {
+    return { style: 'north', division: 1, ascendant: 4 * 30 + 7, reference: reference,
+             planets: [body('Mars', 4), body('Moon', 8)] };
+  };
+  var fromLagna = makeNode('div'), fromMoon = makeNode('div');
+  Charts.render(fromLagna, opts('Ascendant'));
+  Charts.render(fromMoon, opts('Moon'));
+  // Rotated onto the Moon in Sagittarius, nobody owns an angle and a trine.
+  return /Ma \[Y\]/.test(serialise(fromLagna)) && !/\[Y\]/.test(serialise(fromMoon)) &&
+    Astro.isYogakaraka('Mars', 4) && !Astro.isYogakaraka('Mars', 8);
+})());
+ok('and the default view is still the classical one, from the ascendant', (function () {
+  var box = makeNode('div');
+  Charts.render(box, { style: 'north', division: 1, ascendant: 4 * 30 + 7,
+    planets: [{ name: 'Mars', longitude: 4 * 30 + 4, retrograde: false }] });
+  return /Ma \[Y\]/.test(serialise(box));
 })());
 
 ok('the lagna itself is never one, owning nothing',
@@ -904,10 +921,11 @@ ok('and the nodes are never one either, owning no sign',
      return true;
    }));
 
-ok('the key explains [Y] alongside the other two', (function () {
+ok('the key explains [Y], and says it moves with the rotation', (function () {
   var flat = html.replace(/\s+/g, ' ');
-  return /\[Y\] is yogakaraka, a graha owning both an angle and a trine from the lagna/.test(flat) &&
-    /neither changes with the division on screen/.test(flat);
+  return /\[Y\] is yogakaraka, a graha owning both an angle and a trine counted from house 1/.test(flat) &&
+    /follows the chart when it is rotated onto another graha/.test(flat) &&
+    /Half the signs yield nobody/.test(flat);
 })());
 ok('retrograde alone stays bare [R]', /Sa \[R\]<|Sa \[R\]\s/.test(renderIn(1)));
 ok('a graha with neither carries no brackets', /Ju<\/text>|>Ju</.test(renderIn(1)));
