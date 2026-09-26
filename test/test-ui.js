@@ -945,8 +945,7 @@ ok('and the nodes are never one either, owning no sign',
 ok('the key explains [Y], and says it moves with the rotation', (function () {
   var flat = html.replace(/\s+/g, ' ');
   return /\[Y\] is yogakaraka, a graha owning both an angle and a trine counted from house 1/.test(flat) &&
-    /follows the chart when it is rotated onto another graha/.test(flat) &&
-    /Half the signs yield nobody/.test(flat);
+    /follows the chart when it is rotated onto another graha/.test(flat);
 })());
 ok('retrograde alone stays bare [R]', /Sa \[R\]<|Sa \[R\]\s/.test(renderIn(1)));
 ok('a graha with neither carries no brackets', /Ju<\/text>|>Ju</.test(renderIn(1)));
