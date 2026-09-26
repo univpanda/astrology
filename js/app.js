@@ -1375,12 +1375,13 @@
     if (!found.length) {
       note.textContent = 'No yoga among those this page looks for is present in ' +
         chosen.name + '. ' +
-        'Raja yoga, parivartana, neecha bhanga, vipareeta raja, Lakshmi and the five ' +
-        'Mahapurusha yogas are checked so far; the Lesson tab explains each.';
+        'Raja yoga, parivartana, neecha bhanga, vipareeta raja, Lakshmi, Gaja ' +
+        'Kesari and the five Mahapurusha yogas are checked so far; the Lesson tab ' +
+        'explains each.';
       return;
     }
-    note.textContent = 'Raja yoga, parivartana, neecha bhanga, vipareeta raja, Lakshmi and the ' +
-      'five Mahapurusha yogas are checked so far; more will follow. An angle-trine raja yoga ' +
+    note.textContent = 'Raja yoga, parivartana, neecha bhanga, vipareeta raja, Lakshmi, ' +
+      'Gaja Kesari and the five Mahapurusha yogas are checked so far; more will follow. An angle-trine raja yoga ' +
       'is common, present in roughly three charts in four, so it is read alongside the ' +
       'strength of the grahas forming it rather than on its own. The Lesson tab explains ' +
       'what each one means. Yogas are read in the division chosen above, which is ' +

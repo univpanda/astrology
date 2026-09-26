@@ -681,7 +681,119 @@ var Yogas = (function () {
     return found;
   }
 
-  var DETECTORS = [parivartana, neechaBhanga, vipareeta, lakshmi, mahapurusha, rajaYoga];
+  /**
+   * Gaja Kesari, and the weaker Kesari it is usually confused with.
+   *
+   * BPHS, verses 3-4: "Should Jupiter be in an angle from the ascendant or from
+   * the Moon, and be conjunct or aspected by (another) benefic, avoiding at the
+   * same time debilitation, combustion and inimical sign, Gaja Kesari yoga is
+   * caused."
+   *
+   * Five conditions, not one. The definition in common use - Jupiter in a kendra
+   * from the Moon - is only the first of them, and Santhanam says outright that
+   * it is a different yoga: "the Moon-Jupiter mutual angular placement is called
+   * as simply Kesari Yoga, vide Phala Deepika, Ch. 6, shloka 14". Both are
+   * reported here, named apart, with the unmet conditions listed on the lesser
+   * one so it is clear what it is short of.
+   *
+   * Mutual angularity needs no separate test: the kendras are symmetric, so if
+   * Jupiter is 4th from the Moon the Moon is 10th from Jupiter, and both are
+   * angles.
+   */
+  function gajaKesari(chart) {
+    var positions = {};
+    chart.planets.forEach(function (p) { positions[p.name] = p; });
+    var jupiter = positions.Jupiter, moon = positions.Moon, sun = positions.Sun;
+    if (!jupiter || !moon) return [];
+
+    var lagna = Astro.signOf(chart.ascendant.longitude);
+    var houseFrom = function (sign, from) { return ((sign - from) % 12 + 12) % 12 + 1; };
+    var fromLagna = KENDRAS.indexOf(houseFrom(jupiter.sign, lagna)) >= 0;
+    var fromMoon = KENDRAS.indexOf(houseFrom(jupiter.sign, moon.sign)) >= 0;
+    if (!fromLagna && !fromMoon) return [];
+
+    var benefics = Astro.naturalBenefics(chart);
+    var helpers = Object.keys(positions).filter(function (g) {
+      if (g === 'Jupiter' || !benefics[g]) return false;
+      return positions[g].sign === jupiter.sign ||
+        aspects(g, positions[g].sign, jupiter.sign);
+    });
+
+    var dignity = Astro.dignityOf('Jupiter', jupiter.sign, jupiter.longitude % 30);
+    var lord = Astro.SIGN_LORDS[jupiter.sign];
+    var relation = lord === 'Jupiter' ? 'own'
+      : Astro.compoundRelation('Jupiter', lord,
+          ((positions[lord].sign - jupiter.sign) % 12 + 12) % 12 + 1);
+    var inimical = relation === 'shatru' || relation === 'adhishatru';
+
+    /*
+     * Combustion is a fact about the nativity, so it is measured on the rashi
+     * longitudes even when a division is being read. chartInDivision keeps them
+     * for exactly this.
+     */
+    var combust = sun && Astro.isCombust('Jupiter',
+      jupiter.rashiLongitude !== undefined ? jupiter.rashiLongitude : jupiter.longitude,
+      sun.rashiLongitude !== undefined ? sun.rashiLongitude : sun.longitude,
+      jupiter.retrograde);
+
+    var seat = fromLagna && fromMoon ? 'an angle from both the lagna and the Moon'
+      : fromLagna ? 'an angle from the lagna' : 'an angle from the Moon';
+    var where = 'Jupiter stands in ' + Astro.SIGNS[jupiter.sign] + ', ' + seat;
+
+    var missing = [];
+    if (!helpers.length) missing.push('no other benefic is conjunct it or aspects it');
+    if (dignity === 'Debilitated') missing.push('it is debilitated');
+    if (combust) missing.push('it is combust, inside ' +
+      Astro.COMBUSTION.Jupiter.direct + '\u00b0 of the Sun');
+    if (inimical) missing.push('it stands in the sign of an enemy, ' + lord);
+
+    if (!missing.length) {
+      return [{
+        yoga: 'Gaja Kesari Yoga',
+        kind: 'gaja',
+        subject: 'Gaja Kesari Yoga',
+        condition: 'general',
+        title: 'Gaja Kesari yoga',
+        family: null,
+        grahas: ['Jupiter', 'Moon'],
+        houses: [houseFrom(jupiter.sign, lagna)],
+        reasons: [
+          where,
+          'it is ' + (helpers.length === 1 ? 'helped by ' : 'helped by ') +
+            helpers.join(' and ') + ', benefic' + (helpers.length > 1 ? 's' : ''),
+          'and it is neither debilitated, nor combust, nor in an enemy\u2019s sign, ' +
+            'which is what separates this from the commoner Kesari yoga'
+        ],
+        summary: where + ', with a benefic on it and none of the three faults ' +
+          'Parashara excludes, which is Gaja Kesari yoga.'
+      }];
+    }
+
+    // Short of the full conditions. Only the lunar angle makes it Kesari at all.
+    if (!fromMoon) return [];
+    return [{
+      yoga: 'Kesari Yoga',
+      kind: 'kesari',
+      subject: 'Gaja Kesari Yoga',
+      condition: 'kesari',
+      title: 'Kesari yoga',
+      family: null,
+      grahas: ['Jupiter', 'Moon'],
+      houses: [houseFrom(jupiter.sign, moon.sign)],
+      reasons: [
+        'Jupiter and the Moon stand in mutual angles, Jupiter in the ' +
+          ordinal(houseFrom(jupiter.sign, moon.sign)) + ' from the Moon',
+        'this is Phaladeepika\u2019s Kesari yoga and not Parashara\u2019s Gaja Kesari, ' +
+          'which asks for more: ' + missing.join('; and ')
+      ],
+      summary: 'Jupiter is in the ' + ordinal(houseFrom(jupiter.sign, moon.sign)) +
+        ' from the Moon, which is Kesari yoga. It falls short of Gaja Kesari because ' +
+        missing.join('; and ') + '.'
+    }];
+  }
+
+  var DETECTORS = [parivartana, neechaBhanga, vipareeta, lakshmi, mahapurusha, rajaYoga,
+                   gajaKesari];
 
   /**
    * Every yoga this module knows how to look for, in one pass.
@@ -700,7 +812,8 @@ var Yogas = (function () {
 
   return { detect: detect, parivartana: parivartana, neechaBhanga: neechaBhanga,
     vipareeta: vipareeta, lakshmi: lakshmi, mahapurusha: mahapurusha,
-    rajaYoga: rajaYoga, VISHNU_HOUSES: VISHNU_HOUSES, LAKSHMI_HOUSES: LAKSHMI_HOUSES,
+    rajaYoga: rajaYoga, gajaKesari: gajaKesari,
+    VISHNU_HOUSES: VISHNU_HOUSES, LAKSHMI_HOUSES: LAKSHMI_HOUSES,
     VIPAREETA_NAMES: VIPAREETA_NAMES, MAHAPURUSHA: MAHAPURUSHA,
     KENDRAS: KENDRAS,
     // Exposed so a test can notice a detector being added without being wired

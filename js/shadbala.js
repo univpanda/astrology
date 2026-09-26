@@ -264,12 +264,9 @@ var Shadbala = (function () {
     var sun = positions.Sun, moon = positions.Moon;
     var elongation = Astro.norm360(moon.longitude - sun.longitude);
 
-    // Benefic or malefic, which decides the sign of every aspect below.
-    var benefics = { Jupiter: true, Venus: true, Sun: false, Mars: false, Saturn: false };
-    benefics.Moon = elongation > 90 && elongation < 270;   // waxing and bright
-    benefics.Mercury = !GRAHAS.some(function (g) {
-      return !benefics[g] && g !== 'Mercury' && positions[g].sign === positions.Mercury.sign;
-    });
+    // Benefic or malefic, which decides the sign of every aspect below. Shared
+    // with the yoga detectors rather than computed twice and left to drift.
+    var benefics = Astro.naturalBenefics(chart);
 
     var localHours = ((jd + (place.tzOffsetMinutes || 0) / 1440) + 0.5) % 1 * 24;
 

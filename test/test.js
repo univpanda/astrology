@@ -1079,7 +1079,7 @@ ok('ordinals read correctly', Yogas.ordinal(1) === '1st' && Yogas.ordinal(2) ===
   // what makes adding one without listing it a failing test rather than a
   // quietly incomplete check.
   var detectors = [Yogas.parivartana, Yogas.neechaBhanga, Yogas.vipareeta, Yogas.lakshmi,
-                   Yogas.mahapurusha, Yogas.rajaYoga];
+                   Yogas.mahapurusha, Yogas.rajaYoga, Yogas.gajaKesari];
   ok('every detector is covered by this test', detectors.length === Yogas.DETECTOR_COUNT,
      detectors.length + ' named, ' + Yogas.DETECTOR_COUNT + ' in the module');
 
@@ -2125,6 +2125,125 @@ console.log('\nYogas and aspects inside a division');
     return d1.length === d10.length && d1.length > 0 && shape(d1) !== shape(d10);
   })());
 })();
+
+console.log('\nGaja Kesari, and the Kesari it is confused with');
+/*
+ * BPHS verses 3-4: "Should Jupiter be in an angle from the ascendant or from the
+ * Moon, and be conjunct or aspected by (another) benefic, avoiding at the same
+ * time debilitation, combustion and inimical sign, Gaja Kesari yoga is caused."
+ *
+ * Five conditions. The definition in common use is the first of them alone, and
+ * Santhanam names that separately: "the Moon-Jupiter mutual angular placement is
+ * called as simply Kesari Yoga, vide Phala Deepika, Ch. 6, shloka 14."
+ */
+(function () {
+  var lagna = 0;                                   // Aries
+  var body = function (name, sign, deg, extra) {
+    var p = { name: name, sign: sign, longitude: sign * 30 + (deg === undefined ? 10 : deg),
+              house: ((sign - lagna) % 12 + 12) % 12 + 1, retrograde: false };
+    if (extra) Object.keys(extra).forEach(function (k) { p[k] = extra[k]; });
+    return p;
+  };
+  // Jupiter in Cancer, exalted, the 4th from Aries; Moon in Libra; Venus with Jupiter.
+  var full = function (over) {
+    var planets = [body('Jupiter', 3), body('Moon', 6), body('Venus', 3),
+                   body('Sun', 10), body('Mercury', 10), body('Mars', 1), body('Saturn', 8)];
+    if (over) over(planets);
+    return { ascendant: { longitude: lagna * 30 + 10 }, planets: planets };
+  };
+
+  var found = Yogas.gajaKesari(full());
+  ok('all five conditions together give Gaja Kesari',
+     found.length === 1 && found[0].title === 'Gaja Kesari yoga' && found[0].kind === 'gaja',
+     found.length ? found[0].title : 'nothing');
+
+  /*
+   * Each of the three faults alone drops it to Kesari, which is the whole point
+   * of separating them: the popular reading would call all four of these the
+   * same yoga.
+   */
+  ok('debilitation drops it to Kesari', (function () {
+    // Jupiter to Capricorn, its debilitation, the 10th from Aries and 4th from Libra.
+    var f = Yogas.gajaKesari(full(function (ps) {
+      ps[0] = body('Jupiter', 9); ps[2] = body('Venus', 9);
+    }));
+    return f.length === 1 && f[0].kind === 'kesari' &&
+      /it is debilitated/.test(f[0].summary);
+  })());
+
+  ok('combustion drops it to Kesari', (function () {
+    var f = Yogas.gajaKesari(full(function (ps) {
+      ps[3] = body('Sun', 3, 14);                  // Sun beside Jupiter in Cancer
+    }));
+    return f.length === 1 && f[0].kind === 'kesari' && /combust/.test(f[0].summary);
+  })());
+
+  ok('an enemy\'s sign drops it to Kesari', (function () {
+    // Jupiter to Leo, the Sun's sign; the Sun is not Jupiter's enemy, so use Mercury's
+    var f = Yogas.gajaKesari(full(function (ps) {
+      ps[0] = body('Jupiter', 5); ps[2] = body('Venus', 5); ps[1] = body('Moon', 8);
+    }));
+    return f.length === 1 && f[0].kind === 'kesari' && /sign of an enemy/.test(f[0].summary);
+  })());
+
+  ok('and no benefic on it drops it too', (function () {
+    var f = Yogas.gajaKesari(full(function (ps) {
+      ps[2] = body('Venus', 1);                    // Venus away, aspecting nothing
+    }));
+    return f.length === 1 && f[0].kind === 'kesari' &&
+      /no other benefic/.test(f[0].summary);
+  })());
+
+  ok('the lesser form says what it is short of', (function () {
+    var f = Yogas.gajaKesari(full(function (ps) {
+      ps[0] = body('Jupiter', 9); ps[2] = body('Venus', 9);
+    }))[0];
+    return /falls short of Gaja Kesari because/.test(f.summary) &&
+      f.reasons.some(function (r) { return /Phaladeepika/.test(r); });
+  })());
+
+  // No angle at all, from either reference, is neither yoga.
+  ok('Jupiter in no angle forms nothing', (function () {
+    return Yogas.gajaKesari(full(function (ps) {
+      ps[0] = body('Jupiter', 2); ps[1] = body('Moon', 0);   // Gemini, the 3rd from Aries and Aries
+    })).length === 0;
+  })());
+
+  /*
+   * Mutual angularity needs no separate test: the kendras are symmetric, so if
+   * Jupiter is 4th from the Moon the Moon is 10th from Jupiter.
+   */
+  ok('the kendras are symmetric, so mutual angularity is automatic', (function () {
+    var K = [1, 4, 7, 10];
+    for (var apart = 0; apart < 12; apart++) {
+      var there = (apart % 12) + 1;
+      var back = ((12 - apart) % 12) + 1;
+      if ((K.indexOf(there) >= 0) !== (K.indexOf(back) >= 0)) return false;
+    }
+    return true;
+  })());
+})();
+
+console.log('\nCombustion');
+/*
+ * Chapter 4's table, with the retrograde column: three grahas lose their rays
+ * closer in when retrograde, Mars most of all.
+ */
+ok('the orbs are Parashara\'s', A.COMBUSTION.Moon.direct === 12 &&
+   A.COMBUSTION.Mars.direct === 17 && A.COMBUSTION.Mars.retrograde === 8 &&
+   A.COMBUSTION.Mercury.direct === 14 && A.COMBUSTION.Mercury.retrograde === 12 &&
+   A.COMBUSTION.Jupiter.direct === 11 && A.COMBUSTION.Venus.direct === 10 &&
+   A.COMBUSTION.Venus.retrograde === 8 && A.COMBUSTION.Saturn.direct === 16);
+ok('a graha just inside its orb is combust and just outside is not',
+   A.isCombust('Jupiter', 10, 0, false) && !A.isCombust('Jupiter', 12, 0, false));
+ok('the orb is measured the short way round the circle',
+   A.isCombust('Jupiter', 355, 0, false) && A.isCombust('Jupiter', 5, 0, false));
+ok('retrograde Mars burns at 8 degrees rather than 17',
+   A.isCombust('Mars', 10, 0, false) && !A.isCombust('Mars', 10, 0, true));
+// "Rahu and Ketu should not be treated as combust ... they are only mathematical points."
+ok('the nodes are never combust, being points',
+   !A.isCombust('Rahu', 1, 0, false) && !A.isCombust('Ketu', 1, 0, false) &&
+   A.COMBUSTION.Rahu === undefined);
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

@@ -283,3 +283,37 @@ on conflict (topic, subject, condition) do update set
   note = excluded.note,
   sort_order = excluded.sort_order,
   updated_at = now();
+
+-- Gaja Kesari and Kesari. One subject in two conditions, because the second is
+-- what the first is usually mistaken for rather than a separate yoga.
+
+insert into astro_readings (topic, subject, condition, heading, points, note, sort_order) values
+('yoga', 'Gaja Kesari Yoga', 'general',
+ 'Gaja Kesari - Jupiter angular, helped, and unspoilt',
+ array[
+   'Verses 3-4: "Should Jupiter be in an angle from the ascendant or from the Moon, and be conjunct or aspected by (another) benefic, avoiding at the same time debilitation, combustion and inimical sign, Gaja Kesari yoga is caused."',
+   'Five conditions, not one. Jupiter in a kendra, from either the lagna or the Moon; a benefic on it by conjunction or aspect; and none of the three faults - not debilitated, not combust, not in an enemy''s sign.',
+   'Note that the angle may be from the ascendant. The reading in common use counts only from the Moon, which is narrower in one respect and far looser in every other.',
+   'Combustion is the condition most often skipped, and it is the one most likely to catch Jupiter out: within 11 degrees of the Sun, direct or retrograde, it is burnt and the yoga does not form.',
+   'The promised effects are large - "splendorous, wealthy, intelligent endowed with many laudable virtues and will please the king" - which is the reason for the conditions rather than in spite of them.'
+ ],
+ 'What is usually called Gaja Kesari is a different and weaker yoga; see below.', 760),
+
+('yoga', 'Gaja Kesari Yoga', 'kesari',
+ 'Kesari - the yoga this is usually confused with',
+ array[
+   'Jupiter and the Moon in mutual angles, and nothing further asked. This is what most sources mean when they say Gaja Kesari, and it is not what Parashara means.',
+   'Santhanam is direct about it: "That Jupiter-Moon should be in mutual angles is a normally accepted yoga under this name. In my opinion this kind of angularity cannot yield supreme effects... In point of fact, the Moon-Jupiter mutual angular placement is called as simply Kesari Yoga, vide Phala Deepika, Ch. 6, shloka 14."',
+   'Phaladeepika''s effects for it are real but ordinary beside Parashara''s: "The native will destroy the band of his enemies. He will be a lofty speaker in an assembly and will serve a king. He will be long lived and famous. He will be intelligent."',
+   'The difference is not small in practice. Across a sample of charts the mutual angle alone occurs about two and a half times as often as the full conditions, so treating them as one yoga inflates how often the stronger one is claimed.',
+   'Mutual angularity needs no separate checking. The kendras are symmetric: if Jupiter is in the 4th from the Moon, the Moon is in the 10th from Jupiter, and both are angles.',
+   'This page reports both, named apart, and says of the lesser one which conditions it failed.'
+ ],
+ null, 761)
+
+on conflict (topic, subject, condition) do update set
+  heading = excluded.heading,
+  points = excluded.points,
+  note = excluded.note,
+  sort_order = excluded.sort_order,
+  updated_at = now();

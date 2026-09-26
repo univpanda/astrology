@@ -1140,6 +1140,57 @@ var Astro = (function () {
     };
   }
 
+  /*
+   * Degrees of combustion, chapter 4. The retrograde column is separate because
+   * three grahas lose their rays closer in when retrograde, Mars most of all:
+   * 17 degrees direct against 8 retrograde.
+   *
+   * "Rahu and Ketu should not be treated as combust although they may be
+   * longitudinally close to the Sun. For they are only mathematical points."
+   */
+  var COMBUSTION = {
+    Moon: { direct: 12, retrograde: 12 },
+    Mars: { direct: 17, retrograde: 8 },
+    Mercury: { direct: 14, retrograde: 12 },
+    Jupiter: { direct: 11, retrograde: 11 },
+    Venus: { direct: 10, retrograde: 8 },
+    Saturn: { direct: 16, retrograde: 16 }
+  };
+
+  /** Is this graha within its orb of the Sun, and so burnt? */
+  function isCombust(graha, longitude, sunLongitude, retrograde) {
+    var orb = COMBUSTION[graha];
+    if (!orb) return false;                        // the Sun itself, and the nodes
+    var apart = Math.abs(norm360(longitude - sunLongitude));
+    if (apart > 180) apart = 360 - apart;
+    return apart < (retrograde ? orb.retrograde : orb.direct);
+  }
+
+  /**
+   * Which grahas are benefic in this chart.
+   *
+   * Jupiter and Venus always; the Sun, Mars and Saturn never. The Moon is
+   * benefic while waxing and bright, and Mercury takes the character of whatever
+   * it sits with, turning malefic in the company of a malefic.
+   *
+   * Shared rather than written twice: Shadbala weighs every aspect by this and a
+   * second copy would drift from it.
+   */
+  function naturalBenefics(chart) {
+    var positions = {};
+    chart.planets.forEach(function (p) { positions[p.name] = p; });
+    if (!positions.Sun || !positions.Moon) return {};
+
+    var elongation = norm360(positions.Moon.longitude - positions.Sun.longitude);
+    var benefics = { Jupiter: true, Venus: true, Sun: false, Mars: false, Saturn: false };
+    benefics.Moon = elongation > 90 && elongation < 270;
+    benefics.Mercury = !Object.keys(benefics).some(function (g) {
+      return !benefics[g] && positions[g] && positions.Mercury &&
+        positions[g].sign === positions.Mercury.sign;
+    });
+    return benefics;
+  }
+
   /**
    * Vargottama: the same sign in the rashi and in the navamsha.
    *
@@ -1405,6 +1456,9 @@ var Astro = (function () {
     navamsaSign: navamsaSign,
     vargaPosition: vargaPosition,
     chartInDivision: chartInDivision,
+    COMBUSTION: COMBUSTION,
+    isCombust: isCombust,
+    naturalBenefics: naturalBenefics,
     isVargottama: isVargottama,
     vargaDignity: vargaDignity,
     DASAVARGA: DASAVARGA,
