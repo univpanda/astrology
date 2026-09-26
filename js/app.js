@@ -143,6 +143,8 @@
     schemeSelect.addEventListener('change', function () {
       if (lastChart) renderVargas(lastChart);
     });
+
+    fillDivisionPickers();
   }
 
   /*
@@ -789,6 +791,7 @@
       varga.addEventListener('change', function () {
         if (!lastChart) return;
         drawSlot(slot);
+        labelFollowOption();
         renderYogas(lastChart);
         renderAspects(lastChart);
       });
@@ -1295,6 +1298,58 @@
    * charts now: whatever is on screen is what gets read. Not all sixteen at
    * once, which would bury the rashi under a hundred findings nobody asked for.
    */
+  /*
+   * Every division, plus a first entry that follows the two charts above. That
+   * entry is the default because the charts are what a reader is looking at, and
+   * the rest are there so a division can be inspected without having to put it on
+   * screen first: seeing what D24 makes of a chart should not cost you the D9 you
+   * were reading.
+   */
+  var FOLLOW_CHARTS = 'screen';
+
+  function fillDivisionPickers() {
+    ['yoga-division', 'aspect-division'].forEach(function (id) {
+      var select = document.getElementById(id);
+      select.innerHTML = '';
+      var follow = el('option', null, '');
+      follow.value = FOLLOW_CHARTS;
+      follow.selected = true;
+      select.appendChild(follow);
+      Astro.VARGAS.forEach(function (v) {
+        var opt = el('option', null, v.name + ' \u00b7 ' + v.label);
+        opt.value = String(v.division);
+        select.appendChild(opt);
+      });
+      select.addEventListener('change', function () {
+        if (!lastChart) return;
+        if (id === 'yoga-division') renderYogas(lastChart); else renderAspects(lastChart);
+      });
+    });
+    labelFollowOption();
+  }
+
+  /*
+   * The follow option names the divisions it would show, so the dropdown says
+   * what choosing it means rather than leaving it to be found out.
+   */
+  function labelFollowOption() {
+    var names = divisionsOnScreen().map(function (d) { return d.name; }).join(' and ');
+    ['yoga-division', 'aspect-division'].forEach(function (id) {
+      var option = document.getElementById(id).options[0];
+      if (option) option.textContent = 'As the charts above \u00b7 ' + names;
+    });
+  }
+
+  /** Which divisions a panel should read, given its own picker. */
+  function divisionsFor(pickerId) {
+    var chosen = document.getElementById(pickerId).value;
+    if (chosen === FOLLOW_CHARTS) return divisionsOnScreen();
+    var division = +chosen;
+    var varga = Astro.VARGAS.filter(function (v) { return v.division === division; })[0];
+    return [{ division: division, name: varga ? varga.name : 'D' + division,
+              label: varga ? varga.label : '' }];
+  }
+
   function divisionsOnScreen() {
     var seen = [], out = [];
     ['a', 'b'].forEach(function (slot) {
@@ -1320,7 +1375,7 @@
     list.innerHTML = '';
 
     var strengths = strengthsFor(state).grahas;
-    var divisions = divisionsOnScreen();
+    var divisions = divisionsFor('yoga-division');
     var perDivision = divisions.map(function (d) {
       return { d: d, found: Yogas.detect(Astro.chartInDivision(state.chart, d.division), strengths) };
     });
@@ -1404,7 +1459,7 @@
      * further divisions get a table built beside it.
      */
     var host = document.getElementById('aspect-host');
-    var divisions = divisionsOnScreen();
+    var divisions = divisionsFor('aspect-division');
     host.innerHTML = '';
 
     divisions.forEach(function (d) {

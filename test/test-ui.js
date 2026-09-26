@@ -698,7 +698,44 @@ ok('the columns a graha casts sit together, receiving last', (function () {
  * sixteen divisions at once, which would bury the rashi under findings nobody
  * asked for: whichever two are on screen.
  */
-ok('the divisions read are the ones the charts are set to',
+/*
+ * Each panel gets its own chart picker, the same shape as the Vargas scheme
+ * picker. The first entry follows the two charts above and is the default,
+ * because that is what a reader is looking at; the rest are there so a division
+ * can be inspected without having to put it on screen first, which would cost
+ * you whichever chart you were already reading.
+ */
+ok('both panels have a chart picker',
+   /id="yoga-division"/.test(html) && /id="aspect-division"/.test(html) &&
+   /function fillDivisionPickers/.test(appSrc));
+ok('it offers every division, plus the follow entry', (function () {
+  var at = appSrc.indexOf('function fillDivisionPickers');
+  var block = appSrc.slice(at, at + 900);
+  return /follow\.value = FOLLOW_CHARTS;/.test(block) && /follow\.selected = true;/.test(block) &&
+    /Astro\.VARGAS\.forEach\(function \(v\)/.test(block);
+})());
+ok('the follow entry names the divisions it would show, rather than leaving it vague',
+   /function labelFollowOption/.test(appSrc) &&
+   /'As the charts above \\u00b7 ' \+ names/.test(appSrc));
+ok('and is relabelled when a chart division changes', (function () {
+  var at = appSrc.indexOf("varga.addEventListener('change'");
+  var block = appSrc.slice(at, at + 400);
+  return /labelFollowOption\(\);/.test(block);
+})());
+ok('choosing a division reads that one alone', (function () {
+  var at = appSrc.indexOf('function divisionsFor');
+  var block = appSrc.slice(at, at + 500);
+  return /if \(chosen === FOLLOW_CHARTS\) return divisionsOnScreen\(\);/.test(block) &&
+    /return \[\{ division: division/.test(block);
+})());
+ok('each picker redraws only its own panel', (function () {
+  var at = appSrc.indexOf('function fillDivisionPickers');
+  var block = appSrc.slice(at, at + 1200);
+  return /if \(id === 'yoga-division'\) renderYogas\(lastChart\); else renderAspects\(lastChart\);/
+    .test(block);
+})());
+
+ok('the follow entry reads the divisions the charts are set to',
    /function divisionsOnScreen/.test(appSrc) &&
    /\+document\.getElementById\('varga-' \+ slot\)\.value/.test(appSrc));
 ok('and a division shown twice is read once', (function () {
