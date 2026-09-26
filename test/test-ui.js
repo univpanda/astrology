@@ -754,6 +754,66 @@ var renderIn = function (division) {
 };
 
 ok('both flags ride together, retrograde first', /Ve \[R\]\[V\]/.test(renderIn(1)));
+
+/*
+ * A yogakaraka owns both an angle and a trine from the lagna, which only six of
+ * the twelve lagnas produce at all: Mars for Cancer and Leo, Venus for Capricorn
+ * and Aquarius, Saturn for Taurus and Libra. The other six have none, and a flag
+ * that appeared on every chart would be telling nobody anything.
+ */
+ok('the yogakarakas are the classical six, and only those', (function () {
+  var byLagna = {};
+  for (var l = 0; l < 12; l++) {
+    byLagna[Astro.SIGNS[l]] = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn']
+      .filter(function (g) { return Astro.isYogakaraka(g, l); }).join(',');
+  }
+  return byLagna.Cancer === 'Mars' && byLagna.Leo === 'Mars' &&
+    byLagna.Capricorn === 'Venus' && byLagna.Aquarius === 'Venus' &&
+    byLagna.Taurus === 'Saturn' && byLagna.Libra === 'Saturn' &&
+    ['Aries', 'Gemini', 'Virgo', 'Scorpio', 'Sagittarius', 'Pisces']
+      .every(function (sign) { return byLagna[sign] === ''; });
+})());
+
+ok('a yogakaraka is flagged [Y]', (function () {
+  // Leo lagna puts Mars in the 1st as yogakaraka.
+  var asc = 4 * 30 + 7;
+  var box = makeNode('div');
+  Charts.render(box, { style: 'north', division: 1, ascendant: asc,
+    planets: [{ name: 'Mars', longitude: 4 * 30 + 4, retrograde: false }] });
+  return /Ma \[Y\]/.test(serialise(box));
+})());
+
+/*
+ * Lordship is counted from the rashi lagna, not from whatever house 1 has been
+ * rotated onto. Which graha is a yogakaraka is a fact about the nativity, and
+ * reading the chart from the Moon does not make a different graha one.
+ */
+ok('and stays flagged whatever division or rotation is on screen', (function () {
+  var asc = 4 * 30 + 7;
+  return [1, 9, 10, 60].every(function (d) {
+    var box = makeNode('div');
+    Charts.render(box, { style: 'north', division: d, ascendant: asc, reference: 'Moon',
+      planets: [{ name: 'Mars', longitude: 4 * 30 + 4, retrograde: false },
+                { name: 'Moon', longitude: 8 * 30 + 4, retrograde: false }] });
+    return /Ma \[Y\]/.test(serialise(box));
+  });
+})());
+
+ok('the lagna itself is never one, owning nothing',
+   /name: 'Ascendant', retrograde: false, longitude: ascLongitude,\s*\n\s*vargottama: Astro\.isVargottama\(ascLongitude\), yogakaraka: false/
+     .test(fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8')));
+
+ok('and the nodes are never one either, owning no sign',
+   Astro.NODES.every(function (n) {
+     for (var l = 0; l < 12; l++) if (Astro.isYogakaraka(n, l)) return false;
+     return true;
+   }));
+
+ok('the key explains [Y] alongside the other two', (function () {
+  var flat = html.replace(/\s+/g, ' ');
+  return /\[Y\] is yogakaraka, a graha owning both an angle and a trine from the lagna/.test(flat) &&
+    /neither changes with the division on screen/.test(flat);
+})());
 ok('retrograde alone stays bare [R]', /Sa \[R\]<|Sa \[R\]\s/.test(renderIn(1)));
 ok('a graha with neither carries no brackets', /Ju<\/text>|>Ju</.test(renderIn(1)));
 
@@ -782,11 +842,11 @@ ok('the ascendant is eligible for the flag too', (function () {
 ok('the table leaves vargottama to the chart',
    !/<th scope="col">Vargottama<\/th>/.test(html) &&
    !/el\('span', 'flag', ' \[V\]'\)/.test(appSrc));
-ok('the page carries a key for both flags', (function () {
+ok('the page carries a key for all three flags', (function () {
   // Collapsed, so re-wrapping the paragraph cannot fail this on whitespace alone.
   var flat = html.replace(/\s+/g, ' ');
-  return /\[R\] is retrograde\. \[V\] is vargottama/.test(flat) &&
-    /measured against D9 whichever division is on screen/.test(flat);
+  return /\[R\] is retrograde/.test(flat) && /\[V\] is vargottama/.test(flat) &&
+    /\[Y\] is yogakaraka/.test(flat);
 })());
 
 console.log('\nVargas panel');

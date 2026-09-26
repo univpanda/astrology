@@ -64,11 +64,14 @@ var Charts = (function () {
 
   /*
    * Flags ride together after the abbreviation, retrograde first: "Sa [R][V]".
-   * [V] is vargottama, which is D1 against D9 and so does not change when a
-   * different division is put on screen.
+   * [V] is vargottama, which is D1 against D9. [Y] is yogakaraka, which is
+   * lordship from the rashi lagna. Neither changes when a different division is
+   * put on screen, or when the chart is rotated onto another graha: both are
+   * properties the graha carries, not of the view.
    */
   function planetText(p) {
-    var flags = (p.retrograde ? '[R]' : '') + (p.vargottama ? '[V]' : '');
+    var flags = (p.retrograde ? '[R]' : '') + (p.vargottama ? '[V]' : '') +
+      (p.yogakaraka ? '[Y]' : '');
     return ABBR[p.name] + (flags ? ' ' + flags : '');
   }
 
@@ -114,13 +117,21 @@ var Charts = (function () {
     planets.forEach(function (p) {
       bySign[signOfBody(p.longitude)].push({
         name: p.name, retrograde: p.retrograde, longitude: p.longitude,
-        vargottama: Astro.isVargottama(p.longitude)
+        vargottama: Astro.isVargottama(p.longitude),
+        /*
+         * Owning both a kendra and a trikona, counted from the rashi lagna and
+         * not from whatever house 1 has been rotated onto. Which graha is a
+         * yogakaraka is a fact about the nativity; rotating the chart to read it
+         * from the Moon does not make a different graha one.
+         */
+        yogakaraka: Astro.isYogakaraka(p.name, Astro.signOf(ascLongitude))
       });
     });
     var ascSign = signOfBody(ascLongitude);
+    // The lagna is a point, not a graha, so it owns nothing and is never one.
     bySign[ascSign].unshift({
       name: 'Ascendant', retrograde: false, longitude: ascLongitude,
-      vargottama: Astro.isVargottama(ascLongitude)
+      vargottama: Astro.isVargottama(ascLongitude), yogakaraka: false
     });
 
     var firstSign = ascSign;
