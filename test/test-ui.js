@@ -478,6 +478,26 @@ function stripHtml(label) {
      /<th scope="col">House<\/th>/.test(html));
 })();
 
+/*
+ * One row per person. It was three lines - name, place, moment - which made a
+ * list of ten charts a wall three times taller than it needed to be.
+ */
+ok('a saved entry lays out as one row, wrapping only when it must', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var block = css.slice(css.indexOf('.saved-open {'), css.indexOf('.saved-name {'));
+  return /display: flex;/.test(block) && /flex-wrap: wrap;/.test(block) &&
+    !/display: grid;/.test(block);
+})());
+ok('the place truncates and the moment does not', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  return /\.saved-where \{ flex: 0 1 auto/.test(css) && /\.saved-when \{ flex: 0 0 auto/.test(css) &&
+    /saved-meta saved-where/.test(appSrc) && /saved-meta saved-when/.test(appSrc);
+})());
+ok('and a separator keeps the place and the moment from reading as one phrase', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  return /\.saved-when::before \{[^}]*content: '\\00b7'/.test(css);
+})());
+
 // Saved kundalis: the list, and the four keys that identify an entry.
 ok('the saved list and its empty state are both present',
    /id="saved-list"/.test(html) && /id="saved-empty"/.test(html));

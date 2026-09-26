@@ -148,15 +148,19 @@ main, .site-header, .site-footer { max-width: 1120px; margin: 0 auto; }
   cursor: pointer;
   color: var(--ink);
   min-width: 0;
-  display: grid;
-  gap: 0.1rem;
+  /* One row per person. It wraps only when the row genuinely runs out of width,
+     which is the narrow-screen case rather than the normal one. */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.55rem;
+  row-gap: 0.1rem;
 }
 .saved-name {
   font-weight: 600;
   font-size: 0.93rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 0 0 auto;
 }
 .saved-meta {
   font-size: 0.78rem;
@@ -164,6 +168,16 @@ main, .site-header, .site-footer { max-width: 1120px; margin: 0 auto; }
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* The place is the long part and the only one worth truncating: a clipped town
+   is still recognisable, a clipped date is not. */
+.saved-where { flex: 0 1 auto; min-width: 4rem; }
+.saved-when { flex: 0 0 auto; }
+/* A separator, so "United States 6 Jul 1946" does not read as one phrase. */
+.saved-when::before {
+  content: '\00b7';
+  margin-right: 0.55rem;
+  color: var(--ink-faint);
 }
 
 .saved-actions { display: flex; align-items: center; gap: 0.15rem; padding-right: 0.35rem; }

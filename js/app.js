@@ -1878,8 +1878,10 @@
       var savedName = el('span', 'saved-name', entry.name);
       if (entry.celebrity) savedName.appendChild(el('span', 'celebrity-mark', 'study'));
       open.appendChild(savedName);
-      open.appendChild(el('span', 'saved-meta', entry.placeLabel));
-      open.appendChild(el('span', 'saved-meta', formatSavedMoment(entry)));
+      // The place gives way first when the row is short of room; the moment is
+      // what tells two charts of the same person apart, so it keeps its width.
+      open.appendChild(el('span', 'saved-meta saved-where', entry.placeLabel));
+      open.appendChild(el('span', 'saved-meta saved-when', formatSavedMoment(entry)));
       open.addEventListener('click', function () { loadSaved(entry); });
       li.appendChild(open);
 
