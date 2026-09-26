@@ -596,6 +596,22 @@ console.log('\nLesson library');
       first('strength') < first('yoga');
   })());
 
+  /*
+   * The seed script applies the files by hand, so a new one added to the folder
+   * and not to the script is silently never applied - which is how the database
+   * came to hold 13 passages while the repo held 46.
+   */
+  ok('the seed script applies every seed file on disk', (function () {
+    var script = fs.readFileSync(path.join(root, 'scripts/seed-readings.sh'), 'utf8');
+    return files.every(function (f) { return script.indexOf(f) >= 0; });
+  })(), files.length + ' files');
+  ok('and applies the foundations before the yogas, so a partial run still starts somewhere',
+     (function () {
+       var script = fs.readFileSync(path.join(root, 'scripts/seed-readings.sh'), 'utf8');
+       return script.indexOf('astro_readings_basics.sql') <
+         script.indexOf('astro_readings_yogas.sql');
+     })());
+
   ok('no one topic is more than half the library', (function () {
     var counts = {};
     rows.forEach(function (r) { counts[r.topic] = (counts[r.topic] || 0) + 1; });

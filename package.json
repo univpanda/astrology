@@ -8,6 +8,7 @@
     "test": "node test/test.js && node test/test-ui.js && node test/test-db.js",
     "serve": "python3 -m http.server 8000",
     "deploy": "./scripts/deploy-aws.sh",
-    "deploy:api": "./scripts/deploy-edge.sh"
+    "deploy:api": "./scripts/deploy-edge.sh",
+    "seed": "./scripts/seed-readings.sh"
   }
 }

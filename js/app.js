@@ -1557,6 +1557,7 @@
    */
   var STORAGE_KEY = 'jyotisha.saved.v1';
   var TOKEN_KEY = 'jyotisha.owner.v1';
+  var SEED_KEY = 'jyotisha.seeded.v1';
   var KUNDALI_API = 'https://deiefjnwbfcywsaaqqbs.supabase.co/functions/v1/kundalis';
   var savedList = document.getElementById('saved-list');
   var savedEmpty = document.getElementById('saved-empty');
@@ -1564,6 +1565,57 @@
   var saveFeedback = document.getElementById('save-feedback');
   var addButton = document.getElementById('add-kundali');
   var editButton = document.getElementById('edit-button');
+
+  /*
+   * One chart ships with the app, so the saved list is not empty before anyone
+   * has typed a birth time in. Donald Trump's is the useful example to start
+   * from: the time is on a public birth certificate, which makes the chart
+   * checkable against any other ephemeris, and its Jupiter mahadasha begins in
+   * November 2016, on a date every reader already knows.
+   */
+  var STUDY_CHARTS = [{
+    name: 'Donald Trump',
+    placeLabel: 'Jamaica, New York, United States',
+    latitude: 40.6915,
+    longitude: -73.8057,
+    zone: 'America/New_York',
+    date: '1946-06-14',
+    time: '10:54:00',
+    standard: 'zone',
+    ayanamsa: 'lahiri',
+    trueNode: false,
+    gender: 'male',
+    celebrity: true,
+    note: '10:54 am EDT at Jamaica Hospital, Queens, the time on the birth ' +
+      'certificate he posted himself, which astrologers rate AA. Older references ' +
+      'print 9:51 am from Lois Rodden, and that one rises at 17 Leo rather than 29, ' +
+      'so the houses move even though the grahas barely do. Leo ascendant in Magha, ' +
+      'Moon debilitated in Scorpio with Ketu on a full moon, Sun with Rahu in Taurus, ' +
+      'and Jupiter dasha from November 2016.'
+  }];
+
+  /*
+   * Seeding is recorded under its own key rather than inferred from the list
+   * being empty. Deleting the chart has to stick, and having it reappear on the
+   * next visit would read as a bug rather than as a starting point.
+   */
+  function seedStudyCharts() {
+    try {
+      if (window.localStorage.getItem(SEED_KEY)) return;
+    } catch (e) {
+      return; // no storage: nothing to seed into, and no way to remember doing it
+    }
+    var list = readSaved();
+    var known = {};
+    list.forEach(function (entry) { known[keyOf(entry)] = true; });
+    STUDY_CHARTS.forEach(function (entry) {
+      // Appended, not prepended: a saved chart of one's own outranks the example.
+      if (!known[keyOf(entry)]) list.push(entry);
+    });
+    if (writeSaved(list)) {
+      try { window.localStorage.setItem(SEED_KEY, '1'); } catch (e) {}
+    }
+  }
 
   /*
    * There are no accounts, so ownership is a capability: a random token minted
@@ -2040,6 +2092,7 @@
 
   populateSelects();
   populateSlotSelects();
+  seedStudyCharts();
   renderSaved();
   /*
    * Charts saved before this browser could reach the database have no id. Push
