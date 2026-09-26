@@ -15,7 +15,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'It is classified in three by which two houses are exchanged - not by everything the two grahas rule. A graha may own two houses, and only the house whose sign is part of the swap belongs to the yoga.',
    'Strength still matters. An exchange between two weak grahas promises more than it delivers, which is why it is read alongside Shadbala rather than instead of it.'
  ],
- 'The three kinds - maha, khala and dainya - follow below.', 710),
+ 'The three kinds - maha, khala and dainya - follow below.', 910),
 
 ('yoga', 'Parivartana', 'maha',
  'Maha parivartana - the auspicious exchange',
@@ -24,7 +24,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'The two houses reinforce each other, and the yoga is read as strongly favourable - the more so when the houses are a kendra and a trikona, which is the raja yoga pairing.',
    'What it gives follows the houses exchanged rather than any fixed list: a 2nd and 11th exchange speaks of income and accumulation, a 4th and 10th of home and standing, a 5th and 9th of learning and fortune.',
    'Both grahas gain, since each is placed in a sign whose lord is working on its behalf.'
- ], null, 711),
+ ], null, 911),
 
 ('yoga', 'Parivartana', 'khala',
  'Khala parivartana - the mixed exchange',
@@ -33,7 +33,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'Read as mixed. The 3rd is an upachaya house of effort, initiative and courage, so what it brings is earned rather than given, and typically comes after struggle.',
    'The good house in the pair is not spoiled, but its results arrive through exertion, and often through the person''s own initiative rather than through others.',
    'Khala means mischievous or wicked, which overstates it: the classical sense is of a benefit that arrives awkwardly.'
- ], null, 712),
+ ], null, 912),
 
 ('yoga', 'Parivartana', 'dainya',
  'Dainya parivartana - the afflicted exchange',
@@ -42,7 +42,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'Read as difficult. The dusthana draws its partner''s affairs into its own, so the good house suffers obstruction, loss, or dependence on others in the matters it governs.',
    'Dainya means poverty or wretchedness. The classical reading is of effort that does not repay, and of the better house being pulled down rather than the worse one lifted.',
    'One exception is worth knowing: where both houses in the exchange are themselves dusthanas, some authorities read a cancellation rather than an affliction, on the same logic as vipareeta raja yoga - two afflictions turned against each other.'
- ], null, 713)
+ ], null, 913)
 
 on conflict (topic, subject, condition) do update set
   heading = excluded.heading,
@@ -61,7 +61,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'What a cancellation gives is not the same as exaltation. The classical sense is of a fall arrested: the graha recovers its footing, often after an early period in which the debilitation is felt plainly.',
    'A debilitated graha with no cancellation at all is read as it stands, and its dasha is usually where the difficulty shows.'
  ],
- 'Becomes a raja yoga under the condition below.', 720),
+ 'Becomes a raja yoga under the condition below.', 920),
 
 ('yoga', 'Neecha Bhanga Raja Yoga', 'raja',
  'When the cancellation makes a raja yoga',
@@ -70,7 +70,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'The reasoning is that a cancellation restores the graha''s strength, but only an angle or a trine gives it the standing to act on that strength. A debilitation cancelled in the 6th or the 8th is still cancelled; it simply has less to work with.',
    'Where it applies, the classical promise is of rise from low beginnings - standing, authority and recognition arriving after a start that did not suggest them.',
    'Looser readings call any neecha bhanga a raja yoga. The distinction is kept here because a chart usually has one or two cancellations and rarely has one in a kendra or trikona, and treating those alike would make the yoga mean very little.'
- ], null, 721)
+ ], null, 921)
 
 on conflict (topic, subject, condition) do update set
   heading = excluded.heading,
@@ -91,7 +91,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'Results are read in the dasha of the graha concerned, and the classical texts are consistent that the good does not arrive quietly - it tends to follow a period in which the dusthana was felt plainly.',
    'Strength varies. A single dusthana lord sitting in a dusthana is the modest form. The texts describe the fuller effect where several dusthana lords are linked to one another - by conjunction, by exchange, or by aspect - and a lone placement should not be read as if it were that.'
  ],
- 'The three forms - harsha, sarala and vimala - follow below.', 730),
+ 'The three forms - harsha, sarala and vimala - follow below.', 930),
 
 ('yoga', 'Vipareeta Raja Yoga', 'harsha',
  'Harsha yoga - from the sixth lord',
@@ -100,7 +100,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'The 6th governs enemies, debt, disease and service. Harmed, those are what recede: the classical reading is of a person free of illness, free of debt, and unbeaten by rivals.',
    'Harsha means delight or gladness, which is the sense of the result rather than of the placement.',
    'Of the three it is the one most often read as straightforwardly good, the 6th being the least ambiguous of the houses of difficulty.'
- ], null, 731),
+ ], null, 931),
 
 ('yoga', 'Vipareeta Raja Yoga', 'sarala',
  'Sarala yoga - from the eighth lord',
@@ -109,7 +109,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'The 8th governs longevity, obstruction, sudden reversal and what is hidden. Harmed, the classical reading is of long life, fearlessness, and survival of what should have ended badly.',
    'Sarala means straight or honest - the sense being of a path that runs clear where it should have been blocked.',
    'Because the 8th also governs inheritance and what comes unearned, some authorities read gain arriving through others rather than through one''s own effort.'
- ], null, 732),
+ ], null, 932),
 
 ('yoga', 'Vipareeta Raja Yoga', 'vimala',
  'Vimala yoga - from the twelfth lord',
@@ -118,7 +118,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'The 12th governs loss, expenditure, confinement and withdrawal. Harmed, the reading is of a person who spends little and keeps much, independent in conduct, and well regarded.',
    'Vimala means pure or spotless, and the classical descriptions dwell on character rather than circumstance more than the other two do.',
    'The 12th being also the house of release and of the life beyond this one, a strong vimala is sometimes read as favouring retreat, study or a spiritual turn late in life.'
- ], null, 733),
+ ], null, 933),
 
 ('yoga', 'Vipareeta Raja Yoga', 'caveat',
  'When the yoga is compromised',
@@ -128,7 +128,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'The stricter reading holds that a vipareeta is at its cleanest when the graha owns no good house, or when the good house it owns is itself weak and loses little.',
    'A second common condition: the dusthana lord should not be joined by or aspected by a lord of a kendra or trikona, since it would then carry the damage to that house too.',
    'This page reports which good houses a graha also owns and leaves the judgement, rather than silently counting the yoga in or out.'
- ], null, 734)
+ ], null, 934)
 
 on conflict (topic, subject, condition) do update set
   heading = excluded.heading,
@@ -152,7 +152,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'Named for Lakshmi, and read as wealth that stays rather than wealth that passes through - standing, reputation and means together, not a windfall.',
    'Venus is Lakshmi''s karaka, and some formulations add Venus''s own strength to the conditions. Parashara does not, so a dignified Venus is worth noting beside the yoga rather than counting as part of it.'
  ],
- 'Where the 9th lord must stand is the one point the sources disagree on; see below.', 740),
+ 'Where the 9th lord must stand is the one point the sources disagree on; see below.', 940),
 
 ('yoga', 'Lakshmi Yoga', 'angle',
  'Where the 9th lord must stand',
@@ -163,7 +163,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'The wider reading makes the yoga several times commoner, which is reason to know which one is being used rather than reason to prefer either.',
    'This page reports the yoga on either, and says in each finding whether it rests on an angle, which is the text''s own wording, or on a trine, which is the wider reading.'
  ],
- 'The strength of the lagna lord is not in dispute; only the house of the 9th lord is.', 741),
+ 'The strength of the lagna lord is not in dispute; only the house of the 9th lord is.', 941),
 
 ('yoga', 'Lakshmi Yoga', 'strength',
  'What "endowed with strength" is taken to mean',
@@ -173,7 +173,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'That is the same reading the Shadbala tab prints, from the same computation, so the yoga and the strength table can never contradict each other.',
    'It also means the yoga can fail on a chart that looks favourable. A dignified 9th lord with a lagna lord short of its minimum is not Lakshmi yoga, and saying so is the point of having a measure at all.'
  ],
- null, 742)
+ null, 942)
 
 on conflict (topic, subject, condition) do update set
   heading = excluded.heading,
@@ -196,7 +196,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'The text says kendra to the Ascendant. Many modern readings allow a kendra from the Moon as well, which makes the yoga far commoner; that is not what is written, and is not counted here.',
    'A mahapurusha is a "great person", and the yoga is read as a cast of character rather than a piece of luck - it says what kind of person, not what happens to them.'
  ],
- 'Each of the five follows below, by the graha that causes it.', 750),
+ 'Each of the five follows below, by the graha that causes it.', 950),
 
 ('yoga', 'Pancha Mahapurusha Yoga', 'ruchaka',
  'Ruchaka - Mars in its own sign or exaltation, in a kendra',
@@ -205,7 +205,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'Read as the soldier''s make: physical courage, command, a taste for difficulty, and a willingness to be disliked for it.',
    'Mars gives the yoga its edge. The same placement that makes for resolve makes for temper, and the classical descriptions do not pretend otherwise.'
  ],
- null, 751),
+ null, 951),
 
 ('yoga', 'Pancha Mahapurusha Yoga', 'bhadra',
  'Bhadra - Mercury in its own sign or exaltation, in a kendra',
@@ -214,7 +214,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'Read as the scholar''s make: quickness, speech, analysis, and a memory that holds detail.',
    'Bhadra means auspicious or fair, and the descriptions run to learning and to being listened to rather than to wealth.'
  ],
- null, 752),
+ null, 952),
 
 ('yoga', 'Pancha Mahapurusha Yoga', 'hamsa',
  'Hamsa - Jupiter in its own sign or exaltation, in a kendra',
@@ -223,7 +223,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'Read as the teacher''s make: judgement, generosity, a reputation for fairness, and the standing that follows from it.',
    'The hamsa is the swan of the tradition, which is said to separate milk from water - the discrimination the yoga is named for.'
  ],
- null, 753),
+ null, 953),
 
 ('yoga', 'Pancha Mahapurusha Yoga', 'malavya',
  'Malavya - Venus in its own sign or exaltation, in a kendra',
@@ -233,7 +233,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'Venus is the karaka of marriage and of the arts, so the yoga is read across both: the company kept and the things made.',
    'It is the commonest of the five in practice, Venus never straying far from the Sun and so passing through the kendras from the lagna often.'
  ],
- null, 754),
+ null, 954),
 
 ('yoga', 'Pancha Mahapurusha Yoga', 'sasa',
  'Sasa - Saturn in its own sign or exaltation, in a kendra',
@@ -242,7 +242,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'Read as the ruler''s make: endurance, authority over others, and the patience to outlast opposition rather than overcome it.',
    'Saturn gives the yoga its cost as well. The descriptions include a hardness towards others, and the position is not read as a comfortable one to have been raised by.'
  ],
- null, 755)
+ null, 955)
 
 on conflict (topic, subject, condition) do update set
   heading = excluded.heading,
@@ -264,7 +264,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'Mutual is the word that matters in the second of those. The special aspects run one way - Jupiter''s 5th and 9th, Mars''s 4th and 8th, Saturn''s 3rd and 10th - so one graha reaching another is not the two reaching each other, and only the second is this yoga.',
    'The reasoning behind the names is given in the text: Vishnu''s houses and Lakshmi''s, and a relationship between their lords read as the blessing of both together.'
  ],
- 'How much such a yoga is worth is a separate question; see below.', 700),
+ 'How much such a yoga is worth is a separate question; see below.', 900),
 
 ('yoga', 'Raja Yoga', 'weighing',
  'What an angle-trine raja yoga is worth',
@@ -275,7 +275,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'Placement still qualifies everything. Lords of an angle and a trine related inside a dusthana, or afflicted, promise more than they give, the strength never having been what stood in the way.',
    'Parashara reports the yoga and then grades it. The text is explicit that effects come "full, or a half or a quarter according to their strengths", which is the same thought: the combination decides what, the strength decides how much.'
  ],
- null, 701),
+ null, 901),
 
 ('yoga', 'Raja Yoga', 'named-pairs',
  'Which pairings have names, and which do not',
@@ -286,7 +286,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'It is common enough to be worth keeping in proportion: across a sample of charts roughly a quarter of the raja yogas found are this pairing. Being named does not make it rare.',
    'Where one graha owns both the 9th and the 10th there is no pairing at all, only a yogakaraka. From a Taurus lagna Saturn owns both, so the two lordships sit in one graha and no relationship is needed.'
  ],
- 'One name is commonly misapplied; see below.', 702),
+ 'One name is commonly misapplied; see below.', 902),
 
 ('yoga', 'Raja Yoga', 'misnamed',
  'A name worth not borrowing',
@@ -297,7 +297,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'The same caution applies to Gaja Kesari, which is routinely used for the weaker Kesari yoga, and to raja yoga itself, which is sometimes narrowed to mean Dharma Karmadhipati alone.',
    'A yoga is worth reading by its conditions rather than by the grandeur of the name attached to it. This page reports the name where the conditions are met and no further.'
  ],
- null, 703)
+ null, 903)
 
 on conflict (topic, subject, condition) do update set
   heading = excluded.heading,
@@ -319,7 +319,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'Combustion is the condition most often skipped, and it is the one most likely to catch Jupiter out: within 11 degrees of the Sun, direct or retrograde, it is burnt and the yoga does not form.',
    'The promised effects are large - "splendorous, wealthy, intelligent endowed with many laudable virtues and will please the king" - which is the reason for the conditions rather than in spite of them.'
  ],
- 'What is usually called Gaja Kesari is a different and weaker yoga; see below.', 760),
+ 'What is usually called Gaja Kesari is a different and weaker yoga; see below.', 960),
 
 ('yoga', 'Gaja Kesari Yoga', 'kesari',
  'Kesari - the yoga this is usually confused with',
@@ -331,7 +331,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'Mutual angularity needs no separate checking. The kendras are symmetric: if Jupiter is in the 4th from the Moon, the Moon is in the 10th from Jupiter, and both are angles.',
    'This page reports both, named apart, and says of the lesser one which conditions it failed.'
  ],
- null, 761)
+ null, 961)
 
 on conflict (topic, subject, condition) do update set
   heading = excluded.heading,

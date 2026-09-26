@@ -31,6 +31,7 @@ FILES=(
   supabase/seed/astro_readings_basics.sql
   supabase/seed/astro_readings_houses.sql
   supabase/seed/astro_readings_dignity.sql
+  supabase/seed/astro_readings_nakshatra.sql
   supabase/seed/astro_readings_varga.sql
   supabase/seed/astro_readings.sql
   supabase/seed/astro_readings_strength.sql

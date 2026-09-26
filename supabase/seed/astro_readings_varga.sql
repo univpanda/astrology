@@ -13,7 +13,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'Because the parts are small, a division is sensitive to the birth time. D60 changes sign every two minutes of arc, which is why a chart quoted to the second is quoted to the second.',
    'Parashara groups the divisions into schemes of six, seven, ten and sixteen, and scores a strength over whichever is being used. That score is vimsopaka bala.'
  ],
- 'Navamsha and vargottama follow.', 400),
+ 'Navamsha and vargottama follow.', 500),
 
 ('varga', 'Navamsha', 'general',
  'The navamsha, D9',
@@ -23,7 +23,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'It is also where a graha''s deeper dignity shows. A graha debilitated in the rashi but exalted in navamsa is read very differently from one debilitated in both.',
    'Nine parts to a sign means the navamsha of a sign turns over every 3 degrees 20 minutes, so a birth time wrong by ten minutes can move it.'
  ],
- null, 401),
+ null, 501),
 
 ('varga', 'Vargottama', 'general',
  'Vargottama',
@@ -34,7 +34,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'It sharpens rather than blesses. A graha at the end of Virgo is vargottama, and Venus there is also debilitated, so the placement is a debilitation made more certain. K.N. Rao cites exactly that case.',
    'Sign repetition between the rashi and some other division is perfectly computable, and D3, D4, D7, D10 and D12 each have one repeating division per sign, but no classical authority calls that vargottama.'
  ],
- null, 402)
+ null, 502)
 
 on conflict (topic, subject, condition) do update set
   heading = excluded.heading,
