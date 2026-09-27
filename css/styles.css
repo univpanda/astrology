@@ -1001,12 +1001,16 @@ td.varga-sign-abbr { font-family: var(--font-mono); letter-spacing: 0.01em; }
 
 /* The total belongs to the graha, so it sits centred against both its rows, and
    reads as a figure rather than as another dignity. Banded by Parashara's own
-   four readings rather than by a gradient nobody agreed on. */
+   four readings rather than by a gradient nobody agreed on.
+
+   Left at the body weight: the band already colours it, and colour and weight
+   together made one number in each row shout at the dignities it was derived
+   from. The mono face and the rule down its left separate the column well
+   enough without it. */
 #vargas-table td.vimsopaka {
   vertical-align: middle;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  font-weight: 600;
   border-left: 1px solid var(--line-soft);
 }
 td.vimsopaka-strong { color: var(--green-deep); }

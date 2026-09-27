@@ -1691,6 +1691,16 @@ ok('and the rule does not reach the cell that merely sits first in a spanned row
      block = block.slice(0, block.indexOf('}') + 1);
      return !/tr[^,]*:first-child/.test(block) && !/td:first-child/.test(block);
    })());
+/*
+ * Body weight, not bold. The band already colours the figure, and colour with
+ * weight made one number in each row shout at the dignities it was derived from.
+ */
+ok('the score is not bolded on top of its band colour', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var block = css.slice(css.indexOf('#vargas-table td.vimsopaka'));
+  block = block.slice(0, block.indexOf('}') + 1);
+  return !/font-weight/.test(block) && /font-family: var\(--font-mono\)/.test(block);
+})());
 ok('the score is centred with the rest, no longer ranged right', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
   var block = css.slice(css.indexOf('#vargas-table td.vimsopaka'));
