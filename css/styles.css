@@ -881,6 +881,9 @@ td .retro-flag, td.retro-flag, th .retro-flag { color: var(--retro); }
    tiers carry weight and colour. Kept to the page's two hues rather than a
    red-to-green ramp: the scale is a ranking, not a verdict on the chart. */
 td.dig { white-space: nowrap; }
+/* A cancelled debilitation. Kept in the dignity's own red rather than given a
+   colour of its own: it is a mark on that word, not a fifth tier beside it. */
+sup.neecha-bhanga { font-size: 0.85em; line-height: 0; margin-left: 0.1em; }
 td.dig-exalted, td.dig-moolatrikona { color: var(--green-deep); font-weight: 600; }
 td.dig-own { color: var(--green-deep); }
 td.dig-adhimitra { color: var(--green); }

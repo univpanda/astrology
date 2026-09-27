@@ -1321,6 +1321,9 @@
        * wants "they are left out" first and the reason after it, not a clause
        * about friendship to hold until the sentence gets to the point.
        */
+      'A debilitation marked * is one the chart cancels. The score does not know that: it ' +
+      'counts dignity a division at a time, so a cancelled debilitation still scores the ' +
+      'floor. ' +
       'Rahu and Ketu are left out: they own no sign and keep no friendships. In D30 the Sun ' +
       'is judged as Mars and the Moon as Venus, no luminary ruling a trimsamsa.';
   }
@@ -1356,6 +1359,39 @@
     return document.getElementById('vargas-as-charts').getAttribute('aria-pressed') === 'true';
   }
 
+  /*
+   * Which grahas have a cancelled debilitation, division by division.
+   *
+   * Vimsopaka does not know about cancellation and cannot: it scores dignity one
+   * division at a time, and a cancellation is a fact about the chart around the
+   * graha, not about the sign it sits in. So a cancelled debilitation scores the
+   * floor, which is the one case where the total is not merely blind but lowest
+   * exactly where it should not be. The star does not change the number. It says
+   * the number is not to be read at face value here.
+   *
+   * Asked of each division's own chart, the same recast the Yogas tab reads, so
+   * the grid and that tab cannot disagree about D9. Only divisions that actually
+   * hold a debilitation are recast; on the shodasavarga most rounds recast two or
+   * three of the sixteen rather than all of them.
+   */
+  function cancelledDebilitations(chart, divisions, cells) {
+    var needed = {};
+    divisions.forEach(function (division, i) {
+      if (cells.some(function (row) { return row[i] && row[i].key === 'debilitated'; })) {
+        needed[division] = true;
+      }
+    });
+    var found = {};
+    Object.keys(needed).forEach(function (division) {
+      var d = Number(division);
+      found[d] = {};
+      Yogas.neechaBhanga(Astro.chartInDivision(chart, d)).forEach(function (yoga) {
+        (yoga.grahas || []).forEach(function (name) { found[d][name] = true; });
+      });
+    });
+    return found;
+  }
+
   function renderVargas(state) {
     var scheme = currentScheme();
     var brief = scheme.divisions.length > ABBREVIATE_ABOVE;
@@ -1368,11 +1404,16 @@
     var positionsD1 = {};
     state.chart.planets.forEach(function (p) { positionsD1[p.name] = p; });
 
-    // Listed as in the graha tables, for reading across from one to the other.
-    state.chart.planets.forEach(function (planet) {
-      var cells = scheme.divisions.map(function (division) {
+    var rows = state.chart.planets.map(function (planet) {
+      return scheme.divisions.map(function (division) {
         return Astro.vargaDignity(planet.name, planet.longitude, division, positionsD1);
       });
+    });
+    var cancelled = cancelledDebilitations(state.chart, scheme.divisions, rows);
+
+    // Listed as in the graha tables, for reading across from one to the other.
+    state.chart.planets.forEach(function (planet, row) {
+      var cells = rows[row];
       if (cells.every(function (c) { return !c; })) return;   // Rahu and Ketu
 
       /*
@@ -1426,6 +1467,20 @@
           (keys.indexOf(division) >= 0 ? ' varga-key' : ''),
           d ? (brief ? Astro.VARGA_DIGNITY_SHORT[d.key] : d.label) : '\u2013');
         if (detail) { sign.title = detail; dignity.title = detail; }
+        /*
+         * A star on a debilitation the chart cancels. It rides the word rather
+         * than replacing it: the graha is still debilitated by sign, which is
+         * what the column reports, and the cancellation is a separate fact about
+         * the chart around it.
+         */
+        if (d && d.key === 'debilitated' && cancelled[division] &&
+            cancelled[division][planet.name]) {
+          dignity.appendChild(el('sup', 'neecha-bhanga', '*'));
+          dignity.title = (detail ? detail + ' ' : '') + planet.name +
+            '\u2019s debilitation in D' + division + ' is cancelled, so the score below is ' +
+            'the floor for a graha that is not weak. Vimsopaka counts dignity one division ' +
+            'at a time and cannot see the cancellation; the Yogas tab reads it in full.';
+        }
         signRow.appendChild(sign);
         dignityRow.appendChild(dignity);
       });

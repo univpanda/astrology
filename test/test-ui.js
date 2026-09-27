@@ -1180,6 +1180,53 @@ var seeds = ['strength', 'varga', 'dignity'].map(function (name) {
  * the panel's main text with the table as an illustration of it, which is the
  * wrong way round: the table is the thing, the note explains it.
  */
+/*
+ * Vimsopaka cannot see a cancelled debilitation, and that is the one blind spot
+ * where the score is not merely silent but lowest exactly where it should not
+ * be. The star does not change the number; it says the number is not to be read
+ * at face value in that cell.
+ */
+ok('a cancelled debilitation is starred where it is scored',
+   /if \(d && d\.key === 'debilitated' && cancelled\[division\] &&\s*\n\s*cancelled\[division\]\[planet\.name\]\)/
+     .test(appSrc) &&
+   /dignity\.appendChild\(el\('sup', 'neecha-bhanga', '\*'\)\)/.test(appSrc));
+ok('and the hover says the score is the floor for a graha that is not weak',
+   /is cancelled, so the score below is ' \+\s*\n?\s*'the floor for a graha that is not weak/
+     .test(appSrc) ||
+   /is cancelled, so the score below is the floor for a graha that is not weak/
+     .test(appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ')));
+ok('the note explains the star, and that the score does not know',
+   /A debilitation marked \* is one the chart cancels\. The score does not know that/
+     .test(appSrc.replace(/'\s*\+\s*'/g, '')));
+/*
+ * Read off each division's own chart, the same recast the Yogas tab reads, so
+ * the grid cannot disagree with that tab about D9. Only divisions that hold a
+ * debilitation are recast at all.
+ */
+ok('cancellation is asked of the division being scored, not of the rashi alone',
+   /Yogas\.neechaBhanga\(Astro\.chartInDivision\(chart, d\)\)/.test(appSrc) &&
+   /if \(cells\.some\(function \(row\) \{ return row\[i\] && row\[i\]\.key === 'debilitated'; \}\)\)/
+     .test(appSrc));
+ok('and it agrees with the detector, cell by cell, on a chart that has one',
+   (function () {
+     var c = Astro.chart({ jdUT: Astro.julianDay(1948, 3, 31, 12 + 53 / 60 + 5),
+                           latitude: 38.8951, longitude: -77.0364, tzOffsetMinutes: -300 });
+     var mars = c.planets.filter(function (p) { return p.name === 'Mars'; })[0];
+     var pos = {};
+     c.planets.forEach(function (p) { pos[p.name] = p; });
+     var d1 = Astro.vargaDignity('Mars', mars.longitude, 1, pos);
+     var cancelled = Yogas.neechaBhanga(c).some(function (y) {
+       return (y.grahas || []).indexOf('Mars') >= 0;
+     });
+     return d1.key === 'debilitated' && cancelled;
+   })());
+ok('the star is a mark on the word, not a tier beside it', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var block = css.slice(css.indexOf('sup.neecha-bhanga {'));
+  block = block.slice(0, block.indexOf('}'));
+  return /font-size/.test(block) && !/color/.test(block);
+})());
+
 ok('every note is set smaller and softer than the body', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
   var block = css.slice(css.indexOf('.varga-note, .chart-note, .flag-key dd {'));
