@@ -876,6 +876,13 @@ td .retro-flag, td.retro-flag, th .retro-flag { color: var(--retro); }
    this marks something done to it. So it is dimmed rather than given a fourth
    accent, which is also what a burnt graha is. */
 .flag-c { color: var(--flag-combust); }
+/* Hemming is a benefic's doing, so it takes the page's own green rather than a
+   sixth hue; directional strength takes the same, being a strength and not a
+   fact about the graha. Two marks in one colour is safe because one is a
+   bracketed letter and the other a bare plus. */
+.flag-h, .flag-dig { color: var(--green-deep); }
+.flag-dig { font-weight: 700; }
+.flag-star { color: var(--retro); font-weight: 600; }
 
 /* Ten columns of dignity words are read by scanning, not line by line, so the
    tiers carry weight and colour. Kept to the page's two hues rather than a

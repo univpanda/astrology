@@ -1253,13 +1253,55 @@ ok('and neither is the lagna, nor the Sun itself',
  * flag means and which of the two things it is true of. Run together as prose it
  * made the reader find where each sentence started.
  */
-ok('the key is four entries, one per flag', (function () {
+ok('the key has an entry per mark, and every mark has one', (function () {
   var flat = html.replace(/\s+/g, ' ');
   var dl = flat.match(/<dl class="flag-key">.*?<\/dl>/);
   if (!dl) return false;
-  return (dl[0].match(/<dt>/g) || []).length === 4 &&
-    (dl[0].match(/<dd>/g) || []).length === 4;
+  return (dl[0].match(/<dt>/g) || []).length === 7 &&
+    (dl[0].match(/<dd>/g) || []).length === 7;
 })());
+/*
+ * Seven marks on three surfaces, and each entry says which surface it is on.
+ * [R] and [C] are true of the graha wherever it is read, so they ride its name;
+ * [V] and [H] turn on the division alone and [Y] and + on the division and the
+ * reference, so all four ride the chart row; * qualifies a dignity, so it rides
+ * the dignity wherever one is printed.
+ */
+ok('each mark says which of the three surfaces it sits on', (function () {
+  var flat = html.replace(/\s+/g, ' ');
+  return /True of the graha whichever chart is read, so in the table it sits on the name/
+    .test(flat) &&
+    /A real distance, so like \[R\] it sits on the name/.test(flat) &&
+    /True of that division alone, so it sits on the chart row/.test(flat) &&
+    /Nothing to do with house 1, so it reads the same however the chart is rotated/
+      .test(flat) &&
+    /so it sits on the chart row and follows the chart when it is rotated onto another graha/
+      .test(flat) &&
+    /A house, so it moves with the rotation as \[Y\] does/.test(flat) &&
+    /On a dignity, not on a graha or a chart/.test(flat);
+})());
+ok('and the kundli says which four it shows, and why not six', (function () {
+  var flat = html.replace(/\s+/g, ' ');
+  return /The kundli carries \[R\], \[V\], \[Y\] and \[C\] only/.test(flat) &&
+    /will not fit a corner triangle/.test(flat) &&
+    /\[H\], \+ and \* are left to the table/.test(flat);
+})());
+/*
+ * The two that turn on the division alone are read from that division's own
+ * chart, not from the rashi: a varga rearranges which grahas are neighbours, so
+ * asking the rashi who hems a graha in D9 would answer a different question.
+ */
+ok('hemming is read from the division being shown',
+   /Astro\.hemmedByBenefics\(r\.name, v\.sign, divisionChart\)/.test(appSrc) &&
+   /var divisionChart = Astro\.chartInDivision\(c, view\.division\);/.test(appSrc));
+ok('and directional strength from the house, which the row already computes',
+   /Astro\.hasDigBala\(r\.name, house\)/.test(appSrc) &&
+   /var house = \(\(v\.sign - firstSign\) % 12 \+ 12\) % 12 \+ 1;/.test(appSrc));
+ok('the star reaches the graha table\u2019s dignity, not the grid alone',
+   /star: !r\.isAscendant && cancelledHere\[r\.name\]/.test(appSrc) &&
+   /td\.appendChild\(el\('sup', 'neecha-bhanga', '\*'\)\)/.test(appSrc));
+ok('and the ascendant takes none of the four that are about a graha',
+   (appSrc.match(/!r\.isAscendant && Astro\./g) || []).length >= 3);
 ok('each carries its flag in its own colour, and names it',
    ['r Retrograde', 'v Vargottama', 'y Yogakaraka', 'c Combust'].every(function (pair) {
      var parts = pair.split(' ');

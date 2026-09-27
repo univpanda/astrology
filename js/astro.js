@@ -1239,6 +1239,47 @@ var Astro = (function () {
     return benefics;
   }
 
+  /*
+   * The house each graha is strongest in by direction. Jupiter and Mercury rise
+   * with the lagna, the Sun and Mars culminate, Saturn sets, and the Moon and
+   * Venus are strongest underfoot.
+   *
+   * Shadbala measures dig bala as an arc from the point opposite, so it is a
+   * number from nothing to sixty rather than a yes. The flag takes the house
+   * instead, which is the classical statement of the same thing and the only
+   * form that survives into a division: a varga chart has signs and houses but
+   * no midheaven to measure an arc from.
+   */
+  var DIG_BALA_HOUSE = {
+    Jupiter: 1, Mercury: 1, Sun: 10, Mars: 10, Saturn: 7, Moon: 4, Venus: 4
+  };
+
+  /** Whether a graha stands in the house it is directionally strongest in. */
+  function hasDigBala(graha, house) {
+    return DIG_BALA_HOUSE[graha] === house;
+  }
+
+  /*
+   * Shubha kartari: a graha with a benefic in the sign on either side of it, the
+   * 2nd and the 12th counted from the graha itself. Nothing to do with the lagna,
+   * so it reads the same however a chart is rotated, and everything to do with
+   * the division, since a varga rearranges which grahas are neighbours.
+   *
+   * A graha cannot hem itself, and benefic status is read as naturalBenefics
+   * reads it everywhere else here: the Moon by its phase, Mercury by the company
+   * it keeps.
+   */
+  function hemmedByBenefics(name, sign, chart) {
+    var benefics = naturalBenefics(chart);
+    var before = false, after = false;
+    chart.planets.forEach(function (p) {
+      if (p.name === name || !benefics[p.name]) return;
+      if (p.sign === (sign + 11) % 12) before = true;
+      if (p.sign === (sign + 1) % 12) after = true;
+    });
+    return before && after;
+  }
+
   /**
    * Vargottama: the same sign in the rashi and in the navamsha.
    *
@@ -1541,6 +1582,9 @@ var Astro = (function () {
     COMBUSTION: COMBUSTION,
     isCombust: isCombust,
     naturalBenefics: naturalBenefics,
+    DIG_BALA_HOUSE: DIG_BALA_HOUSE,
+    hasDigBala: hasDigBala,
+    hemmedByBenefics: hemmedByBenefics,
     isVargottama: isVargottama,
     vargaDignity: vargaDignity,
     DASAVARGA: DASAVARGA,

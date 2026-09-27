@@ -513,6 +513,74 @@ ok('and a graha the order has never heard of keeps its place at the end', (funct
   return sorted.join(' ') === 'Sun Saturn Gulika' && sorted.length === 3;
 })());
 
+console.log('\nDirectional strength and hemming');
+/*
+ * Both are flags over things measured in fuller form elsewhere. Dig bala is an
+ * arc out of sixty in Shadbala; the flag takes the house instead, which is the
+ * classical statement and the only form that survives into a division, a varga
+ * having signs and houses but no midheaven to measure an arc from.
+ */
+ok('each graha has exactly one house of directional strength',
+   Object.keys(A.DIG_BALA_HOUSE).length === 7 &&
+   A.NODES.every(function (n) { return A.DIG_BALA_HOUSE[n] === undefined; }));
+ok('and they are the four angles, paired as the texts pair them',
+   A.DIG_BALA_HOUSE.Jupiter === 1 && A.DIG_BALA_HOUSE.Mercury === 1 &&
+   A.DIG_BALA_HOUSE.Sun === 10 && A.DIG_BALA_HOUSE.Mars === 10 &&
+   A.DIG_BALA_HOUSE.Saturn === 7 &&
+   A.DIG_BALA_HOUSE.Moon === 4 && A.DIG_BALA_HOUSE.Venus === 4);
+ok('the flag agrees with the house and nothing else',
+   A.hasDigBala('Saturn', 7) && !A.hasDigBala('Saturn', 1) && !A.hasDigBala('Rahu', 7));
+/*
+ * Shubha kartari asks who the neighbours are, so it is read from the chart it is
+ * asked about. A graha cannot hem itself, and benefic status is whatever
+ * naturalBenefics says: the Moon by phase, Mercury by company.
+ */
+ok('hemming needs a benefic on both sides', (function () {
+  var chart = { planets: [
+    { name: 'Sun', sign: 0, longitude: 5 }, { name: 'Moon', sign: 6, longitude: 186 },
+    { name: 'Jupiter', sign: 11, longitude: 355 }, { name: 'Venus', sign: 1, longitude: 35 }] };
+  return A.hemmedByBenefics('Sun', 0, chart) && !A.hemmedByBenefics('Venus', 1, chart);
+})());
+ok('one side alone is not hemming', (function () {
+  var chart = { planets: [
+    { name: 'Sun', sign: 0, longitude: 5 }, { name: 'Moon', sign: 6, longitude: 186 },
+    { name: 'Jupiter', sign: 11, longitude: 355 }] };
+  return !A.hemmedByBenefics('Sun', 0, chart);
+})());
+ok('a malefic either side does not hem', (function () {
+  var chart = { planets: [
+    { name: 'Sun', sign: 0, longitude: 5 }, { name: 'Moon', sign: 6, longitude: 186 },
+    { name: 'Saturn', sign: 11, longitude: 355 }, { name: 'Mars', sign: 1, longitude: 35 }] };
+  return !A.hemmedByBenefics('Sun', 0, chart);
+})());
+ok('and the signs wrap, Pisces and Taurus hemming Aries', (function () {
+  var chart = { planets: [
+    { name: 'Mars', sign: 0, longitude: 5 }, { name: 'Sun', sign: 8, longitude: 245 },
+    { name: 'Moon', sign: 8, longitude: 250 },
+    { name: 'Jupiter', sign: 11, longitude: 355 }, { name: 'Venus', sign: 1, longitude: 35 }] };
+  return A.hemmedByBenefics('Mars', 0, chart);
+})());
+/*
+ * Rates over a long run, so neither flag is quietly always or never on. One
+ * house in twelve is 8.3 per cent; hemming needs both neighbouring signs filled
+ * by benefics, which is rarer.
+ */
+ok('both fire at rates a flag can carry', (function () {
+  var n = 0, dig = 0, hem = 0;
+  for (var y = 1900; y < 2020; y++) {
+    var c = A.chart({ jdUT: A.julianDay(y, (y % 12) + 1, (y % 27) + 1, 9), latitude: 28.61,
+                      longitude: 77.21, tzOffsetMinutes: 330 });
+    var first = A.signOf(c.ascendant.longitude);
+    c.planets.forEach(function (p) {
+      if (A.NODES.indexOf(p.name) >= 0) return;
+      n++;
+      if (A.hasDigBala(p.name, ((p.sign - first) % 12 + 12) % 12 + 1)) dig++;
+      if (A.hemmedByBenefics(p.name, p.sign, c)) hem++;
+    });
+  }
+  return dig / n > 0.05 && dig / n < 0.15 && hem / n > 0.005 && hem / n < 0.1;
+})());
+
 console.log('\nKey divisions');
 /*
  * The three a scheme leans on hardest, read off its own share-out of the twenty

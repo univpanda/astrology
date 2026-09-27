@@ -975,6 +975,11 @@
 
     rows.forEach(function (r) {
       views.forEach(function (view, i) {
+        var cancelledHere = {};
+        Yogas.neechaBhanga(Astro.chartInDivision(c, view.division)).forEach(function (yoga) {
+          if (yoga.kind !== 'raja') return;
+          (yoga.grahas || []).forEach(function (name) { cancelledHere[name] = true; });
+        });
         var v = Astro.vargaPosition(r.longitude, view.division);
         var nak = Astro.nakshatraOf(v.longitude);
         var varga = Astro.VARGAS.filter(function (x) { return x.division === view.division; })[0];
@@ -1010,23 +1015,36 @@
           tr.appendChild(th);
         }
 
-        // Chart-level flags: these change from row to row.
+        /*
+         * Chart-level flags, in the order of what they answer to. [V] and [H]
+         * turn on the division alone: which sign the division gives the graha,
+         * and which grahas the division makes its neighbours. [Y] and + turn on
+         * the division and on the reference as well, both being counted from
+         * house 1, so they move when the chart is rotated onto another graha and
+         * the two above it do not.
+         */
+        var house = ((v.sign - firstSign) % 12 + 12) % 12 + 1;
+        var divisionChart = Astro.chartInDivision(c, view.division);
         var chartCell = el('td', 'graha-chart', varga ? varga.name : 'D' + view.division);
         chartCell.title = (varga ? varga.label + ', ' + varga.about + '. ' : '') +
           'Houses counted from ' +
           (view.reference === 'Ascendant' ? 'the ascendant' : view.reference) + '.';
         [view.division !== 1 && v.sign === Astro.signOf(r.longitude) ? 'V' : null,
-         !r.isAscendant && Astro.isYogakaraka(r.name, firstSign) ? 'Y' : null]
+         !r.isAscendant && Astro.hemmedByBenefics(r.name, v.sign, divisionChart) ? 'H' : null,
+         !r.isAscendant && Astro.isYogakaraka(r.name, firstSign) ? 'Y' : null,
+         !r.isAscendant && Astro.hasDigBala(r.name, house) ? '+' : null]
           .filter(Boolean).forEach(function (f, n) {
-            chartCell.appendChild(el('span', 'flag flag-' + f.toLowerCase(),
-              (n === 0 ? ' ' : '') + '[' + f + ']'));
+            var cls = f === '+' ? 'flag flag-dig' : 'flag flag-' + f.toLowerCase();
+            chartCell.appendChild(el('span', cls,
+              (n === 0 ? ' ' : '') + (f === '+' ? '+' : '[' + f + ']')));
           });
         tr.appendChild(chartCell);
 
         var owned = r.isAscendant ? [] : Astro.housesOwned(r.name, firstSign);
         [{ text: Astro.SIGNS[v.sign] },
-         { text: (r.isAscendant ? '' : Astro.dignityOf(r.name, v.sign, v.degreeInSign)) || '–' },
-         { text: String(((v.sign - firstSign) % 12 + 12) % 12 + 1), cls: 'numeric' },
+         { text: (r.isAscendant ? '' : Astro.dignityOf(r.name, v.sign, v.degreeInSign)) || '\u2013',
+           star: !r.isAscendant && cancelledHere[r.name] },
+         { text: String(house), cls: 'numeric' },
          owned.length
            ? { text: owned.join(', '), cls: 'numeric',
                title: r.name + ' rules ' + owned.map(function (h) {
@@ -1061,6 +1079,15 @@
         ].forEach(function (cell) {
           var td = el('td', cell.cls, cell.text);
           if (cell.title) td.title = cell.title;
+          /*
+           * The star qualifies a dignity, so it goes wherever a dignity is
+           * printed rather than only in the grid that scores them.
+           */
+          if (cell.star) {
+            td.appendChild(el('sup', 'neecha-bhanga', '*'));
+            td.title = r.name + '\u2019s debilitation is cancelled and the graha stands in ' +
+              'an angle or a trine, which is neecha bhanga raja yoga.';
+          }
           tr.appendChild(td);
         });
 
