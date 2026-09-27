@@ -1328,7 +1328,7 @@ ok('and the note still says what the column totals, the heading no longer doing 
 ok('the note says the total is strength and not benefit', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');
   return /Read those as strength and not as benefit/.test(flat) &&
-    /A strong malefic aspecting a house it does not rule afflicts it the more surely for being strong/.test(flat);
+    /a strong malefic aspecting a house it does not rule afflicts it the more surely for being strong/.test(flat);
 })());
 ok('and the column\'s own hover says it too, where the number is read',
    /That is strength, not benefit: it says how fully ' \+ planet\.name/.test(appSrc));
@@ -1385,8 +1385,8 @@ ok('a cancelled debilitation still scores near the floor, which is the point', (
 
 ok('and that it measures magnitude rather than direction', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');
-  return /It measures magnitude rather than direction/.test(flat) &&
-    /the yoga says what is promised and this says how much of it the graha can carry/.test(flat);
+  return /Measuring magnitude rather than direction/.test(flat) &&
+    /the yoga saying what is promised and this how much of it the graha can carry/.test(flat);
 })());
 
 ok('the note explains the totalling and the four readings', (function () {
@@ -1459,10 +1459,46 @@ ok('the heading says its figure here and in every other scheme that carries it',
  * from that scheme rather than written into the prose, where they would be wrong
  * for the other three the moment the select moved.
  */
-ok('and the note builds its distribution from the chosen scheme',
-   /var shares = scheme\.divisions\.map\(function \(d\) \{/.test(appSrc) &&
-   /vimsopakaFigure\(scheme\.weights\[d\]\)/.test(appSrc) &&
-   /share of the twenty in this scheme/.test(appSrc.replace(/'\s*\+\s*'/g, '')));
+/*
+ * The note no longer lists the sixteen shares. Every one is printed under its own
+ * heading a couple of inches above, so the list was the header row read aloud;
+ * the note says where to look instead.
+ */
+/*
+ * The note had grown to four hundred and eighty words in one paragraph, which is
+ * not a note under a table. It is two now: how to read the grid, visible, and
+ * how the scoring works, folded under it. What a reader needs to use the table -
+ * the two rows, the short forms, [V] - had been in the middle of the essay.
+ */
+ok('the visible note is short enough to be read', (function () {
+  var scheme = Astro.VARGA_SCHEMES.shodasavarga;
+  var src = appSrc.slice(appSrc.indexOf('function vargaNote'),
+                         appSrc.indexOf('function vargaDetail'));
+  var words = src.replace(/'\s*\+\s*'/g, '').match(/'[^']*'/g).join(' ')
+    .split(/\s+/).length;
+  return words < 160 && scheme.count === 16;
+})());
+ok('and the scoring is kept, not cut, behind a disclosure', (function () {
+  var flat = html.replace(/\s+/g, ' ');
+  return /<details class="technical varga-more"> <summary>How vimsopaka is scored<\/summary>/
+    .test(flat) && /id="vargas-detail"/.test(flat) &&
+    /function vargaDetail\(scheme\)/.test(appSrc);
+})());
+ok('as paragraphs, each answering one question', (function () {
+  var block = appSrc.slice(appSrc.indexOf('function vargaDetail'));
+  block = block.slice(0, block.indexOf('\n  }'));
+  return (block.match(/\n\n      '/g) || []).length === 4 &&
+    /detail\.appendChild\(el\('p', 'varga-note', para\)\)/.test(appSrc);
+})());
+ok('and the detail is rebuilt with the table, so the scheme it names is current',
+   /detail\.innerHTML = '';/.test(appSrc) &&
+   /vargaDetail\(scheme\)\.forEach/.test(appSrc));
+ok('the other schemes are listed as a list, not trailed off',
+   /names\.slice\(0, -1\)\.join\(', '\) \+ ' and ' \+ names\[names\.length - 1\]/.test(appSrc));
+ok('the note points at the shares rather than reciting them',
+   /share of the twenty in this scheme/.test(appSrc.replace(/'\s*\+\s*'/g, '')) &&
+   !/var shares = scheme\.divisions\.map/.test(appSrc) &&
+   /vimsopakaFigure\(weight\)/.test(appSrc));
 ok('and names the other schemes rather than one fixed pair',
    /Astro\.VARGA_SCHEME_ORDER\.filter\(function \(k\) \{ return k !== scheme\.key; \}\)/.test(appSrc));
 
@@ -1525,20 +1561,22 @@ ok('every dignity has a short form, each distinct and short enough to fit', (fun
   return Astro.VARGA_DIGNITY_SHORT[k]; }).join(' '));
 ok('the note explains the abbreviations where it uses them, and not otherwise', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');
-  return /Sixteen columns leave no room for the words/.test(flat) &&
-    /dignities shorten to Exal, Mool, Own, Gt Fr, Fr, Neut, Enm, Gt Enm and Deb/.test(flat) &&
-    /signs go as Ari, Tau, Can and the rest/.test(flat) &&
+  return /Sixteen columns leave no room for words/.test(flat) &&
+    /dignities as Exal, Mool, Own, Gt Fr, Fr, Neut, Enm, Gt Enm and Deb/.test(flat) &&
+    /signs go as Ari, Tau, Can/.test(flat) &&
     /function vargaNote\(scheme, brief\)/.test(appSrc);
 })());
 /*
- * It said "hover a cell" twice, once for the words and once for the lord. There
- * are two branches now, abbreviated and not, so exactly two mentions total is one
- * per branch; three would be the old duplication returning.
+ * One sentence points at every hover the grid has, rather than a mention per
+ * thing that has one. Three of them in a note this short would be the note
+ * describing the furniture instead of the table.
  */
-ok('and says it once per branch, not twice in one', (function () {
+ok('and points at the hovers once, not once per kind of hover', (function () {
   var note = appSrc.slice(appSrc.indexOf('function vargaNote'));
-  note = note.slice(0, note.indexOf("left out.';"));
-  return (note.match(/hover a cell/gi) || []).length === 2;
+  note = note.slice(0, note.indexOf('function vargaDetail'));
+  return (note.match(/hover/gi) || []).length === 1 &&
+    /Hover any cell for the reading behind it, a heading for what that division is/
+      .test(note.replace(/'\s*\+\s*'/g, ''));
 })());
 ok('and gives the seven-step reading when it differs from the label shown',
    /d\.relationLabel !== d\.label/.test(appSrc));
@@ -1812,8 +1850,8 @@ ok('and the table is what a reader sees first',
 
 ok('the note explains the mark', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');
-  return /A sign marked \[V\] is one the division has landed the graha back in/.test(flat) &&
-    /D1 is left unmarked because every cell in it would qualify/.test(flat);
+  return /\[V\] marks a sign the graha also holds in the rashi/.test(flat) &&
+    /D1 goes unmarked because every cell would qualify/.test(flat);
 })());
 ok('and the D9 case is named as vargottama proper',
    /division === 9 \? ' In D9 that is vargottama proper\.' : ''/.test(appSrc));
