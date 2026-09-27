@@ -2520,6 +2520,45 @@ ok('every script the page loads parses', (function () {
       }
       ok(name + ' runs on a real chart', ran, message);
     });
+
+  /*
+   * And it really puts the war on the screen. Every check on yuddha bala until
+   * now was on the engine or on app.js as text, neither of which can see whether
+   * the row reaches the table - and the row is conditional, so a chart without a
+   * war looks exactly like a renderer that never builds it. Two charts: one with
+   * a war and one without, read back off the rendered rows.
+   */
+  var rowNames = function (state) {
+    var table = byId['shadbala-table'];
+    if (!table) return [];
+    var body = table.querySelector('tbody');
+    body.children.length = 0;
+    out.renderShadbala(state);
+    return body.children.map(function (tr) {
+      return (tr.children[0] && tr.children[0].textContent || '').trim();
+    });
+  };
+  var at = function (y, m) {
+    var c = Astro.chart({ jdUT: Astro.julianDay(y, m, 15, 1), latitude: 28.61,
+                          longitude: 77.21, tzOffsetMinutes: 330 });
+    return { chart: c, place: { lat: 28.61, lon: 77.21, label: 'Delhi' },
+             offset: 330, name: 'Test', celebrity: false, note: '' };
+  };
+  var war = at(1901, 1), peace = at(1946, 7);
+  ok('the chart used here really does hold a war, and the other does not',
+     Shadbala.compute(war.chart, { latitude: 28.61, longitude: 77.21,
+                                   tzOffsetMinutes: 330 }).wars.length === 1 &&
+     Shadbala.compute(peace.chart, { latitude: 28.61, longitude: 77.21,
+                                     tzOffsetMinutes: 330 }).wars.length === 0);
+  ok('and the rendered table carries a Yuddha bala row for it', (function () {
+    var names = rowNames(war);
+    return names.some(function (label) { return /^Yuddha bala/.test(label); });
+  })());
+  ok('and none for the chart without one', (function () {
+    var names = rowNames(peace);
+    return names.length > 0 &&
+      !names.some(function (label) { return /^Yuddha bala/.test(label); });
+  })());
 })();
 
 console.log('\nVargas panel');
