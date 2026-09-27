@@ -1557,6 +1557,34 @@ console.log('\nShadbala');
     return seen;
   })());
 
+  /*
+   * Moolatrikona is a range of degrees inside a sign, and only the rashi gives a
+   * graha a real degree: vargaPosition stretches the position within a division
+   * back across the whole thirty, so the figure handed to dignityOf for D2 or
+   * D30 was not a degree of any sign the graha stands in. Raman settles it as
+   * doctrine too - section 30, "45 Shashtiamsas ... only when it is in its
+   * Moolatrikona Rasi, and not when it occupies any other of the 6 vargas".
+   */
+  ok('saptavargaja allows moolatrikona in the rashi and nowhere else', (function () {
+    var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+    var seenInRashi = false;
+    for (var y = 1900; y < 2000; y++) {
+      var c = Astro.chart({ jdUT: Astro.julianDay(y, 1 + y % 12, 15, 6.5),
+                            latitude: place.latitude, longitude: place.longitude,
+                            tzOffsetMinutes: place.tzOffsetMinutes });
+      var r = Shadbala.compute(c, place);
+      for (var i = 0; i < Shadbala.GRAHAS.length; i++) {
+        var detail = r.grahas[Shadbala.GRAHAS[i]].saptavargajaDetail;
+        for (var j = 0; j < detail.length; j++) {
+          if (detail[j].relation !== 'moolatrikona') continue;
+          if (detail[j].division !== 1) return false;
+          seenInRashi = true;
+        }
+      }
+    }
+    return seenInRashi;          // and the case really occurs, so this proves something
+  })());
+
   // Ceilings, each from its own definition.
   ok('no component exceeds its maximum', Shadbala.GRAHAS.every(function (g) {
     var x = result.grahas[g];

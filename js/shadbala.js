@@ -91,15 +91,19 @@ var Shadbala = (function () {
    * Santhanam's translation reads "45 Virupas, in own Rashi 30 Virupas, extreme
    * friend's Rashi 20 Virupas, friend's Rashi 15 Virupas, neutral's Rashi 10
    * Virupas, enemy's Rashi 4 Virupas and in extreme enemy's Rashi 2 Virupas", and
-   * Saravali gives the same seven figures independently. Much of the web, and
-   * several calculators, instead use a halving series: 45, 30, 22.5, 15, 7.5,
-   * 3.75, 1.875. That series is attributed to the same verses but traces only to
-   * secondary compilations, and no worked example in Santhanam settles it.
+   * Saravali gives the same seven figures independently. The other ladder halves
+   * at each step: 45, 30, 22.5, 15, 7.5, 3.75, 1.875.
    *
-   * The choice is not cosmetic. Measured across 480 sample births it moves about
-   * 1.9% of strong/weak verdicts and reorders the grahas by strength in roughly a
-   * third of charts, so it cannot be left implicit. Santhanam's reading is used
-   * here, being the one in the standard translation of the source.
+   * This comment used to say the halving series "traces only to secondary
+   * compilations". That is wrong and worth recording as wrong: B. V. Raman uses
+   * it in section 30 of Graha and Bhava Balas, which is the standard English
+   * treatment of this chapter, and works every example in the book on it.
+   *
+   * So the two ladders are each carried by a primary authority and they disagree.
+   * Santhanam's is kept, being the one in the standard translation of Parashara
+   * himself and the one Saravali corroborates, but it is a choice and not a
+   * finding. Across 1800 sample births the two differ by a mean of 5.1 virupas
+   * and move 2.4% of strong/weak verdicts.
    */
   var RELATION_VALUE = {
     moolatrikona: 45, own: 30, adhimitra: 20, mitra: 15,
@@ -114,7 +118,21 @@ var Shadbala = (function () {
       var lord = Astro.SIGN_LORDS[position.sign];
       var relation;
       if (lord === graha) {
-        var dignity = Astro.dignityOf(graha, position.sign, position.degreeInSign);
+        /*
+         * Moolatrikona counts in the rashi and nowhere else. Raman section 30:
+         * "45 Shashtiamsas have to be allotted for a planet only when it is in
+         * its Moolatrikona Rasi, and not when it occupies any other of the 6
+         * vargas (than Rasi)."
+         *
+         * It was tested in all seven, and the test could not have meant anything
+         * in the other six: moolatrikona is a range of degrees within a sign,
+         * and vargaPosition stretches the position within a division back across
+         * the whole thirty, so the degree handed to dignityOf was not a degree
+         * of any sign the graha stands in. It claimed moolatrikona in 2.4% of
+         * varga cells outside the rashi.
+         */
+        var dignity = division === 1
+          ? Astro.dignityOf(graha, position.sign, position.degreeInSign) : null;
         relation = dignity === 'Mooltrikona' ? 'moolatrikona' : 'own';
       } else if (!positionsD1[lord]) {
         relation = 'sama';           // the nodes disposit nothing; treat as neutral
