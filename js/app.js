@@ -1221,16 +1221,18 @@
     });
 
     /*
-     * The total closes the row, and wears its twenty the way a division wears
-     * its share: the heading is the name, the figure beneath it is what the
-     * column is out of. "/ 20" made it the one heading with a different shape.
+     * The total closes the row under a blank heading. The panel is called
+     * Vimsopaka Bala and the note beneath says what the column is and what it is
+     * out of, so a heading here was the third telling, and the widest word in
+     * the row was carrying none of it.
+     *
+     * Blank to look at, not to a screen reader: the column still needs a name
+     * for the cells under it to be associated with anything, and a th with no
+     * accessible name gives a row of bare numbers.
      */
-    var total = el('th', null, 'Vimsopaka');
+    var total = el('th', null, null);
     total.setAttribute('scope', 'col');
-    total.appendChild(el('span', 'varga-weight', '20'));
-    total.title = 'Verses 26-27: each division\u2019s share of the twenty, scaled by what the ' +
-      'graha keeps of it. Own sign throughout gives the full twenty; a great enemy throughout ' +
-      'gives five, which is the floor rather than nothing.';
+    total.appendChild(el('span', 'visually-hidden', 'Vimsopaka bala, out of twenty'));
     row.appendChild(total);
   }
 

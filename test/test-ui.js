@@ -1279,7 +1279,7 @@ ok('the total closes the row, after the divisions it adds up', (function () {
                           appSrc.indexOf('function vargaNote'));
   var name = head.indexOf("el('th', null, 'Graha')");
   var divisions = head.indexOf('scheme.divisions.forEach');
-  var total = head.indexOf("el('th', null, 'Vimsopaka')");
+  var total = head.indexOf("'Vimsopaka bala, out of twenty'");
   return name >= 0 && divisions > name && total > divisions;
 })());
 ok('and so does the cell, spanning the graha\u2019s two rows as the name does',
@@ -1302,14 +1302,22 @@ ok('and the title breaks the score into its divisions',
    /part\.viswa \+ '\/20'/.test(appSrc) &&
    /which Parashara reads as ' \+ score\.band\.label/.test(appSrc));
 /*
-  * The heading wears its twenty the way a division wears its share: the name
-  * above, the figure beneath. "/ 20" made it the one heading with a shape of its
-  * own, in the row where every other heading is a name over a number.
+  * The heading is blank to look at. The panel is called Vimsopaka Bala and the
+  * note says what the column is and what it is out of, so a word here was the
+  * third telling of it.
+  *
+  * Blank to look at is not blank: a th with no accessible name leaves the cells
+  * under it associated with nothing, so the name is there and hidden.
   */
-ok('the column has a heading that says what it is out of, shaped like the rest',
-   /el\('th', null, 'Vimsopaka'\)/.test(appSrc) &&
-   /el\('span', 'varga-weight', '20'\)/.test(appSrc) &&
-   !/varga-weight', '\/ 20'/.test(appSrc));
+ok('the last column is headed by nothing visible',
+   /el\('th', null, null\)/.test(appSrc) &&
+   !/el\('th', null, 'Vimsopaka'\)/.test(appSrc) &&
+   !/varga-weight', '20'/.test(appSrc));
+ok('but it still has a name, so the scores under it are not orphaned',
+   /el\('span', 'visually-hidden', 'Vimsopaka bala, out of twenty'\)/.test(appSrc) &&
+   /\.visually-hidden \{/.test(fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8')));
+ok('and the note still says what the column totals, the heading no longer doing it',
+   /The last column totals them, verses 26-27/.test(appSrc.replace(/'\s*\+\s*'/g, '')));
 /*
  * A number in a column invites being read as a verdict. Shadbala and vimsopaka
  * both answer "how fully can this graha act" and neither answers "is that a good
@@ -1658,6 +1666,36 @@ ok('the rules stay visible inside the band, in both palettes', (function () {
       ratio(tint, surface) > 1.05;
   };
   return /border-bottom-color: var\(--line\)/.test(css) && check(0) && check(dark);
+})());
+
+/*
+ * One short token per cell under one short heading, so centring lines each under
+ * its own. The names are the only cells that vary in length and are the one
+ * column left ragged on the right rather than on both sides.
+ */
+ok('every column but the names is centred', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  return /#vargas-table th, #vargas-table td \{ text-align: center; \}/.test(css) &&
+    /#vargas-table thead th:first-child, #vargas-table tbody th \{ text-align: left; \}/
+      .test(css);
+})());
+/*
+ * Not :first-child: a graha's second row has no first cell of its own, the name
+ * spanning down from the row above, so the cell sitting first there is a
+ * division and would have been left-aligned alone among its column.
+ */
+ok('and the rule does not reach the cell that merely sits first in a spanned row',
+   (function () {
+     var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+     var block = css.slice(css.indexOf('#vargas-table thead th:first-child'));
+     block = block.slice(0, block.indexOf('}') + 1);
+     return !/tr[^,]*:first-child/.test(block) && !/td:first-child/.test(block);
+   })());
+ok('the score is centred with the rest, no longer ranged right', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var block = css.slice(css.indexOf('#vargas-table td.vimsopaka'));
+  block = block.slice(0, block.indexOf('}') + 1);
+  return !/text-align/.test(block) && /tabular-nums/.test(block);
 })());
 
 console.log('\nVarga charts');

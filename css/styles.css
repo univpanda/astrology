@@ -904,6 +904,16 @@ td.varga-sign { color: var(--ink-soft); font-size: 0.85rem; }
 td.varga-sign-abbr { font-family: var(--font-mono); letter-spacing: 0.01em; }
 /* Sixteen columns is a lot of table; let it breathe less than the others. */
 #vargas-table th, #vargas-table td { padding-left: 0.45rem; padding-right: 0.45rem; }
+/* Every column but the first holds one short token - a sign code, a dignity, a
+   score - in a column headed by another short token, so centring lines each
+   under its own heading. The names are the exception: they are the only cells
+   that vary in length, and ragging their right edge is better than ragging both.
+
+   Scoped to thead and to the body's th rather than to :first-child, because a
+   graha's second row has no first cell of its own - the name spans down from the
+   row above, and the cell sitting first there is a division. */
+#vargas-table th, #vargas-table td { text-align: center; }
+#vargas-table thead th:first-child, #vargas-table tbody th { text-align: left; }
 #vargas-table td.dig { font-size: 0.86rem; }
 /* The three divisions the chosen scheme leans on hardest, picked out of the row.
    A tint and two rules rather than a colour, so a column separates without
@@ -994,7 +1004,6 @@ td.varga-sign-abbr { font-family: var(--font-mono); letter-spacing: 0.01em; }
    four readings rather than by a gradient nobody agreed on. */
 #vargas-table td.vimsopaka {
   vertical-align: middle;
-  text-align: right;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   font-weight: 600;
