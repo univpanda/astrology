@@ -1028,6 +1028,20 @@ td.varga-sign-abbr { font-family: var(--font-mono); letter-spacing: 0.01em; }
 .legend-swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
 .legend-swatch.series-good { background: var(--chart-good); }
 .legend-swatch.series-vargottama { background: var(--chart-vargottama); }
+/* A facet carries one series, so its title is the identity and the fill has
+   nothing to tell apart. One colour for all five. */
+.series-mark rect { fill: var(--chart-vimsopaka); }
+/* Five small charts where two large ones sit, so they take a narrower track.
+   min-width: 0 lets each shrink to its own rather than holding the row open. */
+.varga-facets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.9rem 1.2rem;
+  grid-column: 1 / -1;
+}
+.varga-facets .varga-figure { min-width: 0; }
+.varga-facets .chart-title { font-size: 0.86rem; }
+.varga-facet-note { grid-column: 1 / -1; }
 /* One size for every note on the page. A note under a table is the table's small
    print and was being set at body size, so it read as the main text of the panel
    and the table read as an illustration of it. The flag key's descriptions join

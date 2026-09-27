@@ -2551,16 +2551,49 @@ console.log('\nVarga charts');
  */
 ok('the score and the counts are on separate plots', (function () {
   var at = appSrc.indexOf('function renderVargaCharts');
-  var block = appSrc.slice(at, at + 2200);
-  var calls = (block.match(/barChart\(\{/g) || []).length;
-  return calls === 2 && /max: 20, outOf: 20/.test(block) &&
-    /max: scheme\.count, outOf: scheme\.count/.test(block);
+  var block = appSrc.slice(at, appSrc.indexOf('function svgEl', at));
+  return /max: 20, outOf: 20/.test(block) &&
+    /max: scheme\.count, outOf: scheme\.count/.test(block) &&
+    /max: ceiling, outOf: scheme\.count/.test(block);
 })());
-ok('the two counts share the division count as their scale', (function () {
+/*
+ * Five marks is where colour runs out. The validator cannot separate five hues
+ * in this page's lightness band - purple against blue is 1.6 under deutan and
+ * 10.5 to normal vision, red against amber 11.3, both under the floor of
+ * fifteen - and the skill's answer for that is to cut series or facet. Facetting
+ * costs nothing here: one series a chart, so the title is the identity.
+ */
+ok('the five marks are facetted rather than crowded onto one axis', (function () {
   var at = appSrc.indexOf('function renderVargaCharts');
-  var block = appSrc.slice(at, at + 2200);
-  return /series-good/.test(block) && /series-vargottama/.test(block) &&
-    /Placement counts across the ' \+ scheme\.count/.test(block);
+  var block = appSrc.slice(at, appSrc.indexOf('function svgEl', at));
+  var marks = (block.match(/\{ key: '[VXSPD]', label: '\[[VXSPD]\]/g) || []);
+  return marks.length === 5 && /compact: true/.test(block) &&
+    /cls: 'series-mark'/.test(block);
+})());
+ok('and every facet carries exactly one series', (function () {
+  var at = appSrc.indexOf('var MARKS = [');
+  var block = appSrc.slice(at, appSrc.indexOf('host.appendChild(facets)', at));
+  return (block.match(/series: \[\{/g) || []).length === 1 &&
+    (block.match(/cls: /g) || []).length === 1;
+})());
+/*
+ * One scale across the five, taken from the largest count any reaches, so a tall
+ * bar is tall against the others and not only against its own chart.
+ */
+ok('the facets share one scale, read off the data', (function () {
+  var block = appSrc.slice(appSrc.indexOf('var ceiling = 1;'));
+  return /ceiling = Math\.max\(ceiling, r\.marks\[m\.key\]\)/.test(block) &&
+    /max: ceiling/.test(block);
+})());
+ok('and a count axis is labelled in whole numbers', (function () {
+  return /var ticks = Math\.min\(4, Math\.max\(1, Math\.round\(opts\.max\)\)\)/.test(appSrc);
+})());
+ok('every mark in the grid is counted in a facet', (function () {
+  var at = appSrc.indexOf('var MARKS = [');
+  var block = appSrc.slice(at, appSrc.indexOf('var ceiling', at));
+  return ['V', 'X', 'S', 'P', 'D'].every(function (k) {
+    return block.indexOf("key: '" + k + "'") >= 0;
+  });
 })());
 
 ok('well placed counts the good rungs and nothing below',
@@ -2817,39 +2850,51 @@ ok('the table is drawn once from both slots, not once per slot',
 ok('the vimsopaka chart is titled by what it measures, not by the scheme',
    /title: 'Vimsopaka bala',/.test(appSrc) &&
    !/Vimsopaka bala over the/.test(appSrc) &&
-   /title: 'Placement counts across the ' \+ scheme\.count \+ ' divisions'/.test(appSrc));
+   /title: 'Well placed, of ' \+ scheme\.count \+ ' divisions'/.test(appSrc));
 /*
  * The second title names the unit and the denominator and leaves the two counts
  * to the legend, which is where a reader looks for which bar is which.
  */
-ok('and the second by what it counts, not by either of its two series',
-   (function () {
-     var at = appSrc.indexOf('function renderVargaCharts');
-     var block = appSrc.slice(at, at + 3000);
-     var title = block.match(/title: 'Placement counts[^']*'/)[0];
-     return !/Well placed|Vargottama/.test(title) && /Well placed/.test(block) &&
-       /label: 'Vargottama'/.test(block);
-   })());
+ok('and the second by what it counts, out of how many', (function () {
+  var at = appSrc.indexOf('function renderVargaCharts');
+  var block = appSrc.slice(at, appSrc.indexOf('function svgEl', at));
+  return /title: 'Well placed, of ' \+ scheme\.count \+ ' divisions'/.test(block);
+})());
 /*
  * And it is called Vargottama, the name it has everywhere else on the page: [V]
  * on the chart, [V] in the graha table, [V] in the grid, Vargottama in the flag
  * key. The legend described the fact instead of naming it, so nothing connected
  * the purple bar to the purple flag.
  */
-ok('the vargottama series is named, not described',
-   /label: 'Vargottama', cls: 'series-vargottama'/.test(appSrc) &&
+ok('the vargottama facet is named, not described',
+   /\{ key: 'V', label: '\[V\] Vargottama' \}/.test(appSrc) &&
    !/Repeats the rashi sign/.test(appSrc) &&
    />\s*<span class="flag flag-v">\[V\]<\/span> Vargottama<\/dt>/
      .test(html.replace(/\s+/g, ' ')));
+/*
+ * Each facet is titled with the mark it counts, so the chart and the grid above
+ * it are read with one vocabulary rather than two.
+ */
+ok('and every facet is titled by its mark',
+   ['\\[V\\] Vargottama', '\\[X\\] Exchange of signs', '\\[S\\] Shubha kartari',
+    '\\[P\\] Papa kartari', '\\[D\\] Directional strength'].every(function (t) {
+     return new RegExp("label: '" + t + "'").test(appSrc);
+   }));
 /*
  * The chart note says what the series counts and stops. The strict reading - the
  * word is the D9 case, D1 excluded because every graha would qualify - is in the
  * flag key at the top of the tab, where all four flags are defined, so saying it
  * again here would be the third statement of it in one panel.
  */
-ok('and the chart note says what the series counts, nothing further',
-   /Vargottama counts the divisions that land the graha back in its rashi sign\./
+/*
+ * The facets carry one note between them rather than one each: five repetitions
+ * of "how many divisions carry this" is the same sentence five times.
+ */
+ok('the facets share one note, and it says what they count',
+   /How many of the ' \+ scheme\.count \+ ' divisions carry each mark/
      .test(appSrc.replace(/'\s*\+\s*'/g, '')) &&
+   /One scale across the five, so a tall bar is tall against the others/
+     .test(appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ')) &&
    !/strictly the word is the D9 case/.test(appSrc) &&
    /never on D1, where every graha would qualify\. In D9 it is vargottama proper/
      .test(html.replace(/\s+/g, ' ')));
@@ -2890,7 +2935,8 @@ ok('no toggled container carries a display rule that outranks [hidden]',
      });
    })());
 ok('and the box is drawn to that half width, not the old full one',
-   /var W = 500, H = 215/.test(appSrc) && !/var W = 760/.test(appSrc));
+   /var W = opts\.compact \? 300 : 500, H = opts\.compact \? 165 : 215;/.test(appSrc) &&
+   !/var W = 760/.test(appSrc));
 
 ok('the table carries ten columns, in order', (function () {
   var wanted = ['Graha', 'Chart', 'Rashi', 'Dignity', 'House', 'Lordship', 'Dispositor',

@@ -1677,15 +1677,24 @@
       var score = Astro.vimsopaka(planet.name, planet.longitude, scheme, positionsD1);
       if (!score) return null;                     // the nodes keep no friendships
       var rashi = Astro.signOf(planet.longitude);
-      var good = 0, repeats = 0;
+      var benefics = Astro.naturalBenefics(state.chart);
+      var good = 0, marks = { V: 0, X: 0, S: 0, P: 0, D: 0 };
       scheme.divisions.forEach(function (division) {
         var d = Astro.vargaDignity(planet.name, planet.longitude, division, positionsD1);
         if (!d) return;
         if (GOOD_KEYS.indexOf(d.key) >= 0) good++;
-        if (division !== 1 && d.sign === rashi) repeats++;
+        var chart = Astro.chartInDivision(state.chart, division);
+        var lagna = Astro.vargaPosition(state.chart.ascendant.longitude, division).sign;
+        if (division !== 1 && d.sign === rashi) marks.V++;
+        if (Yogas.parivartana(chart).some(function (yoga) {
+          return (yoga.grahas || []).indexOf(planet.name) >= 0;
+        })) marks.X++;
+        if (Astro.hemmedByBenefics(planet.name, d.sign, chart, benefics)) marks.S++;
+        if (Astro.hemmedByMalefics(planet.name, d.sign, chart, benefics)) marks.P++;
+        if (Astro.hasDigBala(planet.name, ((d.sign - lagna) % 12 + 12) % 12 + 1)) marks.D++;
       });
       return { graha: planet.name, vimsopaka: score.total, band: score.band,
-               good: good, vargottama: repeats };
+               good: good, vargottama: marks.V, marks: marks };
     }).filter(Boolean);
   }
 
@@ -1715,12 +1724,21 @@
      * labels came out nearer 8. Narrowing the box rather than enlarging the type
      * keeps one set of sizes for both layouts.
      */
-    var W = 500, H = 215, left = 28, right = 8, top = 18, bottom = 34;
+    /*
+     * A facet is drawn to a smaller box for the same reason the wide grid takes
+     * a smaller type size: the viewBox scales to its column, so the ratio of
+     * text to plot is what the number sets. Five of these sit where two of the
+     * others do.
+     */
+    var W = opts.compact ? 300 : 500, H = opts.compact ? 165 : 215;
+    var left = opts.compact ? 22 : 28, right = 8, top = 18;
+    var bottom = opts.compact ? 30 : 34;
     var plotW = W - left - right, plotH = H - top - bottom;
     var svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H, class: 'varga-chart',
                              role: 'img', 'aria-label': opts.title });
 
-    var ticks = 4, step = opts.max / ticks;
+    // Whole numbers on a count axis: four ticks over a max of 5 would label 1.25.
+    var ticks = Math.min(4, Math.max(1, Math.round(opts.max))), step = opts.max / ticks;
     for (var t = 0; t <= ticks; t++) {
       var value = t * step;
       var y = top + plotH - (value / opts.max) * plotH;
@@ -1807,33 +1825,62 @@
     }));
 
     /*
-     * Two counts of divisions. Same unit and same denominator, so they share an
-     * axis, and the title says what is being counted and out of how many rather
-     * than naming either count: the legend does that.
+     * One count out of the division total, on its own because it is the only
+     * one that runs the length of the axis. The marks below run nought to about
+     * five, and a shared scale would flatten them into the baseline.
      */
     host.appendChild(barChart({
-      title: 'Placement counts across the ' + scheme.count + ' divisions',
+      title: 'Well placed, of ' + scheme.count + ' divisions',
       rows: rows, max: scheme.count, outOf: scheme.count,
-      series: [
-        { label: 'Well placed', cls: 'series-good',
-          value: function (r) { return r.good; },
-          readout: function (r) { return String(r.good); } },
-        /*
-         * The name it is called by everywhere else here: [V] in the chart, in
-         * the graha table and in the grid, and Vargottama in the flag key.
-         * Describing it instead left the reader to work out that the purple bar
-         * and the purple flag were the same fact. The strict reading, that the
-         * word is the D9 case and that D1 is excluded, is in the flag key at the
-         * top of the tab, which is where all four flags are defined.
-         */
-        { label: 'Vargottama', cls: 'series-vargottama',
-          value: function (r) { return r.vargottama; },
-          readout: function (r) { return String(r.vargottama); } }
-      ],
-      note: 'Well placed counts exaltation, moolatrikona, own sign and a friend’s or ' +
-        'great friend’s sign, and nothing below. Vargottama counts the divisions that ' +
-        'land the graha back in its rashi sign.'
+      series: [{ label: 'Well placed', cls: 'series-good',
+                 value: function (r) { return r.good; },
+                 readout: function (r) { return String(r.good); } }],
+      note: 'Exaltation, moolatrikona, own sign and a friend\u2019s or great friend\u2019s ' +
+        'sign, and nothing below.'
     }));
+
+    /*
+     * The five cell marks, one small chart each rather than five series in one.
+     *
+     * Five series is where colour runs out. The palette validator cannot
+     * separate five hues inside this page's lightness band: purple against blue
+     * comes to 1.6 under deutan and 10.5 to normal vision, and red against amber
+     * to 11.3, both under the floor of fifteen. The skill's answer for that is
+     * to cut series or to facet, and facetting loses nothing here - each chart
+     * carries one series, so its title is the identity and no colour has to tell
+     * anything apart.
+     *
+     * One scale across all five, taken from the largest count any of them
+     * reaches, so the heights can be read against each other.
+     */
+    var MARKS = [
+      { key: 'V', label: '[V] Vargottama' },
+      { key: 'X', label: '[X] Exchange of signs' },
+      { key: 'S', label: '[S] Shubha kartari' },
+      { key: 'P', label: '[P] Papa kartari' },
+      { key: 'D', label: '[D] Directional strength' }
+    ];
+    var ceiling = 1;
+    rows.forEach(function (r) {
+      MARKS.forEach(function (m) { ceiling = Math.max(ceiling, r.marks[m.key]); });
+    });
+
+    var facets = el('div', 'varga-facets');
+    MARKS.forEach(function (m) {
+      facets.appendChild(barChart({
+        title: m.label,
+        rows: rows, max: ceiling, outOf: scheme.count, compact: true,
+        series: [{ label: m.label, cls: 'series-mark',
+                   value: function (r) { return r.marks[m.key]; },
+                   readout: function (r) { return String(r.marks[m.key]); } }]
+      }));
+    });
+    host.appendChild(facets);
+    host.appendChild(el('p', 'chart-note varga-facet-note',
+      'How many of the ' + scheme.count + ' divisions carry each mark. One scale across ' +
+      'the five, so a tall bar is tall against the others and not only against its own ' +
+      'chart. The grid above says which divisions they are.'));
+  }
   }
 
   /* --------------------------------------------------------------- yogas */

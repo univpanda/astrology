@@ -817,11 +817,16 @@ ok('so hemming takes the rashi\u2019s benefics and the division\u2019s neighbour
      return A.hemmedByBenefics('Jupiter', jup.sign, d7, ben) === true &&
        A.hemmedByBenefics('Jupiter', jup.sign, d7) === false;
    })());
+/*
+ * Counted rather than listed: a caller added without the map is the drift worth
+ * catching, and a fixed number would have to be edited every time one is.
+ */
 ok('and every caller passes one, so no division recomputes it', (function () {
   var appSrc = require('fs').readFileSync(__dirname + '/../js/app.js', 'utf8');
-  var calls = appSrc.replace(/\s+/g, ' ').match(/hemmedByBenefics\([^;]*?\)\s*[?)]/g) || [];
-  return calls.length === 2 && calls.every(function (call) {
-    return /benefics\)/.test(call) || /naturalBenefics\(c\)\)/.test(call);
+  var calls = appSrc.replace(/\s+/g, ' ')
+    .match(/hemmedBy(?:Benefics|Malefics)\([^;]*?\)\s*[?)]/g) || [];
+  return calls.length >= 4 && calls.every(function (call) {
+    return /, benefics\)/.test(call) || /naturalBenefics\(c\)\)/.test(call);
   });
 })());
 /*
