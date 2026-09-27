@@ -1352,14 +1352,20 @@
        * exchange is about a pair of grahas and directional strength about a
        * house, and the grid prints neither - so they hang on the graha's name.
        */
-      'A marked cell is one the score reads wrong, and the mark says how. [V] repeats the ' +
-      'rashi sign, [X] is an exchange of signs, [S] and [P] are a benefic or a malefic in ' +
-      'the sign either side, [D] is the house the graha is strongest in by direction, and ' +
-      '* on a dignity is a ' +
-      'debilitation cancelled into a raja yoga. Every one of them is something the score ' +
-      'cannot see, counting dignity a division at a time, and each sits against the value ' +
-      'in that cell it bears on, so an unmarked cell is one the score has whole. Hover any ' +
-      'of them for the reading. ' +
+      /*
+       * Names nothing. The flag key at the top of the tab defines all eight
+       * marks, and the note listing them again was that list in a second place,
+       * which is what carried it back over two hundred words.
+       *
+       * The two channels are worth separating, though, because they make
+       * different claims: a mark is one thing the score is blind to and lands on
+       * about a third of the cells, a tint is any yoga at all and lands on most.
+       */
+      'A marked cell is one the score reads wrong and the mark says how, each being ' +
+      'something it cannot see, set against the value in that cell it bears on. A tinted ' +
+      'cell is one where the graha takes part in a yoga in that division: most cells are, ' +
+      'so the tint says where to look rather than what is rare. Hover either for the ' +
+      'reading, and the Yogas tab reads a division in full. ' +
       /*
        * Both say what the grid does before why. A reader looking at seven rows
        * wants "they are left out" first and the reason after it, not a clause
@@ -1377,6 +1383,12 @@
    * this one, which already scroll and are none the worse for it.
    */
   var ABBREVIATE_ABOVE = 10;
+
+  /** "A", "A and B", "A, B and C". */
+  function listOf(items) {
+    if (items.length < 2) return items[0] || '';
+    return items.slice(0, -1).join(', ') + ' and ' + items[items.length - 1];
+  }
 
   /** Whichever scheme the select is on, falling back to the widest. */
   function currentScheme() {
@@ -1468,15 +1480,24 @@
     // Settled in the rashi and handed to every division: see hemmedByBenefics.
     var benefics = Astro.naturalBenefics(state.chart);
     var sun = positionsD1.Sun;
-    var divisionLagna = {}, exchanging = {}, divisionCharts = {};
+    var divisionLagna = {}, exchanging = {}, divisionCharts = {}, yogasIn = {};
+    var strengths = strengthsFor(state);
     scheme.divisions.forEach(function (division) {
       divisionLagna[division] =
         Astro.vargaPosition(state.chart.ascendant.longitude, division).sign;
       divisionCharts[division] = Astro.chartInDivision(state.chart, division);
       exchanging[division] = {};
-      Yogas.parivartana(divisionCharts[division]).forEach(function (yoga) {
+      yogasIn[division] = {};
+      /*
+       * Every yoga the module knows, read in this division's own chart - the
+       * same recast and the same strengths the Yogas tab uses, so the two cannot
+       * disagree about what D9 holds.
+       */
+      Yogas.detect(divisionCharts[division], strengths).forEach(function (yoga) {
         (yoga.grahas || []).forEach(function (name) {
-          exchanging[division][name] = yoga.title;
+          var list = yogasIn[division][name] || (yogasIn[division][name] = []);
+          if (list.indexOf(yoga.title) < 0) list.push(yoga.title);
+          if (yoga.yoga === 'Parivartana') exchanging[division][name] = yoga.title;
         });
       });
     });
@@ -1599,7 +1620,26 @@
         var dignity = el('td', (d ? 'dig dig-' + d.key : '') +
           (keys.indexOf(division) >= 0 ? ' varga-key' : ''),
           d ? (brief ? Astro.VARGA_DIGNITY_SHORT[d.key] : d.label) : '\u2013');
-        if (detail) { sign.title = detail; dignity.title = detail; }
+        /*
+         * The yogas this graha takes part in, in this division. Named and not
+         * explained: the Yogas tab reads a division in full, and this is telling
+         * the reader that the cell is doing something the score below cannot
+         * account for.
+         */
+        var yogas = d ? (yogasIn[division][planet.name] || []) : [];
+        var yogaNote = yogas.length
+          ? ' ' + planet.name + ' takes part in ' +
+            listOf(yogas.map(function (t) { return t.toLowerCase(); })) + ' in D' +
+            division + '.'
+          : '';
+        if (detail) {
+          sign.title = detail + yogaNote;
+          dignity.title = detail + yogaNote;
+        }
+        if (yogas.length) {
+          sign.className += ' varga-yoga';
+          dignity.className += ' varga-yoga';
+        }
         /*
          * A star on a debilitation the chart cancels. It rides the word rather
          * than replacing it: the graha is still debilitated by sign, which is

@@ -1484,19 +1484,65 @@ ok('and the hover says the score is the floor for a graha that is not weak',
  * is one of the four things vimsopaka cannot see. A marked cell is one the score
  * reads wrong; an unmarked cell is one it has whole.
  */
-ok('the note says a mark means the score reads that cell wrong', (function () {
+/*
+ * Two channels, two claims. A tint says the graha takes part in a yoga in that
+ * division, which most cells do; a mark says a particular thing the score is
+ * blind to, which about a third do. Putting both in letters would have made the
+ * common one look like the rare ones.
+ */
+/*
+ * Two channels, two claims, and the note says which is which without naming a
+ * single mark: the flag key at the top of the tab defines all eight, and listing
+ * them here as well is that list in a second place - it is what carried the note
+ * back past two hundred words once already.
+ */
+ok('the note separates the two channels without naming a mark', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
-  return /A marked cell is one the score reads wrong, and the mark says how/.test(flat) &&
-    /so an unmarked cell is one the score has whole/.test(flat);
-})());
-ok('and names them all without defining any, the key doing that', (function () {
-  var flat = appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
-  return /\[V\] repeats the rashi sign, \[X\] is an exchange of signs, \[S\] and \[P\] are a benefic or a malefic in the sign either side, \[D\] is the house the graha is strongest in by direction, and \* on a dignity is a debilitation cancelled into a raja yoga/
+  return /A marked cell is one the score reads wrong and the mark says how, each being something it cannot see/
     .test(flat) &&
-    !/A sign marked \[V\] is one the division has landed/.test(flat);
+    /A tinted cell is one where the graha takes part in a yoga in that division: most cells are, so the tint says where to look rather than what is rare/
+      .test(flat);
+})());
+ok('and names none of them, the key doing that', (function () {
+  var at = appSrc.indexOf('function vargaNote');
+  var note = appSrc.slice(at, appSrc.indexOf('ABBREVIATE_ABOVE', at))
+    .replace(/\/\*[\s\S]*?\*\//g, '');
+  return !/\[V\] repeats the rashi sign/.test(note) && !/\[D\] is the house/.test(note) &&
+    /<dt><span class="flag flag-v">\[V\]<\/span> Vargottama<\/dt>/
+      .test(html.replace(/\s+/g, ' '));
+})());
+ok('and the tint is a background where the marks are letters', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  return /#vargas-table td\.varga-yoga \{[^}]*background: var\(--varga-yoga\)/.test(css) &&
+    /--varga-yoga: #fcf3e0;/.test(css) && /--varga-yoga: #2e2a1c;/.test(css);
+})());
+/*
+ * A key column keeps its identity in the two vertical rules either side, which
+ * are borders, so the yoga tint can take the background without either signal
+ * being lost.
+ */
+ok('so a key column that also holds a yoga keeps both signals', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var key = css.slice(css.indexOf('#vargas-table .varga-key {'));
+  key = key.slice(0, key.indexOf('}'));
+  return /border-left: 1px solid var\(--line\)/.test(key) &&
+    /border-right: 1px solid var\(--line\)/.test(key);
+})());
+ok('and the row rules stay visible through the yoga tint too', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var block = css.slice(css.indexOf('#vargas-table td.varga-yoga {'));
+  block = block.slice(0, block.indexOf('}'));
+  return /border-bottom-color: var\(--line\)/.test(block);
+})());
+ok('a graha in two yogas in one division is named once for each', (function () {
+  var at = appSrc.indexOf('var list = yogasIn[division][name]');
+  var block = appSrc.slice(at, at + 200);
+  return /if \(list\.indexOf\(yoga\.title\) < 0\) list\.push\(yoga\.title\);/.test(block);
 })());
 ok('every one is computed per division, not once for the chart',
-   /Yogas\.parivartana\(divisionCharts\[division\]\)/.test(appSrc) &&
+   /Yogas\.detect\(divisionCharts\[division\], strengths\)/.test(appSrc) &&
+   /if \(yoga\.yoga === 'Parivartana'\) exchanging\[division\]\[name\] = yoga\.title;/
+     .test(appSrc) &&
    /Astro\.hemmedByBenefics\(planet\.name, d\.sign, divisionCharts\[division\],\s*\n?\s*benefics\)/
      .test(appSrc) &&
    /Astro\.hemmedByMalefics\(planet\.name, d\.sign, divisionCharts\[division\],\s*\n?\s*benefics\)/
@@ -1510,11 +1556,18 @@ ok('every one is computed per division, not once for the chart',
  * cells, raja yoga alone running better than one per divisional chart on two
  * grahas each, and a mark on three cells in five is decoration.
  */
-ok('and nothing wider than the four is marked', (function () {
+/*
+ * The five marks stay the five marks. Every yoga is reported too, but as a tint
+ * on the cell and a line in its hover rather than as a sixth letter: raja yoga
+ * alone would put one on a third of the grid, and a mark that common says
+ * nothing about the cell it is on.
+ */
+ok('and no yoga becomes a sixth mark', (function () {
   var at = appSrc.indexOf('function renderVargas(state)');
   var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
-  return !/Yogas\.detect\(/.test(block) && !/function grahaFootnote/.test(appSrc) &&
-    /a mark on three cells in\s*\n?\s*\* five is a decoration/.test(appSrc);
+  var marks = (block.match(/'flag flag-[a-z]+'/g) || []);
+  return marks.length === 5 && /varga-yoga/.test(block) &&
+    !/function grahaFootnote/.test(appSrc);
 })());
 ok('which is measurably a third of the cells rather than three fifths', (function () {
   var scheme = Astro.VARGA_SCHEMES.shodasavarga, cells = 0, marked = 0;
@@ -2344,7 +2397,7 @@ ok('and points at the hovers once, in general rather than kind by kind',
      note = note.slice(0, note.indexOf('ABBREVIATE_ABOVE'));
      var flat = note.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
      return (flat.match(/Hover/g) || []).length === 1 &&
-       /Hover any of them for the reading/.test(flat) &&
+       /Hover either for the reading, and the Yogas tab reads a division in full/.test(flat) &&
        !/a heading for what that division is worth/.test(flat);
    })());
 /*
@@ -2353,7 +2406,7 @@ ok('and points at the hovers once, in general rather than kind by kind',
  * different places.
  */
 ok('and everything it promises a hover on has one',
-   /if \(detail\) \{ sign\.title = detail; dignity\.title = detail; \}/.test(appSrc) &&
+   /sign\.title = detail \+ yogaNote;/.test(appSrc) &&
    /th\.title = \(varga \? varga\.label/.test(appSrc) &&
    /td\.title = planet\.name \+ ' scores '/.test(appSrc));
 ok('and gives the seven-step reading when it differs from the label shown',
@@ -2732,7 +2785,15 @@ ok('and the chart agrees with the Vargas grid, being the same comparison', (func
   });
 })());
 ok('both halves of a pair carry the same hover',
-   /if \(detail\) \{ sign\.title = detail; dignity\.title = detail; \}/.test(appSrc));
+   /sign\.title = detail \+ yogaNote;\s*\n\s*dignity\.title = detail \+ yogaNote;/
+     .test(appSrc));
+/*
+ * And the same highlight. A yoga belongs to the graha in that division, which is
+ * the pair of cells and not either row of it.
+ */
+ok('and the same highlight, a yoga being the pair\u2019s and not a row\u2019s',
+   /sign\.className \+= ' varga-yoga';\s*\n\s*dignity\.className \+= ' varga-yoga';/
+     .test(appSrc));
 ok('and a graha with no reading still contributes no rows at all',
    /if \(cells\.every\(function \(c\) \{ return !c; \}\)\) return;/.test(appSrc));
 ok('the rule sits under the pair rather than between its halves', (function () {

@@ -30,6 +30,9 @@
   --green-soft: #dcefe4;
   /* Light enough that the row rules still read through it. */
   --varga-key: #ebf6ef;
+  /* The yoga tint sits at the same weight as the key tint, so neither reads as
+     the louder of the two; they are told apart by hue, not by strength. */
+  --varga-yoga: #fcf3e0;
   --retro: #b8483a;
   --flag-vargottama: #6d4aa8;
   --flag-yogakaraka: #a8710c;
@@ -962,6 +965,15 @@ td.varga-sign-abbr { font-family: var(--font-mono); letter-spacing: 0.01em; }
   border-bottom-color: var(--line);
 }
 #vargas-table th.varga-key { color: var(--green-deep); }
+/* A cell whose graha takes part in a yoga in that division. It wins the
+   background from a key column, which keeps its identity in the two vertical
+   rules either side of it - a border rather than a fill, so the two signals do
+   not have to fight over one channel. The row rules step up to --line here for
+   the same reason they do in a key column. */
+#vargas-table td.varga-yoga {
+  background: var(--varga-yoga);
+  border-bottom-color: var(--line);
+}
 
 /* Table or charts. A view switch rather than a data control, so it reads as two
    buttons rather than as another dropdown beside the scheme. */
@@ -1172,6 +1184,7 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
     --green-deep: #7fd3a5;
     --green-soft: #21362b;
     --varga-key: #1e2f26;
+    --varga-yoga: #2e2a1c;
     --retro: #e8867a;
     /* Both flag hues need lifting off a dark ground, as the graha colours do. */
     --flag-vargottama: #b69ae0;
