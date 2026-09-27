@@ -1214,12 +1214,45 @@ var Astro = (function () {
     return apart < (retrograde ? orb.retrograde : orb.direct);
   }
 
+  /*
+   * Which house-distances a graha aspects fully. Every graha sees the 7th; Mars,
+   * Jupiter and Saturn have their own besides. Partial aspects are not used:
+   * where the texts speak of a graha being aspected they mean fully.
+   *
+   * Here rather than in yogas.js because naturalBenefics needs it, for
+   * Parashara's clause about a waning Moon that a benefic aspects.
+   */
+  var FULL_ASPECTS = {
+    Mars: [4, 7, 8], Jupiter: [5, 7, 9], Saturn: [3, 7, 10],
+    // Parashara gives the nodes no aspects; most modern practice gives them the
+    // 5th, 7th and 9th, as Jupiter has. Named here rather than assumed.
+    Rahu: [5, 7, 9], Ketu: [5, 7, 9]
+  };
+  function aspects(graha, fromSign, toSign) {
+    var apart = ((toSign - fromSign) % 12 + 12) % 12 + 1;
+    return (FULL_ASPECTS[graha] || [7]).indexOf(apart) >= 0;
+  }
+
   /**
    * Which grahas are benefic in this chart.
    *
-   * Jupiter and Venus always; the Sun, Mars and Saturn never. The Moon is
-   * benefic while waxing and bright, and Mercury takes the character of whatever
-   * it sits with, turning malefic in the company of a malefic.
+   * Jupiter and Venus always; the Sun, Mars and Saturn never. The Moon and
+   * Mercury are conditional, and Parashara's conditions are not the ones a
+   * brightness test gives.
+   *
+   * The Moon is benefic while waxing, dark half to bright: Santhanam's note at
+   * chapter 2 is explicit that a decreasing Moon is a malefic and an increasing
+   * one a benefic, and that the 120-to-240 band some commentators quote is the
+   * Yavana view of her strength rather than of her nature. This function used to
+   * test brightness, elongation between 90 and 270, which is that second thing
+   * wearing the name of the first. The two disagree about the Moon in half of
+   * all charts: a Moon 60 degrees from the Sun is waxing and dim, one 200
+   * degrees away is waning and bright.
+   *
+   * Two clauses follow it in the same note. A waning Moon conjunct or aspected
+   * by a benefic turns benefic regardless, and a waning Moon together with
+   * Mercury makes both benefic - which is the one place the circularity between
+   * these two is settled by the text rather than by an order of evaluation.
    *
    * Shared rather than written twice: Shadbala weighs every aspect by this and a
    * second copy would drift from it.
@@ -1231,10 +1264,30 @@ var Astro = (function () {
 
     var elongation = norm360(positions.Moon.longitude - positions.Sun.longitude);
     var benefics = { Jupiter: true, Venus: true, Sun: false, Mars: false, Saturn: false };
-    benefics.Moon = elongation > 90 && elongation < 270;
-    benefics.Mercury = !Object.keys(benefics).some(function (g) {
-      return !benefics[g] && positions[g] && positions.Mercury &&
-        positions[g].sign === positions.Mercury.sign;
+    var waxing = elongation < 180;
+    var moon = positions.Moon, mercury = positions.Mercury;
+    var withMercury = !!mercury && mercury.sign === moon.sign;
+
+    /*
+     * Settled first, because everything below depends on which of the two this
+     * pairing makes benefic and the text answers it outright.
+     */
+    if (!waxing && withMercury) {
+      benefics.Moon = true;
+      benefics.Mercury = true;
+      return benefics;
+    }
+
+    // Jupiter and Venus are the unconditional benefics, so they are the two that
+    // can rescue a waning Moon; Mercury joins them when it is benefic itself.
+    var rescues = ['Jupiter', 'Venus'];
+    benefics.Moon = waxing || rescues.some(function (g) {
+      var p = positions[g];
+      return p && (p.sign === moon.sign || aspects(g, p.sign, moon.sign));
+    });
+
+    benefics.Mercury = !mercury || !Object.keys(benefics).some(function (g) {
+      return !benefics[g] && positions[g] && positions[g].sign === mercury.sign;
     });
     return benefics;
   }
@@ -1606,6 +1659,8 @@ var Astro = (function () {
     COMBUSTION: COMBUSTION,
     isCombust: isCombust,
     naturalBenefics: naturalBenefics,
+    aspects: aspects,
+    FULL_ASPECTS: FULL_ASPECTS,
     DIG_BALA_HOUSE: DIG_BALA_HOUSE,
     hasDigBala: hasDigBala,
     hemmedByBenefics: hemmedByBenefics,

@@ -73,21 +73,11 @@ var Yogas = (function () {
   }
 
   /*
-   * Which house-distances a graha aspects fully. Every graha sees the 7th;
-   * Mars, Jupiter and Saturn have their own besides. Partial aspects are not
-   * used here - for cancelling a debilitation the classical texts speak of
-   * being aspected, not of being aspected a quarter.
+   * Full aspects live in astro.js: naturalBenefics needs them for Parashara's
+   * clause about a waning Moon aspected by a benefic, and a second copy here
+   * would be the same table written twice.
    */
-  var FULL_ASPECTS = {
-    Mars: [4, 7, 8], Jupiter: [5, 7, 9], Saturn: [3, 7, 10],
-    // Parashara gives the nodes no aspects; most modern practice gives them the
-    // 5th, 7th and 9th, as Jupiter has. Named here rather than assumed.
-    Rahu: [5, 7, 9], Ketu: [5, 7, 9]
-  };
-  function aspects(graha, fromSign, toSign) {
-    var apart = ((toSign - fromSign) % 12 + 12) % 12 + 1;
-    return (FULL_ASPECTS[graha] || [7]).indexOf(apart) >= 0;
-  }
+  var aspects = Astro.aspects;
 
   var KENDRA_HOUSES = [1, 4, 7, 10];
   var TRIKONA_HOUSES = [1, 5, 9];
@@ -898,7 +888,7 @@ var Yogas = (function () {
     DETECTOR_COUNT: DETECTORS.length,
     aspectTable: aspectTable, aspects: aspects, ordinal: ordinal,
     raoRetrogradeAspects: raoRetrogradeAspects, RAO_MAX_DEGREE: RAO_MAX_DEGREE,
-    FULL_ASPECTS: FULL_ASPECTS, GRAHAS: GRAHAS };
+    FULL_ASPECTS: Astro.FULL_ASPECTS, GRAHAS: GRAHAS };
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = Yogas;

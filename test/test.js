@@ -513,6 +513,101 @@ ok('and a graha the order has never heard of keeps its place at the end', (funct
   return sorted.join(' ') === 'Sun Saturn Gulika' && sorted.length === 3;
 })());
 
+console.log('\nBenefic and malefic nature');
+/*
+ * Santhanam's note at chapter 2 separates two things this function had run
+ * together: a waning Moon is a malefic and a waxing one a benefic, while the
+ * 120-to-240 band some commentators quote is the Yavana view of her strength.
+ * The code tested brightness, 90 to 270, which is the second wearing the name
+ * of the first.
+ */
+ok('the Moon is benefic by waxing, not by brightness', (function () {
+  var chart = function (elongation) {
+    return { planets: [
+      { name: 'Sun', sign: 0, longitude: 0 },
+      { name: 'Moon', sign: Math.floor(elongation / 30) % 12, longitude: elongation }] };
+  };
+  // 60 degrees on: waxing and dim, so benefic by the rule and not by brightness.
+  // 200 degrees on: waning and bright, so the reverse.
+  return A.naturalBenefics(chart(60)).Moon === true &&
+    A.naturalBenefics(chart(200)).Moon === false;
+})());
+ok('and the two rules disagree about half of all charts', (function () {
+  var differ = 0, charts = 0;
+  for (var y = 1900; y < 2020; y++) {
+    for (var h = 1; h < 24; h += 7) {
+      var c = A.chart({ jdUT: A.julianDay(y, (y % 12) + 1, (y % 27) + 1, h), latitude: 28.61,
+                        longitude: 77.21, tzOffsetMinutes: 330 });
+      var sun = c.planets.filter(function (p) { return p.name === 'Sun'; })[0];
+      var moon = c.planets.filter(function (p) { return p.name === 'Moon'; })[0];
+      var e = A.norm360(moon.longitude - sun.longitude);
+      charts++;
+      if ((e < 180) !== (e > 90 && e < 270)) differ++;
+    }
+  }
+  return differ / charts > 0.45 && differ / charts < 0.55;
+})());
+/*
+ * Two clauses follow it in the same note, and both are Parashara's own.
+ */
+ok('a waning Moon conjunct a benefic turns benefic', (function () {
+  var chart = { planets: [
+    { name: 'Sun', sign: 0, longitude: 0 },
+    { name: 'Moon', sign: 8, longitude: 260 },
+    { name: 'Jupiter', sign: 8, longitude: 265 }] };
+  return A.naturalBenefics(chart).Moon === true;
+})());
+ok('and so does one a benefic aspects', (function () {
+  // Jupiter in Aries sees the 9th from itself, Sagittarius.
+  var chart = { planets: [
+    { name: 'Sun', sign: 0, longitude: 0 },
+    { name: 'Moon', sign: 8, longitude: 260 },
+    { name: 'Jupiter', sign: 0, longitude: 5 }] };
+  return A.aspects('Jupiter', 0, 8) && A.naturalBenefics(chart).Moon === true;
+})());
+ok('but a waning Moon a malefic aspects stays malefic', (function () {
+  var chart = { planets: [
+    { name: 'Sun', sign: 0, longitude: 0 },
+    { name: 'Moon', sign: 8, longitude: 260 },
+    { name: 'Saturn', sign: 5, longitude: 155 }] };
+  return A.naturalBenefics(chart).Moon === false;
+})());
+/*
+ * "If waning Moon and Mercury are together, both are benefics." It is the one
+ * place the circularity between these two - the Moon's nature depending on
+ * Mercury's and Mercury's on the Moon's - is settled by the text.
+ */
+ok('a waning Moon with Mercury makes both benefic', (function () {
+  var chart = { planets: [
+    { name: 'Sun', sign: 0, longitude: 0 },
+    { name: 'Moon', sign: 8, longitude: 260 },
+    { name: 'Mercury', sign: 8, longitude: 262 }] };
+  var b = A.naturalBenefics(chart);
+  return b.Moon === true && b.Mercury === true;
+})());
+ok('Mercury is still malefic in the company of a plain malefic', (function () {
+  var chart = { planets: [
+    { name: 'Sun', sign: 0, longitude: 0 },
+    { name: 'Moon', sign: 3, longitude: 100 },
+    { name: 'Mercury', sign: 8, longitude: 262 },
+    { name: 'Saturn', sign: 8, longitude: 265 }] };
+  return A.naturalBenefics(chart).Mercury === false;
+})());
+/*
+ * Jupiter and Venus are unconditional either way, which is what makes them the
+ * two that can rescue a waning Moon.
+ */
+ok('Jupiter and Venus are benefic in every chart, the Sun Mars and Saturn never',
+   (function () {
+     for (var y = 1980; y < 2000; y++) {
+       var c = A.chart({ jdUT: A.julianDay(y, 6, 12, 9), latitude: 28.61, longitude: 77.21,
+                         tzOffsetMinutes: 330 });
+       var b = A.naturalBenefics(c);
+       if (!b.Jupiter || !b.Venus || b.Sun || b.Mars || b.Saturn) return false;
+     }
+     return true;
+   })());
+
 console.log('\nHemming, both kinds');
 /*
  * The same figure with the other blades. The nodes are malefics for it and take
@@ -695,24 +790,32 @@ ok('and the signs wrap, Pisces and Taurus hemming Aries', (function () {
  * two of them is an angle about nothing, and it moves from division to division.
  */
 ok('the Moon\u2019s phase is a fact about the sky, not about a division', (function () {
+  // Stallone, 6 July 1946: the same waxing Moon, read as waning in D7.
   var c = A.chart({ jdUT: A.julianDay(1946, 7, 6, 19 + 20 / 60 + 4), latitude: 40.7143,
                     longitude: -74.006, tzOffsetMinutes: -240 });
-  var rashi = A.naturalBenefics(c);
-  var d10 = A.naturalBenefics(A.chartInDivision(c, 10));
-  // The bug this guards: the same Moon, waxing in the rashi and waning in D10.
-  return rashi.Moon === true && d10.Moon === false;
+  return A.naturalBenefics(c).Moon === true &&
+    A.naturalBenefics(A.chartInDivision(c, 7)).Moon === false;
+})());
+ok('and a waning Moon can be read as waxing the same way', (function () {
+  var c = A.chart({ jdUT: 2429896.5416666665, latitude: 40.7143, longitude: -74.006,
+                    tzOffsetMinutes: -240 });
+  var rashi = A.naturalBenefics(c).Moon;
+  // Fourteen of the fifteen other divisions disagree with the sky on this one.
+  var differ = [2, 3, 4, 7, 9, 10, 12, 16, 20, 24, 27, 30, 40, 45, 60]
+    .filter(function (d) { return A.naturalBenefics(A.chartInDivision(c, d)).Moon !== rashi; });
+  return rashi === false && differ.length > 10;
 })());
 ok('so hemming takes the rashi\u2019s benefics and the division\u2019s neighbours',
    (function () {
      var c = A.chart({ jdUT: A.julianDay(1946, 7, 6, 19 + 20 / 60 + 4), latitude: 40.7143,
                        longitude: -74.006, tzOffsetMinutes: -240 });
      var ben = A.naturalBenefics(c);
-     var d10 = A.chartInDivision(c, 10);
-     var jup = d10.planets.filter(function (p) { return p.name === 'Jupiter'; })[0];
+     var d7 = A.chartInDivision(c, 7);
+     var jup = d7.planets.filter(function (p) { return p.name === 'Jupiter'; })[0];
      // Venus on one side and the Moon on the other, so hemmed - and not hemmed
-     // at all if the Moon's phase is recomputed from D10's own longitudes.
-     return A.hemmedByBenefics('Jupiter', jup.sign, d10, ben) === true &&
-       A.hemmedByBenefics('Jupiter', jup.sign, d10) === false;
+     // at all if the Moon's phase is recomputed from D7's own longitudes.
+     return A.hemmedByBenefics('Jupiter', jup.sign, d7, ben) === true &&
+       A.hemmedByBenefics('Jupiter', jup.sign, d7) === false;
    })());
 ok('and every caller passes one, so no division recomputes it', (function () {
   var appSrc = require('fs').readFileSync(__dirname + '/../js/app.js', 'utf8');
