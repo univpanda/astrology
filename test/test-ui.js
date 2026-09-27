@@ -2147,9 +2147,18 @@ ok('each short form is given with the word it stands for', (function () {
 })());
 ok('and no copy of either table is typed into the sentence',
    !/Exal, Mool, Own, Gt Fr/.test(appSrc) && !/Gt Enm and Deb/.test(appSrc));
+/*
+ * The names shorten where everything else does. Sixteen columns already cost the
+ * signs and the dignities their words; a full graha name beside Ari and Gt Fr is
+ * the one column still spending width it has not got. Six and seven keep theirs.
+ */
+ok('the graha names shorten only where the rest of the row has',
+   /el\('th', null, brief \? Astro\.grahaAbbr\(planet\.name\) : planet\.name\)/.test(appSrc) &&
+   /if \(brief\) th\.title = planet\.name;/.test(appSrc));
 ok('the note explains the abbreviations where it uses them, and not otherwise', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');
-  return /Signs go as Ari, Tau, Can and dignities as ' \+ dignityKey\(\)/.test(flat) &&
+  return /Grahas go as Su, Mo, Ma and the rest, signs as Ari, Tau, Can, and dignities as ' \+ dignityKey\(\)/
+    .test(flat.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ')) &&
     // Stated, not justified: that sixteen columns leave no room is visible in them.
     !/leave no room for words/.test(flat) &&
     /function vargaNote\(scheme, brief\)/.test(appSrc);

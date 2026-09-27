@@ -1341,7 +1341,8 @@
        * No excuse for the shortening: that sixteen columns leave no room for
        * words is visible in the sixteen columns.
        */
-      (brief ? 'Signs go as Ari, Tau, Can and dignities as ' + dignityKey() + '. ' : '') +
+      (brief ? 'Grahas go as Su, Mo, Ma and the rest, signs as Ari, Tau, Can, and ' +
+        'dignities as ' + dignityKey() + '. ' : '') +
       /*
        * Placement, not definition. The flag key at the top of the tab defines
        * [V] and *, so the note says only where they sit and why they are here:
@@ -1486,9 +1487,16 @@
        */
       var signRow = document.createElement('tr');
       signRow.className = 'varga-signs';
-      var th = el('th', null, planet.name);
+      /*
+       * The names shorten where everything else does. Sixteen columns already
+       * cost the signs and the dignities their words, and a full graha name
+       * beside Ari and Gt Fr is the one column still spending width it has not
+       * got. Six and seven columns leave room, and keep it.
+       */
+      var th = el('th', null, brief ? Astro.grahaAbbr(planet.name) : planet.name);
       th.setAttribute('scope', 'rowgroup');
       th.setAttribute('rowspan', '2');
+      if (brief) th.title = planet.name;
       signRow.appendChild(th);
 
 
