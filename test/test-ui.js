@@ -1795,9 +1795,27 @@ ok('the vimsopaka chart is titled by what it measures, not by the scheme',
 ok('the two charts sit side by side where there is room, and stack where not',
    (function () {
      var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-     return /#vargas-charts \{[^}]*display: grid/.test(css) &&
-       /#vargas-charts \{[^}]*repeat\(auto-fit, minmax\(/.test(css) &&
+     return /#vargas-charts:not\(\[hidden\]\) \{[^}]*display: grid/.test(css) &&
+       /#vargas-charts:not\(\[hidden\]\) \{[^}]*repeat\(auto-fit, minmax\(/.test(css) &&
        /\.varga-figure \{[^}]*min-width: 0/.test(css);
+   })());
+/*
+ * An author display rule beats the display: none the browser gives [hidden], so
+ * a container that something toggles cannot carry one unguarded. Checked for
+ * every such container rather than for the one that broke: the Table switch
+ * stopped hiding the charts the moment they were laid out as a grid, and nothing
+ * about that was specific to this container.
+ */
+ok('no toggled container carries a display rule that outranks [hidden]',
+   (function () {
+     var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+     var ids = (appSrc.match(/getElementById\('([a-z-]+)'\)\.hidden/g) || [])
+       .map(function (m) { return m.replace(/.*'([a-z-]+)'.*/, '$1'); });
+     if (!ids.length) return false;
+     return ids.every(function (id) {
+       var blocks = css.match(new RegExp('#' + id + '\\s*\\{[^}]*\\}', 'g')) || [];
+       return blocks.every(function (b) { return !/display:/.test(b); });
+     });
    })());
 ok('and the box is drawn to that half width, not the old full one',
    /var W = 500, H = 215/.test(appSrc) && !/var W = 760/.test(appSrc));
