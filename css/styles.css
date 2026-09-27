@@ -958,9 +958,12 @@ td .retro-flag, td.retro-flag, th .retro-flag { color: var(--retro); }
   color: var(--ink-soft);
 }
 
-/* And the row they come to closes the block rather than opening it, with the
-   rule under the parts rather than over them. */
-#shadbala-table tr.bala-total > * { border-top: 1px solid var(--line); }
+/* And the share opens the block rather than closing it, so the rule falls above
+   the name rather than under the parts. A total below reads right while a column
+   is being added up; this is a table being looked things up in, and eight
+   indented rows with their parent underneath are eight rows a reader who lands
+   among them cannot name. */
+#shadbala-table tr.bala-head > * { border-top: 1px solid var(--line); }
 #shadbala-table tr.bala-sum > * {
   border-top: 1px solid var(--line);
   font-weight: 600;

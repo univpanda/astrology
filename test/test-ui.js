@@ -1218,7 +1218,22 @@ ok('and the parts read as parts of the row they add up to', (function () {
     /color: var\(--ink-soft\)/.test(part[0]) &&
     /padding-left: 1\.1rem/.test(part[0]) &&
     /#shadbala-table tr\.bala-part td \{ color: var\(--ink-soft\); \}/.test(css) &&
-    /#shadbala-table tr\.bala-total > \* \{ border-top: 1px solid var\(--line\); \}/.test(css);
+    /#shadbala-table tr\.bala-head > \* \{ border-top: 1px solid var\(--line\); \}/.test(css);
+})());
+/*
+ * And the share opens its block rather than closing it. Closing reads right
+ * while a column is being added up; this is a table being looked things up in,
+ * and eight indented rows with their parent underneath are eight rows a reader
+ * who lands among them cannot name - which is exactly what was asked of the
+ * Kala block: these are sub-balas of which bala?
+ */
+ok('and a share is passed before its parts are reached', (function () {
+  var at = appSrc.indexOf('BALA_ROWS.forEach(function (bala) {');
+  var block = appSrc.slice(at, appSrc.indexOf('row(\'Total\'', at));
+  return block.indexOf("'bala-head'") > 0 &&
+    block.indexOf("'bala-head'") < block.indexOf("(bala.parts || []).forEach") &&
+    block.indexOf("(bala.parts || []).forEach") < block.indexOf("'bala-part'") &&
+    !/bala-total/.test(appSrc);
 })());
 /*
  * Which only holds while the part rule outweighs the share rule it overrides.
@@ -1313,7 +1328,7 @@ ok('and nata-unnata follows the verse it comes from', (function () {
  * beside the name. The same span the Vimsopaka grid uses for a division's share.
  */
 ok('and every measure with a ceiling carries it beside its name',
-   /th\.appendChild\(el\('span', 'varga-weight', String\(max\)\)\)/.test(appSrc) &&
+   /th\.appendChild\(el\('span', 'varga-weight', ' ' \+ String\(max\)\)\)/.test(appSrc) &&
    /Where a row name carries a second figure, that is the most the row can be worth/
      .test(appSrc.replace(/'\s*\+\s*'/g, '')));
 /*
@@ -1420,8 +1435,22 @@ ok('and every measure carries its English name beside the Sanskrit', (function (
   return Object.keys(want).every(function (k) {
     return new RegExp("key: '" + k + "', label: '[^']*', en: '" + want[k] + "'")
       .test(block);
-  }) && /if \(en\) th\.appendChild\(el\('span', 'measure-en', en\)\);/.test(appSrc) &&
+  }) && /if \(en\) th\.appendChild\(el\('span', 'measure-en', ' ' \+ en\)\);/.test(appSrc) &&
     /#shadbala-table th \.measure-en \{/.test(css);
+})());
+/*
+ * Each piece carries its own separator rather than relying on the margin beside
+ * it. A margin is drawn and never written, so copying a row gave
+ * "Nata-UnnataDay or night60" and a screen reader said the same - three
+ * separate facts run into one word. The grid beside it had "D93" for the same
+ * reason.
+ */
+ok('and a row reads as three things when it is copied, not one', (function () {
+  // Four of these are built on the page: the gloss, two ceilings and the
+  // Vimsopaka twenty. Every one of them opens its text with a space.
+  var all = appSrc.match(/el\('span', '(?:measure-en|varga-weight)', /g) || [];
+  var spaced = appSrc.match(/el\('span', '(?:measure-en|varga-weight)', ' /g) || [];
+  return all.length === 4 && spaced.length === 4;
 })());
 /*
  * Set as running text beside the Sanskrit, not as a second heading: caps and
@@ -2560,7 +2589,7 @@ ok('and the title breaks the score into its divisions',
  */
 ok('the totals row says what it is, and what it is out of',
    /var head = el\('th', null, 'Vimsopaka'\);/.test(appSrc) &&
-   /head\.appendChild\(el\('span', 'varga-weight', '20'\)\);/.test(appSrc));
+   /head\.appendChild\(el\('span', 'varga-weight', ' 20'\)\);/.test(appSrc));
 ok('and the note still says what the totals row totals, the heading no longer doing it',
    /the last row scores those dignities out of twenty/
      .test(appSrc.replace(/'\s*\+\s*'/g, '')));

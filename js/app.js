@@ -1211,7 +1211,7 @@
   var BALA_ROWS = [
     { key: 'sthana', label: 'Sthana bala', en: 'Positional', parts: STHANA_PARTS,
       total: true, max: 480,
-      says: 'Positional strength: the six rows above it added.' },
+      says: 'Positional strength: the six rows under it added.' },
     { key: 'dig', label: 'Dig bala', en: 'Directional', max: 60,
       says: 'Directional strength. Each graha has one angle it is strongest on and ' +
         'is worth nothing opposite it: Jupiter and Mercury the 1st, the Sun and ' +
@@ -1224,7 +1224,7 @@
      */
     { key: 'kala', label: 'Kala bala', en: 'Temporal', parts: KALA_PARTS,
       total: true, max: null,
-      says: 'Temporal strength: the eight rows above it added. They cap at 390 ' +
+      says: 'Temporal strength: the eight rows under it added. They cap at 390 ' +
         'together, or 450 for the Moon and the Sun, whose paksha and ayana ' +
         'count double - which is why no one ceiling is given here.' },
     { key: 'cheshta', label: 'Cheshta bala', en: 'Motional', max: 60,
@@ -1274,13 +1274,25 @@
     };
 
     /*
-     * A share's parts, then the share. Sthana and Kala were each one figure with
-     * their parts in a hover, which put the only place those parts could be
-     * compared behind a mouse and one graha at a time: a reader wanting to know
-     * why Mercury is positionally weak had to hover seven cells and hold the
+     * A share, then its parts. Sthana and Kala were each one figure with their
+     * parts in a hover, which put the only place those parts could be compared
+     * behind a mouse and one graha at a time: a reader wanting to know why
+     * Mercury is positionally weak had to hover seven cells and hold the
      * answers. The other four shares have no parts and are one row each.
+     *
+     * The share opened the block after being put at the end of it first. Closing
+     * reads right while a column is being added up, and this is not a column
+     * being added up but a table being looked things up in: eight indented rows
+     * with their parent below them are eight rows a reader who lands among them
+     * cannot name. Opening, the parent has been passed before the parts are
+     * reached, so which bala they belong to is never in question.
      */
     BALA_ROWS.forEach(function (bala) {
+      row(bala.label, bala.en, bala.max, bala.says, grahas.map(function (graha) {
+        var x = result.grahas[graha];
+        return el('td', 'numeric',
+          n(bala.parts ? x[bala.key].total : x[bala.key]));
+      }), bala.parts ? 'bala-head' : null);
       (bala.parts || []).forEach(function (part) {
         row(part.label, part.en, part.max, part.says, grahas.map(function (graha) {
           var x = result.grahas[graha];
@@ -1290,11 +1302,6 @@
           return td;
         }), 'bala-part');
       });
-      row(bala.label, bala.en, bala.max, bala.says, grahas.map(function (graha) {
-        var x = result.grahas[graha];
-        return el('td', 'numeric',
-          n(bala.parts ? x[bala.key].total : x[bala.key]));
-      }), bala.total ? 'bala-total' : null);
     });
 
     /*
@@ -1377,9 +1384,16 @@
   function measureHead(label, en, max, says) {
     var th = el('th', null, label);
     th.setAttribute('scope', 'row');
-    if (en) th.appendChild(el('span', 'measure-en', en));
+    /*
+     * A space inside each span, not only a margin between them. A margin is
+     * drawn and never written, so copying a row gave "Nata-UnnataDay or night60"
+     * and a screen reader said the same - three separate facts run into one
+     * word. The margin still does the spacing on screen; the space is there for
+     * everything that reads the text rather than the layout.
+     */
+    if (en) th.appendChild(el('span', 'measure-en', ' ' + en));
     if (max !== null && max !== undefined) {
-      th.appendChild(el('span', 'varga-weight', String(max)));
+      th.appendChild(el('span', 'varga-weight', ' ' + String(max)));
     }
     if (says) th.title = says;
     return th;
@@ -1482,7 +1496,9 @@
     var weight = scheme.weights[division];
     var th = el('th', null, 'D' + division);
     th.setAttribute('scope', 'row');
-    th.appendChild(el('span', 'varga-weight', vimsopakaFigure(weight)));
+    // A space in the span, not only the margin: see measureHead. Copied, this
+    // row read "D93" where it means D9 worth 3.
+    th.appendChild(el('span', 'varga-weight', ' ' + vimsopakaFigure(weight)));
     var varga = Astro.VARGAS.filter(function (v) { return v.division === division; })[0];
     /*
      * Every other scheme that carries this division, with its figure. The same
@@ -1751,7 +1767,8 @@
     totals.className = 'varga-totals';
     var head = el('th', null, 'Vimsopaka');
     head.setAttribute('scope', 'row');
-    head.appendChild(el('span', 'varga-weight', '20'));
+    // Spaced like every other one of these: copied, it read "Vimsopaka20".
+    head.appendChild(el('span', 'varga-weight', ' 20'));
     totals.appendChild(head);
     planets.forEach(function (planet) {
       var score = Astro.vimsopaka(planet.name, planet.longitude, scheme, positionsD1);
