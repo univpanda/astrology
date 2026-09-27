@@ -1072,9 +1072,17 @@
      * column that held eleven characters for this now holds two, which is what
      * the Moon's, Jupiter's and Saturn's columns were sized by.
      */
-    { label: 'Degrees', group: 'Longitude', says: 'Whole degrees into the sign, from 0 to 29.' },
-    { label: 'Minutes', group: 'Longitude', says: 'Minutes of arc, a sixtieth of a degree each.' },
-    { label: 'Seconds', group: 'Longitude', says: 'Seconds of arc, a sixtieth of a minute each.' },
+    /*
+     * A heading of its own, then the three units under it. Three bare unit
+     * names beside a table of numbers do not say what they are units of, and
+     * the heading costs a row, which is the cheap direction in a table this
+     * shape.
+     */
+    { label: 'Longitude', head: true,
+      says: 'Where the graha stands within its sign, in the three rows below.' },
+    { label: 'Degrees', part: true, says: 'Whole degrees into the sign, from 0 to 29.' },
+    { label: 'Minutes', part: true, says: 'Minutes of arc, a sixtieth of a degree each.' },
+    { label: 'Seconds', part: true, says: 'Seconds of arc, a sixtieth of a minute each.' },
     { label: 'Nakshatra', says: 'Which of the 27 nakshatras the graha falls in.' },
     { label: 'Pada', says: 'Which quarter of that nakshatra, of four. Read with the row above it: a bare 3 means nothing on its own.' },
     { label: 'Lord / sub lord', says: 'The nakshatra’s Vimshottari lord, over its KP sub lord.' }
@@ -1213,11 +1221,9 @@
 
     var thead = el('thead');
     var headRow = el('tr');
-    // Blank, the row headings under it naming themselves. Two columns wide,
-    // the labels below splitting into a group and its parts.
+    // Blank, the row headings under it naming themselves.
     var corner = el('th');
     corner.setAttribute('scope', 'col');
-    corner.setAttribute('colspan', '2');
     headRow.appendChild(corner);
     columns.forEach(function (col) {
       if (col.entity.isAscendant) {
@@ -1235,31 +1241,27 @@
 
     var tbody = el('tbody');
     /*
-     * A row belonging to a group gets the group's name once, spanning its rows
-     * in a column of its own: Degrees, Minutes and Seconds are three rows of
-     * one thing, and three bare unit names beside a table of numbers do not say
-     * which measurement they are units of. Every other row's label spans both
-     * columns, there being no group above it.
+     * A heading row names what the rows under it are units of and holds nothing
+     * itself; the rows under it step in. Everything else is one row of values
+     * with its own name.
      */
-    GRAHA_ROWS.forEach(function (row, i) {
+    var cellIndex = 0;
+    GRAHA_ROWS.forEach(function (row) {
       var tr = document.createElement('tr');
-      var startsGroup = row.group && (i === 0 || GRAHA_ROWS[i - 1].group !== row.group);
-      if (startsGroup) {
-        var span = 0;
-        for (var k = i; k < GRAHA_ROWS.length && GRAHA_ROWS[k].group === row.group; k++) {
-          span++;
-        }
-        var groupTh = el('th', 'row-group', row.group);
-        groupTh.setAttribute('scope', 'rowgroup');
-        groupTh.setAttribute('rowspan', String(span));
-        tr.appendChild(groupTh);
-        tr.className = 'group-first';
-      }
-      var th = el('th', row.group ? 'row-part' : null, row.label);
+      if (row.part) tr.className = 'row-part';
+      var th = el('th', row.head ? 'row-head' : null, row.label);
       th.setAttribute('scope', 'row');
-      if (!row.group) th.setAttribute('colspan', '2');
       th.title = row.says;
       tr.appendChild(th);
+      if (row.head) {
+        // Nothing to put in it: the values are in the rows it names.
+        var blank = el('td', 'row-head-fill');
+        blank.setAttribute('colspan', String(columns.length));
+        tr.appendChild(blank);
+        tbody.appendChild(tr);
+        return;
+      }
+      var i = cellIndex++;
       columns.forEach(function (col) {
         var cell = col.cells[i];
         var td = el('td', cell.cls, cell.stack ? null : cell.text);

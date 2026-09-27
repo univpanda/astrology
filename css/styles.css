@@ -1263,16 +1263,16 @@ table.graha-table th, table.graha-table td {
 table.graha-table .stacked { display: block; }
 
 /* Degrees, minutes and seconds are three rows of one measurement, so the
-   measurement is named once beside them rather than left to be inferred from
-   three bare unit names. The name spans its rows; the units indent under it and
-   step back, being parts of the thing named rather than things of their own. */
-table.graha-table th.row-group {
-  vertical-align: middle;
-  white-space: nowrap;
-  border-right: 1px solid var(--line-soft);
+   measurement is named in a row above them rather than left to be inferred from
+   three bare unit names. That row holds nothing itself; the three under it step
+   in and back, being parts of the thing named rather than things of their own.
+   The same reading the Shadbala grid gives its shares and their parts. */
+table.graha-table tr.row-part th[scope="row"] {
+  color: var(--ink-soft);
+  padding-left: 1.4rem;
 }
-table.graha-table th.row-part { color: var(--ink-soft); padding-left: 0.9rem; }
-table.graha-table tr.group-first > * { border-top: 1px solid var(--line-soft); }
+table.graha-table th.row-head { border-bottom: none; }
+table.graha-table td.row-head-fill { border-bottom: none; }
 
 /* The strip of chart tabs inside the Grahas panel. Smaller than the panel tabs
    above it: it chooses between three tables at most and should not compete with
