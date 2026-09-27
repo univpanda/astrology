@@ -524,9 +524,58 @@ ok('the vimsopaka grid takes no hover band, and the graha table keeps one',
    (function () {
      var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
      return /#vargas-table tbody tr:hover \{ background: none; \}/.test(css) &&
-       /\ntbody tr:hover \{ background: #f1f9f4; \}/.test(css) &&
+       /\ntbody tr:hover \{ background: var\(--row-hover\); \}/.test(css) &&
        !/#graha-table tbody tr:hover \{ background: none/.test(css);
    })());
+/*
+ * The name column stays put while the rest scrolls. Every one of these tables is
+ * wider than its card, and a row read four columns to the right is a row whose
+ * subject has gone off the left edge.
+ */
+ok('the first column is frozen in every scrolling table', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var block = css.slice(css.indexOf('.table-scroll thead th:first-child,'));
+  block = block.slice(0, block.indexOf('}'));
+  return /position: sticky/.test(block) && /left: 0/.test(block) &&
+    /background: var\(--surface\)/.test(block);
+})());
+/*
+ * Two things a sticky cell in a collapsed-border table needs and does not get on
+ * its own: something opaque to stand on, because what scrolls under it paints
+ * over it otherwise, and a divider that is not a border - with border-collapse
+ * the edge belongs to the pair of cells and travels with the one that moves.
+ */
+ok('and it is opaque, with a shadow for a divider rather than a border',
+   (function () {
+     var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+     var block = css.slice(css.indexOf('.table-scroll thead th:first-child,'));
+     block = block.slice(0, block.indexOf('}'));
+     return /box-shadow: 1px 0 0 var\(--line-soft\)/.test(block) &&
+       !/border-right/.test(block);
+   })());
+ok('the heading corner sits above the column it heads', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  return /\.table-scroll thead th:first-child \{ z-index: 2; \}/.test(css);
+})());
+/*
+ * Every one of these tables puts a th first in a body row, which is what the
+ * rule selects; the grid's second row has none, its name spanning down from
+ * above, so nothing there is frozen by accident.
+ */
+ok('and every scrolling table really does head its rows with a th', (function () {
+  // Three set it on a td variable named for the cell it may be, two on a th.
+  return (appSrc.match(/setAttribute\('scope', 'row'\)/g) || []).length === 3 &&
+    (appSrc.match(/setAttribute\('scope', 'rowgroup'\)/g) || []).length === 2 &&
+    (appSrc.match(/el\(i === 0 \? 'th' : 'td'/g) || []).length === 2;
+})());
+ok('the frozen cell joins the hover band, except where it spans a group',
+   (function () {
+     var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+     return /tbody tr:hover th\[scope\]:not\(\[rowspan\]\) \{ background: var\(--row-hover\); \}/
+       .test(css) &&
+       /tbody tr:hover th\[rowspan\] \{ background: var\(--surface\); \}/.test(css);
+   })());
+
 ok('the hover band is one row wide, the spanning name staying out of it', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
   return /\ntbody tr:hover th\[rowspan\] \{ background: var\(--surface\); \}/.test(css);

@@ -18,6 +18,7 @@
   --paper: #f4faf6;
   --paper-tint: #eaf5ee;
   --surface: #ffffff;
+  --row-hover: #f1f9f4;
   --line: #d4e9dc;
   --line-soft: #e4f1e9;
 
@@ -860,7 +861,7 @@ th {
 }
 
 tbody tr:last-child td, tbody tr:last-child th { border-bottom: none; }
-tbody tr:hover { background: #f1f9f4; }
+tbody tr:hover { background: var(--row-hover); }
 td.numeric, .longitude { font-family: var(--font-mono); font-size: 0.87rem; }
 td .retro-flag, td.retro-flag, th .retro-flag { color: var(--retro); }
 /* Vargottama is a fact about the graha rather than a verdict on it, so the flag
@@ -1163,6 +1164,29 @@ tbody tr:hover th[rowspan] { background: var(--surface); }
    reading, and eleven columns are worth a guide across. */
 #vargas-table tbody tr:hover { background: none; }
 
+/* The name column stays put while the rest scrolls. Every one of these tables is
+   wider than its card - eleven columns in the graha table, sixteen divisions in
+   the grid - and a row read four columns to the right is a row whose subject has
+   gone off the left edge.
+
+   It carries its own background because a sticky cell is painted over by what
+   scrolls under it otherwise, and its divider is a box-shadow rather than a
+   border: with border-collapse a border on a sticky cell is owned by the
+   collapsed edge and scrolls away with the neighbour. */
+.table-scroll thead th:first-child,
+.table-scroll tbody th[scope] {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface);
+  box-shadow: 1px 0 0 var(--line-soft);
+}
+.table-scroll thead th:first-child { z-index: 2; }
+/* And it joins the hover band, so the band does not start at the second column.
+   Not where the name spans a group: that one is out of the band by design, a
+   spanning cell belonging to all of its rows and to none. */
+tbody tr:hover th[scope]:not([rowspan]) { background: var(--row-hover); }
+
 tr.weak-graha { background: rgba(184, 72, 58, 0.06); }
 td.strong-flag { color: var(--green-deep); font-weight: 600; }
 td.weak-flag { color: var(--retro); font-weight: 600; }
@@ -1187,6 +1211,7 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
     --paper: #121a16;
     --paper-tint: #1a231e;
     --surface: #18211c;
+    --row-hover: #1d2822;
     --line: #2b3a32;
     --line-soft: #243029;
 
@@ -1240,7 +1265,7 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
   .saved-item:hover { background: #21362b; }
   .add-kundali { background: #21362b; color: var(--green-deep); }
   .add-kundali:hover { background: #2a4435; }
-  tbody tr:hover { background: #1d2822; }
+  tbody tr:hover { background: var(--row-hover); }
   tr.current-dasha { background: rgba(88, 192, 138, 0.13); }
   tr.weak-graha { background: rgba(232, 134, 122, 0.08); }
 }
