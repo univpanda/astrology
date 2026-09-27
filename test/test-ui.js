@@ -1799,6 +1799,11 @@ ok('and a two-word label stacks, as the nakshatra does', (function () {
   // the row holds two-word company, and stacking costs nothing where there is
   // only one word to put on a line.
   return stacked === 4 &&
+    // And the karaka is split before the word every one of the eight ends in,
+    // the part that tells them apart going on top.
+    /function karakaLines\(name\)/.test(appSrc) &&
+    /return name\.replace\(\/karaka\$\/, ' Karaka'\);/.test(appSrc) &&
+    Astro.CHARA_KARAKAS.every(function (k) { return /karaka$/.test(k); }) &&
     /Astro\.dignityOf\(r\.name, v\.sign, v\.degreeInSign\)\) \|\| '–',\s*\n\s*stack: true,/
       .test(block) &&
     /cls: 'dispositor', stack: true,/.test(block);

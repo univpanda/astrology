@@ -971,6 +971,16 @@
     return views;
   }
 
+  /*
+   * Atmakaraka over two lines, which is the whole of the name but not the whole
+   * of it on one line: every one of the eight ends in karaka, so the part that
+   * tells them apart is the part before it and that is what goes on top.
+   * Bhratru is seven characters where Bhratrukaraka is thirteen.
+   */
+  function karakaLines(name) {
+    return name.replace(/karaka$/, ' Karaka');
+  }
+
   /** "first", "second" ... for a karaka's place in the order of eight. */
   function karakaRank(name) {
     var at = Astro.CHARA_KARAKAS.indexOf(name);
@@ -1246,7 +1256,9 @@
           { text: nak.subLord,
             title: 'The sub lord of this point in ' + nak.name + ' is ' +
               nak.subLord + '.' },
-          { text: r.isAscendant ? '–' : (karakas[r.name] || '–'), stack: true,
+          { text: r.isAscendant || !karakas[r.name] ? '–'
+              : karakaLines(karakas[r.name]),
+            stack: true,
             title: r.isAscendant
               ? 'The lagna is a point rather than a graha, so it takes no karaka.'
               : karakas[r.name]
