@@ -137,13 +137,20 @@ var Shadbala = (function () {
     return { value: total, detail: detail };
   }
 
+  /*
+   * Verse 414. Fifteen virupas for the rashi and fifteen for the navamsa, and
+   * Santhanam's instruction is that the two "be added together to know the
+   * Ojhayugmarasiamsa bala" - so the bala is one figure made of two, and the two
+   * are returned apart as well as added. Venus and the Moon want even signs,
+   * being reckoned female; the other five want odd.
+   */
   function ojhayugmaBala(graha, planet) {
     var wantsOdd = ODD_STRONG.indexOf(graha) >= 0;
     var navamsa = Astro.vargaPosition(planet.longitude, 9).sign;
-    var score = 0;
-    if ((planet.sign % 2 === 0) === wantsOdd) score += 15;
-    if ((navamsa % 2 === 0) === wantsOdd) score += 15;
-    return score;
+    return {
+      rasi: (planet.sign % 2 === 0) === wantsOdd ? 15 : 0,
+      navamsa: (navamsa % 2 === 0) === wantsOdd ? 15 : 0
+    };
   }
 
   function kendradiBala(house) {
@@ -278,10 +285,15 @@ var Shadbala = (function () {
       var dec = Astro.declination(tropical, latitude, eps);
 
       var saptavargaja = saptavargajaBala(graha, chart, positions);
+      var ojha = ojhayugmaBala(graha, p);
       var sthana = {
         uchcha: uchchaBala(graha, p.longitude),
         saptavargaja: saptavargaja.value,
-        ojhayugma: ojhayugmaBala(graha, p),
+        // The two halves of the one bala, kept apart for anything that shows
+        // where its 15 or 30 came from, and added for anything that does not.
+        ojhaRasi: ojha.rasi,
+        ojhaNavamsa: ojha.navamsa,
+        ojhayugma: ojha.rasi + ojha.navamsa,
         kendradi: kendradiBala(p.house),
         drekkana: drekkanaBala(graha, p.degreeInSign)
       };

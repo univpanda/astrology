@@ -1179,7 +1179,7 @@ ok('shadbala no longer has a card to itself', !/<h3>Shadbala<\/h3>/.test(html));
  * measures, and fifteen columns is a table that scrolls; turned, the width is
  * whatever grahas Shadbala reckons however many measures are shown.
  */
-ok('all six shares have a row of their own, the five parts of Sthana above it',
+ok('all six shares have a row of their own, the six parts of Sthana above it',
    (function () {
      var at = appSrc.indexOf('var BALA_ROWS = [');
      var block = appSrc.slice(at, appSrc.indexOf('function renderShadbala', at));
@@ -1188,7 +1188,7 @@ ok('all six shares have a row of their own, the five parts of Sthana above it',
      var parts = appSrc.slice(appSrc.indexOf('var STHANA_PARTS = ['),
                               appSrc.indexOf('var BALA_ROWS = ['));
      return shares &&
-       ['uchcha', 'saptavargaja', 'ojhayugma', 'kendradi', 'drekkana']
+       ['uchcha', 'saptavargaja', 'ojhaRasi', 'ojhaNavamsa', 'kendradi', 'drekkana']
          .every(function (k) { return parts.indexOf("key: '" + k + "'") >= 0; }) &&
        /<table id="shadbala-table">\s*<thead><tr><\/tr><\/thead>/
          .test(html.replace(/\s+/g, ' ').replace(/> </g, '><'));
@@ -1248,7 +1248,8 @@ ok('and the total row is those five added, read off the engine', (function () {
                                 tzOffsetMinutes: -240 });
   return Object.keys(r.grahas).every(function (g) {
     var st = r.grahas[g].sthana;
-    var sum = st.uchcha + st.saptavargaja + st.ojhayugma + st.kendradi + st.drekkana;
+    var sum = st.uchcha + st.saptavargaja + st.ojhaRasi + st.ojhaNavamsa +
+      st.kendradi + st.drekkana;
     return Math.abs(sum - st.total) < 1e-9;
   }) && /bala\.key === 'sthana' \? x\.sthana\.total/.test(appSrc);
 })());
@@ -1279,9 +1280,9 @@ ok('and no measure ever exceeds the ceiling it claims', (function () {
   var declared = {};
   var parts = appSrc.slice(appSrc.indexOf('var STHANA_PARTS = ['),
                            appSrc.indexOf('function renderShadbala'));
-  var m, re = /key: '([a-z]+)', label: '[^']*', (?:total: true, )?max: (\d+|null)/g;
+  var m, re = /key: '([A-Za-z]+)', label: '[^']*', (?:total: true, )?max: (\d+|null)/g;
   while ((m = re.exec(parts))) declared[m[1]] = m[2] === 'null' ? null : Number(m[2]);
-  if (declared.sthana !== 60 + 315 + 30 + 60 + 15) return false;
+  if (declared.sthana !== 60 + 315 + 15 + 15 + 60 + 15) return false;
   if (declared.kala !== null || declared.drik !== null) return false;
 
   var worst = {};
@@ -1294,9 +1295,10 @@ ok('and no measure ever exceeds the ceiling it claims', (function () {
     Object.keys(r.grahas).forEach(function (g) {
       var x = r.grahas[g];
       var seen = { uchcha: x.sthana.uchcha, saptavargaja: x.sthana.saptavargaja,
-        ojhayugma: x.sthana.ojhayugma, kendradi: x.sthana.kendradi,
-        drekkana: x.sthana.drekkana, sthana: x.sthana.total, dig: x.dig,
-        cheshta: x.cheshta, naisargika: x.naisargika };
+        ojhaRasi: x.sthana.ojhaRasi, ojhaNavamsa: x.sthana.ojhaNavamsa,
+        kendradi: x.sthana.kendradi, drekkana: x.sthana.drekkana,
+        sthana: x.sthana.total, dig: x.dig, cheshta: x.cheshta,
+        naisargika: x.naisargika };
       Object.keys(seen).forEach(function (k) {
         worst[k] = Math.max(worst[k] === undefined ? -Infinity : worst[k], seen[k]);
       });

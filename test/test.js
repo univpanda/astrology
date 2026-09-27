@@ -1428,6 +1428,39 @@ console.log('\nShadbala');
     var s = result.grahas[g].sthana;
     return Math.abs((s.uchcha + s.saptavargaja + s.ojhayugma + s.kendradi + s.drekkana) - s.total) < 1e-9;
   }));
+  /*
+   * And the third of those five is itself two. Santhanam gives one
+   * Ojhayugmarasiamsa bala and says under verse 414 that the rashi and navamsa
+   * strengths "be added together" to reach it, so the halves are reported apart
+   * as well - each 0 or 15, and their sum the bala the total is built from.
+   */
+  ok('and its ojhayugma is the rashi half and the navamsa half added',
+     Shadbala.GRAHAS.every(function (g) {
+       var s = result.grahas[g].sthana;
+       return [0, 15].indexOf(s.ojhaRasi) >= 0 && [0, 15].indexOf(s.ojhaNavamsa) >= 0 &&
+         s.ojhaRasi + s.ojhaNavamsa === s.ojhayugma;
+     }));
+  /*
+   * The rashi half reads the sign the graha stands in, the navamsa half the
+   * navamsa sign, and the two disagree often enough that reporting only the sum
+   * hides which one paid: over 300 births they differ in about a third of
+   * placements.
+   */
+  ok('and the two halves are read off different positions', (function () {
+    var same = 0, apart = 0;
+    for (var y = 1940; y < 2000; y++) {
+      var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+      var c = Astro.chart({ jdUT: Astro.julianDay(y, 1 + y % 12, 1 + y % 28, y % 24),
+                            latitude: place.latitude, longitude: place.longitude,
+                            tzOffsetMinutes: place.tzOffsetMinutes });
+      var r = Shadbala.compute(c, place);
+      Shadbala.GRAHAS.forEach(function (g) {
+        var s = r.grahas[g].sthana;
+        if (s.ojhaRasi === s.ojhaNavamsa) same++; else apart++;
+      });
+    }
+    return apart > 0 && apart / (same + apart) > 0.2;
+  })());
 
   // Ceilings, each from its own definition.
   ok('no component exceeds its maximum', Shadbala.GRAHAS.every(function (g) {

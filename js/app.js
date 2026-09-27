@@ -1137,10 +1137,22 @@
       says: 'The graha against the lord of the sign it takes in each of the seven ' +
         'divisions, 45 for moolatrikona down to 2 in a great enemy’s, added ' +
         'over all seven.' },
-    { key: 'ojhayugma', label: 'Ojhayugma', max: 30,
-      says: 'Fifteen for standing in the odd or even sign the graha wants, and ' +
-        'fifteen again for the navamsa. The Moon and Venus want even signs, the ' +
-        'other five odd.' },
+    /*
+     * One bala in the text and two rows here. Santhanam gives it as a single
+     * Ojhayugmarasiamsa bala, but the instruction under verse 414 is that the
+     * rashi and navamsa strengths "be added together" to reach it - so the
+     * figure is a sum of two, and a row reading 15 does not say which of the two
+     * it came from. Split, it does.
+     */
+    { key: 'ojhaRasi', label: 'Oja-Yugma Rasi', max: 15,
+      says: 'Fifteen for standing in the odd or even sign the graha wants. The ' +
+        'Moon and Venus want even signs, being reckoned female; the other five ' +
+        'want odd.' },
+    { key: 'ojhaNavamsa', label: 'Oja-Yugma Navamsa', max: 15,
+      says: 'The same test of the navamsa the graha falls in. Santhanam gives ' +
+        'this and the row above as one bala, Ojhayugmarasiamsa, reached by ' +
+        'adding the two; they are apart here so a figure of 15 says which half ' +
+        'it came from.' },
     { key: 'kendradi', label: 'Kendradi', max: 60,
       says: 'Sixty in an angle, thirty in a succedent house, fifteen in a cadent ' +
         'one. The only share of Sthana bala that reads the houses.' },
