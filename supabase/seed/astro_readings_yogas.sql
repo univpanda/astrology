@@ -58,16 +58,16 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'A graha in its sign of debilitation is at its weakest, but the weakness can be lifted by the company it keeps. That lifting is neecha bhanga: nicha, the fall, and bhanga, its breaking.',
    'This site applies two conditions and no more. One: the lord of the sign the debilitated graha stands in is in a kendra from the lagna or from the Moon. Two: the graha that would be exalted in that sign is in a kendra from either. Where one graha is both - in Virgo, Mercury rules the sign and is exalted in it - a single placement answers both, and it is reported as one clause saying so.',
    'Those two are what modern sources attribute to B. V. Raman, though that attribution has not been checked against his own text: the two scans of Three Hundred Important Combinations that carry full text both break off around the hundred and sixtieth combination, and Hindu Predictive Astrology mentions neecha bhanga only inside worked examples.',
-   'De Fouw and Svoboda have been checked, and give four, at page 295 of Light on Life. One: the lord of the rashi the debilitated graha occupies, in a kendra from the Moon or lagna. Two: the lord of the rashi where that graha is exalted, in a kendra from either. Three: the lord of the rashi it occupies aspects it. Four: the graha who would be exalted in the rashi it occupies, in a kendra from either. Their own worked example is Saturn in Aries, cancelled if Mars, Venus or the Sun holds a kendra, or if Mars aspects Aries.',
+   'De Fouw and Svoboda have been read, and give four at page 295 of Light on Life. The lord of the rashi the debilitated graha occupies, in a kendra from the Moon or lagna; the lord of the rashi where that graha is exalted, in a kendra from either; the lord of the rashi it occupies aspecting it; and the graha who would be exalted in the rashi it occupies, in a kendra from either. Their worked example is Saturn in Aries, cancelled by Mars, Venus or the Sun holding a kendra, or by Mars aspecting Aries.',
    'Their first and fourth are the two applied here. Their third is the dispositor''s aspect. Their second is a different rule that is easy to mistake for the fourth and never coincides with it: Mars debilitated in Cancer has Jupiter exalted there, while the lord of Aries, where Mars exalts, is the Sun. The two differ for all seven grahas, and on 480 charts that second alone would cancel a further 45 debilitations out of 257.',
-   'On the raja yoga they are exact, and this site follows them: neecha bhanga "creates a Raja Yoga only when the debilitated graha occupies a kendra or a kona; otherwise the planet''s debility will merely be removed". Occupies, not owns. They are equally plain about what a cancellation is worth: "Debility is debility, and Neecha Bhanga is no more perfect than is a prosthesis applied to a limbless body."',
-   'The enumeration is not Parashara''s. The Brihat Parashara Hora Sastra discusses a cancelled debilitation and works an example, but it nowhere lists the conditions; the canonical list is Mantreswara''s, Phaladeepika chapter 7 from verse 26, with Jataka Parijata and Uttara Kalamrita giving overlapping sets. Few authorities give all of them, and they do not agree on how many must hold.',
-   'Six further cancellations circulate between those texts and are not applied here: the debilitated graha conjunct its dispositor; aspected by its dispositor; aspected by the graha exalted in that sign; exchanging signs with its dispositor; exalted in navamsa; or itself standing in a kendra. Accepting them turns 72 per cent of rashi debilitations into cancellations into 92, measured over 480 charts, so a fifth of what the looser reading calls a cancelled debilitation rests on conditions Raman does not accept.',
+   'The enumeration is nobody''s single invention. The Brihat Parashara Hora Sastra discusses a cancelled debilitation and works an example but nowhere lists the conditions; Phaladeepika chapter 7 from verse 26 is the canonical list, with Jataka Parijata and Uttara Kalamrita giving overlapping sets. Few authorities give all of them and they do not agree on how many must hold.',
+   'Six further cancellations circulate between those texts and are not applied here: the debilitated graha conjunct its dispositor; aspected by its dispositor; aspected by the graha exalted in that sign; exchanging signs with its dispositor; exalted in navamsa; or itself standing in a kendra. Accepting all of them turns 72 per cent of rashi debilitations into cancellations into 92, measured over 480 charts.',
    'Nothing is lost by leaving out the exchange in particular. An exchange between a debilitated graha and its dispositor is parivartana yoga, which is reported in its own right, under its own name, on the same pair of grahas.',
    'The conditions carry no names of their own. They are clauses of a verse, and the name belongs to the result.',
-   'Both conditions are kendra placements, which is a generous test on its own: a kendra from either the lagna or the Moon reaches eight signs out of twelve, which is why cancellation stays common even on the narrow reading. Two of them holding together is a stronger claim than one, so the cancellations that apply are named rather than counted.',
+   'Both conditions applied here are kendra placements, which is a generous test on its own: a kendra from either the lagna or the Moon reaches eight signs out of twelve, which is why cancellation stays common even on the narrow reading. Two of them holding together is a stronger claim than one, so the cancellations that apply are named rather than counted.',
+   'De Fouw and Svoboda add that the dispositor''s own condition governs how much relief arrives: the better placed it is, the more the debilitated graha recovers, and the worst case is a dispositor that is itself debilitated - Saturn in Aries with Mars in Cancer.',
    'Santhanam adds a prerequisite in his commentary rather than a third condition: that the ascendant lord be strong before a cancelled debilitation is read as giving the splendid results the yoga promises. This site does not enforce it, and Shadbala is where that reading is checked.',
-   'What a cancellation gives is not the same as exaltation. The classical sense is of a fall arrested: the graha recovers its footing, often after an early period in which the debilitation is felt plainly.',
+   'What a cancellation gives is not the same as exaltation. De Fouw and Svoboda put it as a prosthesis rather than a cure: the graha walks, and is never what an undebilitated graha would have been. The classical sense is of a fall arrested, often after an early period in which the debilitation is felt plainly.',
    'A debilitated graha with no cancellation at all is read as it stands, and its dasha is usually where the difficulty shows.'
  ],
  'Becomes a raja yoga under the condition below.', 920),
@@ -75,32 +75,15 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
 ('yoga', 'Neecha Bhanga Raja Yoga', 'raja',
  'When the cancellation makes a raja yoga',
  array[
-   'The stricter reading: a cancelled debilitation is a raja yoga when the graha also stands in a kendra or a trikona - the 1st, 4th, 5th, 7th, 9th or 10th.',
-   'The reasoning is that a cancellation restores the graha''s strength, but only an angle or a trine gives it the standing to act on that strength. A debilitation cancelled in the 6th or the 8th is still cancelled; it simply has less to work with.',
+   'A cancelled debilitation is a raja yoga when the debilitated graha itself stands in a kendra or a trikona - the 1st, 4th, 5th, 7th, 9th or 10th, counted from the lagna. Otherwise the debility is merely removed, and it is reported as plain neecha bhanga.',
+   'De Fouw and Svoboda are explicit on this at page 295 of Light on Life, and say it the same way round: the cancellation makes a raja yoga only where the graha occupies an angle or a trine. Occupying one, not owning one - a competing formulation asks instead that the debilitated graha rule a kendra or trikona, and this site does not use it.',
+   'The reasoning is that a cancellation restores the graha''s strength while only an angle or a trine gives it the standing to act on that strength. A debilitation cancelled in the 6th or the 8th is still cancelled; it simply has less to work with.',
+   'The two reference points differ on purpose. The cancellation is read from the lagna or the Moon, either being able to supply the help; the raja yoga is read from the lagna alone, standing in the chart being a house position from the ascendant.',
    'Where it applies, the classical promise is of rise from low beginnings - standing, authority and recognition arriving after a start that did not suggest them.',
-   'Looser readings call any neecha bhanga a raja yoga. The distinction is kept here because a chart usually has one or two cancellations and rarely has one in a kendra or trikona, and treating those alike would make the yoga mean very little.'
- ], null, 921)
-
-on conflict (topic, subject, condition) do update set
-  heading = excluded.heading,
-  points = excluded.points,
-  note = excluded.note,
-  sort_order = excluded.sort_order,
-  updated_at = now();
-
-insert into astro_readings (topic, subject, condition, heading, points, note, sort_order) values
-('yoga', 'Vipareeta Raja Yoga', 'general',
- 'Vipareeta raja yoga - the reverse royal yoga',
- array[
-   'Formed when the lord of a dusthana - the 6th, 8th or 12th - is itself placed in a dusthana.',
-   'The reasoning is mutual cancellation, and it is worth stating precisely, because the loose version - that a lord harms the house it sits in - is not a principle of the subject at all. A lord in its own house is ordinarily strong.',
-   'What is true is that the lords of the 6th, 8th and 12th are themselves sources of harm. Placed in a dusthana, that harm falls on a house whose significations are unwanted anyway, so the two work against each other instead of compounding; and the placement keeps the lord away from the houses that would suffer by it.',
-   'It is called reverse because the arrangement reads badly and gives well. The classical promise is of rise through circumstances that looked like ruin - gain through loss, advancement through the failure of rivals, recovery after illness or debt.',
-   'It is named for the house whose lord it is, not the house it sits in: harsha from the 6th, sarala from the 8th, vimala from the 12th.',
-   'Results are read in the dasha of the graha concerned, and the classical texts are consistent that the good does not arrive quietly - it tends to follow a period in which the dusthana was felt plainly.',
-   'Strength varies. A single dusthana lord sitting in a dusthana is the modest form. The texts describe the fuller effect where several dusthana lords are linked to one another - by conjunction, by exchange, or by aspect - and a lone placement should not be read as if it were that.'
+   'Looser readings call any neecha bhanga a raja yoga. The distinction is kept here because it is the one that decides whether a low vimsopaka score is misleading: a graha cancelled but placed in a dusthana has little to act from, and a score near the floor is not far wrong for it.',
+   'That is why the Vimsopaka Bala grid stars the raja form alone. Over a run of charts it marks about a third of the debilitations in the sixteen divisions rather than two thirds, and what it marks is the case where reading the floor at face value would be the real mistake.'
  ],
- 'The three forms - harsha, sarala and vimala - follow below.', 930),
+ null, 921),
 
 ('yoga', 'Vipareeta Raja Yoga', 'harsha',
  'Harsha yoga - from the sixth lord',

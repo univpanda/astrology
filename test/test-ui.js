@@ -1335,13 +1335,46 @@ ok('a cancelled debilitation is starred where it is scored',
      .test(appSrc) &&
    /dignity\.appendChild\(el\('sup', 'neecha-bhanga', '\*'\)\)/.test(appSrc));
 ok('and the hover says the score is the floor for a graha that is not weak',
-   /is cancelled, so the score below is ' \+\s*\n?\s*'the floor for a graha that is not weak/
-     .test(appSrc) ||
-   /is cancelled, so the score below is the floor for a graha that is not weak/
+   /is cancelled and the graha stands in an angle or a trine, which is neecha bhanga raja yoga, so the score below is the floor for a graha that is not weak/
      .test(appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ')));
 ok('the note explains the star, and that the score does not know',
-   /A debilitation marked \* is one the chart cancels\. The score does not know that/
-     .test(appSrc.replace(/'\s*\+\s*'/g, '')));
+   /A debilitation marked \* is one the chart cancels into a raja yoga\. The score does not know that/
+     .test(appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ')));
+/*
+ * The raja form only. A plain cancellation lifts the weakness and leaves the
+ * graha with nowhere to act from, so a score near the floor is not far wrong for
+ * it; the raja form is the case where the floor misreports the graha outright.
+ * Marking both put a star on two debilitations in three.
+ */
+ok('the star marks the raja form and not a plain cancellation',
+   /if \(yoga\.kind !== 'raja'\) return;/.test(appSrc));
+ok('and that really does thin it out', (function () {
+  var deb = 0, any = 0, raja = 0;
+  var scheme = Astro.VARGA_SCHEMES.shodasavarga;
+  for (var y = 1950; y < 1990; y += 2) {
+    var c = Astro.chart({ jdUT: Astro.julianDay(y, 5, 17, 9), latitude: 28.61,
+                          longitude: 77.21, tzOffsetMinutes: 330 });
+    var pos = {};
+    c.planets.forEach(function (p) { pos[p.name] = p; });
+    scheme.divisions.forEach(function (d) {
+      var all = {}, rj = {};
+      Yogas.neechaBhanga(Astro.chartInDivision(c, d)).forEach(function (yoga) {
+        (yoga.grahas || []).forEach(function (n) {
+          all[n] = true;
+          if (yoga.kind === 'raja') rj[n] = true;
+        });
+      });
+      c.planets.forEach(function (p) {
+        var dig = Astro.vargaDignity(p.name, p.longitude, d, pos);
+        if (!dig || dig.key !== 'debilitated') return;
+        deb++;
+        if (all[p.name]) any++;
+        if (rj[p.name]) raja++;
+      });
+    });
+  }
+  return deb > 100 && raja < any * 0.7 && raja / deb < 0.5;
+})());
 /*
  * Read off each division's own chart, the same recast the Yogas tab reads, so
  * the grid cannot disagree with that tab about D9. Only divisions that hold a
@@ -1442,6 +1475,15 @@ ok('the library gives the two conditions the site applies', (function () {
   return /This site applies two conditions and no more/.test(seeds) &&
     wanted.every(function (t) { return seeds.indexOf(t) >= 0; });
 })());
+/*
+ * Both passages are paraphrase now. De Fouw and Svoboda are reported rather than
+ * quoted, which is the house style for the library.
+ */
+ok('the neecha bhanga passages quote nobody', (function () {
+  var block = seeds.slice(seeds.indexOf("'yoga', 'Neecha Bhanga Raja Yoga', 'general'"));
+  block = block.slice(0, block.indexOf("'yoga', 'Vipareeta"));
+  return block.indexOf('"') < 0 && /De Fouw and Svoboda have been read/.test(block);
+})());
 ok('and the detector applies those two and nothing else', (function () {
   var src = fs.readFileSync(path.join(root, 'js/yogas.js'), 'utf8');
   var block = src.slice(src.indexOf('function neechaBhanga'));
@@ -1470,16 +1512,16 @@ ok('the attribution to Raman says what was and was not verified',
  * four are the best-sourced list here, and two of them are the two applied.
  */
 ok('the one source read in the original is cited to the page',
-   /at page 295 of Light on Life/.test(seeds) &&
-   /Their own worked example is Saturn in Aries/.test(seeds) &&
+   /give four at page 295 of Light on Life/.test(seeds) &&
+   /Their worked example is Saturn in Aries/.test(seeds) &&
    /Their first and fourth are the two applied here/.test(seeds));
 /*
  * And they settle the raja yoga test the app already used, in their own words:
  * occupies a kendra or kona, not owns one.
  */
 ok('and they settle the raja yoga test, which the detector already matched',
-   /creates a Raja Yoga only when the debilitated graha occupies a kendra or a kona/
-     .test(seeds) && /Occupies, not owns/.test(seeds) &&
+   /the cancellation makes a raja yoga only where the graha occupies an angle or a trine/
+     .test(seeds) && /Occupying one, not owning one/.test(seeds) &&
    (function () {
      var src = fs.readFileSync(path.join(root, 'js/yogas.js'), 'utf8');
      return /var royal = KENDRA_HOUSES\.indexOf\(house\) >= 0 \|\| TRIKONA_HOUSES\.indexOf\(house\) >= 0;/
@@ -1552,10 +1594,10 @@ ok('which the detector agrees with, measured', (function () {
 })());
 
 ok('the library says whose enumeration it is, Parashara not having one',
-   /Phaladeepika chapter 7 from verse 26/.test(seeds) &&
-   /it nowhere lists the conditions/.test(seeds));
+   /Phaladeepika chapter 7 from verse 26 is the canonical list/.test(seeds) &&
+   /nowhere lists the conditions/.test(seeds));
 ok('and that the site declines the looser reading rather than never meeting it',
-   /Few authorities give all of them, and they do not agree on how many must hold/
+   /Few authorities give all of them and they do not agree on how many must hold/
      .test(seeds));
 
 console.log('\nVargas panel');

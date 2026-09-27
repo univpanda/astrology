@@ -1321,9 +1321,9 @@
        * wants "they are left out" first and the reason after it, not a clause
        * about friendship to hold until the sentence gets to the point.
        */
-      'A debilitation marked * is one the chart cancels. The score does not know that: it ' +
-      'counts dignity a division at a time, so a cancelled debilitation still scores the ' +
-      'floor. ' +
+      'A debilitation marked * is one the chart cancels into a raja yoga. The score does ' +
+      'not know that: it counts dignity a division at a time, so a cancelled debilitation ' +
+      'still scores the floor. ' +
       'Rahu and Ketu are left out: they own no sign and keep no friendships. In D30 the Sun ' +
       'is judged as Mars and the Moon as Venus, no luminary ruling a trimsamsa.';
   }
@@ -1369,6 +1369,11 @@
    * exactly where it should not be. The star does not change the number. It says
    * the number is not to be read at face value here.
    *
+   * Only the raja form is marked. A plain cancellation lifts the weakness and
+   * leaves the graha with nowhere to act from, so a score near the floor is not
+   * far wrong; it is the raja form, cancelled and standing in an angle or a
+   * trine, where the floor misreports the graha outright.
+   *
    * Asked of each division's own chart, the same recast the Yogas tab reads, so
    * the grid and that tab cannot disagree about D9. Only divisions that actually
    * hold a debilitation are recast; on the shodasavarga most rounds recast two or
@@ -1386,6 +1391,7 @@
       var d = Number(division);
       found[d] = {};
       Yogas.neechaBhanga(Astro.chartInDivision(chart, d)).forEach(function (yoga) {
+        if (yoga.kind !== 'raja') return;
         (yoga.grahas || []).forEach(function (name) { found[d][name] = true; });
       });
     });
@@ -1477,7 +1483,8 @@
             cancelled[division][planet.name]) {
           dignity.appendChild(el('sup', 'neecha-bhanga', '*'));
           dignity.title = (detail ? detail + ' ' : '') + planet.name +
-            '\u2019s debilitation in D' + division + ' is cancelled, so the score below is ' +
+            '\u2019s debilitation in D' + division + ' is cancelled and the graha stands in ' +
+            'an angle or a trine, which is neecha bhanga raja yoga, so the score below is ' +
             'the floor for a graha that is not weak. Vimsopaka counts dignity one division ' +
             'at a time and cannot see the cancellation; the Yogas tab reads it in full.';
         }
