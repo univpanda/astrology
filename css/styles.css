@@ -1252,7 +1252,15 @@ table.graha-table thead th, table.graha-table td { text-align: center; }
 table.graha-table th, table.graha-table td {
   padding-left: 0.5rem;
   padding-right: 0.5rem;
+  /* Rows are no longer all one line high - a two-word nakshatra stacks - so
+     everything centres against the tallest cell in its row rather than sitting
+     at the top of it and leaving the label stranded. */
+  vertical-align: middle;
 }
+
+/* A word a line. The break is put in rather than left to the layout, which
+   would move it as the table resized and could split the pair anywhere. */
+table.graha-table .stacked { display: block; }
 
 /* The strip of chart tabs inside the Grahas panel. Smaller than the panel tabs
    above it: it chooses between three tables at most and should not compete with

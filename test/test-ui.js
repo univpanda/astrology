@@ -4156,6 +4156,30 @@ ok('the pada is its own row, next to the nakshatra it quarters', (function () {
 ok('and each says on hover what the other supplies',
    /'Nakshatra ' \+ nak\.name \+ ', ruled by ' \+ nak\.lord/.test(appSrc) &&
    /'Pada ' \+ nak\.pada \+ ' of four, in ' \+ nak\.name/.test(appSrc));
+/*
+ * Six of the twenty-seven nakshatras are two words, and one of them sets the
+ * whole column's width. Stacked, a column is as wide as the longer word rather
+ * than as the pair - "Uttara Bhadrapada" is seventeen characters and its longer
+ * half is ten - and the break is put in rather than left to the layout, which
+ * would move it as the table resized.
+ */
+ok('a two-word nakshatra stacks, one word to a line', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var twoWord = Astro.NAKSHATRAS.filter(function (n) { return n.indexOf(' ') >= 0; });
+  return twoWord.length === 6 &&
+    /\{ text: nak\.name, stack: true,/.test(appSrc) &&
+    /String\(cell\.text\)\.split\(' '\)\.forEach\(function \(word\) \{/.test(appSrc) &&
+    /table\.graha-table \.stacked \{ display: block; \}/.test(css);
+})());
+/*
+ * And a row that has grown to two lines centres what is beside it, rather than
+ * leaving the label at the top of a cell twice its height.
+ */
+ok('and every cell centres against the tallest in its row', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var block = css.match(/table\.graha-table th, table\.graha-table td \{[^}]*\}/);
+  return block && /vertical-align: middle/.test(block[0]);
+})());
 ok('lordship comes from the shared helper, not a column-specific one',
    /'Lordship'/.test(appSrc) && !/function rulership/.test(appSrc) &&
    typeof Astro.housesOwned === 'function');

@@ -1159,7 +1159,14 @@
            * so splitting them actually narrows the table - Purva Phalguni - 1
            * was setting Mars's column by itself.
            */
-          { text: nak.name,
+          /*
+           * Six of the twenty-seven are two words - Purva and Uttara Phalguni,
+           * Ashadha and Bhadrapada - and one of them sets the whole column's
+           * width. Stacked, the column is as wide as the longer word rather than
+           * as the pair: "Uttara Bhadrapada" is seventeen characters and its
+           * longer half is ten.
+           */
+          { text: nak.name, stack: true,
             title: 'Nakshatra ' + nak.name + ', ruled by ' + nak.lord + '.' },
           { text: String(nak.pada), cls: 'numeric',
             title: 'Pada ' + nak.pada + ' of four, in ' + nak.name + '.' },
@@ -1208,7 +1215,14 @@
       tr.appendChild(th);
       columns.forEach(function (col) {
         var cell = col.cells[i];
-        var td = el('td', cell.cls, cell.text);
+        var td = el('td', cell.cls, cell.stack ? null : cell.text);
+        // One word a line, rather than left to wherever the column happens to
+        // wrap: a break the layout chooses moves as the table resizes.
+        if (cell.stack) {
+          String(cell.text).split(' ').forEach(function (word) {
+            td.appendChild(el('span', 'stacked', word));
+          });
+        }
         if (cell.title) td.title = cell.title;
         /*
          * The star qualifies a dignity, so it goes wherever a dignity is
