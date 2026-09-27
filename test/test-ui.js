@@ -2150,9 +2150,18 @@ ok('the vargottama series is named, not described',
    !/Repeats the rashi sign/.test(appSrc) &&
    />\s*<span class="flag flag-v">\[V\]<\/span> Vargottama<\/dt>/
      .test(html.replace(/\s+/g, ' ')));
-ok('and the strict reading moved to the note, where a qualification belongs',
-   /Vargottama counts the divisions that land the graha back in its rashi sign; strictly the word is the D9 case/
-     .test(appSrc.replace(/'\s*\+\s*'/g, '')));
+/*
+ * The chart note says what the series counts and stops. The strict reading - the
+ * word is the D9 case, D1 excluded because every graha would qualify - is in the
+ * flag key at the top of the tab, where all four flags are defined, so saying it
+ * again here would be the third statement of it in one panel.
+ */
+ok('and the chart note says what the series counts, nothing further',
+   /Vargottama counts the divisions that land the graha back in its rashi sign\./
+     .test(appSrc.replace(/'\s*\+\s*'/g, '')) &&
+   !/strictly the word is the D9 case/.test(appSrc) &&
+   /never on D1, where every graha would qualify\. In D9 it is vargottama proper/
+     .test(html.replace(/\s+/g, ' ')));
 ok('the titles are centred over their own plots',
    (function () {
      var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');

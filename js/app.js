@@ -1617,8 +1617,8 @@
          * the graha table and in the grid, and Vargottama in the flag key.
          * Describing it instead left the reader to work out that the purple bar
          * and the purple flag were the same fact. The strict reading, that the
-         * word is the D9 case, belongs in the note under it rather than in the
-         * legend, where it was doing the work of a name.
+         * word is the D9 case and that D1 is excluded, is in the flag key at the
+         * top of the tab, which is where all four flags are defined.
          */
         { label: 'Vargottama', cls: 'series-vargottama',
           value: function (r) { return r.vargottama; },
@@ -1626,8 +1626,7 @@
       ],
       note: 'Well placed counts exaltation, moolatrikona, own sign and a friend’s or ' +
         'great friend’s sign, and nothing below. Vargottama counts the divisions that ' +
-        'land the graha back in its rashi sign; strictly the word is the D9 case, and D1 ' +
-        'is left out because every graha would qualify there.'
+        'land the graha back in its rashi sign.'
     }));
   }
 
