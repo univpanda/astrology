@@ -4240,6 +4240,16 @@ ok('the position splits into three rows from one rounding', (function () {
     /var p = dmsParts\(deg\);/.test(appSrc);
 })());
 /*
+ * And each part goes in as the number it is. The zero padding belongs to dms(),
+ * where 5° 06' 03" is one string and the zeroes are what hold it together; a
+ * row of its own holds a number, and a leading zero on a number says nothing.
+ */
+ok('and each part goes in unpadded, being a number rather than a field',
+   /\{ text: String\(arc\.d\), cls: 'longitude',/.test(appSrc) &&
+   /\{ text: String\(arc\.m\), cls: 'longitude',/.test(appSrc) &&
+   /\{ text: String\(arc\.s\), cls: 'longitude',/.test(appSrc) &&
+   /String\(p\.m\)\.padStart\(2, '0'\)/.test(appSrc));
+/*
  * And a cell holding a bare 39 still says what it is a part of: every one of
  * the three carries the whole position in its hover.
  */

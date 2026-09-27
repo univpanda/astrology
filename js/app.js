@@ -1168,9 +1168,14 @@
           { text: String(arc.d), cls: 'longitude',
             title: Astro.SIGNS[v.sign] + ' ' + dms(v.degreeInSign) +
               '. Longitude ' + v.longitude.toFixed(4) + '°.' },
-          { text: String(arc.m).padStart(2, '0'), cls: 'longitude',
+          /*
+           * Unpadded. The zeroes are there in dms(), where 5° 06' 03" is one
+           * string and the padding is what keeps it readable; here each part is
+           * its own number in its own row and a leading zero says nothing.
+           */
+          { text: String(arc.m), cls: 'longitude',
             title: Astro.SIGNS[v.sign] + ' ' + dms(v.degreeInSign) + '.' },
-          { text: String(arc.s).padStart(2, '0'), cls: 'longitude',
+          { text: String(arc.s), cls: 'longitude',
             title: Astro.SIGNS[v.sign] + ' ' + dms(v.degreeInSign) + '.' },
           /*
            * Two rows, where they were one cell reading "Rohini - 1". Joined was
