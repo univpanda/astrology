@@ -972,11 +972,15 @@ td.varga-sign-abbr { font-family: var(--font-mono); letter-spacing: 0.01em; }
   align-items: start;
 }
 .varga-figure { margin: 0; min-width: 0; }
+/* Centred over its own plot. Ranged left, a title sat over the axis labels
+   rather than over the bars, and with two figures side by side the two titles
+   lined up with each other instead of each with the thing it names. */
 .chart-title {
   font-family: var(--font-display);
   font-weight: 500;
   font-size: 1rem;
   color: var(--green-deep);
+  text-align: center;
   margin-bottom: 0.4rem;
 }
 .varga-chart { width: 100%; height: auto; display: block; }

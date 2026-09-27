@@ -1596,21 +1596,34 @@
         'enemy’s sign in every division still scores five. Strength, not benefit.'
     }));
 
-    // Two counts of divisions. Same unit and same denominator, so they share an axis.
+    /*
+     * Two counts of divisions. Same unit and same denominator, so they share an
+     * axis, and the title says what is being counted and out of how many rather
+     * than naming either count: the legend does that.
+     */
     host.appendChild(barChart({
-      title: 'Placements across the ' + scheme.count + ' divisions',
+      title: 'Placement counts across the ' + scheme.count + ' divisions',
       rows: rows, max: scheme.count, outOf: scheme.count,
       series: [
         { label: 'Well placed', cls: 'series-good',
           value: function (r) { return r.good; },
           readout: function (r) { return String(r.good); } },
-        { label: 'Repeats the rashi sign', cls: 'series-vargottama',
+        /*
+         * The name it is called by everywhere else here: [V] in the chart, in
+         * the graha table and in the grid, and Vargottama in the flag key.
+         * Describing it instead left the reader to work out that the purple bar
+         * and the purple flag were the same fact. The strict reading, that the
+         * word is the D9 case, belongs in the note under it rather than in the
+         * legend, where it was doing the work of a name.
+         */
+        { label: 'Vargottama', cls: 'series-vargottama',
           value: function (r) { return r.vargottama; },
           readout: function (r) { return String(r.vargottama); } }
       ],
       note: 'Well placed counts exaltation, moolatrikona, own sign and a friend’s or ' +
-        'great friend’s sign, and nothing below. The second counts the divisions that ' +
-        'land the graha back in its rashi sign, which D1 cannot do and so is left out of it.'
+        'great friend’s sign, and nothing below. Vargottama counts the divisions that ' +
+        'land the graha back in its rashi sign; strictly the word is the D9 case, and D1 ' +
+        'is left out because every graha would qualify there.'
     }));
   }
 

@@ -1845,7 +1845,7 @@ ok('the two counts share the division count as their scale', (function () {
   var at = appSrc.indexOf('function renderVargaCharts');
   var block = appSrc.slice(at, at + 2200);
   return /series-good/.test(block) && /series-vargottama/.test(block) &&
-    /Placements across the ' \+ scheme\.count/.test(block);
+    /Placement counts across the ' \+ scheme\.count/.test(block);
 })());
 
 ok('well placed counts the good rungs and nothing below',
@@ -2068,7 +2068,39 @@ ok('the table is drawn once from both slots, not once per slot',
 ok('the vimsopaka chart is titled by what it measures, not by the scheme',
    /title: 'Vimsopaka bala',/.test(appSrc) &&
    !/Vimsopaka bala over the/.test(appSrc) &&
-   /title: 'Placements across the ' \+ scheme\.count \+ ' divisions'/.test(appSrc));
+   /title: 'Placement counts across the ' \+ scheme\.count \+ ' divisions'/.test(appSrc));
+/*
+ * The second title names the unit and the denominator and leaves the two counts
+ * to the legend, which is where a reader looks for which bar is which.
+ */
+ok('and the second by what it counts, not by either of its two series',
+   (function () {
+     var at = appSrc.indexOf('function renderVargaCharts');
+     var block = appSrc.slice(at, at + 3000);
+     var title = block.match(/title: 'Placement counts[^']*'/)[0];
+     return !/Well placed|Vargottama/.test(title) && /Well placed/.test(block) &&
+       /label: 'Vargottama'/.test(block);
+   })());
+/*
+ * And it is called Vargottama, the name it has everywhere else on the page: [V]
+ * on the chart, [V] in the graha table, [V] in the grid, Vargottama in the flag
+ * key. The legend described the fact instead of naming it, so nothing connected
+ * the purple bar to the purple flag.
+ */
+ok('the vargottama series is named, not described',
+   /label: 'Vargottama', cls: 'series-vargottama'/.test(appSrc) &&
+   !/Repeats the rashi sign/.test(appSrc) &&
+   />\s*<span class="flag flag-v">\[V\]<\/span> Vargottama<\/dt>/
+     .test(html.replace(/\s+/g, ' ')));
+ok('and the strict reading moved to the note, where a qualification belongs',
+   /Vargottama counts the divisions that land the graha back in its rashi sign; strictly the word is the D9 case/
+     .test(appSrc.replace(/'\s*\+\s*'/g, '')));
+ok('the titles are centred over their own plots',
+   (function () {
+     var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+     var block = css.slice(css.indexOf('.chart-title {'));
+     return /text-align: center/.test(block.slice(0, block.indexOf('}')));
+   })());
 /*
  * Side by side, so each figure gets half the width and the svg is drawn to half
  * the box. Enlarging the type instead would have needed one set of sizes for the
