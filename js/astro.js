@@ -1279,10 +1279,25 @@ var Astro = (function () {
    * itself, where computing from the chart is the same thing.
    */
   function hemmedByBenefics(name, sign, chart, benefics) {
+    return hemmedBy(name, sign, chart, benefics, true);
+  }
+
+  /*
+   * Papa kartari, the same scissors with the other blades. The nodes are
+   * malefics here and take no part in naturalBenefics, so they are named rather
+   * than left to fall through its map.
+   */
+  function hemmedByMalefics(name, sign, chart, benefics) {
+    return hemmedBy(name, sign, chart, benefics, false);
+  }
+
+  function hemmedBy(name, sign, chart, benefics, wantBenefic) {
     benefics = benefics || naturalBenefics(chart);
     var before = false, after = false;
     chart.planets.forEach(function (p) {
-      if (p.name === name || !benefics[p.name]) return;
+      if (p.name === name) return;
+      var benefic = NODES.indexOf(p.name) < 0 && benefics[p.name] === true;
+      if (benefic !== wantBenefic) return;
       if (p.sign === (sign + 11) % 12) before = true;
       if (p.sign === (sign + 1) % 12) after = true;
     });
@@ -1594,6 +1609,7 @@ var Astro = (function () {
     DIG_BALA_HOUSE: DIG_BALA_HOUSE,
     hasDigBala: hasDigBala,
     hemmedByBenefics: hemmedByBenefics,
+    hemmedByMalefics: hemmedByMalefics,
     isVargottama: isVargottama,
     vargaDignity: vargaDignity,
     DASAVARGA: DASAVARGA,

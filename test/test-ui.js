@@ -1307,8 +1307,8 @@ ok('the key has an entry per mark, and every mark has one', (function () {
   var flat = html.replace(/\s+/g, ' ');
   var dl = flat.match(/<dl class="flag-key">.*?<\/dl>/);
   if (!dl) return false;
-  return (dl[0].match(/<dt>/g) || []).length === 8 &&
-    (dl[0].match(/<dd>/g) || []).length === 8;
+  return (dl[0].match(/<dt>/g) || []).length === 9 &&
+    (dl[0].match(/<dd>/g) || []).length === 9;
 })());
 /*
  * Seven marks on three surfaces, and each entry says which surface it is on.
@@ -1338,7 +1338,7 @@ ok('and the page says which surface carries which marks', (function () {
   var flat = html.replace(/\s+/g, ' ');
   return /The kundli carries \[R\], \[V\], \[Y\] and \[C\]/.test(flat) &&
     /a corner triangle will not hold more/.test(flat) &&
-    /The Vimsopaka Bala grid carries \[V\], \[P\], \[H\], \[D\] and \*/.test(flat) &&
+    /The Vimsopaka Bala grid carries \[V\], \[X\], \[S\], \[P\], \[D\] and \*/.test(flat) &&
     /every one of them something that score cannot see/.test(flat);
 })());
 ok('and the grid really carries those five and no others', (function () {
@@ -1346,9 +1346,10 @@ ok('and the grid really carries those five and no others', (function () {
   var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
   var marks = (block.match(/'flag flag-[a-z]+'/g) || [])
     .concat(block.match(/'neecha-bhanga'/g) || []);
-  return marks.length === 5 && block.indexOf("'flag flag-v'") >= 0 &&
-    block.indexOf("'flag flag-p'") >= 0 && block.indexOf("'flag flag-h'") >= 0 &&
-    block.indexOf("'flag flag-d'") >= 0 && block.indexOf("'neecha-bhanga'") >= 0;
+  return marks.length === 6 && block.indexOf("'flag flag-v'") >= 0 &&
+    block.indexOf("'flag flag-x'") >= 0 && block.indexOf("'flag flag-s'") >= 0 &&
+    block.indexOf("'flag flag-p'") >= 0 && block.indexOf("'flag flag-d'") >= 0 &&
+    block.indexOf("'neecha-bhanga'") >= 0;
 })());
 /*
  * The two that turn on the division alone are read from that division's own
@@ -1362,6 +1363,8 @@ ok('and the grid really carries those five and no others', (function () {
  */
 ok('hemming reads its neighbours from the division and its benefics from the rashi',
    /Astro\.hemmedByBenefics\(r\.name, v\.sign, divisionChart,\s*\n?\s*Astro\.naturalBenefics\(c\)\)/
+     .test(appSrc) &&
+   /Astro\.hemmedByMalefics\(r\.name, v\.sign, divisionChart,\s*\n?\s*Astro\.naturalBenefics\(c\)\)/
      .test(appSrc) &&
    /var divisionChart = Astro\.chartInDivision\(c, view\.division\);/.test(appSrc));
 ok('and directional strength from the house, which the row already computes',
@@ -1461,13 +1464,15 @@ ok('the note says a mark means the score reads that cell wrong', (function () {
 })());
 ok('and names them all without defining any, the key doing that', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
-  return /\[V\] repeats the rashi sign, \[P\] is an exchange of signs, \[H\] is a benefic in the sign either side, \[D\] is the house the graha is strongest in by direction, and \* on a dignity is a debilitation cancelled into a raja yoga/
+  return /\[V\] repeats the rashi sign, \[X\] is an exchange of signs, \[S\] and \[P\] are a benefic or a malefic in the sign either side, \[D\] is the house the graha is strongest in by direction, and \* on a dignity is a debilitation cancelled into a raja yoga/
     .test(flat) &&
     !/A sign marked \[V\] is one the division has landed/.test(flat);
 })());
 ok('every one is computed per division, not once for the chart',
    /Yogas\.parivartana\(divisionCharts\[division\]\)/.test(appSrc) &&
    /Astro\.hemmedByBenefics\(planet\.name, d\.sign, divisionCharts\[division\],\s*\n?\s*benefics\)/
+     .test(appSrc) &&
+   /Astro\.hemmedByMalefics\(planet\.name, d\.sign, divisionCharts\[division\],\s*\n?\s*benefics\)/
      .test(appSrc) &&
    /var benefics = Astro\.naturalBenefics\(state\.chart\);/.test(appSrc) &&
    /var cellHouse = \(\(d\.sign - divisionLagna\[division\]\) % 12 \+ 12\) % 12 \+ 1;/
@@ -1579,8 +1584,8 @@ ok('and it agrees with the detector, cell by cell, on a chart that has one',
 ok('no mark is a bare symbol except the star', (function () {
   var flat = html.replace(/\s+/g, ' ');
   var dts = flat.match(/<dt>.*?<\/dt>/g) || [];
-  return dts.length === 8 && !/flag-dig/.test(flat) &&
-    dts.filter(function (d) { return /\[[RVYCPHD]\]/.test(d); }).length === 7 &&
+  return dts.length === 9 && !/flag-dig/.test(flat) &&
+    dts.filter(function (d) { return /\[[RVYCXSPD]\]/.test(d); }).length === 8 &&
     dts.filter(function (d) { return />\*</.test(d); }).length === 1;
 })());
 /*
@@ -1591,7 +1596,8 @@ ok('no mark is a bare symbol except the star', (function () {
  */
 ok('and the palette stays at five hues, the letters doing the rest', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-  return /\.flag-h, \.flag-d \{ color: var\(--green-deep\); \}/.test(css) &&
+  return /\.flag-s, \.flag-d \{ color: var\(--green-deep\); \}/.test(css) &&
+    /\.flag-p \{ color: var\(--retro\); \}/.test(css) &&
     !/--flag-direction/.test(css);
 })());
 

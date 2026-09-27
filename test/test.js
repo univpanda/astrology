@@ -513,6 +513,53 @@ ok('and a graha the order has never heard of keeps its place at the end', (funct
   return sorted.join(' ') === 'Sun Saturn Gulika' && sorted.length === 3;
 })());
 
+console.log('\nHemming, both kinds');
+/*
+ * The same figure with the other blades. The nodes are malefics for it and take
+ * no part in naturalBenefics, so hemmedBy names them rather than letting them
+ * fall through its map as neither.
+ */
+ok('a graha with malefics either side is hemmed by them', (function () {
+  var chart = { planets: [
+    { name: 'Sun', sign: 0, longitude: 5 }, { name: 'Moon', sign: 6, longitude: 186 },
+    { name: 'Saturn', sign: 11, longitude: 355 }, { name: 'Mars', sign: 1, longitude: 35 }] };
+  return A.hemmedByMalefics('Sun', 0, chart) && !A.hemmedByBenefics('Sun', 0, chart);
+})());
+ok('and the nodes count among them', (function () {
+  var chart = { planets: [
+    { name: 'Sun', sign: 0, longitude: 5 }, { name: 'Moon', sign: 6, longitude: 186 },
+    { name: 'Rahu', sign: 11, longitude: 355 }, { name: 'Ketu', sign: 1, longitude: 35 }] };
+  return A.hemmedByMalefics('Sun', 0, chart);
+})());
+ok('a benefic one side and a malefic the other is neither', (function () {
+  var chart = { planets: [
+    { name: 'Sun', sign: 0, longitude: 5 }, { name: 'Moon', sign: 6, longitude: 186 },
+    { name: 'Jupiter', sign: 11, longitude: 355 }, { name: 'Mars', sign: 1, longitude: 35 }] };
+  return !A.hemmedByBenefics('Sun', 0, chart) && !A.hemmedByMalefics('Sun', 0, chart);
+})());
+/*
+ * Papa runs much the commoner: five grahas are malefic before the nodes are
+ * counted, and only four can be benefic with two of those conditional.
+ */
+ok('and the malefic kind is the commoner, by a long way', (function () {
+  var benefic = 0, malefic = 0, placements = 0;
+  for (var y = 1900; y < 2020; y++) {
+    for (var h = 1; h < 24; h += 7) {
+      var c = A.chart({ jdUT: A.julianDay(y, (y % 12) + 1, (y % 27) + 1, h), latitude: 28.61,
+                        longitude: 77.21, tzOffsetMinutes: 330 });
+      var ben = A.naturalBenefics(c);
+      c.planets.forEach(function (p) {
+        if (A.NODES.indexOf(p.name) >= 0) return;
+        placements++;
+        if (A.hemmedByBenefics(p.name, p.sign, c, ben)) benefic++;
+        if (A.hemmedByMalefics(p.name, p.sign, c, ben)) malefic++;
+      });
+    }
+  }
+  return benefic / placements > 0.01 && malefic > benefic * 3 &&
+    malefic / placements < 0.25;
+})());
+
 console.log('\nKartari');
 /*
  * The lagna between two planets, as between the blades of a pair of scissors.

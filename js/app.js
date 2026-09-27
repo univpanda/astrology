@@ -1016,7 +1016,7 @@
         }
 
         /*
-         * Chart-level flags, in the order of what they answer to. [V] and [H]
+         * Chart-level flags, in the order of what they answer to. [V], [S] and [P]
          * turn on the division alone: which sign the division gives the graha,
          * and which grahas the division makes its neighbours. [Y] and + turn on
          * the division and on the reference as well, both being counted from
@@ -1031,7 +1031,9 @@
           (view.reference === 'Ascendant' ? 'the ascendant' : view.reference) + '.';
         [view.division !== 1 && v.sign === Astro.signOf(r.longitude) ? 'V' : null,
          !r.isAscendant && Astro.hemmedByBenefics(r.name, v.sign, divisionChart,
-           Astro.naturalBenefics(c)) ? 'H' : null,
+           Astro.naturalBenefics(c)) ? 'S' : null,
+         !r.isAscendant && Astro.hemmedByMalefics(r.name, v.sign, divisionChart,
+           Astro.naturalBenefics(c)) ? 'P' : null,
          !r.isAscendant && Astro.isYogakaraka(r.name, firstSign) ? 'Y' : null,
          !r.isAscendant && Astro.hasDigBala(r.name, house) ? 'D' : null]
           .filter(Boolean).forEach(function (f, n) {
@@ -1351,8 +1353,9 @@
        * house, and the grid prints neither - so they hang on the graha's name.
        */
       'A marked cell is one the score reads wrong, and the mark says how. [V] repeats the ' +
-      'rashi sign, [P] is an exchange of signs, [H] is a benefic in the sign either side, ' +
-      '[D] is the house the graha is strongest in by direction, and * on a dignity is a ' +
+      'rashi sign, [X] is an exchange of signs, [S] and [P] are a benefic or a malefic in ' +
+      'the sign either side, [D] is the house the graha is strongest in by direction, and ' +
+      '* on a dignity is a ' +
       'debilitation cancelled into a raja yoga. Every one of them is something the score ' +
       'cannot see, counting dignity a division at a time, and each sits against the value ' +
       'in that cell it bears on, so an unmarked cell is one the score has whole. Hover any ' +
@@ -1548,7 +1551,7 @@
          * division in full; the grid marks what this score is blind to.
          */
         if (d && exchanging[division][planet.name]) {
-          sign.appendChild(el('span', 'flag flag-p', ' [P]'));
+          sign.appendChild(el('span', 'flag flag-x', ' [X]'));
           sign.title = planet.name + ' is in an exchange of signs in D' + division +
             ', which is ' + exchanging[division][planet.name].toLowerCase() +
             '. The score judges it against the lord of this sign and never asks what ' +
@@ -1556,10 +1559,17 @@
         }
         if (d && Astro.hemmedByBenefics(planet.name, d.sign, divisionCharts[division],
               benefics)) {
-          sign.appendChild(el('span', 'flag flag-h', ' [H]'));
+          sign.appendChild(el('span', 'flag flag-s', ' [S]'));
           sign.title = planet.name + ' has a benefic in the sign either side of it in D' +
-            division + '. The score judges the sign it stands in and never looks at the ' +
-            'two beside it.';
+            division + ', which is shubha kartari around the graha. The score judges the ' +
+            'sign it stands in and never looks at the two beside it.';
+        }
+        if (d && Astro.hemmedByMalefics(planet.name, d.sign, divisionCharts[division],
+              benefics)) {
+          sign.appendChild(el('span', 'flag flag-p', ' [P]'));
+          sign.title = planet.name + ' has a malefic in the sign either side of it in D' +
+            division + ', which is papa kartari around the graha. The score judges the ' +
+            'sign it stands in and never looks at the two beside it.';
         }
         if (d) {
           var cellHouse = ((d.sign - divisionLagna[division]) % 12 + 12) % 12 + 1;
