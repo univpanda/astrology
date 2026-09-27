@@ -2283,8 +2283,39 @@ ok('grahas keep the order of the tables beside it',
    /\/\/ Listed as in the graha tables/.test(appSrc));
 ok('a graha with no reading anywhere is dropped, not shown as a row of dashes',
    /if \(cells\.every\(function \(c\) \{ return !c; \}\)\) return;/.test(appSrc));
-ok('each cell gives its full dignity, sign and lord in the title',
-   /d\.label \+ ' - ' \+ Astro\.SIGNS\[d\.sign\] \+[\s\S]{0,40}', ruled by ' \+ d\.lord/.test(appSrc));
+/*
+ * The title used to open by repeating the cell - "D7: Neutral - Cancer, ruled by
+ * Moon" - where the division is the column heading, the dignity the row beneath
+ * and the sign the cell itself. Three quarters of it was the screen read back.
+ * The dignity short forms are spelt out in the note instead, once for the grid.
+ */
+ok('a cell title does not repeat the cell', (function () {
+  var at = appSrc.indexOf('function vargasDetail');
+  var block = appSrc.slice(at, appSrc.indexOf('function vimsopakaFigure', at));
+  return !/d\.label \+ ' - ' \+ Astro\.SIGNS\[d\.sign\]/.test(block) &&
+    !/', ruled by ' \+ d\.lord/.test(block);
+})());
+// The dignity short forms keep their words, in the note, once for the grid.
+ok('and the short forms are still spelt out somewhere',
+   /dignities as ' \+ dignityKey\(\)/.test(appSrc) && /function dignityKey/.test(appSrc));
+/*
+ * And every mark keeps its own. Each used to assign the title outright and the
+ * dignity reading assigned it again below, so whichever ran last won: the marks'
+ * explanations were written and never shown. It went unnoticed because the
+ * reading always had something to say, so there was always a hover - just never
+ * the one the mark had put there.
+ */
+ok('the marks and the reading are collected, not assigned over each other',
+   /var signSays = \[\], dignitySays = \[\];/.test(appSrc) &&
+   /var signTitle = signSays\.concat\(shared \|\| \[\]\)\.join\(' '\);/.test(appSrc) &&
+   (appSrc.match(/signSays\.push\(/g) || []).length === 5 &&
+   (appSrc.match(/dignitySays\.push\(/g) || []).length === 1);
+ok('and no mark assigns a title of its own any more', (function () {
+  var at = appSrc.indexOf('function renderVargas(state)');
+  var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
+  return !/sign\.title = planet\.name/.test(block) &&
+    !/dignity\.title = \(detail/.test(block);
+})());
 
 /*
  * Sixteen columns carry neither "Sagittarius" nor "Great enemy". Signs go as
@@ -2406,7 +2437,7 @@ ok('and points at the hovers once, in general rather than kind by kind',
  * different places.
  */
 ok('and everything it promises a hover on has one',
-   /sign\.title = detail \+ yogaNote;/.test(appSrc) &&
+   /if \(signTitle\) sign\.title = signTitle;/.test(appSrc) &&
    /th\.title = \(varga \? varga\.label/.test(appSrc) &&
    /td\.title = planet\.name \+ ' scores '/.test(appSrc));
 ok('and gives the seven-step reading when it differs from the label shown',
@@ -2784,9 +2815,14 @@ ok('and the chart agrees with the Vargas grid, being the same comparison', (func
     });
   });
 })());
-ok('both halves of a pair carry the same hover',
-   /sign\.title = detail \+ yogaNote;\s*\n\s*dignity\.title = detail \+ yogaNote;/
-     .test(appSrc));
+/*
+ * The pair shares what belongs to the pair - the reading and the yogas - while a
+ * mark stays on the cell it was put against, [V] on the sign and the star on the
+ * dignity.
+ */
+ok('both halves of a pair carry what the pair has to say',
+   /var shared = \(detail \+ yogaNote\)\.trim\(\);/.test(appSrc) &&
+   /var dignityTitle = dignitySays\.concat\(shared \|\| \[\]\)\.join\(' '\);/.test(appSrc));
 /*
  * And the same highlight. A yoga belongs to the graha in that division, which is
  * the pair of cells and not either row of it.

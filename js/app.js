@@ -1196,16 +1196,23 @@
    */
   /** What one cell of the grid is saying, in full. */
   function vargasDetail(d, division, graha) {
-    var text = 'D' + division + ': ' + d.label + ' - ' + Astro.SIGNS[d.sign] +
-      ', ruled by ' + d.lord + '.';
+    /*
+     * It used to open by repeating the cell: "D7: Neutral - Cancer, ruled by
+     * Moon." The division is the column heading, the dignity is the row beneath,
+     * and the sign is the cell itself, so three quarters of that sentence was
+     * the reader's own screen read back at them. What is left is what the cell
+     * does not already say.
+     */
+    var said = [];
     if (d.viaProxy) {
-      text += ' Neither luminary rules a trimsamsa, so for this division ' + graha +
-        ' stands in as ' + d.viaProxy + ', which is what lets it hold one of its own.';
+      said.push('Neither luminary rules a trimsamsa, so for this division ' + graha +
+        ' stands in as ' + d.viaProxy + ', which is what lets it hold one of its own.');
     }
     if (d.relationLabel && d.relationLabel !== d.label) {
-      text += ' On the seven-step varga scale that counts as ' + d.relationLabel.toLowerCase() + '.';
+      said.push('On the seven-step varga scale that counts as ' +
+        d.relationLabel.toLowerCase() + '.');
     }
-    return text;
+    return said.join(' ');
   }
 
   /** Halves read better as halves: 3.5 is 3\u00bd, 0.5 is \u00bd. */
@@ -1555,6 +1562,14 @@
          * codes label the kundli's cells above, so the reader is not learning a
          * second shorthand for this table. The full name stays in the title.
          */
+        /*
+         * Collected rather than assigned. Each mark used to set the cell's title
+         * outright and the dignity reading set it again below, so whichever ran
+         * last won and the mark's own explanation was never read - the reason it
+         * went unnoticed is that the reading always had something to say, so
+         * there was always a hover, just never the right one.
+         */
+        var signSays = [], dignitySays = [];
         var sign = el('td', 'varga-sign' + (brief ? ' varga-sign-abbr' : '') +
           (keys.indexOf(division) >= 0 ? ' varga-key' : ''),
           d ? (brief ? Astro.SIGN_ABBR[d.sign] : Astro.SIGNS[d.sign]) : '\u2013');
@@ -1571,9 +1586,9 @@
          */
         if (d && division !== 1 && d.sign === Astro.signOf(planet.longitude)) {
           sign.appendChild(el('span', 'flag flag-v', ' [V]'));
-          sign.title = planet.name + ' holds ' + Astro.SIGNS[d.sign] + ' in D' + division +
+          signSays.push(planet.name + ' holds ' + Astro.SIGNS[d.sign] + ' in D' + division +
             ' as well as in the rashi.' +
-            (division === 9 ? ' In D9 that is vargottama proper.' : '');
+            (division === 9 ? ' In D9 that is vargottama proper.' : ''));
         }
         /*
          * The other two the score cannot see, per cell rather than per graha.
@@ -1589,32 +1604,32 @@
          */
         if (d && exchanging[division][planet.name]) {
           sign.appendChild(el('span', 'flag flag-x', ' [X]'));
-          sign.title = planet.name + ' is in an exchange of signs in D' + division +
+          signSays.push(planet.name + ' is in an exchange of signs in D' + division +
             ', which is ' + exchanging[division][planet.name].toLowerCase() +
             '. The score judges it against the lord of this sign and never asks what ' +
-            'that lord is doing.';
+            'that lord is doing.');
         }
         if (d && Astro.hemmedByBenefics(planet.name, d.sign, divisionCharts[division],
               benefics)) {
           sign.appendChild(el('span', 'flag flag-s', ' [S]'));
-          sign.title = planet.name + ' has a benefic in the sign either side of it in D' +
+          signSays.push(planet.name + ' has a benefic in the sign either side of it in D' +
             division + ', which is shubha kartari around the graha. The score judges the ' +
-            'sign it stands in and never looks at the two beside it.';
+            'sign it stands in and never looks at the two beside it.');
         }
         if (d && Astro.hemmedByMalefics(planet.name, d.sign, divisionCharts[division],
               benefics)) {
           sign.appendChild(el('span', 'flag flag-p', ' [P]'));
-          sign.title = planet.name + ' has a malefic in the sign either side of it in D' +
+          signSays.push(planet.name + ' has a malefic in the sign either side of it in D' +
             division + ', which is papa kartari around the graha. The score judges the ' +
-            'sign it stands in and never looks at the two beside it.';
+            'sign it stands in and never looks at the two beside it.');
         }
         if (d) {
           var cellHouse = ((d.sign - divisionLagna[division]) % 12 + 12) % 12 + 1;
           if (Astro.hasDigBala(planet.name, cellHouse)) {
             sign.appendChild(el('span', 'flag flag-d', ' [D]'));
-            sign.title = planet.name + ' stands in the ' + Yogas.ordinal(cellHouse) +
+            signSays.push(planet.name + ' stands in the ' + Yogas.ordinal(cellHouse) +
               ' of D' + division + ', the house it is strongest in by direction. The score ' +
-              'counts dignity and never looks at houses.';
+              'counts dignity and never looks at houses.');
           }
         }
         var dignity = el('td', (d ? 'dig dig-' + d.key : '') +
@@ -1632,10 +1647,12 @@
             listOf(yogas.map(function (t) { return t.toLowerCase(); })) + ' in D' +
             division + '.'
           : '';
-        if (detail) {
-          sign.title = detail + yogaNote;
-          dignity.title = detail + yogaNote;
-        }
+        // Nothing to say, no hover: the same rule the rest of the page follows.
+        var shared = (detail + yogaNote).trim();
+        var signTitle = signSays.concat(shared || []).join(' ');
+        var dignityTitle = dignitySays.concat(shared || []).join(' ');
+        if (signTitle) sign.title = signTitle;
+        if (dignityTitle) dignity.title = dignityTitle;
         if (yogas.length) {
           sign.className += ' varga-yoga';
           dignity.className += ' varga-yoga';
@@ -1649,11 +1666,11 @@
         if (d && d.key === 'debilitated' && cancelled[division] &&
             cancelled[division][planet.name]) {
           dignity.appendChild(el('sup', 'neecha-bhanga', '*'));
-          dignity.title = (detail ? detail + ' ' : '') + planet.name +
+          dignitySays.push(planet.name +
             '\u2019s debilitation in D' + division + ' is cancelled and the graha stands in ' +
             'an angle or a trine, which is neecha bhanga raja yoga, so the score below is ' +
             'the floor for a graha that is not weak. Vimsopaka counts dignity one division ' +
-            'at a time and cannot see the cancellation; the Yogas tab reads it in full.';
+            'at a time and cannot see the cancellation; the Yogas tab reads it in full.');
         }
         signRow.appendChild(sign);
         dignityRow.appendChild(dignity);
