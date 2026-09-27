@@ -2689,10 +2689,22 @@ ok('and gives the seven-step reading when it differs from the label shown',
 ok('every dignity tier has a colour, and no colour is orphaned', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
   var keys = Object.keys(Astro.VARGA_DIGNITY_LABELS);
-  var styled = (css.match(/td\.dig-([a-z]+)/g) || [])
-    .map(function (m) { return m.replace('td.dig-', ''); });
+  var styled = (css.match(/\.dig-([a-z]+)/g) || [])
+    .map(function (m) { return m.replace('.dig-', ''); });
   return keys.every(function (k) { return styled.indexOf(k) >= 0; }) &&
     styled.every(function (k) { return keys.indexOf(k) >= 0; });
+})());
+/*
+ * And the selectors reach wherever a dignity is written. They were td rules
+ * while a dignity was always a cell; the grid turned and its dignity became a
+ * span inside one, so every colour stopped reaching it - silently, because the
+ * words still rendered, in plain ink.
+ */
+ok('and a dignity is coloured wherever it is written, cell or span', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  return !/td\.dig-/.test(css) && /\n\.dig-debilitated \{ color: var\(--retro\)/.test(css) &&
+    /el\('span', 'varga-dignity dig dig-' \+ d\.key, d\.label\)/.test(appSrc) &&
+    /\{ text: \(r\.isAscendant \? '' : Astro\.dignityOf/.test(appSrc);
 })());
 
 ok('the library says exaltation is outside the classical steps',

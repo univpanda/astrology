@@ -893,21 +893,28 @@ td .retro-flag, td.retro-flag, th .retro-flag { color: var(--retro); }
 .flag-p { color: var(--retro); }
 .flag-star { color: var(--retro); font-weight: 600; }
 
-/* Ten columns of dignity words are read by scanning, not line by line, so the
-   tiers carry weight and colour. Kept to the page's two hues rather than a
-   red-to-green ramp: the scale is a ranking, not a verdict on the chart. */
-td.dig { white-space: nowrap; }
+/* Dignity words are read by scanning, not line by line, so the tiers carry
+   weight and colour. Kept to the page's two hues rather than a red-to-green
+   ramp: the scale is a ranking, not a verdict on the chart. Debilitation and a
+   great enemy's sign take the red, the two ends of the ladder being the two a
+   reader looks for first.
+
+   Written without a td in front of them. They were td rules while a dignity was
+   always a cell; the grid turned and its dignity became a span inside one, and
+   every colour here stopped reaching it silently - the words rendered, in plain
+   ink, and nothing failed. */
+.dig { white-space: nowrap; }
 /* A cancelled debilitation. Kept in the dignity's own red rather than given a
    colour of its own: it is a mark on that word, not a fifth tier beside it. */
 sup.neecha-bhanga { font-size: 0.85em; line-height: 0; margin-left: 0.1em; }
-td.dig-exalted, td.dig-moolatrikona { color: var(--green-deep); font-weight: 600; }
-td.dig-own { color: var(--green-deep); }
-td.dig-adhimitra { color: var(--green); }
-td.dig-mitra { color: var(--ink); }
-td.dig-sama { color: var(--ink-soft); }
-td.dig-shatru { color: var(--ink-faint); }
-td.dig-adhishatru { color: var(--retro); }
-td.dig-debilitated { color: var(--retro); font-weight: 600; }
+.dig-exalted, .dig-moolatrikona { color: var(--green-deep); font-weight: 600; }
+.dig-own { color: var(--green-deep); }
+.dig-adhimitra { color: var(--green); }
+.dig-mitra { color: var(--ink); }
+.dig-sama { color: var(--ink-soft); }
+.dig-shatru { color: var(--ink-faint); }
+.dig-adhishatru { color: var(--retro); }
+.dig-debilitated { color: var(--retro); font-weight: 600; }
 
 /* Grahas across the top and divisions down the side, so a cell is one graha in
    one division: its sign over its dignity, two lines in one td rather than two
