@@ -1338,9 +1338,36 @@ ok('and the page says which surface carries which marks', (function () {
   var flat = html.replace(/\s+/g, ' ');
   return /The kundli carries \[R\], \[V\], \[Y\] and \[C\]/.test(flat) &&
     /a corner triangle will not hold more/.test(flat) &&
-    /The Vimsopaka Bala grid carries \[V\], \[X\], \[S\], \[P\], \[D\] and \*/.test(flat) &&
+    /The Vimsopaka Bala grid carries \[R\] and \[C\] on the name and \[V\], \[X\], \[S\], \[P\], \[D\] and \* in the cells/
+      .test(flat) &&
     /every one of them something that score cannot see/.test(flat);
 })());
+/*
+ * [R] and [C] belong on the grid too, and by its own rule: the score counts
+ * dignity, and neither a backward graha nor a burnt one changes the sign it
+ * stands in. What puts them on the name rather than in a cell is that they hold
+ * whichever division is read, so they span its columns as the name does - the
+ * same split the graha table makes.
+ */
+ok('the grid marks retrogression and combustion on the name', (function () {
+  var at = appSrc.indexOf('function renderVargas(state)');
+  var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
+  return /\[planet\.retrograde \? 'R' : null,/.test(block) &&
+    /sun && Astro\.isCombust\(planet\.name, planet\.longitude, sun\.longitude,/.test(block) &&
+    block.indexOf('th.appendChild') > 0;
+})());
+ok('and both tables split the marks the same way', (function () {
+  var graha = appSrc.slice(appSrc.indexOf('function renderGrahaTable'),
+                           appSrc.indexOf('function strengthsFor'));
+  var vargas = appSrc.slice(appSrc.indexOf('function renderVargas(state)'),
+                            appSrc.indexOf('function vargaSummary'));
+  // R and C on a th in both, and in neither do they reach a cell.
+  return /th\.appendChild\(el\('span', 'flag flag-' \+ f\.toLowerCase\(\)/.test(graha) &&
+    /th\.appendChild\(el\('span', 'flag flag-' \+ f\.toLowerCase\(\)/.test(vargas) &&
+    !/flag flag-r/.test(vargas.replace(/th\.appendChild[^;]*;/g, '')) &&
+    !/flag flag-c'/.test(vargas.replace(/th\.appendChild[^;]*;/g, ''));
+})());
+
 ok('and the grid really carries those five and no others', (function () {
   var at = appSrc.indexOf('function renderVargas(state)');
   var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));

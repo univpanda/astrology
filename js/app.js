@@ -1467,6 +1467,7 @@
      */
     // Settled in the rashi and handed to every division: see hemmedByBenefics.
     var benefics = Astro.naturalBenefics(state.chart);
+    var sun = positionsD1.Sun;
     var divisionLagna = {}, exchanging = {}, divisionCharts = {};
     scheme.divisions.forEach(function (division) {
       divisionLagna[division] =
@@ -1503,6 +1504,21 @@
       var th = el('th', null, planet.name);
       th.setAttribute('scope', 'rowgroup');
       th.setAttribute('rowspan', '2');
+      /*
+       * [R] and [C] on the name, as the graha table has them. Both are things
+       * the score cannot see - it counts dignity, and neither a backward graha
+       * nor a burnt one changes the sign it stands in - so they belong on the
+       * grid by the same rule as the rest of its marks. What makes them the
+       * name's rather than a cell's is that they are true of the graha whichever
+       * division is being read, so they span its columns as the name does.
+       */
+      [planet.retrograde ? 'R' : null,
+       sun && Astro.isCombust(planet.name, planet.longitude, sun.longitude,
+         planet.retrograde) ? 'C' : null]
+        .filter(Boolean).forEach(function (f, n) {
+          th.appendChild(el('span', 'flag flag-' + f.toLowerCase(),
+            (n === 0 ? ' ' : '') + '[' + f + ']'));
+        });
       signRow.appendChild(th);
 
 
