@@ -2860,28 +2860,27 @@ ok('the rules stay visible inside the band, in both palettes', (function () {
 })());
 
 /*
- * One short token per cell under one short heading, so centring lines each under
- * its own. The names are the only cells that vary in length and are the one
- * column left ragged on the right rather than on both sides.
+ * Everything centred, the division labels included. They were left when the
+ * first column held names of varying length; it holds D1 and D60 now, which are
+ * short tokens like everything else in the row.
  */
-ok('every column but the names is centred', (function () {
+ok('every cell in the grid is centred, labels included', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
   return /#vargas-table th, #vargas-table td \{ text-align: center; \}/.test(css) &&
-    /#vargas-table thead th:first-child, #vargas-table tbody th \{ text-align: left; \}/
-      .test(css);
+    !/#vargas-table thead th:first-child/.test(css);
 })());
 /*
- * Not :first-child: a graha's second row has no first cell of its own, the name
- * spanning down from the row above, so the cell sitting first there is a
- * division and would have been left-aligned alone among its column.
+ * And the share sits beside its division rather than under it. Under was right
+ * while the division was a column heading and the share the second line of one;
+ * as a row label, two lines make every row in the table twice as tall for a
+ * figure that belongs on the same line as the thing it qualifies.
  */
-ok('and the rule does not reach the cell that merely sits first in a spanned row',
-   (function () {
-     var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-     var block = css.slice(css.indexOf('#vargas-table thead th:first-child'));
-     block = block.slice(0, block.indexOf('}') + 1);
-     return !/tr[^,]*:first-child/.test(block) && !/td:first-child/.test(block);
-   })());
+ok('the share is beside the division, not under it', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var rules = css.match(/#vargas-table th \.varga-weight \{[^}]*\}/g) || [];
+  return rules.length === 1 && /display: inline;/.test(rules[0]) &&
+    /margin-left: 0\.35rem;/.test(rules[0]);
+})());
 /*
  * Body weight, not bold. The band already colours the figure, and colour with
  * weight made one number in each row shout at the dignities it was derived from.

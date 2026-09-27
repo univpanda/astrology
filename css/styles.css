@@ -923,8 +923,10 @@ td.dig-debilitated { color: var(--retro); font-weight: 600; }
 /* Every column but the first holds two short tokens under a name, so centring
    lines each under its own heading. The division numbers are the exception and
    stay left, being the column a reader runs down. */
+/* Everything centred, the division labels included. They were left because the
+   first column of the old shape held names of varying length; they hold D1 and
+   D60 now, which are short tokens like everything else in the row. */
 #vargas-table th, #vargas-table td { text-align: center; }
-#vargas-table thead th:first-child, #vargas-table tbody th { text-align: left; }
 
 /* The three divisions the chosen scheme leans on hardest, picked out of the
    table. A row now rather than a column, so the rules that bracket it are
@@ -974,8 +976,12 @@ td.vimsopaka-poor { color: var(--retro); }
    keeps its band: a row there is one whole reading across eleven columns. */
 #vargas-table tbody tr:hover { background: none; }
 
-/* The vimsopaka share sits under its division, lighter than the heading so the
-   row still reads as D9 first and "worth 3" second. */
+/* The share sits beside its division rather than under it. It was under when
+   the division was a column heading and the share was the second line of one;
+   the division is a row label now, and a label that takes two lines makes every
+   row in the table twice as tall for a figure that belongs on the same line as
+   the thing it qualifies. Lighter than the number, so the cell still reads as D9
+   first and "worth 3" second. */
 #vargas-table th .varga-weight {
   display: inline;
   font-weight: 400;
@@ -1112,17 +1118,6 @@ td.vimsopaka-poor { color: var(--retro); }
   color: var(--ink-soft);
 }
 .varga-scheme-row select { width: auto; min-width: 15rem; }
-/* The vimsopaka share sits under its division, lighter than the heading so the
-   column still reads as D9 first and "worth 3" second. */
-#vargas-table th .varga-weight {
-  display: block;
-  font-weight: 400;
-  font-size: 0.8rem;
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--ink-faint);
-  font-variant-numeric: tabular-nums;
-}
 /* Four flags, four entries, laid across the width rather than run together
    down a 60ch column. A key is looked up one flag at a time, not read through,
    and centred prose makes the reader find where each sentence starts. */
