@@ -28,6 +28,8 @@
   --green: #2f8f5f;
   --green-deep: #1f6b47;
   --green-soft: #dcefe4;
+  /* Light enough that the row rules still read through it. */
+  --varga-key: #ebf6ef;
   --retro: #b8483a;
   --flag-vargottama: #6d4aa8;
   --flag-yogakaraka: #a8710c;
@@ -907,11 +909,20 @@ td.varga-sign-abbr { font-family: var(--font-mono); letter-spacing: 0.01em; }
    A tint and two rules rather than a colour, so a column separates without
    competing with the dignity colours inside it. Where two of the three are
    neighbours, as D3 and D9 are in the shadvarga, the collapsed border between
-   them still divides the band into its columns. */
+   them still divides the band into its columns.
+
+   Its own tint rather than --green-soft, which was darker than --line-soft and
+   swallowed the row rules running through it: a marked column lost the lines
+   every other column kept. Lightening the tint alone would have traded the
+   rules back for the band, so the rules inside the band step up to --line as
+   well. The pair measures 1.15 for a rule on the tint against 1.16 for the same
+   rule on the surface outside it, so the lines read the same either side of the
+   edge. */
 #vargas-table .varga-key {
-  background: var(--green-soft);
+  background: var(--varga-key);
   border-left: 1px solid var(--line);
   border-right: 1px solid var(--line);
+  border-bottom-color: var(--line);
 }
 #vargas-table th.varga-key { color: var(--green-deep); }
 
@@ -1091,6 +1102,7 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
     --green: #58c08a;
     --green-deep: #7fd3a5;
     --green-soft: #21362b;
+    --varga-key: #1e2f26;
     --retro: #e8867a;
     /* Both flag hues need lifting off a dark ground, as the graha colours do. */
     --flag-vargottama: #b69ae0;
@@ -1145,6 +1157,7 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
     --ink: #111; --ink-soft: #444; --ink-faint: #666;
     --line: #ccc; --line-soft: #ddd;
     --green: #1f6b47; --green-deep: #145336; --green-soft: #eef7f1;
+    --varga-key: #f5faf7;
     --retro: #96382c;
     --shadow: none; --shadow-lift: none;
   }

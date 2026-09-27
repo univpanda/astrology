@@ -1261,22 +1261,22 @@ ok('the total spans the graha\'s pair of rows',
  * it was. Both the heading and the cell have to move, and separately, so each is
  * checked where it is built.
  */
-ok('the total heads the table beside the graha, before the divisions', (function () {
+ok('the total closes the row, after the divisions it adds up', (function () {
   var head = appSrc.slice(appSrc.indexOf('function renderVargasHead'),
                           appSrc.indexOf('function vargaNote'));
   var name = head.indexOf("el('th', null, 'Graha')");
-  var total = head.indexOf("el('th', null, 'Vimsopaka')");
   var divisions = head.indexOf('scheme.divisions.forEach');
-  return name >= 0 && total > name && divisions > total;
+  var total = head.indexOf("el('th', null, 'Vimsopaka')");
+  return name >= 0 && divisions > name && total > divisions;
 })());
 ok('and so does the cell, spanning the graha\u2019s two rows as the name does',
    (function () {
      var body = appSrc.slice(appSrc.indexOf('function renderVargas(state)'),
                              appSrc.indexOf('function vargaSummary'));
      var name = body.indexOf('signRow.appendChild(th);');
-     var score = body.indexOf('signRow.appendChild(td);');
      var cells = body.indexOf('cells.forEach(function (d, i)');
-     return name >= 0 && score > name && cells > score &&
+     var score = body.indexOf('signRow.appendChild(td);');
+     return name >= 0 && cells > name && score > cells &&
        /td\.setAttribute\('rowspan', '2'\);/.test(body);
    })());
 ok('it is banded by Parashara\'s four readings, not by a gradient', (function () {
@@ -1288,9 +1288,15 @@ ok('it is banded by Parashara\'s four readings, not by a gradient', (function ()
 ok('and the title breaks the score into its divisions',
    /part\.viswa \+ '\/20'/.test(appSrc) &&
    /which Parashara reads as ' \+ score\.band\.label/.test(appSrc));
-ok('the column has a heading that says what it is out of',
+/*
+  * The heading wears its twenty the way a division wears its share: the name
+  * above, the figure beneath. "/ 20" made it the one heading with a shape of its
+  * own, in the row where every other heading is a name over a number.
+  */
+ok('the column has a heading that says what it is out of, shaped like the rest',
    /el\('th', null, 'Vimsopaka'\)/.test(appSrc) &&
-   /el\('span', 'varga-weight', '\/ 20'\)/.test(appSrc));
+   /el\('span', 'varga-weight', '20'\)/.test(appSrc) &&
+   !/varga-weight', '\/ 20'/.test(appSrc));
 /*
  * A number in a column invites being read as a verdict. Shadbala and vimsopaka
  * both answer "how fully can this graha act" and neither answers "is that a good
@@ -1364,7 +1370,7 @@ ok('and that it measures magnitude rather than direction', (function () {
 
 ok('the note explains the totalling and the four readings', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');
-  return /The column beside the name totals them, verses 26-27/.test(flat) &&
+  return /The last column totals them, verses 26-27/.test(flat) &&
     /below 5 as incapable of auspicious results, 5 to 10 as some good, up to 15 as mediocre and above 15 as wholly favourable/.test(flat);
 })());
 
@@ -1605,8 +1611,41 @@ ok('the mark is a tint rather than a colour, so it does not fight the dignities'
      var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
      var block = css.slice(css.indexOf('#vargas-table .varga-key'),
                            css.indexOf('#vargas-table th.varga-key'));
-     return /background: var\(--green-soft\)/.test(block) && !/(^|[^-])color:/.test(block);
+     return /background: var\(--varga-key\)/.test(block) &&
+       !/(^|[^-])color: /.test(block);
    })());
+/*
+ * The tint was --green-soft, darker than --line-soft, so the row rules vanished
+ * inside a marked column while every unmarked column kept them. Lightening the
+ * tint alone trades the rules back for the band, so the rules inside the band
+ * step up to --line too, and both are measured rather than eyeballed: a rule on
+ * the tint has to read at least as well as the same rule on the surface outside.
+ */
+ok('the rules stay visible inside the band, in both palettes', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var token = function (name, from) {
+    var at = css.indexOf(name + ':', from || 0);
+    return at < 0 ? null : css.slice(at).match(/#[0-9a-f]{6}/)[0];
+  };
+  var lum = function (hex) {
+    return hex.slice(1).match(/../g).map(function (h) { return parseInt(h, 16) / 255; })
+      .map(function (v) { return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); })
+      .reduce(function (t, v, i) { return t + [0.2126, 0.7152, 0.0722][i] * v; }, 0);
+  };
+  var ratio = function (a, b) {
+    var x = lum(a), y = lum(b);
+    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+  };
+  var dark = css.indexOf('prefers-color-scheme: dark');
+  var check = function (from) {
+    var tint = token('--varga-key', from), line = token('--line', from);
+    var soft = token('--line-soft', from), surface = token('--surface', from) ||
+      token('--surface', 0);
+    return ratio(line, tint) >= ratio(soft, surface) * 0.95 &&
+      ratio(tint, surface) > 1.05;
+  };
+  return /border-bottom-color: var\(--line\)/.test(css) && check(0) && check(dark);
+})());
 
 console.log('\nVarga charts');
 /*
