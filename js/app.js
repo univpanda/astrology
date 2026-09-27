@@ -1257,19 +1257,39 @@
    * and not nine, and why the Sun is judged as Mars in one column. Both are
    * visible facts about what is on screen.
    *
+   * The verse citation went with the doctrine. Which verses a scheme's share-out
+   * comes from is worth knowing and is worth checking, but it is a fact about
+   * the text rather than about the grid, and a reader looking at the grid is not
+   * looking for it. The engine still records it, scheme by scheme, and the
+   * library quotes all four.
+   *
    * [V] is not among them. The flag key at the top of the tab defines all four
    * flags, this one included, and a second definition a few inches below it is
    * the same drift in miniature.
    */
+  /** "Exal (Exalted), Mool (Mooltrikona) ... and Deb (Debilitated)", in rank order. */
+  function dignityKey() {
+    var pairs = Object.keys(Astro.VARGA_DIGNITY_LABELS).map(function (k) {
+      return Astro.VARGA_DIGNITY_SHORT[k] + ' (' + Astro.VARGA_DIGNITY_LABELS[k] + ')';
+    });
+    return pairs.slice(0, -1).join(', ') + ' and ' + pairs[pairs.length - 1];
+  }
+
   function vargaNote(scheme, brief) {
     return 'Where each graha stands in the ' + scheme.count + ' divisions of the ' +
       scheme.label + ', judged against the lord of the sign each one gives. Every graha ' +
       'takes two rows, the sign above its dignity there, and the last column scores those ' +
-      'dignities out of twenty, from ' + scheme.source + '. ' +
-      (brief
-        ? 'Sixteen columns leave no room for words, so signs go as Ari, Tau, Can and ' +
-          'dignities as Exal, Mool, Own, Gt Fr, Fr, Neut, Enm, Gt Enm and Deb. '
-        : '') +
+      'dignities out of twenty. ' +
+      /*
+       * The short forms with their words, built from the engine's own two tables
+       * rather than typed out here. Nine abbreviations and nine words written
+       * into a sentence is the pair of tables copied, and a rename would have
+       * left the sentence saying the old one.
+       *
+       * No excuse for the shortening: that sixteen columns leave no room for
+       * words is visible in the sixteen columns.
+       */
+      (brief ? 'Signs go as Ari, Tau, Can and dignities as ' + dignityKey() + '. ' : '') +
       'Hover any cell for the reading behind it, a heading for what that division is ' +
       'worth, a total for how it was reached. ' +
       'Rahu and Ketu own no sign and keep no friendships, so there is no relation to score ' +

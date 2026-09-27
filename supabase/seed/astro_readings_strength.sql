@@ -49,6 +49,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'So the floor is 5 and the ceiling is 20. A graha in a great enemy''s sign in every single division still scores 5, not nothing, which is worth knowing before reading a low total as an absence.',
    'Moolatrikona is not given a rung of its own and keeps the same twenty as an own sign. Exaltation has no rung either, so an exalted graha scores by its relation to the lord of that sign.',
    'The scheme has to be named alongside any figure. The same chart gives four different totals across the Shadvarga, Saptavarga, Dasavarga and Shodasavarga, because each shares the twenty points out differently, and a total quoted without its scheme cannot be checked.',
+   'Each share-out has its own place in chapter 7. The Shadvarga and the Saptavarga are given at verses 17-19, the Dasavarga at verse 20, and the Shodasavarga at verses 21-25 - which is also where the varga viswa fractions above are given, the four bands following at verses 26-27.',
    'It measures dignity across divisions and nothing else. It does not know which houses the graha rules, where it sits, or what aspects it, so it is one input to a judgement rather than the judgement.'
  ],
  'What a high total does and does not mean is set out under Strength and influence.', 703),

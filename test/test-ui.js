@@ -1328,8 +1328,24 @@ ok('but it still has a name, so the scores under it are not orphaned',
    /el\('span', 'visually-hidden', 'Vimsopaka bala, out of twenty'\)/.test(appSrc) &&
    /\.visually-hidden \{/.test(fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8')));
 ok('and the note still says what the column totals, the heading no longer doing it',
-   /the last column scores those dignities out of twenty, from ' \+ scheme\.source/
+   /the last column scores those dignities out of twenty/
      .test(appSrc.replace(/'\s*\+\s*'/g, '')));
+/*
+ * Which verses a share-out comes from is a fact about the text, not about the
+ * grid, so it went to the library with the rest of the doctrine. The engine
+ * still records it per scheme, and the library quotes all four, so the two are
+ * checked against each other rather than one being left to rot.
+ */
+ok('the note cites no verses, the library citing them instead',
+   !/scheme\.source/.test(appSrc) &&
+   /The Shadvarga and the Saptavarga are given at verses 17-19, the Dasavarga at verse 20, and the Shodasavarga at verses 21-25/
+     .test(seeds));
+ok('and every scheme the engine records is cited there, with the verses it records',
+   Astro.VARGA_SCHEME_ORDER.every(function (k) {
+     return seeds.indexOf(Astro.VARGA_SCHEMES[k].source) >= 0;
+   }),
+   Astro.VARGA_SCHEME_ORDER.map(function (k) {
+     return Astro.VARGA_SCHEMES[k].source; }).join(' / '));
 /*
  * A number in a column invites being read as a verdict. Shadbala and vimsopaka
  * both answer "how fully can this graha act" and neither answers "is that a good
@@ -1500,8 +1516,7 @@ ok('the note sends the reader to the library for the rest',
    /'strength', 'Vimsopaka Bala'/.test(seeds));
 ok('the shares are pointed at rather than recited, each heading printing its own',
    !/var shares = scheme\.divisions\.map/.test(appSrc) &&
-   /vimsopakaFigure\(weight\)/.test(appSrc) &&
-   /out of twenty, from ' \+ scheme\.source/.test(appSrc.replace(/'\s*\+\s*'/g, '')));
+   /vimsopakaFigure\(weight\)/.test(appSrc));
 ok('and the library is the one naming all four schemes together',
    /Shadvarga, Saptavarga, Dasavarga and Shodasavarga/.test(seeds));
 
@@ -1562,11 +1577,28 @@ ok('every dignity has a short form, each distinct and short enough to fit', (fun
     brief.every(function (t) { return t.length <= 6; });
 })(), Object.keys(Astro.VARGA_DIGNITY_SHORT).map(function (k) {
   return Astro.VARGA_DIGNITY_SHORT[k]; }).join(' '));
+/*
+ * Each short form carries its word in brackets, and the pairing is built from
+ * the engine's two tables rather than typed into the sentence. Nine
+ * abbreviations and nine words written out by hand is those tables copied, and
+ * a rename would have left the sentence quoting the old one.
+ */
+ok('each short form is given with the word it stands for', (function () {
+  var key = Object.keys(Astro.VARGA_DIGNITY_LABELS).map(function (k) {
+    return Astro.VARGA_DIGNITY_SHORT[k] + ' (' + Astro.VARGA_DIGNITY_LABELS[k] + ')';
+  });
+  return /function dignityKey\(\)/.test(appSrc) &&
+    /Astro\.VARGA_DIGNITY_SHORT\[k\] \+ ' \(' \+ Astro\.VARGA_DIGNITY_LABELS\[k\] \+ '\)'/
+      .test(appSrc) &&
+    key.length === 9 && key[0] === 'Exal (Exalted)' && key[8] === 'Deb (Debilitated)';
+})());
+ok('and no copy of either table is typed into the sentence',
+   !/Exal, Mool, Own, Gt Fr/.test(appSrc) && !/Gt Enm and Deb/.test(appSrc));
 ok('the note explains the abbreviations where it uses them, and not otherwise', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');
-  return /Sixteen columns leave no room for words/.test(flat) &&
-    /dignities as Exal, Mool, Own, Gt Fr, Fr, Neut, Enm, Gt Enm and Deb/.test(flat) &&
-    /signs go as Ari, Tau, Can/.test(flat) &&
+  return /Signs go as Ari, Tau, Can and dignities as ' \+ dignityKey\(\)/.test(flat) &&
+    // Stated, not justified: that sixteen columns leave no room is visible in them.
+    !/leave no room for words/.test(flat) &&
     /function vargaNote\(scheme, brief\)/.test(appSrc);
 })());
 /*
