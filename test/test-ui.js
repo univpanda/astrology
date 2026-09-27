@@ -2038,13 +2038,18 @@ ok('the note says the rows come in pairs, and what each of the two holds',
  */
 ok('and opens with a sentence rather than a fragment', (function () {
   var at = appSrc.indexOf('function vargaNote');
+  var src = appSrc.slice(at, appSrc.indexOf('ABBREVIATE_ABOVE', at));
   // Collapsed on both counts: the string joins, then the line wrapping between
   // them, so re-wrapping the expression cannot fail this.
-  var flat = appSrc.slice(at, appSrc.indexOf('ABBREVIATE_ABOVE', at))
-    .replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
+  var flat = src.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
+  /*
+   * The old wording is quoted in a comment right there, explaining why it went,
+   * so "is it gone" has to ask the strings and not the source around them.
+   */
+  var prose = (flat.match(/'[^']*'/g) || []).join(' ');
   return /Each of the ' \+ scheme\.count \+ ' divisions of the ' \+ scheme\.label \+ ' puts a graha in a sign\./
-    .test(flat) && !/Where each graha stands in/.test(flat) &&
-    !/the lord of the sign each one gives/.test(flat);
+    .test(flat) && !/Where each graha stands in/.test(prose) &&
+    !/the lord of the sign each one gives/.test(prose);
 })());
 
 /*
