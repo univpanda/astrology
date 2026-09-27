@@ -1264,8 +1264,10 @@
       }));
 
     document.getElementById('shadbala-note').textContent =
-      'In shashtiamsas; sixty make one Rupa, and the figure beside a row name is the ' +
-      'most that row can be worth. A graha is strong when it meets the minimum ' +
+      'In shashtiamsas; sixty make one Rupa. Where a row name carries a second ' +
+      'figure, that is the most the row can be worth; Kala and Drik bala carry none, ' +
+      'the first because its ceiling differs by graha and the second because it has ' +
+      'no ceiling at all. A graha is strong when it meets the minimum ' +
       'Parashara sets for it, which differs by graha, so compare each total against its ' +
       'own requirement rather than against the others. Grahas are in the order of the ' +
       'tables beside this one. Yuddha bala is not included, and Rahu and Ketu are ' +

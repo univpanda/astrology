@@ -1199,11 +1199,43 @@ ok('all six shares have a row of their own, the five parts of Sthana above it',
  * rather than over: a reader running down the column meets the parts and then
  * what they come to.
  */
+/*
+ * Recessive against the shares, not against the body ink. Every th on the page
+ * starts at --ink-faint, so setting the parts to --ink-soft lifted them above
+ * the rows they belong to instead of sinking them below: on screen the five
+ * parts read brighter than the six shares, which is the ordering backwards.
+ *
+ * Both step up by one instead, rather than the parts stepping down: this column
+ * is the key to every figure beside it, and --ink-faint is 2.8:1 on white,
+ * under the 4.5 a word like "Saptavargaja" needs. The share at body ink and the
+ * part at --ink-soft keeps the ordering and clears the floor in both modes.
+ */
 ok('and the parts read as parts of the row they add up to', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-  return /#shadbala-table tr\.bala-part > \* \{ color: var\(--ink-soft\); \}/.test(css) &&
-    /#shadbala-table tr\.bala-part th\[scope="row"\] \{ padding-left: 1\.1rem; \}/.test(css) &&
+  var head = css.match(/#shadbala-table tbody th\[scope="row"\] \{[^}]*\}/);
+  var part = css.match(/#shadbala-table tr\.bala-part th\[scope="row"\] \{[^}]*\}/);
+  return head && part && /color: var\(--ink\)/.test(head[0]) &&
+    /color: var\(--ink-soft\)/.test(part[0]) &&
+    /padding-left: 1\.1rem/.test(part[0]) &&
+    /#shadbala-table tr\.bala-part td \{ color: var\(--ink-soft\); \}/.test(css) &&
     /#shadbala-table tr\.bala-total > \* \{ border-top: 1px solid var\(--line\); \}/.test(css);
+})());
+/*
+ * Which only holds while the part rule outweighs the share rule it overrides.
+ * Both name the same element and the cascade decides by specificity, not by
+ * which is written later, so the part selector carries the extra class.
+ */
+ok('and the part rule is the more specific of the two', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var weight = function (sel) {
+    return [(sel.match(/#/g) || []).length,
+            (sel.match(/\.|\[/g) || []).length,
+            (sel.match(/\b(tbody|thead|tr|th|td)\b/g) || []).length];
+  };
+  var a = weight('#shadbala-table tbody th[scope="row"]');
+  var b = weight('#shadbala-table tr.bala-part th[scope="row"]');
+  return css.indexOf('#shadbala-table tr.bala-part th[scope="row"]') >= 0 &&
+    (b[0] > a[0] || (b[0] === a[0] && b[1] > a[1]));
 })());
 /*
  * And the Sthana row is the five added rather than a figure of its own, so the
@@ -1227,7 +1259,14 @@ ok('and the total row is those five added, read off the engine', (function () {
  */
 ok('and every measure with a ceiling carries it beside its name',
    /th\.appendChild\(el\('span', 'varga-weight', String\(max\)\)\)/.test(appSrc) &&
-   /the figure beside a row name is the most that row can be worth/
+   /Where a row name carries a second figure, that is the most the row can be worth/
+     .test(appSrc.replace(/'\s*\+\s*'/g, '')));
+/*
+ * And the note says which rows have none and why, rather than making a claim
+ * about "the figure beside a row name" that six of the fifteen rows do not have.
+ */
+ok('and says which rows carry none, and why',
+   /Kala and Drik bala carry none, the first because its ceiling differs by graha and the second because it has no ceiling at all/
      .test(appSrc.replace(/'\s*\+\s*'/g, '')));
 /*
  * And it really is the most: a ceiling in the column is a claim about the
@@ -3008,9 +3047,20 @@ ok('every cell in the grid is centred, labels included', (function () {
  */
 ok('the share is beside the division, not under it', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-  var rules = css.match(/#vargas-table th \.varga-weight \{[^}]*\}/g) || [];
+  var rules = css.match(/#vargas-table th \.varga-weight,\n#shadbala-table th \.varga-weight \{[^}]*\}/g) || [];
   return rules.length === 1 && /display: inline;/.test(rules[0]) &&
     /margin-left: 0\.35rem;/.test(rules[0]);
+})());
+/*
+ * And the Shadbala grid gets the same figure the same way. It had the span and
+ * not the rule that styles it - the selector named one table - so its ceilings
+ * rendered as the last syllable of the label: UCHCHA60, SAPTAVARGAJA315. More
+ * air there than here, a word in caps and letter-spaced needing more than "D9".
+ */
+ok('and a measure wears its ceiling the same way, with room for a word', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  return /#vargas-table th \.varga-weight,\n#shadbala-table th \.varga-weight \{/.test(css) &&
+    /#shadbala-table th \.varga-weight \{ margin-left: 0\.6rem; \}/.test(css);
 })());
 /*
  * Body weight, not bold. The band already colours the figure, and colour with

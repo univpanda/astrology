@@ -928,16 +928,35 @@ td .retro-flag, td.retro-flag, th .retro-flag { color: var(--retro); }
    number under a graha's name, so every figure centres under it; the measure
    names stay left, being the column a reader runs down. */
 #shadbala-table th, #shadbala-table td { text-align: center; }
-#shadbala-table tbody th[scope="row"] { text-align: left; white-space: nowrap; }
+/* Darker than a heading elsewhere on the page. This column is not decoration on
+   a table that can be read without it: every figure to its right is unreadable
+   until you know which measure the row is, so it takes body ink. --ink-faint,
+   which every other th defaults to, is 2.8:1 on white - under the 4.5 a word
+   this long needs. */
+#shadbala-table tbody th[scope="row"] {
+  text-align: left;
+  white-space: nowrap;
+  color: var(--ink);
+}
 #shadbala-table td.numeric { font-variant-numeric: tabular-nums; }
 /* Fifteen rows is a lot of table; let it breathe less than the others. */
 #shadbala-table th, #shadbala-table td { padding-top: 0.4rem; padding-bottom: 0.4rem; }
 
 /* The five parts of Sthana bala are recessive: they are what the row under them
    is made of, not six measures of equal standing, and reading them as equals is
-   what makes the block look like eleven shares of Shadbala rather than six. */
-#shadbala-table tr.bala-part > * { color: var(--ink-soft); }
-#shadbala-table tr.bala-part th[scope="row"] { padding-left: 1.1rem; }
+   what makes the block look like eleven shares of Shadbala rather than six.
+
+   Recessive against the shares, which is a step down from --ink-soft and not a
+   step down from --ink: every th here starts at --ink-faint, so setting the
+   parts to --ink-soft lifted them above the rows they belong to rather than
+   sinking them below. Both step up by one instead: the shares to body ink and
+   the parts to --ink-soft, which keeps the ordering and keeps both above 4.5:1
+   in either mode, where --ink-faint is 2.8:1 on white. */
+#shadbala-table tr.bala-part td { color: var(--ink-soft); }
+#shadbala-table tr.bala-part th[scope="row"] {
+  padding-left: 1.1rem;
+  color: var(--ink-soft);
+}
 
 /* And the row they come to closes the block rather than opening it, with the
    rule under the parts rather than over them. */
@@ -1022,7 +1041,8 @@ td.vimsopaka-poor { color: var(--retro); }
    row in the table twice as tall for a figure that belongs on the same line as
    the thing it qualifies. Lighter than the number, so the cell still reads as D9
    first and "worth 3" second. */
-#vargas-table th .varga-weight {
+#vargas-table th .varga-weight,
+#shadbala-table th .varga-weight {
   display: inline;
   font-weight: 400;
   font-size: 0.8rem;
@@ -1032,6 +1052,10 @@ td.vimsopaka-poor { color: var(--retro); }
   font-variant-numeric: tabular-nums;
   margin-left: 0.35rem;
 }
+/* More air here than in the grid beside it. There the label is "D9"; here it is
+   a word set in caps and letter-spaced, and 0.35rem against that read as the
+   last syllable of it - SAPTAVARGAJA315. */
+#shadbala-table th .varga-weight { margin-left: 0.6rem; }
 
 /* Table or charts. A view switch rather than a data control, so it reads as two
    buttons rather than as another dropdown beside the scheme. */
