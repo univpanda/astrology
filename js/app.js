@@ -1032,11 +1032,10 @@
         [view.division !== 1 && v.sign === Astro.signOf(r.longitude) ? 'V' : null,
          !r.isAscendant && Astro.hemmedByBenefics(r.name, v.sign, divisionChart) ? 'H' : null,
          !r.isAscendant && Astro.isYogakaraka(r.name, firstSign) ? 'Y' : null,
-         !r.isAscendant && Astro.hasDigBala(r.name, house) ? '+' : null]
+         !r.isAscendant && Astro.hasDigBala(r.name, house) ? 'D' : null]
           .filter(Boolean).forEach(function (f, n) {
-            var cls = f === '+' ? 'flag flag-dig' : 'flag flag-' + f.toLowerCase();
-            chartCell.appendChild(el('span', cls,
-              (n === 0 ? ' ' : '') + (f === '+' ? '+' : '[' + f + ']')));
+            chartCell.appendChild(el('span', 'flag flag-' + f.toLowerCase(),
+              (n === 0 ? ' ' : '') + '[' + f + ']'));
           });
         tr.appendChild(chartCell);
 
@@ -1352,7 +1351,7 @@
        */
       'A marked cell is one the score reads wrong, and the mark says how. [V] repeats the ' +
       'rashi sign, [P] is an exchange of signs, [H] is a benefic in the sign either side, ' +
-      '+ is the house the graha is strongest in by direction, and * on a dignity is a ' +
+      '[D] is the house the graha is strongest in by direction, and * on a dignity is a ' +
       'debilitation cancelled into a raja yoga. Every one of them is something the score ' +
       'cannot see, counting dignity a division at a time, and each sits against the value ' +
       'in that cell it bears on, so an unmarked cell is one the score has whole. Hover any ' +
@@ -1561,7 +1560,7 @@
         if (d) {
           var cellHouse = ((d.sign - divisionLagna[division]) % 12 + 12) % 12 + 1;
           if (Astro.hasDigBala(planet.name, cellHouse)) {
-            sign.appendChild(el('span', 'flag flag-dig', ' +'));
+            sign.appendChild(el('span', 'flag flag-d', ' [D]'));
             sign.title = planet.name + ' stands in the ' + Yogas.ordinal(cellHouse) +
               ' of D' + division + ', the house it is strongest in by direction. The score ' +
               'counts dignity and never looks at houses.';

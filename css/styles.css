@@ -878,12 +878,16 @@ td .retro-flag, td.retro-flag, th .retro-flag { color: var(--retro); }
    accent, which is also what a burnt graha is. */
 .flag-c { color: var(--flag-combust); }
 .flag-p { color: var(--flag-exchange); }
-/* Hemming is a benefic's doing, so it takes the page's own green rather than a
-   sixth hue; directional strength takes the same, being a strength and not a
-   fact about the graha. Two marks in one colour is safe because one is a
-   bracketed letter and the other a bare plus. */
-.flag-h, .flag-dig { color: var(--green-deep); }
-.flag-dig { font-weight: 700; }
+/* [H] and [D] share the page's green. Both say the graha's surroundings are
+   helping it - benefic company on either side, or the house it is strongest in -
+   and the bracketed letter is what tells them apart.
+
+   A sixth hue was tried and dropped. Nothing left in the wheel clears the
+   validator against the five already here: teal reads at ΔE 9.1 against the
+   green to normal vision, and every magenta and purple that passes that test
+   collapses against the blue under protanopia, 3.8 to 5.3. A colour that needs
+   the letter to be legible is a colour doing no work. */
+.flag-h, .flag-d { color: var(--green-deep); }
 .flag-star { color: var(--retro); font-weight: 600; }
 
 /* Ten columns of dignity words are read by scanning, not line by line, so the

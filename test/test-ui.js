@@ -1291,7 +1291,7 @@ ok('and the page says which surface carries which marks', (function () {
   var flat = html.replace(/\s+/g, ' ');
   return /The kundli carries \[R\], \[V\], \[Y\] and \[C\]/.test(flat) &&
     /a corner triangle will not hold more/.test(flat) &&
-    /The Vimsopaka Bala grid carries \[V\], \[P\], \[H\], \+ and \*/.test(flat) &&
+    /The Vimsopaka Bala grid carries \[V\], \[P\], \[H\], \[D\] and \*/.test(flat) &&
     /every one of them something that score cannot see/.test(flat);
 })());
 ok('and the grid really carries those five and no others', (function () {
@@ -1301,7 +1301,7 @@ ok('and the grid really carries those five and no others', (function () {
     .concat(block.match(/'neecha-bhanga'/g) || []);
   return marks.length === 5 && block.indexOf("'flag flag-v'") >= 0 &&
     block.indexOf("'flag flag-p'") >= 0 && block.indexOf("'flag flag-h'") >= 0 &&
-    block.indexOf("'flag flag-dig'") >= 0 && block.indexOf("'neecha-bhanga'") >= 0;
+    block.indexOf("'flag flag-d'") >= 0 && block.indexOf("'neecha-bhanga'") >= 0;
 })());
 /*
  * The two that turn on the division alone are read from that division's own
@@ -1408,7 +1408,7 @@ ok('the note says a mark means the score reads that cell wrong', (function () {
 })());
 ok('and names them all without defining any, the key doing that', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
-  return /\[V\] repeats the rashi sign, \[P\] is an exchange of signs, \[H\] is a benefic in the sign either side, \+ is the house the graha is strongest in by direction, and \* on a dignity is a debilitation cancelled into a raja yoga/
+  return /\[V\] repeats the rashi sign, \[P\] is an exchange of signs, \[H\] is a benefic in the sign either side, \[D\] is the house the graha is strongest in by direction, and \* on a dignity is a debilitation cancelled into a raja yoga/
     .test(flat) &&
     !/A sign marked \[V\] is one the division has landed/.test(flat);
 })());
@@ -1516,6 +1516,30 @@ ok('and it agrees with the detector, cell by cell, on a chart that has one',
      });
      return d1.key === 'debilitated' && cancelled;
    })());
+/*
+ * Every mark is now a bracketed letter but the star, which is not a flag: it
+ * qualifies a word rather than naming a condition. A bare plus was the odd one
+ * out and is gone.
+ */
+ok('no mark is a bare symbol except the star', (function () {
+  var flat = html.replace(/\s+/g, ' ');
+  var dts = flat.match(/<dt>.*?<\/dt>/g) || [];
+  return dts.length === 8 && !/flag-dig/.test(flat) &&
+    dts.filter(function (d) { return /\[[RVYCPHD]\]/.test(d); }).length === 7 &&
+    dts.filter(function (d) { return />\*</.test(d); }).length === 1;
+})());
+/*
+ * [H] and [D] share the green, the letters telling them apart. A sixth hue was
+ * tried: nothing in the wheel clears the validator against the five already
+ * here, teal reading at 9.1 against the green to normal vision and every
+ * magenta that passes that collapsing against the blue under protanopia.
+ */
+ok('and the palette stays at five hues, the letters doing the rest', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  return /\.flag-h, \.flag-d \{ color: var\(--green-deep\); \}/.test(css) &&
+    !/--flag-direction/.test(css);
+})());
+
 ok('the star is a mark on the word, not a tier beside it', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
   var block = css.slice(css.indexOf('sup.neecha-bhanga {'));
