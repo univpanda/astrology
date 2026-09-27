@@ -513,6 +513,86 @@ ok('and a graha the order has never heard of keeps its place at the end', (funct
   return sorted.join(' ') === 'Sun Saturn Gulika' && sorted.length === 3;
 })());
 
+console.log('\nKartari');
+/*
+ * The lagna between two planets, as between the blades of a pair of scissors.
+ * De Fouw and Svoboda put it on the first house and not on a graha, at page 297
+ * of Light on Life, and their worked case is Indira Gandhi.
+ */
+(function () {
+  var gandhi = A.chart({ jdUT: A.julianDay(1917, 11, 19, 23 + 11 / 60 - 5.5),
+                         latitude: 25.45, longitude: 81.85, tzOffsetMinutes: 330 });
+  var found = Yogas.kartari(gandhi);
+  ok('the worked example comes out as they describe it',
+     A.SIGNS[A.signOf(gandhi.ascendant.longitude)] === 'Cancer' &&
+     found.length === 1 && found[0].kind === 'papa' &&
+     found[0].grahas.sort().join(', ') === 'Ketu, Mars',
+     found.length ? found[0].summary : 'nothing found');
+  /*
+   * Their definition asks for the malefics to be unaspected by benefics, and
+   * their own example fails it: Venus in Sagittarius aspects the Gemini holding
+   * Ketu. So occupancy decides the yoga and an aspect from the other side is
+   * reported against it, rather than gating it out and losing the case the book
+   * is built on.
+   */
+  ok('and the qualifier their example fails is reported, not enforced',
+     found.length === 1 &&
+     found[0].reasons.some(function (r) { return /Venus aspects one of the two signs/.test(r); }));
+})();
+ok('one of each kind flanking is no scissors at all', (function () {
+  // Jupiter in the 2nd and Saturn in the 12th: benefic one side, malefic the other.
+  var chart = { ascendant: { longitude: 5 }, planets: [
+    { name: 'Sun', sign: 4, longitude: 125 }, { name: 'Moon', sign: 4, longitude: 128 },
+    { name: 'Jupiter', sign: 1, longitude: 35 }, { name: 'Saturn', sign: 11, longitude: 355 }] };
+  return Yogas.kartari(chart).length === 0;
+})());
+ok('and an empty house on either side is none either', (function () {
+  var chart = { ascendant: { longitude: 5 }, planets: [
+    { name: 'Sun', sign: 4, longitude: 125 }, { name: 'Moon', sign: 4, longitude: 128 },
+    { name: 'Jupiter', sign: 1, longitude: 35 }] };
+  return Yogas.kartari(chart).length === 0;
+})());
+ok('the unqualified form says so rather than saying nothing', (function () {
+  var chart = { ascendant: { longitude: 5 }, planets: [
+    { name: 'Sun', sign: 6, longitude: 186 }, { name: 'Moon', sign: 6, longitude: 190 },
+    { name: 'Jupiter', sign: 1, longitude: 35 }, { name: 'Venus', sign: 11, longitude: 355 }] };
+  var found = Yogas.kartari(chart);
+  return found.length === 1 && found[0].kind === 'shubha' &&
+    found[0].reasons.some(function (r) { return /unqualified form/.test(r); });
+})());
+/*
+ * The nodes are malefics here. They keep no friendships and take no part in
+ * naturalBenefics, but Ketu is half the Gandhi example.
+ */
+ok('the nodes count as malefics, which is what makes the example work', (function () {
+  var chart = { ascendant: { longitude: 5 }, planets: [
+    { name: 'Sun', sign: 6, longitude: 186 }, { name: 'Moon', sign: 6, longitude: 190 },
+    { name: 'Rahu', sign: 1, longitude: 35 }, { name: 'Ketu', sign: 7, longitude: 215 },
+    { name: 'Saturn', sign: 11, longitude: 355 }] };
+  var found = Yogas.kartari(chart);
+  return found.length === 1 && found[0].kind === 'papa';
+})());
+/*
+ * Both kinds occur, and papa runs the commoner of the two: five grahas are
+ * malefic before the nodes are counted and only four can be benefic, of which
+ * two are conditional. A hundred and twenty charts is too small a sweep to see
+ * a shubha at all, so this takes the hours as well.
+ */
+ok('both kinds occur, and papa is the commoner', (function () {
+  var shubha = 0, papa = 0, charts = 0;
+  for (var y = 1900; y < 2020; y++) {
+    for (var h = 1; h < 24; h += 7) {
+      var c = A.chart({ jdUT: A.julianDay(y, (y % 12) + 1, (y % 27) + 1, h), latitude: 28.61,
+                        longitude: 77.21, tzOffsetMinutes: 330 });
+      charts++;
+      Yogas.kartari(c).forEach(function (f) {
+        if (f.kind === 'shubha') shubha++; else papa++;
+      });
+    }
+  }
+  return shubha > 0 && papa > shubha && (shubha + papa) / charts < 0.3;
+})());
+
 console.log('\nDirectional strength and hemming');
 /*
  * Both are flags over things measured in fuller form elsewhere. Dig bala is an
@@ -1355,7 +1435,8 @@ ok('ordinals read correctly', Yogas.ordinal(1) === '1st' && Yogas.ordinal(2) ===
   // Every detector the module has must be named here. The count assertion is
   // what makes adding one without listing it a failing test rather than a
   // quietly incomplete check.
-  var detectors = [Yogas.parivartana, Yogas.neechaBhanga, Yogas.vipareeta, Yogas.lakshmi,
+  var detectors = [Yogas.kartari,
+                   Yogas.parivartana, Yogas.neechaBhanga, Yogas.vipareeta, Yogas.lakshmi,
                    Yogas.mahapurusha, Yogas.rajaYoga, Yogas.gajaKesari];
   ok('every detector is covered by this test', detectors.length === Yogas.DETECTOR_COUNT,
      detectors.length + ' named, ' + Yogas.DETECTOR_COUNT + ' in the module');

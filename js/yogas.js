@@ -784,8 +784,92 @@ var Yogas = (function () {
     }];
   }
 
+  /**
+   * Kartari: the lagna caught between two planets, as between the blades of a
+   * pair of scissors.
+   *
+   * De Fouw and Svoboda put it at page 297 of Light on Life, and they put it on
+   * the first house and not on a graha: planets sitting simultaneously in the
+   * 2nd and the 12th. Benefics there is shubha kartari, and the protection is
+   * described as the flanking benefics snipping problems away before they reach
+   * the native; malefics there is papa kartari, and the same scissors cut the
+   * blessings off instead. Their worked case is Indira Gandhi, where Mars and
+   * Ketu hem a Cancer lagna.
+   *
+   * Their definition adds that the benefics be unafflicted by malefics, and the
+   * malefics unaspected by benefics. That is applied here as a caveat and not as
+   * a gate, because their own example fails it: Venus in Sagittarius aspects the
+   * Gemini that holds Ketu, and they still call the chart papa kartari. So the
+   * occupancy decides whether there is a yoga and of which kind, and an aspect
+   * from the other side is reported against it, which is how this module already
+   * handles a Gaja Kesari that is missing one of its conditions.
+   *
+   * The nodes count as malefics. They keep no friendships and take no part in
+   * naturalBenefics, but Ketu is half of the Gandhi example and a hemming that
+   * ignored them would miss it.
+   */
+  function kartari(chart) {
+    var lagna = Astro.signOf(chart.ascendant.longitude);
+    var benefics = Astro.naturalBenefics(chart);
+    var second = (lagna + 1) % 12, twelfth = (lagna + 11) % 12;
+    var inSign = function (sign) {
+      return chart.planets.filter(function (p) { return p.sign === sign; });
+    };
+    var isBenefic = function (p) {
+      return Astro.NODES.indexOf(p.name) < 0 && benefics[p.name] === true;
+    };
+    var reaching = function (sign, wanted) {
+      return chart.planets.filter(function (p) {
+        return isBenefic(p) === wanted && p.sign !== sign &&
+          aspects(p.name, p.sign, sign);
+      }).map(function (p) { return p.name; });
+    };
+
+    var here = inSign(second), there = inSign(twelfth);
+    if (!here.length || !there.length) return [];
+    var all = here.concat(there);
+    var shubha = all.every(isBenefic);
+    var papa = all.every(function (p) { return !isBenefic(p); });
+    if (!shubha && !papa) return [];        // one of each is no scissors at all
+
+    var against = reaching(second, !shubha).concat(reaching(twelfth, !shubha));
+    var reasons = [(shubha ? 'benefics' : 'malefics') + ' stand in both the 12th and the ' +
+      '2nd, so the lagna is flanked on both sides at once'];
+    if (against.length) {
+      reasons.push(listOf(against) + ' ' + (against.length > 1 ? 'aspect' : 'aspects') +
+        ' one of the two signs, which the classical wording counts against the yoga - ' +
+        'de Fouw and Svoboda ask for benefics unafflicted and malefics unaspected, and ' +
+        'read the yoga in a chart of their own where that does not hold');
+    } else {
+      reasons.push('nothing of the opposite kind reaches either sign, which is the ' +
+        'unqualified form');
+    }
+
+    return [{
+      yoga: 'Kartari',
+      kind: shubha ? 'shubha' : 'papa',
+      subject: 'Kartari Yoga',
+      condition: shubha ? 'shubha' : 'papa',
+      title: (shubha ? 'Shubha' : 'Papa') + ' kartari yoga',
+      family: 'Kartari yoga',
+      grahas: all.map(function (p) { return p.name; }),
+      houses: [12, 2],
+      reasons: reasons,
+      summary: listOf(here.map(function (p) { return p.name; })) + ' in the 2nd and ' +
+        listOf(there.map(function (p) { return p.name; })) + ' in the 12th ' +
+        (shubha ? 'flank the lagna, which is shubha kartari yoga.'
+                : 'close the lagna in, which is papa kartari yoga.')
+    }];
+  }
+
+  /** "Mars", "Mars and Ketu", "Mars, Saturn and Ketu". */
+  function listOf(names) {
+    if (names.length < 2) return names[0] || '';
+    return names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1];
+  }
+
   var DETECTORS = [parivartana, neechaBhanga, vipareeta, lakshmi, mahapurusha, rajaYoga,
-                   gajaKesari];
+                   gajaKesari, kartari];
 
   /**
    * Every yoga this module knows how to look for, in one pass.
@@ -803,6 +887,7 @@ var Yogas = (function () {
   }
 
   return { detect: detect, parivartana: parivartana, neechaBhanga: neechaBhanga,
+    kartari: kartari,
     vipareeta: vipareeta, lakshmi: lakshmi, mahapurusha: mahapurusha,
     rajaYoga: rajaYoga, gajaKesari: gajaKesari,
     VISHNU_HOUSES: VISHNU_HOUSES, LAKSHMI_HOUSES: LAKSHMI_HOUSES,

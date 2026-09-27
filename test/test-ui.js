@@ -233,7 +233,7 @@ console.log('\nStudy charts that ship with the app');
   ok('STUDY_CHARTS is still a literal this test can read', !!literal);
   if (!literal) return;
   var charts = new Function('return ' + literal[1])();
-  ok('two charts ship', charts.length === 2, charts.map(function (c) { return c.name; }).join(', '));
+  ok('three charts ship', charts.length === 3, charts.map(function (c) { return c.name; }).join(', '));
 
   function cast(entry, offsetMinutes) {
     var t = entry.time.split(':').map(Number);
@@ -273,10 +273,12 @@ console.log('\nStudy charts that ship with the app');
        entry.note ? entry.note.length + ' chars' : 'no note');
   });
 
-  var trump = charts.filter(function (c) { return c.name === 'Donald Trump'; })[0];
-  var kareem = charts.filter(function (c) { return c.name === 'Kareem Abdul-Jabbar'; })[0];
-  ok('both notes belong to a chart that is still there', !!trump && !!kareem);
-  if (!trump || !kareem) return;
+  function named(name) {
+    return charts.filter(function (c) { return c.name === name; })[0];
+  }
+  var trump = named('Donald Trump'), kareem = named('Kareem Abdul-Jabbar'), ava = named('Ava Gardner');
+  ok('each chart checked below is still in the list', !!trump && !!kareem && !!ava);
+  if (!trump || !kareem || !ava) return;
 
   var tc = cast(trump);
   ok('Trump: 6 Leo rises in Magha, as the note says',
@@ -348,6 +350,51 @@ console.log('\nStudy charts that ship with the app');
   ok('Abdul-Jabbar: and runs to July 1994, when Mercury takes over',
      kmer && kmer.y === 1994 && kmer.m === 7,
      kmer ? kmer.y + '-' + kmer.m + '-' + kmer.d : 'no Mercury period');
+
+  var ac = cast(ava);
+  ok('Gardner: 7 Cancer rises in Pushya',
+     ac.ascendant.signName === 'Cancer' && Math.floor(ac.ascendant.longitude % 30) === 7 &&
+     ac.ascendant.nakshatra.name === 'Pushya',
+     ac.ascendant.signName + ' ' + (ac.ascendant.longitude % 30).toFixed(2) +
+     ' ' + ac.ascendant.nakshatra.name);
+  ok('Gardner: December is standard time, so no summer-time trap here',
+     Geo.offsetMinutes(ava.zone, 1922, 12, 24, 19, 10) === -300,
+     Geo.formatOffset(Geo.offsetMinutes(ava.zone, 1922, 12, 24, 19, 10)));
+  /*
+   * Grabtown is too small for the gazetteer, so the entry stands at Smithfield
+   * eight kilometres west. Published charts are cast from Boon Hill and print a
+   * tropical ascendant of 0 Leo; from here it is the last minutes of Cancer. The
+   * sidereal lagna this app draws is in Cancer from either place, which is the
+   * whole argument for the substitution: it has to not matter, and it does not.
+   */
+  var tropical = (ac.ascendant.longitude + ac.ayanamsa) % 30;
+  ok('Gardner: from Smithfield the tropical ascendant is the tail of Cancer',
+     Astro.SIGNS[Math.floor(((ac.ascendant.longitude + ac.ayanamsa) % 360) / 30)] === 'Cancer' &&
+     tropical > 29.5, tropical.toFixed(2) + ' of Cancer');
+  var boonHill = cast({
+    date: ava.date, time: ava.time, zone: ava.zone, trueNode: ava.trueNode,
+    latitude: 35.5167, longitude: -78.1833
+  });
+  ok('Gardner: and the sidereal lagna is Cancer from Boon Hill too',
+     boonHill.ascendant.signName === 'Cancer' &&
+     Math.abs(boonHill.ascendant.longitude - ac.ascendant.longitude) < 0.5,
+     boonHill.ascendant.signName + ' ' + (boonHill.ascendant.longitude % 30).toFixed(2));
+  var ap = {};
+  ac.planets.forEach(function (planet) { ap[planet.name] = planet; });
+  ok('Gardner: Moon with Mars in Aquarius in the 8th',
+     ap.Moon.signName === 'Aquarius' && ap.Mars.signName === 'Aquarius' &&
+     ap.Moon.house === 8 && ap.Mars.house === 8);
+  ok('Gardner: Sun with Mercury in Sagittarius in the 6th',
+     ap.Sun.signName === 'Sagittarius' && ap.Mercury.signName === 'Sagittarius' &&
+     ap.Sun.house === 6);
+  ok('Gardner: Purva Bhadrapada birth nakshatra leaves 8 years of Jupiter',
+     ac.dashas.birthNakshatra.name === 'Purva Bhadrapada' &&
+     Math.floor(ac.dashas.balanceYears) === 8,
+     ac.dashas.birthNakshatra.name + ', ' + ac.dashas.balanceYears.toFixed(2) + ' years');
+  var asat = dashaStart(ac, 'Saturn'), amer = dashaStart(ac, 'Mercury');
+  ok('Gardner: Saturn dasha runs June 1931 to June 1950, over the MGM years',
+     asat && asat.y === 1931 && asat.m === 6 && amer && amer.y === 1950 && amer.m === 6,
+     (asat ? asat.y + '-' + asat.m : '?') + ' to ' + (amer ? amer.y + '-' + amer.m : '?'));
 })();
 
 /*
@@ -948,9 +995,9 @@ ok('a chart with no yoga makes no request for one', (function () {
 ok('the page says which yogas it looks for, and the list is current', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');
   var named = ['Raja yoga', 'parivartana', 'neecha bhanga', 'vipareeta raja', 'Lakshmi',
-               'Gaja Kesari', 'Mahapurusha'];
+               'Gaja Kesari', 'kartari', 'Mahapurusha'];
   return named.every(function (n) { return flat.indexOf(n) >= 0; }) &&
-    /Raja yoga, parivartana, neecha bhanga, vipareeta raja, Lakshmi, Gaja Kesari and the five Mahapurusha yogas are checked/.test(flat) &&
+    /Raja yoga, parivartana, neecha bhanga, vipareeta raja, Lakshmi, Gaja Kesari, kartari and the five Mahapurusha yogas are checked/.test(flat) &&
     named.length === Yogas.DETECTOR_COUNT;
 })(), Yogas.DETECTOR_COUNT + ' detectors');
 ok('and the yoga check is handed the strengths it needs',

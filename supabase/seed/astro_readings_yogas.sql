@@ -323,7 +323,20 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'Mutual angularity needs no separate checking. The kendras are symmetric: if Jupiter is in the 4th from the Moon, the Moon is in the 10th from Jupiter, and both are angles.',
    'This page reports both, named apart, and says of the lesser one which conditions it failed.'
  ],
- null, 961)
+ null, 961),
+
+('yoga', 'Kartari Yoga', 'general',
+ 'Kartari - the lagna between the blades',
+ array[
+   'Kartari means scissors. When planets sit in the 2nd and the 12th at once, the first house is caught between them, and what the blades do to it depends on whose they are.',
+   'Benefics either side is shubha kartari, and the classical promise is protection: the flanking benefics are said to snip problems away before they reach the native. Malefics either side is papa kartari, and the same scissors cut the blessings off instead, the first house being the one whose matters lose their cover.',
+   'It is a yoga of the first house and not of a graha. The same hemming can be read around any graha, and this site marks that separately as [H] in the Vimsopaka Bala grid, but the yoga the texts name is the one around the lagna.',
+   'De Fouw and Svoboda add a qualifier at page 297 of Light on Life: the benefics unafflicted by malefics, the malefics unaspected by benefics. This site reports that rather than enforcing it, because their own worked example fails it - Indira Gandhi''s Cancer lagna is hemmed by Mars and Ketu, and Venus in Sagittarius aspects the Gemini that holds Ketu, and they read the chart as papa kartari regardless.',
+   'The nodes count as malefics for this. They keep no friendships and take no part in the benefic reckoning used elsewhere here, but Ketu is half of that example.',
+   'One of each kind flanking is not a kartari of either sort. A benefic on one side and a malefic on the other is not a pair of scissors, and no authority reads it as one.',
+   'Papa kartari is the commoner of the two, and not by a little. Five grahas are malefic before the nodes are counted and only four can be benefic, two of those conditionally: on a run of 480 charts papa came out at 10 per cent and shubha at 2.'
+ ],
+ 'Marked [H] on a graha rather than the lagna in the Vimsopaka Bala grid.', 962)
 
 on conflict (topic, subject, condition) do update set
   heading = excluded.heading,

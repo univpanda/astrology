@@ -1899,7 +1899,7 @@
       return;
     }
     note.textContent = 'Raja yoga, parivartana, neecha bhanga, vipareeta raja, Lakshmi, ' +
-      'Gaja Kesari and the five Mahapurusha yogas are checked so far; more will follow. An angle-trine raja yoga ' +
+      'Gaja Kesari, kartari and the five Mahapurusha yogas are checked so far; more will follow. An angle-trine raja yoga ' +
       'is common, present in roughly three charts in four, so it is read alongside the ' +
       'strength of the grahas forming it rather than on its own. The Lesson tab explains ' +
       'what each one means. Yogas are read in the division chosen above, which is ' +
@@ -2202,15 +2202,25 @@
   var editButton = document.getElementById('edit-button');
 
   /*
-   * Two charts ship with the app, so the saved list is not empty before anyone
-   * has typed a birth time in. Both are picked for being checkable rather than
-   * for being famous. Donald Trump's time is on a public birth certificate, so
-   * the chart can be reproduced in any other ephemeris, and its Jupiter
-   * mahadasha begins in November 2016, on a date every reader already knows.
-   * Kareem Abdul-Jabbar's is the other kind of example: a time given from
-   * memory rather than from a record, on a date that falls in the gap before
-   * daylight saving began that year, which is where the reading of a clock time
-   * decides the ascendant.
+   * Three charts ship with the app, so the saved list is not empty before anyone
+   * has typed a birth time in. All three are picked for being checkable rather
+   * than for being famous, and between them they show the three things that
+   * decide whether a chart can be trusted: the time, the clock it is read on,
+   * and the place.
+   *
+   * Donald Trump's time is on a public birth certificate, so the chart can be
+   * reproduced in any other ephemeris, and its Jupiter mahadasha begins in
+   * November 2016, on a date every reader already knows. Kareem Abdul-Jabbar's
+   * is a time given from memory rather than from a record, on a date that falls
+   * in the gap before daylight saving began that year, which is where the
+   * reading of a clock time decides the ascendant. Ava Gardner's is an AA time
+   * from a birth certificate, but she was born in Grabtown, which no gazetteer
+   * of towns above five thousand people carries, so the place is Smithfield
+   * eight kilometres away. That is close enough to leave the lagna at 7 Cancer
+   * and not close enough to leave the tropical ascendant where the references
+   * print it: they give 0 Leo from Boon Hill, and Smithfield gives 29 Cancer.
+   * Nothing this app shows moves, which is the point worth knowing about how
+   * much precision a birthplace actually needs.
    */
   var STUDY_CHARTS = [{
     name: 'Donald Trump',
@@ -2244,6 +2254,19 @@
     ayanamsa: 'lahiri',
     trueNode: false,
     gender: 'male',
+    celebrity: true
+  }, {
+    name: 'Ava Gardner',
+    placeLabel: 'Smithfield, North Carolina, United States',
+    latitude: 35.5085,
+    longitude: -78.3394,
+    zone: 'America/New_York',
+    date: '1922-12-24',
+    time: '19:10:00',
+    standard: 'zone',
+    ayanamsa: 'lahiri',
+    trueNode: false,
+    gender: 'female',
     celebrity: true
   }];
 
