@@ -514,6 +514,19 @@ ok('and it is not tinted apart from the grahas', (function () {
  * from the first row it lit the whole block, from the second it lit nothing,
  * and the same gesture drew two different shapes.
  */
+/*
+ * And no band at all in the Vimsopaka Bala grid. A graha there is two rows, so a
+ * band one row wide lights half a cell: it follows the drawing rather than the
+ * thing, the same reason that grid chips a pair once and not twice. The graha
+ * table keeps it, a row there being a whole reading across eleven columns.
+ */
+ok('the vimsopaka grid takes no hover band, and the graha table keeps one',
+   (function () {
+     var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+     return /#vargas-table tbody tr:hover \{ background: none; \}/.test(css) &&
+       /\ntbody tr:hover \{ background: #f1f9f4; \}/.test(css) &&
+       !/#graha-table tbody tr:hover \{ background: none/.test(css);
+   })());
 ok('the hover band is one row wide, the spanning name staying out of it', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
   return /\ntbody tr:hover th\[rowspan\] \{ background: var\(--surface\); \}/.test(css);

@@ -1155,6 +1155,13 @@ tr td.rulership:not(:empty) { white-space: nowrap; }
    True of the Vargas grid as well, which spans a name the same way; --surface
    is the card these tables sit on, in either mode. */
 tbody tr:hover th[rowspan] { background: var(--surface); }
+/* Not in the Vimsopaka Bala grid. A graha there is two rows, so a band one row
+   wide lights half a cell - it follows the drawing rather than the thing, which
+   is the same reason that grid marks a pair once and not twice. The chip in the
+   corner is what says a cell has something in it; the band was only saying
+   where the pointer was. The graha table keeps it: a row there is a whole
+   reading, and eleven columns are worth a guide across. */
+#vargas-table tbody tr:hover { background: none; }
 
 tr.weak-graha { background: rgba(184, 72, 58, 0.06); }
 td.strong-flag { color: var(--green-deep); font-weight: 600; }
