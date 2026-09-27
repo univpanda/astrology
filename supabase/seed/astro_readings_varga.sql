@@ -1,4 +1,4 @@
--- Divisional charts. The Vargas tab has sixteen columns and the library said
+-- Divisional charts. The Vimsopaka Bala tab has sixteen columns and the library said
 -- nothing about what a division is.
 --
 --   psql "$DATABASE_URL" -f supabase/seed/astro_readings_varga.sql

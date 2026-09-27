@@ -1163,6 +1163,19 @@ ok('and it is laid across the width rather than down a column', (function () {
 
 console.log('\nVargas panel');
 /*
+ * Named for the measure, as Shadbala beside it is, rather than for the columns.
+ * Everything in the panel is scaled to the twenty: the scheme picker chooses
+ * which division set the score is taken over, the totals are out of twenty, and
+ * the first chart plots them. The id stays 'vargas' - it is what the divisions
+ * are, and renaming it would move every selector for a label change.
+ */
+ok('the tab is named for the measure, beside the other strength measure',
+   />Vimsopaka Bala<\/button>/.test(html) && />Shadbala<\/button>/.test(html) &&
+   !/>Vargas<\/button>/.test(html));
+ok('and the panel it controls is unchanged underneath',
+   /id="tab-vargas"[\s\S]*?aria-controls="panel-vargas"/.test(html) &&
+   /id="panel-vargas"/.test(html));
+/*
  * The headings are built in code now, from the same list the cells come from, so
  * the markup carries an empty row rather than sixteen divisions typed a second
  * time. This checks the builder walks the engine's list in order.

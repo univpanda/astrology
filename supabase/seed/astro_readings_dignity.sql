@@ -1,4 +1,4 @@
--- Dignity and friendship. The Vargas tab prints these words in every cell and the
+-- Dignity and friendship. The Vimsopaka Bala tab prints these words in every cell and the
 -- library defined none of them.
 --
 --   psql "$DATABASE_URL" -f supabase/seed/astro_readings_dignity.sql
@@ -11,7 +11,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'The ladder, best first: exalted, moolatrikona, own sign, a great friend''s sign, a friend''s, a neutral''s, an enemy''s, a great enemy''s, and debilitated.',
    'A graha in its own sign is at home and answerable to nobody. In any other sign it is a guest, and the top and bottom of the ladder are the two special signs where it is either most itself or least.',
    'Dignity says how freely a graha can act, not whether what it does is welcome. A malefic in its own sign acts fully as itself, which is not the same as acting well.',
-   'The same ladder is applied inside divisional charts, which is what the Vargas tab shows, and what vimsopaka bala scores.'
+   'The same ladder is applied inside divisional charts, which is what the Vimsopaka Bala tab shows, and what vimsopaka bala scores.'
  ],
  'Exaltation, moolatrikona and friendship each follow below.', 300),
 
