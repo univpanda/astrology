@@ -945,157 +945,219 @@
     return views;
   }
 
+  /** Which chart's table is on screen. Kept across renders where it still exists. */
+  var grahaChart = 1;
+
   /**
-   * Every graha, once, with a row for each chart being shown.
+   * One table per chart on screen, behind a tab each.
    *
-   * It was two tables in two tabs, which made comparing a graha across divisions
-   * a matter of switching back and forth and remembering. The name spans its
-   * rows so the pair reads as one entry.
+   * It was one table with a Chart column and a row per division under every
+   * graha's name, which made a reader wanting the rashi read past two other
+   * charts to find it, and made the table three times as tall as the question
+   * usually asked of it. Turned into tabs, each table answers one chart.
    *
-   * The flags divide by what they belong to. Retrogression and combustion are
-   * facts about the graha, true whichever division is being looked at, so they
-   * ride on the name. Vargottama is a fact about one division and yogakaraka is
-   * lordship counted from that chart's house 1, so both ride on the chart row
-   * and can differ from line to line.
+   * Which charts: D1 always, then whichever other divisions the two charts at
+   * the top are set to. Both on D1 gives one tab; D1 and D7 gives two; D2 and
+   * D7 gives three, D1 being there whether or not a chart shows it.
+   *
+   * The flags spread out with the column that held them. There is no Chart
+   * column any more and no need for one, so each flag now sits on the value it
+   * qualifies: [R] and [C] on the name, being facts about the graha; [V], [S]
+   * and [P] on the sign, being about the sign the division gives and the two
+   * beside it; [Y] on the lordship it is a fact about; [D] on the house; and
+   * [N] stays on the dignity it cancels.
    */
   function renderGrahaTable(state) {
     var c = state.chart;
-    var tbody = document.querySelector('#graha-table tbody');
-    tbody.innerHTML = '';
-
     var views = grahaViews();
+    var strip = document.getElementById('graha-chart-tabs');
+    var host = document.getElementById('graha-tables');
+    strip.innerHTML = '';
+    host.innerHTML = '';
+
+    var divisions = views.map(function (view) { return view.division; });
+    if (divisions.indexOf(grahaChart) < 0) grahaChart = 1;
+
+    views.forEach(function (view) {
+      var varga = Astro.VARGAS.filter(function (x) {
+        return x.division === view.division;
+      })[0];
+      var selected = view.division === grahaChart;
+
+      var tab = el('button', 'tab', 'D' + view.division);
+      tab.type = 'button';
+      tab.setAttribute('role', 'tab');
+      tab.setAttribute('aria-selected', String(selected));
+      tab.tabIndex = selected ? 0 : -1;
+      tab.title = (varga ? varga.label + ', ' + varga.about + '. ' : '') +
+        'Houses counted from ' +
+        (view.reference === 'Ascendant' ? 'the ascendant' : view.reference) + '.';
+      tab.addEventListener('click', function () {
+        grahaChart = view.division;
+        renderGrahaTable(state);
+      });
+      strip.appendChild(tab);
+
+      var scroll = el('div', 'table-scroll');
+      scroll.hidden = !selected;
+      scroll.appendChild(grahaTableFor(state, view));
+      host.appendChild(scroll);
+    });
+
+    // Only one chart to show, so the tab would be a control with nothing to
+    // choose between. The heading above it already says which chart it is.
+    strip.hidden = views.length < 2;
+  }
+
+  /*
+   * The tab strip moves with the arrow keys, as the panel tabs do. Delegated
+   * from the strip because its buttons are rebuilt on every render.
+   */
+  function wireGrahaChartKeys() {
+    var strip = document.getElementById('graha-chart-tabs');
+    if (!strip) return;
+    strip.addEventListener('keydown', function (e) {
+      var step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (!step) return;
+      e.preventDefault();
+      var tabs = [].slice.call(strip.querySelectorAll('button'));
+      var at = tabs.map(function (t) {
+        return t.getAttribute('aria-selected') === 'true';
+      }).indexOf(true);
+      var next = tabs[(at + step + tabs.length) % tabs.length];
+      if (next) { next.click(); next.focus(); }
+    });
+  }
+
+  /** One chart's table: the ascendant, then every graha, one row each. */
+  function grahaTableFor(state, view) {
+    var c = state.chart;
     var positionsD1 = {};
     c.planets.forEach(function (p) { positionsD1[p.name] = p; });
     var sun = positionsD1.Sun;
+    var benefics = Astro.naturalBenefics(c);
+    var divisionChart = Astro.chartInDivision(c, view.division);
+
+    var cancelledHere = {};
+    Yogas.neechaBhanga(divisionChart).forEach(function (yoga) {
+      if (yoga.kind !== 'raja') return;
+      (yoga.grahas || []).forEach(function (name) { cancelledHere[name] = true; });
+    });
+
+    // House 1 for this chart: the ascendant, or the graha it is turned onto.
+    var firstSign = Astro.vargaPosition(c.ascendant.longitude, view.division).sign;
+    if (view.reference && view.reference !== 'Ascendant') {
+      var anchor = c.planets.filter(function (p) {
+        return p.name === view.reference;
+      })[0];
+      if (anchor) firstSign = Astro.vargaPosition(anchor.longitude, view.division).sign;
+    }
+
+    var table = el('table', 'graha-table');
+    table.id = 'graha-table-d' + view.division;
+    var thead = el('thead');
+    var headRow = el('tr');
+    ['Graha', 'Rashi', 'Dignity', 'House', 'Lordship', 'Dispositor', 'Longitude',
+     'Nakshatra - pada', 'Lord / sub lord'].forEach(function (name) {
+      var th = el('th', null, name);
+      th.setAttribute('scope', 'col');
+      headRow.appendChild(th);
+    });
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+    var tbody = el('tbody');
+    table.appendChild(tbody);
 
     var rows = [{ name: 'Ascendant', longitude: c.ascendant.longitude, isAscendant: true }]
       .concat(c.planets.map(function (p) {
         return { name: p.name, longitude: p.longitude, retrograde: p.retrograde };
       }));
 
-    rows.forEach(function (r) {
-      views.forEach(function (view, i) {
-        var cancelledHere = {};
-        Yogas.neechaBhanga(Astro.chartInDivision(c, view.division)).forEach(function (yoga) {
-          if (yoga.kind !== 'raja') return;
-          (yoga.grahas || []).forEach(function (name) { cancelledHere[name] = true; });
-        });
-        var v = Astro.vargaPosition(r.longitude, view.division);
-        var nak = Astro.nakshatraOf(v.longitude);
-        var varga = Astro.VARGAS.filter(function (x) { return x.division === view.division; })[0];
-
-        // House 1 for this row: the ascendant, or the graha the chart is turned onto.
-        var firstSign = Astro.vargaPosition(c.ascendant.longitude, view.division).sign;
-        if (view.reference && view.reference !== 'Ascendant') {
-          var anchor = c.planets.filter(function (p) { return p.name === view.reference; })[0];
-          if (anchor) firstSign = Astro.vargaPosition(anchor.longitude, view.division).sign;
-        }
-
-        /*
-         * The lagna is not tinted apart from the grahas. It is the first entry
-         * and it is named, which is enough to tell it from them, and a standing
-         * tint on one row of a table whose hover is also a tint left the reader
-         * two greens to tell apart.
-         */
-        var tr = document.createElement('tr');
-        if (i === 0) tr.className = 'graha-first';
-
-        if (i === 0) {
-          var th = el('th', null, r.name);
-          th.setAttribute('scope', 'rowgroup');
-          th.setAttribute('rowspan', String(views.length));
-          // Graha-level flags: true of the graha itself, not of any one chart.
-          [r.retrograde ? 'R' : null,
-           !r.isAscendant && sun && Astro.isCombust(r.name, r.longitude, sun.longitude,
-             r.retrograde) ? 'C' : null]
-            .filter(Boolean).forEach(function (f, n) {
-              th.appendChild(el('span', 'flag flag-' + f.toLowerCase(),
-                (n === 0 ? ' ' : '') + '[' + f + ']'));
-            });
-          tr.appendChild(th);
-        }
-
-        /*
-         * Chart-level flags, in the order of what they answer to. [V], [S] and [P]
-         * turn on the division alone: which sign the division gives the graha,
-         * and which grahas the division makes its neighbours. [Y] and + turn on
-         * the division and on the reference as well, both being counted from
-         * house 1, so they move when the chart is rotated onto another graha and
-         * the two above it do not.
-         */
-        var house = ((v.sign - firstSign) % 12 + 12) % 12 + 1;
-        var divisionChart = Astro.chartInDivision(c, view.division);
-        var chartCell = el('td', 'graha-chart', varga ? varga.name : 'D' + view.division);
-        chartCell.title = (varga ? varga.label + ', ' + varga.about + '. ' : '') +
-          'Houses counted from ' +
-          (view.reference === 'Ascendant' ? 'the ascendant' : view.reference) + '.';
-        [view.division !== 1 && v.sign === Astro.signOf(r.longitude) ? 'V' : null,
-         !r.isAscendant && Astro.hemmedByBenefics(r.name, v.sign, divisionChart,
-           Astro.naturalBenefics(c)) ? 'S' : null,
-         !r.isAscendant && Astro.hemmedByMalefics(r.name, v.sign, divisionChart,
-           Astro.naturalBenefics(c)) ? 'P' : null,
-         !r.isAscendant && Astro.isYogakaraka(r.name, firstSign) ? 'Y' : null,
-         !r.isAscendant && Astro.hasDigBala(r.name, house) ? 'D' : null]
-          .filter(Boolean).forEach(function (f, n) {
-            chartCell.appendChild(el('span', 'flag flag-' + f.toLowerCase(),
-              (n === 0 ? ' ' : '') + '[' + f + ']'));
-          });
-        tr.appendChild(chartCell);
-
-        var owned = r.isAscendant ? [] : Astro.housesOwned(r.name, firstSign);
-        [{ text: Astro.SIGNS[v.sign] },
-         { text: (r.isAscendant ? '' : Astro.dignityOf(r.name, v.sign, v.degreeInSign)) || '\u2013',
-           star: !r.isAscendant && cancelledHere[r.name] },
-         { text: String(house), cls: 'numeric' },
-         owned.length
-           ? { text: owned.join(', '), cls: 'numeric',
-               title: r.name + ' rules ' + owned.map(function (h) {
-                 return Astro.SIGNS[(firstSign + h - 1) % 12] + ', the ' + Yogas.ordinal(h);
-               }).join(' and ') + '.' }
-           : { text: '–', cls: 'numeric' },
-         { text: r.isAscendant ? Astro.grahaAbbr(Astro.SIGN_LORDS[v.sign])
-             : dispositorOf(r.name, v.sign, positionsD1),
-           cls: 'dispositor',
-           title: r.isAscendant
-             ? Astro.SIGN_LORDS[v.sign] + ' rules ' + Astro.SIGNS[v.sign] + '.'
-             : dispositorDetail(r.name, v.sign, positionsD1) },
-         { text: dms(v.degreeInSign), cls: 'longitude',
-           title: 'Longitude ' + v.longitude.toFixed(4) + '°' },
-         /*
-          * The pada had a column of its own, which said nothing on its own: a
-          * bare 3 is only meaningful as the third quarter of some nakshatra, and
-          * the two are read together every time. Joined, they cost one column
-          * instead of two and lose nothing.
-          */
-         { text: nak.name + ' - ' + nak.pada,
-           title: nak.name + ', pada ' + nak.pada + ' of four.' },
-         /*
-          * Two grahas in one cell, so both go in abbreviated and the words go in
-          * the hover. Nothing else in the row needs them spelt out: this pair is
-          * read as a pair, Vimshottari's lord over its KP sub lord.
-          */
-         { text: Astro.grahaAbbr(nak.lord) + ' / ' + Astro.grahaAbbr(nak.subLord),
-           cls: 'nak-lords',
-           title: nak.name + ' is ruled by ' + nak.lord + ', and its sub lord is ' +
-             nak.subLord + '.' }
-        ].forEach(function (cell) {
-          var td = el('td', cell.cls, cell.text);
-          if (cell.title) td.title = cell.title;
-          /*
-           * The star qualifies a dignity, so it goes wherever a dignity is
-           * printed rather than only in the grid that scores them.
-           */
-          if (cell.star) {
-            td.appendChild(el('span', 'flag flag-n', ' [N]'));
-            td.title = r.name + '\u2019s debilitation is cancelled and the graha stands in ' +
-              'an angle or a trine, which is neecha bhanga raja yoga.';
-          }
-          tr.appendChild(td);
-        });
-
-        tbody.appendChild(tr);
+    var flag = function (cell, letters) {
+      letters.filter(Boolean).forEach(function (f, n) {
+        cell.appendChild(el('span', 'flag flag-' + f.toLowerCase(),
+          (n === 0 ? ' ' : '') + '[' + f + ']'));
       });
+    };
+
+    rows.forEach(function (r) {
+      var v = Astro.vargaPosition(r.longitude, view.division);
+      var nak = Astro.nakshatraOf(v.longitude);
+      var house = ((v.sign - firstSign) % 12 + 12) % 12 + 1;
+      var owned = r.isAscendant ? [] : Astro.housesOwned(r.name, firstSign);
+
+      var tr = document.createElement('tr');
+      var th = el('th', null, r.name);
+      th.setAttribute('scope', 'row');
+      flag(th, [r.retrograde ? 'R' : null,
+        !r.isAscendant && sun && Astro.isCombust(r.name, r.longitude, sun.longitude,
+          r.retrograde) ? 'C' : null]);
+      tr.appendChild(th);
+
+      var cells = [
+        { text: Astro.SIGNS[v.sign],
+          flags: [view.division !== 1 && v.sign === Astro.signOf(r.longitude) ? 'V' : null,
+            !r.isAscendant && Astro.hemmedByBenefics(r.name, v.sign, divisionChart,
+              benefics) ? 'S' : null,
+            !r.isAscendant && Astro.hemmedByMalefics(r.name, v.sign, divisionChart,
+              benefics) ? 'P' : null] },
+        { text: (r.isAscendant ? '' : Astro.dignityOf(r.name, v.sign, v.degreeInSign)) || '–',
+          star: !r.isAscendant && cancelledHere[r.name] },
+        { text: String(house), cls: 'numeric',
+          flags: [!r.isAscendant && Astro.hasDigBala(r.name, house) ? 'D' : null] },
+        owned.length
+          ? { text: owned.join(', '), cls: 'numeric',
+              flags: [Astro.isYogakaraka(r.name, firstSign) ? 'Y' : null],
+              title: r.name + ' rules ' + owned.map(function (h) {
+                return Astro.SIGNS[(firstSign + h - 1) % 12] + ', the ' + Yogas.ordinal(h);
+              }).join(' and ') + '.' }
+          : { text: '–', cls: 'numeric' },
+        { text: r.isAscendant ? Astro.grahaAbbr(Astro.SIGN_LORDS[v.sign])
+            : dispositorOf(r.name, v.sign, positionsD1),
+          cls: 'dispositor',
+          title: r.isAscendant
+            ? Astro.SIGN_LORDS[v.sign] + ' rules ' + Astro.SIGNS[v.sign] + '.'
+            : dispositorDetail(r.name, v.sign, positionsD1) },
+        { text: dms(v.degreeInSign), cls: 'longitude',
+          title: 'Longitude ' + v.longitude.toFixed(4) + '°' },
+        /*
+         * The pada had a column of its own, which said nothing on its own: a
+         * bare 3 is only meaningful as the third quarter of some nakshatra, and
+         * the two are read together every time.
+         */
+        { text: nak.name + ' - ' + nak.pada,
+          title: nak.name + ', pada ' + nak.pada + ' of four.' },
+        /*
+         * Two grahas in one cell, so both go in abbreviated and the words go in
+         * the hover: this pair is read as a pair, Vimshottari's lord over its
+         * KP sub lord.
+         */
+        { text: Astro.grahaAbbr(nak.lord) + ' / ' + Astro.grahaAbbr(nak.subLord),
+          cls: 'nak-lords',
+          title: nak.name + ' is ruled by ' + nak.lord + ', and its sub lord is ' +
+            nak.subLord + '.' }
+      ];
+
+      cells.forEach(function (cell) {
+        var td = el('td', cell.cls, cell.text);
+        if (cell.title) td.title = cell.title;
+        /*
+         * The star qualifies a dignity, so it goes wherever a dignity is
+         * printed rather than only in the grid that scores them.
+         */
+        if (cell.star) {
+          td.appendChild(el('span', 'flag flag-n', ' [N]'));
+          td.title = r.name + '’s debilitation is cancelled and the graha stands in ' +
+            'an angle or a trine, which is neecha bhanga raja yoga.';
+        }
+        if (cell.flags) flag(td, cell.flags);
+        tr.appendChild(td);
+      });
+
+      tbody.appendChild(tr);
     });
+
+    return table;
   }
 
   /**
@@ -2977,8 +3039,14 @@
    * charts are set to. Fixed D1/D9 labels would have lied the moment either
    * select moved.
    */
+  /*
+   * Named rather than taken as the first .tabs.subtabs on the page. The graha
+   * panel has a strip of its own now, and document order is a poor thing to
+   * rest on when the two are a few lines apart.
+   */
   var tableTabs = setupTabs(['grahas', 'shadbala', 'vargas', 'yogas', 'aspects'],
-    document.querySelector('.tabs.subtabs'));
+    document.querySelector('.tabs.subtabs:not(.graha-charts)'));
+  wireGrahaChartKeys();
 
   function activateTab(name, moveFocus) { sections.activate(name, moveFocus); }
 

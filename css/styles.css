@@ -1236,13 +1236,17 @@ td.rao-aspects { color: var(--ink-soft); font-style: italic; }
 tr td.rulership:not(:empty) { white-space: nowrap; }
 /* A graha spans its chart rows, so the name sits centred against them and the
    rule belongs under the group rather than between its lines. */
-#graha-table th[rowspan] { vertical-align: middle; }
-#graha-table tbody tr:not(.graha-first) th,
-#graha-table tbody tr:not(.graha-first) td { border-top: none; }
-#graha-table tbody tr:not(:last-child) td { border-bottom: none; }
-#graha-table tr.graha-first:not(:first-child) th,
-#graha-table tr.graha-first:not(:first-child) td { border-top: 1px solid var(--line-soft); }
-#graha-table td.graha-chart { color: var(--ink-soft); font-size: 0.82rem; white-space: nowrap; }
+/* The graha tables are built one per chart and carry a class rather than an id,
+   there being several of them. Nothing spans a group any more - a graha is one
+   row, because a table is one chart - so the rules that suppressed borders
+   inside a group have gone with the group. */
+table.graha-table th[scope="row"] { white-space: nowrap; }
+
+/* The strip of chart tabs inside the Grahas panel. Smaller than the panel tabs
+   above it: it chooses between three tables at most and should not compete with
+   the row that chooses between five panels. */
+.tabs.graha-charts { margin-bottom: 0.6rem; }
+.tabs.graha-charts .tab { font-size: 0.78rem; padding: 0.35rem 0.7rem; }
 /* A name that spans its rows belongs to all of them and to none in particular,
    so it stays out of the hover band, which is one row wide. Letting it tint
    meant hovering the first row lit the name and the block with it while

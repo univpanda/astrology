@@ -342,16 +342,14 @@
       </div>
 
       <div id="panel-grahas" role="tabpanel" aria-labelledby="tab-grahas">
-        <div class="table-scroll">
-          <table id="graha-table">
-            <thead>
-              <tr>
-                <th scope="col">Graha</th><th scope="col">Chart</th><th scope="col">Rashi</th><th scope="col">Dignity</th><th scope="col">House</th><th scope="col">Lordship</th><th scope="col">Dispositor</th><th scope="col">Longitude</th><th scope="col">Nakshatra - pada</th><th scope="col">Lord / sub lord</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
+        <!-- One tab and one table per chart on screen, built in app.js: D1
+             always, then whichever other divisions the two charts above are
+             set to. The tables were one table with a Chart column and a row
+             per division, which put three charts' worth of rows under every
+             graha whether or not a reader wanted them. -->
+        <div class="tabs subtabs graha-charts" id="graha-chart-tabs" role="tablist"
+             aria-label="Which chart the graha table reads"></div>
+        <div id="graha-tables"></div>
       </div>
 
       <div id="panel-shadbala" role="tabpanel" aria-labelledby="tab-shadbala" hidden>
