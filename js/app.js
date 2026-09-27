@@ -1042,7 +1042,8 @@
     { label: 'Lordship', says: 'Which houses the graha rules, counted from the same house 1 as the row above.' },
     { label: 'Dispositor', says: 'The lord of the sign the graha stands in, and what the graha makes of it.' },
     { label: 'Longitude', says: 'Degrees, minutes and seconds within the sign.' },
-    { label: 'Nakshatra - pada', says: 'Which of the 27 nakshatras the graha falls in, and which quarter of it.' },
+    { label: 'Nakshatra', says: 'Which of the 27 nakshatras the graha falls in.' },
+    { label: 'Pada', says: 'Which quarter of that nakshatra, of four. Read with the row above it: a bare 3 means nothing on its own.' },
     { label: 'Lord / sub lord', says: 'The nakshatra’s Vimshottari lord, over its KP sub lord.' }
   ];
 
@@ -1130,12 +1131,16 @@
           { text: dms(v.degreeInSign), cls: 'longitude',
             title: 'Longitude ' + v.longitude.toFixed(4) + '°' },
           /*
-           * The pada had a column of its own, which said nothing on its own: a
-           * bare 3 is only meaningful as the third quarter of some nakshatra,
-           * and the two are read together every time.
+           * Two rows, where they were one cell reading "Rohini - 1". Joined was
+           * right while they were a column each and a column cost width; turned,
+           * a row costs none and a column costs whatever its widest cell holds,
+           * so splitting them actually narrows the table - Purva Phalguni - 1
+           * was setting Mars's column by itself.
            */
-          { text: nak.name + ' - ' + nak.pada,
-            title: nak.name + ', pada ' + nak.pada + ' of four.' },
+          { text: nak.name,
+            title: 'Nakshatra ' + nak.name + ', ruled by ' + nak.lord + '.' },
+          { text: String(nak.pada), cls: 'numeric',
+            title: 'Pada ' + nak.pada + ' of four, in ' + nak.name + '.' },
           /*
            * Two grahas in one cell, so both go in abbreviated and the words go
            * in the hover: this pair is read as a pair, Vimshottari's lord over

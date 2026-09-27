@@ -1779,7 +1779,7 @@ ok('no cell in the table prints a graha name in full where it names one',
   */
 ok('and no note under the table explains the codes',
    !/two-letter code the kundli uses/.test(html) &&
-   /title: nak\.name \+ ', pada '/.test(appSrc));
+   /title: 'Pada ' \+ nak\.pada \+ ' of four/.test(appSrc));
 
 console.log('\nVargottama flags');
 /*
@@ -4087,18 +4087,18 @@ ok('and the box is drawn to that half width, not the old full one',
    !/var W = 760/.test(appSrc));
 
 /*
- * Eight rows now rather than nine columns, the table having been turned to
+ * Nine rows now rather than nine columns, the table having been turned to
  * match the two grids beside it. The Graha heading went with the turn: the
  * grahas are the columns, so the corner above their names is blank.
  */
-ok('the table carries eight rows, in order', (function () {
+ok('the table carries nine rows, in order', (function () {
   var at = appSrc.indexOf('var GRAHA_ROWS = [');
   if (at < 0) return false;
   var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
   var found = (block.match(/label: '[^']+'/g) || [])
     .map(function (t) { return t.slice(8, -1); });
   return found.join('|') === ['Rashi', 'Dignity', 'House', 'Lordship', 'Dispositor',
-    'Longitude', 'Nakshatra - pada', 'Lord / sub lord'].join('|') &&
+    'Longitude', 'Nakshatra', 'Pada', 'Lord / sub lord'].join('|') &&
     !/<th scope="col">Chart<\/th>/.test(html);
 })());
 /*
@@ -4118,15 +4118,25 @@ ok('and every row says what it measures', (function () {
  * detector use, rather than from a bespoke function of its own.
  */
 /*
- * A pada is the quarter of a nakshatra and means nothing apart from it: a column
- * holding a bare 3 was a column the reader had to join to its neighbour to use.
+ * A pada is the quarter of a nakshatra and means nothing apart from it, so the
+ * two were one cell reading "Rohini - 1" for as long as they were a column
+ * each. Turned, a row costs no width and a column costs whatever its widest
+ * cell holds, so they are two rows again - and splitting them narrows the
+ * table, "Purva Phalguni - 1" having set Mars's column on its own.
  */
-ok('the pada rides with its nakshatra rather than in a column of its own',
-   /nak\.name \+ ' - ' \+ nak\.pada/.test(appSrc) &&
-   !/<th scope="col">Pada<\/th>/.test(html) &&
-   !/text: String\(nak\.pada\)/.test(appSrc));
-ok('and the hover says which quarter it is, the hyphen being terse',
-   /nak\.name \+ ', pada ' \+ nak\.pada \+ ' of four\.'/.test(appSrc));
+ok('the pada is its own row, next to the nakshatra it quarters', (function () {
+  var at = appSrc.indexOf('var GRAHA_ROWS = [');
+  var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
+  var rows = (block.match(/label: '[^']+'/g) || [])
+    .map(function (t) { return t.slice(8, -1); });
+  return rows.indexOf('Pada') === rows.indexOf('Nakshatra') + 1 &&
+    /\{ text: nak\.name,/.test(appSrc) &&
+    /\{ text: String\(nak\.pada\), cls: 'numeric',/.test(appSrc) &&
+    !/nak\.name \+ ' - ' \+ nak\.pada/.test(appSrc);
+})());
+ok('and each says on hover what the other supplies',
+   /'Nakshatra ' \+ nak\.name \+ ', ruled by ' \+ nak\.lord/.test(appSrc) &&
+   /'Pada ' \+ nak\.pada \+ ' of four, in ' \+ nak\.name/.test(appSrc));
 ok('lordship comes from the shared helper, not a column-specific one',
    /'Lordship'/.test(appSrc) && !/function rulership/.test(appSrc) &&
    typeof Astro.housesOwned === 'function');
