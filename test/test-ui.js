@@ -52,6 +52,7 @@ global.Astro = Astro;
 var Yogas = require('../js/yogas.js');
 var Charts = new Function('document', 'Astro',
   fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8') + '\nreturn Charts;')(document, Astro);
+var Shadbala = require('../js/shadbala.js');
 
 /* --------------------------------------------------------- place lookup */
 
@@ -1988,6 +1989,112 @@ ok('every script the page loads parses', (function () {
   });
 })());
 
+/*
+ * The renderers, run rather than read.
+ *
+ * Nearly everything here checks app.js as text, and text cannot see an
+ * identifier that is used and never declared. Two have got through that way in
+ * two commits - GOOD_KEYS, which broke the charts, and listOf, which broke
+ * renderVargas and with it every click on a saved kundali, because render()
+ * calls the panels in order and stops at the first throw.
+ *
+ * So this loads the real file against a DOM stub, injects one line before the
+ * IIFE closes to reach the functions inside it, and calls them on a real chart.
+ * It is a smoke test and not a rendering test: what it proves is that the code
+ * runs, which is the thing a regex cannot.
+ */
+(function () {
+  var loose = function (tag) {
+    var node = makeNode(tag);
+    node.className = '';
+    node.title = '';
+    node.hidden = false;
+    node.value = '';
+    node.style = {};
+    node.classList = { add: function () {}, remove: function () {},
+                       toggle: function () {}, contains: function () { return false; } };
+    node.addEventListener = function () {};
+    node.removeAttribute = function () {};
+    node.querySelectorAll = function () { return []; };
+    node.querySelector = function (sel) {
+      var want = sel.replace(/[^a-z]/gi, ''), hit = null;
+      (function walk(n) {
+        if (hit) return;
+        if (n.tag === want) { hit = n; return; }
+        n.children.forEach(walk);
+      })(node);
+      if (!hit) { hit = loose(want || 'div'); node.appendChild(hit); }
+      return hit;
+    };
+    return node;
+  };
+  var byId = {};
+  var sandbox = {
+    document: {
+      createElement: loose,
+      createElementNS: function (ns, tag) { return loose(tag); },
+      getElementById: function (id) { return byId[id] || (byId[id] = loose('div')); },
+      querySelector: function () { return loose('div'); },
+      querySelectorAll: function () { return []; },
+      addEventListener: function () {},
+      body: loose('body'),
+      documentElement: loose('html')
+    },
+    window: {
+      localStorage: { getItem: function () { return null; }, setItem: function () {},
+                      removeItem: function () {} },
+      addEventListener: function () {},
+      matchMedia: function () { return { matches: false, addEventListener: function () {} }; },
+      crypto: { randomUUID: function () { return 'test'; } },
+      location: { hash: '' }
+    },
+    location: { hash: '', search: '', href: '' },
+    history: { replaceState: function () {}, pushState: function () {} },
+    navigator: { language: 'en' },
+    fetch: undefined
+  };
+
+  var close = appSrc.lastIndexOf('})();');
+  var wired = appSrc.slice(0, close) +
+    '  __out.render = render; __out.renderVargas = renderVargas;\n' +
+    '  __out.renderGrahaTable = renderGrahaTable;\n' +
+    '  __out.renderShadbala = renderShadbala; __out.renderYogas = renderYogas;\n' +
+    '  __out.renderAspects = renderAspects;\n' +
+    appSrc.slice(close);
+
+  var out = {};
+  var loaded = true, why = '';
+  try {
+    new Function('document', 'window', 'location', 'history', 'navigator', 'fetch',
+                 'Astro', 'Geo', 'Charts', 'Shadbala', 'Yogas', 'PERTURBATIONS', '__out',
+                 wired)(
+      sandbox.document, sandbox.window, sandbox.location, sandbox.history,
+      sandbox.navigator, sandbox.fetch, Astro, Geo, Charts, Shadbala, Yogas,
+      global.PERTURBATIONS, out);
+  } catch (e) {
+    loaded = false;
+    why = e.message;
+  }
+  ok('app.js loads against a document without throwing', loaded, why);
+
+  if (!loaded) return;
+  var chart = Astro.chart({ jdUT: Astro.julianDay(1946, 7, 6, 19 + 20 / 60 + 4),
+                            latitude: 40.7143, longitude: -74.006, tzOffsetMinutes: -240 });
+  var state = { chart: chart, place: { lat: 40.7143, lon: -74.006, label: 'New York' },
+                offset: -240, name: 'Test', celebrity: false, note: '' };
+  ['renderGrahaTable', 'renderVargas', 'renderShadbala', 'renderYogas', 'renderAspects']
+    .forEach(function (name) {
+      var ran = true, message = '';
+      try {
+        out[name](state);
+      } catch (e) {
+        ran = false;
+        message = e.message;
+      }
+      ok(name + ' runs on a real chart', ran, message);
+    });
+})();
+
 console.log('\nVargas panel');
 /*
  * Named for the measure, as Shadbala beside it is, rather than for the columns.
@@ -2560,7 +2667,9 @@ ok('and points at the hovers once, in general rather than kind by kind',
    (function () {
      var note = appSrc.slice(appSrc.indexOf('function vargaNote'));
      note = note.slice(0, note.indexOf('function currentScheme'));
-     var flat = note.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
+     // Comments stripped: theirs is prose too, and one of them says "hover".
+     var flat = note.replace(/\/\*[\s\S]*?\*\//g, '')
+       .replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
      return (flat.match(/hover/gi) || []).length === 1 &&
        /has something to say on hover/.test(flat) &&
        !/a heading for what that division is worth/.test(flat);

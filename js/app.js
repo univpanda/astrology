@@ -1410,6 +1410,16 @@
       'is judged as Mars and the Moon as Venus, no luminary ruling a trimsamsa.';
   }
 
+  /*
+   * "A", "A and B", "A, B and C". Deleted with the abbreviation machinery and
+   * put back: the cell hover reads a graha's yogas through it, so every chart
+   * with a yoga in it - which is nearly all of them - threw on render.
+   */
+  function listOf(items) {
+    if (items.length < 2) return items[0] || '';
+    return items.slice(0, -1).join(', ') + ' and ' + items[items.length - 1];
+  }
+
   /** Whichever scheme the select is on, falling back to the widest. */
   function currentScheme() {
     var chosen = document.getElementById('varga-scheme').value;
