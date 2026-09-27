@@ -962,7 +962,9 @@ td.varga-sign-abbr { font-family: var(--font-mono); letter-spacing: 0.01em; }
   border-bottom-color: var(--line);
 }
 #vargas-table th.varga-key { color: var(--green-deep); }
-/* A cell with something to say on hover, marked by a chip in its top corner.
+/* A graha in a division has something to say on hover, marked by one chip at
+   the pair's top corner. The two rows are how a cell is drawn and not what it
+   is, so the chip goes on the upper of them and counts once.
 
    A tint was tried here first and taken out: two thirds of the cells carry a
    yoga, so tinting them coloured most of the grid and made the dignities harder

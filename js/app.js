@@ -1684,11 +1684,20 @@
          * yoga, so tinting them coloured most of the grid and made the dignities
          * harder to read for a signal that was nearly always on.
          */
-        if (signTitle) { sign.title = signTitle; sign.className += ' has-note'; }
-        if (dignityTitle) {
-          dignity.title = dignityTitle;
-          dignity.className += ' has-note';
-        }
+        if (signTitle) sign.title = signTitle;
+        if (dignityTitle) dignity.title = dignityTitle;
+        /*
+         * One chip for the pair, not one for each half. A cell here is a graha
+         * in a division and the two rows are how it is drawn, not what it is: a
+         * yoga belongs to the graha in that division and so does everything else
+         * the hover says, so two chips would be counting the drawing rather than
+         * the thing. It sits on the sign, the upper of the two, which puts it at
+         * the pair's own top corner.
+         *
+         * Hovering either row still reads, which is what the two titles above
+         * are for; only the mark is single.
+         */
+        if (signTitle || dignityTitle) sign.className += ' has-note';
 
         /*
          * A star on a debilitation the chart cancels. It rides the word rather

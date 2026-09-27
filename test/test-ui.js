@@ -2495,8 +2495,7 @@ ok('and points at the hovers once, in general rather than kind by kind',
  * different places.
  */
 ok('and everything it promises a hover on has one',
-   /if \(signTitle\) \{ sign\.title = signTitle; sign\.className \+= ' has-note'; \}/
-     .test(appSrc) &&
+   /if \(signTitle\) sign\.title = signTitle;/.test(appSrc) &&
    /th\.title = \(varga \? varga\.label/.test(appSrc) &&
    /td\.title = planet\.name \+ ' scores '/.test(appSrc));
 ok('and gives the seven-step reading when it differs from the label shown',
@@ -2887,14 +2886,28 @@ ok('both halves of a pair carry what the pair has to say',
  * the pair of cells and not either row of it.
  */
 /*
- * A chip goes on whichever half has something, which is usually both - the
- * reading and the yogas belong to the pair - and only one where a mark put
- * something on one of them alone.
+ * One chip for the pair. A cell here is a graha in a division and the two rows
+ * are how it is drawn, not what it is - a yoga belongs to the graha in that
+ * division, and so does everything else the hover says - so two chips would be
+ * counting the drawing rather than the thing.
  */
-ok('and a chip goes on whichever half has something to say',
-   /if \(signTitle\) \{ sign\.title = signTitle; sign\.className \+= ' has-note'; \}/
-     .test(appSrc) &&
-   /dignity\.className \+= ' has-note';/.test(appSrc));
+ok('and one chip stands for the pair, on the upper of its two rows',
+   /if \(signTitle \|\| dignityTitle\) sign\.className \+= ' has-note';/.test(appSrc) &&
+   !/dignity\.className \+= ' has-note'/.test(appSrc));
+ok('though hovering either row still reads',
+   /if \(signTitle\) sign\.title = signTitle;/.test(appSrc) &&
+   /if \(dignityTitle\) dignity\.title = dignityTitle;/.test(appSrc));
+/*
+ * Which means a dignity-only note - the star's, or a score its label does not
+ * give - still raises the pair's chip, because the pair is what has something
+ * to say.
+ */
+ok('and a note on the lower row alone still chips the pair', (function () {
+  var at = appSrc.indexOf('var shared = (detail + yogaNote).trim();');
+  var block = appSrc.slice(at, appSrc.indexOf('signRow.appendChild(sign)', at));
+  return /dignitySays\.concat\(shared/.test(block) &&
+    /signTitle \|\| dignityTitle/.test(block);
+})());
 ok('and a graha with no reading still contributes no rows at all',
    /if \(cells\.every\(function \(c\) \{ return !c; \}\)\) return;/.test(appSrc));
 ok('the rule sits under the pair rather than between its halves', (function () {
