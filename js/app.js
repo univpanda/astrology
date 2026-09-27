@@ -1251,58 +1251,73 @@
    * Built here because the divisions and the weights both live in the engine;
    * repeating either in the markup would be a second place for them to drift.
    */
-  function renderVargasHead(table, scheme) {
+  /*
+   * Grahas across the top, divisions down the side.
+   *
+   * It was the other way round and could not stop scrolling: sixteen divisions
+   * and a total made seventeen columns, and a graha read four columns in was a
+   * graha whose name had gone off the left edge. Turned, the width is seven
+   * grahas however many divisions the scheme has, so it fits a card and stays
+   * fitting when the scheme changes.
+   *
+   * The turn also makes a cell what it always was in the reading. A graha in a
+   * division is one td now, holding its sign over its dignity, where before it
+   * was two rows that had to be kept in step by hand - the chip counted twice,
+   * the hover band lit half of it, and every mark had to say which row it
+   * belonged to.
+   *
+   * And nothing abbreviates any more. Seven columns leave room for Sagittarius
+   * and Great Friend, so the short forms and the machinery that chose them are
+   * gone with the scroll they were there to fight.
+   */
+  function renderVargasHead(table, scheme, planets, sun) {
     var row = table.querySelector('thead tr');
     row.innerHTML = '';
-    var first = el('th', null, 'Graha');
+    var first = el('th', null, 'Division');
     first.setAttribute('scope', 'col');
     row.appendChild(first);
 
-    /*
-     * The three the scheme leans on hardest, picked out of the row. Which three
-     * is the scheme's own answer rather than a fixed trio: the shadvarga and the
-     * saptavarga lean on D1, D9 and D3, the dasavarga and shodasavarga on D60,
-     * D1 and D9.
-     */
-    var keys = Astro.keyDivisions(scheme);
-
-    scheme.divisions.forEach(function (division) {
-      var weight = scheme.weights[division];
-      var th = el('th', keys.indexOf(division) >= 0 ? 'varga-key' : null, 'D' + division);
+    planets.forEach(function (planet) {
+      var th = el('th', null, planet.name);
       th.setAttribute('scope', 'col');
-      th.appendChild(el('span', 'varga-weight', vimsopakaFigure(weight)));
-      var varga = Astro.VARGAS.filter(function (v) { return v.division === division; })[0];
       /*
-       * Every other scheme that carries this division, with its figure. The same
-       * varga is worth 5 in one and 4 in another, and quoting a figure without
-       * its scheme is the usual reason a vimsopaka total will not reconcile.
+       * [R] and [C] head the column, being true of the graha in every division
+       * below. They were on the name when the name was a row; the name is a
+       * column heading now and they have come with it.
        */
-      var elsewhere = Astro.VARGA_SCHEME_ORDER.filter(function (k) {
-        return k !== scheme.key && Astro.VARGA_SCHEMES[k].weights[division] !== undefined;
-      }).map(function (k) {
-        var other = Astro.VARGA_SCHEMES[k];
-        return other.weights[division] + ' across the ' + other.label.toLowerCase();
-      });
-      th.title = (varga ? varga.label + ', ' + varga.about + '. ' : '') +
-        'Worth ' + weight + ' of the twenty in the ' + scheme.label.toLowerCase() +
-        (elsewhere.length ? '; ' + elsewhere.join(', ') + '.' : '.');
+      [planet.retrograde ? 'R' : null,
+       sun && Astro.isCombust(planet.name, planet.longitude, sun.longitude,
+         planet.retrograde) ? 'C' : null]
+        .filter(Boolean).forEach(function (f, n) {
+          th.appendChild(el('span', 'flag flag-' + f.toLowerCase(),
+            (n === 0 ? ' ' : '') + '[' + f + ']'));
+        });
       row.appendChild(th);
     });
+  }
 
+  /** The heading cell for one division: its number, its share, and the hover. */
+  function divisionHead(division, scheme) {
+    var weight = scheme.weights[division];
+    var th = el('th', null, 'D' + division);
+    th.setAttribute('scope', 'row');
+    th.appendChild(el('span', 'varga-weight', vimsopakaFigure(weight)));
+    var varga = Astro.VARGAS.filter(function (v) { return v.division === division; })[0];
     /*
-     * The total closes the row under a blank heading. The panel is called
-     * Vimsopaka Bala and the note beneath says what the column is and what it is
-     * out of, so a heading here was the third telling, and the widest word in
-     * the row was carrying none of it.
-     *
-     * Blank to look at, not to a screen reader: the column still needs a name
-     * for the cells under it to be associated with anything, and a th with no
-     * accessible name gives a row of bare numbers.
+     * Every other scheme that carries this division, with its figure. The same
+     * varga is worth 5 in one and 4 in another, and quoting a figure without
+     * its scheme is the usual reason a vimsopaka total will not reconcile.
      */
-    var total = el('th', null, null);
-    total.setAttribute('scope', 'col');
-    total.appendChild(el('span', 'visually-hidden', 'Vimsopaka bala, out of twenty'));
-    row.appendChild(total);
+    var elsewhere = Astro.VARGA_SCHEME_ORDER.filter(function (k) {
+      return k !== scheme.key && Astro.VARGA_SCHEMES[k].weights[division] !== undefined;
+    }).map(function (k) {
+      var other = Astro.VARGA_SCHEMES[k];
+      return other.weights[division] + ' across the ' + other.label.toLowerCase();
+    });
+    th.title = (varga ? varga.label + ', ' + varga.about + '. ' : '') +
+      'Worth ' + weight + ' of the twenty in the ' + scheme.label.toLowerCase() +
+      (elsewhere.length ? '; ' + elsewhere.join(', ') + '.' : '.');
+    return th;
   }
 
   /*
@@ -1344,15 +1359,7 @@
    * flags, this one included, and a second definition a few inches below it is
    * the same drift in miniature.
    */
-  /** "Exal (Exalted), Mool (Mooltrikona) ... and Deb (Debilitated)", in rank order. */
-  function dignityKey() {
-    var pairs = Object.keys(Astro.VARGA_DIGNITY_LABELS).map(function (k) {
-      return Astro.VARGA_DIGNITY_SHORT[k] + ' (' + Astro.VARGA_DIGNITY_LABELS[k] + ')';
-    });
-    return pairs.slice(0, -1).join(', ') + ' and ' + pairs[pairs.length - 1];
-  }
-
-  function vargaNote(scheme, brief) {
+  function vargaNote(scheme) {
     /*
      * One idea a sentence. It had been "Where each graha stands in the 16
      * divisions of the Shodasavarga, judged against the lord of the sign each
@@ -1372,7 +1379,6 @@
        * No excuse for the shortening: that sixteen columns leave no room for
        * words is visible in the sixteen columns.
        */
-      (brief ? 'Signs go as Ari, Tau, Can and dignities as ' + dignityKey() + '. ' : '') +
       /*
        * Placement, not definition. The flag key at the top of the tab defines
        * [V] and *, so the note says only where they sit and why they are here:
@@ -1404,21 +1410,6 @@
       'is judged as Mars and the Moon as Venus, no luminary ruling a trimsamsa.';
   }
 
-  /*
-   * Past ten divisions the row stops fitting and the words have to give way to
-   * abbreviations. Below that there is room, and shortening where there is room
-   * serves nobody: six columns of "Great enemy" read better than six of "Gt Enm".
-   * Ten full-word columns come to roughly the width of the graha tables beside
-   * this one, which already scroll and are none the worse for it.
-   */
-  var ABBREVIATE_ABOVE = 10;
-
-  /** "A", "A and B", "A, B and C". */
-  function listOf(items) {
-    if (items.length < 2) return items[0] || '';
-    return items.slice(0, -1).join(', ') + ' and ' + items[items.length - 1];
-  }
-
   /** Whichever scheme the select is on, falling back to the widest. */
   function currentScheme() {
     var chosen = document.getElementById('varga-scheme').value;
@@ -1441,292 +1432,144 @@
     return document.getElementById('vargas-as-charts').getAttribute('aria-pressed') === 'true';
   }
 
-  /*
-   * Which grahas have a cancelled debilitation, division by division.
-   *
-   * Vimsopaka does not know about cancellation and cannot: it scores dignity one
-   * division at a time, and a cancellation is a fact about the chart around the
-   * graha, not about the sign it sits in. So a cancelled debilitation scores the
-   * floor, which is the one case where the total is not merely blind but lowest
-   * exactly where it should not be. The star does not change the number. It says
-   * the number is not to be read at face value here.
-   *
-   * Only the raja form is marked. A plain cancellation lifts the weakness and
-   * leaves the graha with nowhere to act from, so a score near the floor is not
-   * far wrong; it is the raja form, cancelled and standing in an angle or a
-   * trine, where the floor misreports the graha outright.
-   *
-   * Asked of each division's own chart, the same recast the Yogas tab reads, so
-   * the grid and that tab cannot disagree about D9. Only divisions that actually
-   * hold a debilitation are recast; on the shodasavarga most rounds recast two or
-   * three of the sixteen rather than all of them.
-   */
-  function cancelledDebilitations(chart, divisions, cells) {
-    var needed = {};
-    divisions.forEach(function (division, i) {
-      if (cells.some(function (row) { return row[i] && row[i].key === 'debilitated'; })) {
-        needed[division] = true;
-      }
-    });
-    var found = {};
-    Object.keys(needed).forEach(function (division) {
-      var d = Number(division);
-      found[d] = {};
-      Yogas.neechaBhanga(Astro.chartInDivision(chart, d)).forEach(function (yoga) {
-        if (yoga.kind !== 'raja') return;
-        (yoga.grahas || []).forEach(function (name) { found[d][name] = true; });
-      });
-    });
-    return found;
-  }
-
   function renderVargas(state) {
     var scheme = currentScheme();
-    var brief = scheme.divisions.length > ABBREVIATE_ABOVE;
     var keys = Astro.keyDivisions(scheme);
     var table = document.getElementById('vargas-table');
-    // Sixteen columns take a smaller type size rather than shorter words.
-    table.className = brief ? 'brief' : '';
-    renderVargasHead(table, scheme);
     var tbody = table.querySelector('tbody');
     tbody.innerHTML = '';
 
     var positionsD1 = {};
     state.chart.planets.forEach(function (p) { positionsD1[p.name] = p; });
-
-    var rows = state.chart.planets.map(function (planet) {
-      return scheme.divisions.map(function (division) {
-        return Astro.vargaDignity(planet.name, planet.longitude, division, positionsD1);
-      });
+    var sun = positionsD1.Sun;
+    // Rahu and Ketu keep no friendships, so they have no column to head.
+    var planets = state.chart.planets.filter(function (p) {
+      return Astro.vargaDignity(p.name, p.longitude, 1, positionsD1);
     });
-    var cancelled = cancelledDebilitations(state.chart, scheme.divisions, rows);
+    renderVargasHead(table, scheme, planets, sun);
 
-    /*
-     * Each division's own ascending sign, which is what its houses are counted
-     * from, and which grahas that division puts in an exchange. Computed once
-     * per division rather than once per cell.
-     */
     // Settled in the rashi and handed to every division: see hemmedByBenefics.
     var benefics = Astro.naturalBenefics(state.chart);
-    var sun = positionsD1.Sun;
-    var divisionLagna = {}, exchanging = {}, divisionCharts = {}, yogasIn = {};
     var strengths = strengthsFor(state);
+
     scheme.divisions.forEach(function (division) {
-      divisionLagna[division] =
-        Astro.vargaPosition(state.chart.ascendant.longitude, division).sign;
-      divisionCharts[division] = Astro.chartInDivision(state.chart, division);
-      exchanging[division] = {};
-      yogasIn[division] = {};
+      var lagna = Astro.vargaPosition(state.chart.ascendant.longitude, division).sign;
+      var chart = Astro.chartInDivision(state.chart, division);
       /*
        * Every yoga the module knows, read in this division's own chart - the
        * same recast and the same strengths the Yogas tab uses, so the two cannot
-       * disagree about what D9 holds.
+       * disagree about what D9 holds. The exchange is pulled out of the same
+       * pass, being one of the marks.
        */
-      Yogas.detect(divisionCharts[division], strengths).forEach(function (yoga) {
+      var yogasIn = {}, exchanging = {}, cancelled = {};
+      Yogas.detect(chart, strengths).forEach(function (yoga) {
         (yoga.grahas || []).forEach(function (name) {
-          var list = yogasIn[division][name] || (yogasIn[division][name] = []);
+          var list = yogasIn[name] || (yogasIn[name] = []);
           if (list.indexOf(yoga.title) < 0) list.push(yoga.title);
-          if (yoga.yoga === 'Parivartana') exchanging[division][name] = yoga.title;
+          if (yoga.yoga === 'Parivartana') exchanging[name] = yoga.title;
+          if (yoga.yoga === 'Neecha Bhanga' && yoga.kind === 'raja') cancelled[name] = true;
         });
       });
-    });
 
-    // Listed as in the graha tables, for reading across from one to the other.
-    state.chart.planets.forEach(function (planet, row) {
-      var cells = rows[row];
-      if (cells.every(function (c) { return !c; })) return;   // Rahu and Ketu
+      var tr = document.createElement('tr');
+      if (keys.indexOf(division) >= 0) tr.className = 'varga-key';
+      tr.appendChild(divisionHead(division, scheme));
 
-      /*
-       * Each graha takes two rows, its sign above its dignity, with the name
-       * spanning both so the pair reads as one entry. The dignity is the answer
-       * and the sign is the working behind it, and keeping the working in a hover
-       * meant the one question the grid raises - which sign is that? - could only
-       * be answered one cell at a time.
-       */
-      var signRow = document.createElement('tr');
-      signRow.className = 'varga-signs';
-      /*
-       * Names in full at every width. Sixteen columns are tight, but a name is
-       * the one thing in the row a reader scans for rather than decodes, and
-       * the grid gives up a little type size for it instead - see the brief
-       * class on the table.
-       */
-      var th = el('th', null, planet.name);
-      th.setAttribute('scope', 'rowgroup');
-      th.setAttribute('rowspan', '2');
-      /*
-       * [R] and [C] on the name, as the graha table has them. Both are things
-       * the score cannot see - it counts dignity, and neither a backward graha
-       * nor a burnt one changes the sign it stands in - so they belong on the
-       * grid by the same rule as the rest of its marks. What makes them the
-       * name's rather than a cell's is that they are true of the graha whichever
-       * division is being read, so they span its columns as the name does.
-       */
-      [planet.retrograde ? 'R' : null,
-       sun && Astro.isCombust(planet.name, planet.longitude, sun.longitude,
-         planet.retrograde) ? 'C' : null]
-        .filter(Boolean).forEach(function (f, n) {
-          th.appendChild(el('span', 'flag flag-' + f.toLowerCase(),
-            (n === 0 ? ' ' : '') + '[' + f + ']'));
-        });
-      signRow.appendChild(th);
+      planets.forEach(function (planet) {
+        var d = Astro.vargaDignity(planet.name, planet.longitude, division, positionsD1);
+        var td = el('td', 'varga-cell');
+        if (!d) { td.textContent = '\u2013'; tr.appendChild(td); return; }
 
-
-      var dignityRow = document.createElement('tr');
-      dignityRow.className = 'varga-dignities';
-
-      cells.forEach(function (d, i) {
-        var division = scheme.divisions[i];
-        var detail = d ? vargasDetail(d, division, planet.name) : null;
-        /*
-         * Where a name will not fit, the sign goes as the project's
-         * abbreviation, the first three letters: Ari, Tau, Can, Sco. The same
-         * codes label the kundli's cells above, so the reader is not learning a
-         * second shorthand for this table. The full name stays in the title.
-         */
-        /*
-         * Collected rather than assigned. Each mark used to set the cell's title
-         * outright and the dignity reading set it again below, so whichever ran
-         * last won and the mark's own explanation was never read - the reason it
-         * went unnoticed is that the reading always had something to say, so
-         * there was always a hover, just never the right one.
-         */
-        var signSays = [], dignitySays = [];
-        var sign = el('td', 'varga-sign' + (brief ? ' varga-sign-abbr' : '') +
-          (keys.indexOf(division) >= 0 ? ' varga-key' : ''),
-          d ? (brief ? Astro.SIGN_ABBR[d.sign] : Astro.SIGNS[d.sign]) : '\u2013');
+        var says = [];
+        var signLine = el('span', 'varga-sign', Astro.SIGNS[d.sign]);
 
         /*
          * The division has landed the graha back in the sign it holds in the
-         * rashi. Marked here rather than as a flag on the graha, because it is a
-         * fact about one division and a flag would have to pick one to stand for.
-         *
-         * D1 is skipped: it is the rashi, so every cell in it would qualify and
-         * the mark would say nothing. The classical vargottama is this in the D9
-         * column; the other columns are the same comparison, which is computable
-         * everywhere but is not what the texts mean by the word.
+         * rashi. D1 is skipped: it is the rashi, so every cell in it would
+         * qualify and the mark would say nothing. The classical vargottama is
+         * this in D9; the other rows are the same comparison, computable
+         * everywhere but not what the texts mean by the word.
          */
-        if (d && division !== 1 && d.sign === Astro.signOf(planet.longitude)) {
-          sign.appendChild(el('span', 'flag flag-v', ' [V]'));
-          signSays.push(planet.name + ' holds ' + Astro.SIGNS[d.sign] + ' in D' + division +
+        if (division !== 1 && d.sign === Astro.signOf(planet.longitude)) {
+          signLine.appendChild(el('span', 'flag flag-v', ' [V]'));
+          says.push(planet.name + ' holds ' + Astro.SIGNS[d.sign] + ' in D' + division +
             ' as well as in the rashi.' +
             (division === 9 ? ' In D9 that is vargottama proper.' : ''));
         }
-        /*
-         * The other two the score cannot see, per cell rather than per graha.
-         * Each says something true of this graha in this division and nowhere
-         * else: an exchange rearranges who disposits whom, and a house belongs
-         * to the division's own lagna.
-         *
-         * Only these four are marked. Every yoga the app detects would mark 58
-         * per cent of the cells - raja yoga alone is better than one per
-         * divisional chart, on two grahas each - and a mark on three cells in
-         * five is a decoration rather than a finding. The Yogas tab reads a
-         * division in full; the grid marks what this score is blind to.
-         */
-        if (d && exchanging[division][planet.name]) {
-          sign.appendChild(el('span', 'flag flag-x', ' [X]'));
-          signSays.push(planet.name + ' is in an exchange of signs in D' + division +
-            ', which is ' + exchanging[division][planet.name].toLowerCase() +
-            '. The score judges it against the lord of this sign and never asks what ' +
-            'that lord is doing.');
+        if (exchanging[planet.name]) {
+          signLine.appendChild(el('span', 'flag flag-x', ' [X]'));
+          says.push(planet.name + ' is in an exchange of signs in D' + division + ', which ' +
+            'is ' + exchanging[planet.name].toLowerCase() + '. The score judges it against ' +
+            'the lord of this sign and never asks what that lord is doing.');
         }
-        if (d && Astro.hemmedByBenefics(planet.name, d.sign, divisionCharts[division],
-              benefics)) {
-          sign.appendChild(el('span', 'flag flag-s', ' [S]'));
-          signSays.push(planet.name + ' has a benefic in the sign either side of it in D' +
+        if (Astro.hemmedByBenefics(planet.name, d.sign, chart, benefics)) {
+          signLine.appendChild(el('span', 'flag flag-s', ' [S]'));
+          says.push(planet.name + ' has a benefic in the sign either side of it in D' +
             division + ', which is shubha kartari around the graha. The score judges the ' +
             'sign it stands in and never looks at the two beside it.');
         }
-        if (d && Astro.hemmedByMalefics(planet.name, d.sign, divisionCharts[division],
-              benefics)) {
-          sign.appendChild(el('span', 'flag flag-p', ' [P]'));
-          signSays.push(planet.name + ' has a malefic in the sign either side of it in D' +
+        if (Astro.hemmedByMalefics(planet.name, d.sign, chart, benefics)) {
+          signLine.appendChild(el('span', 'flag flag-p', ' [P]'));
+          says.push(planet.name + ' has a malefic in the sign either side of it in D' +
             division + ', which is papa kartari around the graha. The score judges the ' +
             'sign it stands in and never looks at the two beside it.');
         }
-        if (d) {
-          var cellHouse = ((d.sign - divisionLagna[division]) % 12 + 12) % 12 + 1;
-          if (Astro.hasDigBala(planet.name, cellHouse)) {
-            sign.appendChild(el('span', 'flag flag-d', ' [D]'));
-            signSays.push(planet.name + ' stands in the ' + Yogas.ordinal(cellHouse) +
-              ' of D' + division + ', the house it is strongest in by direction. The score ' +
-              'counts dignity and never looks at houses.');
-          }
+        var house = ((d.sign - lagna) % 12 + 12) % 12 + 1;
+        if (Astro.hasDigBala(planet.name, house)) {
+          signLine.appendChild(el('span', 'flag flag-d', ' [D]'));
+          says.push(planet.name + ' stands in the ' + Yogas.ordinal(house) + ' of D' +
+            division + ', the house it is strongest in by direction. The score counts ' +
+            'dignity and never looks at houses.');
         }
-        var dignity = el('td', (d ? 'dig dig-' + d.key : '') +
-          (keys.indexOf(division) >= 0 ? ' varga-key' : ''),
-          d ? (brief ? Astro.VARGA_DIGNITY_SHORT[d.key] : d.label) : '\u2013');
-        /*
-         * The yogas this graha takes part in, in this division. Named and not
-         * explained: the Yogas tab reads a division in full, and this is telling
-         * the reader that the cell is doing something the score below cannot
-         * account for.
-         */
-        var yogas = d ? (yogasIn[division][planet.name] || []) : [];
-        var yogaNote = yogas.length
-          ? ' ' + planet.name + ' takes part in ' +
-            listOf(yogas.map(function (t) { return t.toLowerCase(); })) + ' in D' +
-            division + '.'
-          : '';
-        // Nothing to say, no hover: the same rule the rest of the page follows.
-        var shared = (detail + yogaNote).trim();
-        var signTitle = signSays.concat(shared || []).join(' ');
-        var dignityTitle = dignitySays.concat(shared || []).join(' ');
-        /*
-         * A corner chip where a cell has something to say. It marks the presence
-         * of a hover rather than any one kind of thing in it, which is what a
-         * reader needs to know before hovering: the marks advertise themselves
-         * in letters, and a yoga or a score that disagrees with its label has
-         * nothing visible at all without this.
-         *
-         * A tint was tried here and taken out. Two thirds of the cells carry a
-         * yoga, so tinting them coloured most of the grid and made the dignities
-         * harder to read for a signal that was nearly always on.
-         */
-        if (signTitle) sign.title = signTitle;
-        if (dignityTitle) dignity.title = dignityTitle;
-        /*
-         * One chip for the pair, not one for each half. A cell here is a graha
-         * in a division and the two rows are how it is drawn, not what it is: a
-         * yoga belongs to the graha in that division and so does everything else
-         * the hover says, so two chips would be counting the drawing rather than
-         * the thing. It sits on the sign, the upper of the two, which puts it at
-         * the pair's own top corner.
-         *
-         * Hovering either row still reads, which is what the two titles above
-         * are for; only the mark is single.
-         */
-        if (signTitle || dignityTitle) sign.className += ' has-note';
 
-        /*
-         * A star on a debilitation the chart cancels. It rides the word rather
-         * than replacing it: the graha is still debilitated by sign, which is
-         * what the column reports, and the cancellation is a separate fact about
-         * the chart around it.
-         */
-        if (d && d.key === 'debilitated' && cancelled[division] &&
-            cancelled[division][planet.name]) {
-          dignity.appendChild(el('sup', 'neecha-bhanga', '*'));
-          dignitySays.push(planet.name +
-            '\u2019s debilitation in D' + division + ' is cancelled and the graha stands in ' +
-            'an angle or a trine, which is neecha bhanga raja yoga, so the score below is ' +
-            'the floor for a graha that is not weak. Vimsopaka counts dignity one division ' +
-            'at a time and cannot see the cancellation; the Yogas tab reads it in full.');
+        var dignityLine = el('span', 'varga-dignity dig dig-' + d.key, d.label);
+        if (d.key === 'debilitated' && cancelled[planet.name]) {
+          dignityLine.appendChild(el('sup', 'neecha-bhanga', '*'));
+          says.push(planet.name + '\u2019s debilitation in D' + division + ' is cancelled ' +
+            'and the graha stands in an angle or a trine, which is neecha bhanga raja ' +
+            'yoga, so the score below is the floor for a graha that is not weak.');
         }
-        signRow.appendChild(sign);
-        dignityRow.appendChild(dignity);
+
+        var detail = vargasDetail(d, division, planet.name);
+        if (detail) says.push(detail);
+        if (yogasIn[planet.name]) {
+          says.push(planet.name + ' takes part in ' +
+            listOf(yogasIn[planet.name].map(function (t) { return t.toLowerCase(); })) +
+            ' in D' + division + '.');
+        }
+
+        td.appendChild(signLine);
+        td.appendChild(dignityLine);
+        /*
+         * One chip for the cell, which is now one cell rather than two rows to
+         * keep in step. It marks the presence of a hover rather than any one
+         * kind of thing in it: the marks advertise themselves in letters, and a
+         * yoga or a score its own word does not give has nothing visible at all.
+         */
+        if (says.length) {
+          td.title = says.join(' ');
+          td.className += ' has-note';
+        }
+        tr.appendChild(td);
       });
+      tbody.appendChild(tr);
+    });
 
-      /*
-       * The total belongs to the graha, not to either of its rows, so it spans
-       * both the way the name does, and it closes the row the way its heading
-       * closes the head.
-       */
+    /*
+     * The totals close the table, a row rather than a column now, under a
+     * heading that says what they are out of only to a screen reader: the panel
+     * is called Vimsopaka Bala and the note beneath says the rest.
+     */
+    var totals = document.createElement('tr');
+    totals.className = 'varga-totals';
+    var head = el('th', null, 'Vimsopaka');
+    head.setAttribute('scope', 'row');
+    head.appendChild(el('span', 'varga-weight', '20'));
+    totals.appendChild(head);
+    planets.forEach(function (planet) {
       var score = Astro.vimsopaka(planet.name, planet.longitude, scheme, positionsD1);
       var td = el('td', 'vimsopaka' + (score ? ' vimsopaka-' + score.band.key : ''),
         score ? score.total.toFixed(2) : '\u2013');
-      td.setAttribute('rowspan', '2');
       if (score) {
         td.title = planet.name + ' scores ' + score.total.toFixed(2) + ' of twenty across the ' +
           scheme.label.toLowerCase() + ', which Parashara reads as ' + score.band.label +
@@ -1737,37 +1580,22 @@
               part.viswa + '/20';
           }).join(', ') + '.';
       }
-      signRow.appendChild(td);
-
-      tbody.appendChild(signRow);
-      tbody.appendChild(dignityRow);
+      totals.appendChild(td);
     });
+    tbody.appendChild(totals);
 
-    /*
-     * Ordered as the table is actually read: what it shows, how to read it, what
-     * the readings are worth, then the two places the ordinary rule does not
-     * reach, then who is missing.
-     *
-     * The scoring had been stated as seven names against six figures. Those six
-     * are varga viswa, from verses 21-25, and their top category is an own sign -
-     * moolatrikona is not among them - so the two scales are now named apart
-     * rather than welded into one sentence that leaves a name without a number.
-     */
-    document.getElementById('vargas-note').textContent = vargaNote(scheme, brief);
+    document.getElementById('vargas-note').textContent = vargaNote(scheme);
     renderVargaCharts(state, scheme);
   }
 
-  /* ------------------------------------------------- varga charts */
-
+  /*
+   * The rungs that count as well placed: exaltation, moolatrikona, an own sign
+   * and a friend's or great friend's, and nothing below. Deleted by accident
+   * with the abbreviation machinery and put back - vargaSummary still read it,
+   * so the charts were throwing where the grid was fine.
+   */
   var GOOD_KEYS = ['exalted', 'moolatrikona', 'own', 'adhimitra', 'mitra'];
 
-  /**
-   * The three numbers each graha earns over a scheme.
-   *
-   * Vimsopaka is a score out of twenty. The other two are counts of divisions,
-   * so they share a unit and a denominator with each other and with nothing
-   * else, which is why they are plotted together and the score is plotted apart.
-   */
   function vargaSummary(state, scheme) {
     var positionsD1 = {};
     state.chart.planets.forEach(function (p) { positionsD1[p.name] = p; });

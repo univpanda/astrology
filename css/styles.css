@@ -909,63 +909,49 @@ td.dig-shatru { color: var(--ink-faint); }
 td.dig-adhishatru { color: var(--retro); }
 td.dig-debilitated { color: var(--retro); font-weight: 600; }
 
-/* Each graha in Vargas spans two rows, its sign above its dignity. The rule
-   belongs under the pair rather than between its halves, so the sign row drops
-   its own, and the name sits centred against both. */
-#vargas-table th[rowspan] { vertical-align: middle; }
-#vargas-table tr.varga-signs td { border-bottom: none; padding-bottom: 0; }
-#vargas-table tr.varga-dignities td { padding-top: 0.15rem; }
-/* Sign numbers rather than names: sixteen columns of "Sagittarius" do not fit,
-   and the chart above already labels its boxes this way. Tabular figures so the
-   columns line up whatever the digits. */
-td.varga-sign { color: var(--ink-soft); }
-/* Only the numbered form wants tabular figures; sign names want the body face. */
-td.varga-sign-abbr { font-family: var(--font-mono); letter-spacing: 0.01em; }
-/* Sixteen columns is a lot of table; let it breathe less than the others. */
-#vargas-table th, #vargas-table td { padding-left: 0.45rem; padding-right: 0.45rem; }
-/* Every column but the first holds one short token - a sign code, a dignity, a
-   score - in a column headed by another short token, so centring lines each
-   under its own heading. The names are the exception: they are the only cells
-   that vary in length, and ragging their right edge is better than ragging both.
-
-   Scoped to thead and to the body's th rather than to :first-child, because a
-   graha's second row has no first cell of its own - the name spans down from the
-   row above, and the cell sitting first there is a division. */
+/* Grahas across the top and divisions down the side, so a cell is one graha in
+   one division: its sign over its dignity, two lines in one td rather than two
+   rows to be kept in step. Seven columns however many divisions the scheme has,
+   which is what took the horizontal scroll out. */
+#vargas-table td.varga-cell { vertical-align: top; }
+#vargas-table .varga-sign,
+#vargas-table .varga-dignity { display: block; white-space: nowrap; }
+#vargas-table .varga-sign { color: var(--ink-soft); font-size: 0.92em; }
+#vargas-table .varga-dignity { font-size: 0.93em; }
+/* Sixteen rows is a lot of table; let it breathe less than the others. */
+#vargas-table th, #vargas-table td { padding-top: 0.4rem; padding-bottom: 0.4rem; }
+/* Every column but the first holds two short tokens under a name, so centring
+   lines each under its own heading. The division numbers are the exception and
+   stay left, being the column a reader runs down. */
 #vargas-table th, #vargas-table td { text-align: center; }
 #vargas-table thead th:first-child, #vargas-table tbody th { text-align: left; }
-/* Sizes inside the grid are relative to the grid, so sixteen columns change one
-   number and every part keeps its proportion to every other. Setting each part
-   its own rem size for the wide case had inverted them: a graha's name ran at
-   0.80 of a cell in the narrow schemes and 1.08 at sixteen, which is why D16
-   read as a different table rather than the same one drawn smaller. */
-#vargas-table { font-size: 0.93rem; }
-#vargas-table th { font-size: 0.73em; }
-#vargas-table td.varga-sign { font-size: 0.92em; }
-#vargas-table td.dig { font-size: 0.93em; }
-#vargas-table.brief { font-size: 0.84rem; }
-/* The three divisions the chosen scheme leans on hardest, picked out of the row.
-   A tint and two rules rather than a colour, so a column separates without
-   competing with the dignity colours inside it. Where two of the three are
-   neighbours, as D3 and D9 are in the shadvarga, the collapsed border between
-   them still divides the band into its columns.
 
-   Its own tint rather than --green-soft, which was darker than --line-soft and
-   swallowed the row rules running through it: a marked column lost the lines
-   every other column kept. Lightening the tint alone would have traded the
-   rules back for the band, so the rules inside the band step up to --line as
-   well. The pair measures 1.15 for a rule on the tint against 1.16 for the same
-   rule on the surface outside it, so the lines read the same either side of the
-   edge. */
-#vargas-table .varga-key {
+/* The three divisions the chosen scheme leans on hardest, picked out of the
+   table. A row now rather than a column, so the rules that bracket it are
+   horizontal. Its own tint rather than --green-soft, which was darker than
+   --line-soft and swallowed the rules running through it. */
+#vargas-table tr.varga-key > * {
   background: var(--varga-key);
-  border-left: 1px solid var(--line);
-  border-right: 1px solid var(--line);
-  border-bottom-color: var(--line);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
 }
-#vargas-table th.varga-key { color: var(--green-deep); }
-/* A graha in a division has something to say on hover, marked by one chip at
-   the pair's top corner. The two rows are how a cell is drawn and not what it
-   is, so the chip goes on the upper of them and counts once.
+#vargas-table tr.varga-key th { color: var(--green-deep); }
+
+/* The totals close the table. Read as a figure rather than as another dignity,
+   and banded by Parashara's own four readings rather than by a gradient nobody
+   agreed on. Left at the body weight: the band already colours it. */
+#vargas-table tr.varga-totals > * { border-top: 1px solid var(--line); }
+#vargas-table td.vimsopaka {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+td.vimsopaka-strong { color: var(--green-deep); }
+td.vimsopaka-mediocre { color: var(--ink); }
+td.vimsopaka-some { color: var(--ink-soft); }
+td.vimsopaka-poor { color: var(--retro); }
+
+/* A graha in a division has something to say on hover, marked by one chip in the
+   cell's top corner.
 
    A tint was tried here first and taken out: two thirds of the cells carry a
    yoga, so tinting them coloured most of the grid and made the dignities harder
@@ -976,11 +962,29 @@ td.varga-sign-abbr { font-family: var(--font-mono); letter-spacing: 0.01em; }
 #vargas-table td.has-note::after {
   content: '';
   position: absolute;
-  top: 0;
-  right: 0;
+  top: 2px;
+  right: 2px;
   border-top: 5px solid var(--ink-faint);
   border-left: 5px solid transparent;
   opacity: 0.55;
+}
+
+/* No hover band here. A row is a division across seven grahas, and lighting the
+   whole of it says nothing about the cell under the pointer. The graha table
+   keeps its band: a row there is one whole reading across eleven columns. */
+#vargas-table tbody tr:hover { background: none; }
+
+/* The vimsopaka share sits under its division, lighter than the heading so the
+   row still reads as D9 first and "worth 3" second. */
+#vargas-table th .varga-weight {
+  display: inline;
+  font-weight: 400;
+  font-size: 0.8rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+  margin-left: 0.35rem;
 }
 
 /* Table or charts. A view switch rather than a data control, so it reads as two

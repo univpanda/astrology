@@ -563,9 +563,9 @@ ok('the heading corner sits above the column it heads', (function () {
  * above, so nothing there is frozen by accident.
  */
 ok('and every scrolling table really does head its rows with a th', (function () {
-  // Three set it on a td variable named for the cell it may be, two on a th.
-  return (appSrc.match(/setAttribute\('scope', 'row'\)/g) || []).length === 3 &&
-    (appSrc.match(/setAttribute\('scope', 'rowgroup'\)/g) || []).length === 2 &&
+  // The grid heads its rows with a division now; the rest with a graha.
+  return (appSrc.match(/setAttribute\('scope', 'row'\)/g) || []).length === 5 &&
+    (appSrc.match(/setAttribute\('scope', 'rowgroup'\)/g) || []).length === 1 &&
     (appSrc.match(/el\(i === 0 \? 'th' : 'td'/g) || []).length === 2;
 })());
 ok('the frozen cell joins the hover band, except where it spans a group',
@@ -1411,23 +1411,26 @@ ok('and the page says which surface carries which marks', (function () {
  * whichever division is read, so they span its columns as the name does - the
  * same split the graha table makes.
  */
-ok('the grid marks retrogression and combustion on the name', (function () {
-  var at = appSrc.indexOf('function renderVargas(state)');
-  var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
-  return /\[planet\.retrograde \? 'R' : null,/.test(block) &&
-    /sun && Astro\.isCombust\(planet\.name, planet\.longitude, sun\.longitude,/.test(block) &&
-    block.indexOf('th.appendChild') > 0;
-})());
-ok('and both tables split the marks the same way', (function () {
+/*
+ * [R] and [C] head the graha's column, being true of it in every division below.
+ * They were on the name when the name was a row; the name is a column heading
+ * now and they have come with it.
+ */
+ok('the grid marks retrogression and combustion on the column heading',
+   (function () {
+     var at = appSrc.indexOf('function renderVargasHead');
+     var block = appSrc.slice(at, appSrc.indexOf('function divisionHead', at));
+     return /\[planet\.retrograde \? 'R' : null,/.test(block) &&
+       /sun && Astro\.isCombust\(planet\.name, planet\.longitude, sun\.longitude,/.test(block) &&
+       block.indexOf('th.appendChild') > 0;
+   })());
+ok('and both tables keep them on a th rather than in a cell', (function () {
   var graha = appSrc.slice(appSrc.indexOf('function renderGrahaTable'),
                            appSrc.indexOf('function strengthsFor'));
-  var vargas = appSrc.slice(appSrc.indexOf('function renderVargas(state)'),
-                            appSrc.indexOf('function vargaSummary'));
-  // R and C on a th in both, and in neither do they reach a cell.
+  var head = appSrc.slice(appSrc.indexOf('function renderVargasHead'),
+                          appSrc.indexOf('function divisionHead'));
   return /th\.appendChild\(el\('span', 'flag flag-' \+ f\.toLowerCase\(\)/.test(graha) &&
-    /th\.appendChild\(el\('span', 'flag flag-' \+ f\.toLowerCase\(\)/.test(vargas) &&
-    !/flag flag-r/.test(vargas.replace(/th\.appendChild[^;]*;/g, '')) &&
-    !/flag flag-c'/.test(vargas.replace(/th\.appendChild[^;]*;/g, ''));
+    /th\.appendChild\(el\('span', 'flag flag-' \+ f\.toLowerCase\(\)/.test(head);
 })());
 
 ok('and the grid really carries those five and no others', (function () {
@@ -1535,9 +1538,8 @@ var seeds = ['strength', 'varga', 'dignity', 'yogas'].map(function (name) {
  * at face value in that cell.
  */
 ok('a cancelled debilitation is starred where it is scored',
-   /if \(d && d\.key === 'debilitated' && cancelled\[division\] &&\s*\n\s*cancelled\[division\]\[planet\.name\]\)/
-     .test(appSrc) &&
-   /dignity\.appendChild\(el\('sup', 'neecha-bhanga', '\*'\)\)/.test(appSrc));
+   /if \(d\.key === 'debilitated' && cancelled\[planet\.name\]\)/.test(appSrc) &&
+   /dignityLine\.appendChild\(el\('sup', 'neecha-bhanga', '\*'\)\)/.test(appSrc));
 ok('and the hover says the score is the floor for a graha that is not weak',
    /is cancelled and the graha stands in an angle or a trine, which is neecha bhanga raja yoga, so the score below is the floor for a graha that is not weak/
      .test(appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ')));
@@ -1584,7 +1586,7 @@ ok('the chip is a corner mark, not a fill', (function () {
   block = block.slice(0, block.indexOf('}'));
   return /border-top: 5px solid var\(--ink-faint\)/.test(block) &&
     /border-left: 5px solid transparent/.test(block) &&
-    /top: 0;/.test(block) && /right: 0;/.test(block) &&
+    /top: 2px;/.test(block) && /right: 2px;/.test(block) &&
     !/background/.test(block) && !/--varga-yoga/.test(css);
 })());
 /*
@@ -1592,34 +1594,35 @@ ok('the chip is a corner mark, not a fill', (function () {
  * are borders, so the yoga tint can take the background without either signal
  * being lost.
  */
-ok('so a key column that also holds a yoga keeps both signals', (function () {
+/*
+ * The three the scheme leans on hardest are a row now rather than a column, so
+ * the rules that bracket them are horizontal.
+ */
+ok('the key divisions are bracketed across, being rows now', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-  var key = css.slice(css.indexOf('#vargas-table .varga-key {'));
+  var key = css.slice(css.indexOf('#vargas-table tr.varga-key > * {'));
   key = key.slice(0, key.indexOf('}'));
-  return /border-left: 1px solid var\(--line\)/.test(key) &&
-    /border-right: 1px solid var\(--line\)/.test(key);
+  return /border-top: 1px solid var\(--line\)/.test(key) &&
+    /border-bottom: 1px solid var\(--line\)/.test(key) &&
+    /background: var\(--varga-key\)/.test(key);
 })());
 ok('and it needs nothing of the cell but a corner to sit in', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
   return /#vargas-table td\.has-note \{ position: relative; \}/.test(css);
 })());
 ok('a graha in two yogas in one division is named once for each', (function () {
-  var at = appSrc.indexOf('var list = yogasIn[division][name]');
+  var at = appSrc.indexOf('var list = yogasIn[name]');
   var block = appSrc.slice(at, at + 200);
   return /if \(list\.indexOf\(yoga\.title\) < 0\) list\.push\(yoga\.title\);/.test(block);
 })());
 ok('every one is computed per division, not once for the chart',
-   /Yogas\.detect\(divisionCharts\[division\], strengths\)/.test(appSrc) &&
-   /if \(yoga\.yoga === 'Parivartana'\) exchanging\[division\]\[name\] = yoga\.title;/
-     .test(appSrc) &&
-   /Astro\.hemmedByBenefics\(planet\.name, d\.sign, divisionCharts\[division\],\s*\n?\s*benefics\)/
-     .test(appSrc) &&
-   /Astro\.hemmedByMalefics\(planet\.name, d\.sign, divisionCharts\[division\],\s*\n?\s*benefics\)/
-     .test(appSrc) &&
+   /Yogas\.detect\(chart, strengths\)/.test(appSrc) &&
+   /if \(yoga\.yoga === 'Parivartana'\) exchanging\[name\] = yoga\.title;/.test(appSrc) &&
+   /Astro\.hemmedByBenefics\(planet\.name, d\.sign, chart, benefics\)/.test(appSrc) &&
+   /Astro\.hemmedByMalefics\(planet\.name, d\.sign, chart, benefics\)/.test(appSrc) &&
    /var benefics = Astro\.naturalBenefics\(state\.chart\);/.test(appSrc) &&
-   /var cellHouse = \(\(d\.sign - divisionLagna\[division\]\) % 12 \+ 12\) % 12 \+ 1;/
-     .test(appSrc) &&
-   /Astro\.hasDigBala\(planet\.name, cellHouse\)/.test(appSrc));
+   /var house = \(\(d\.sign - lagna\) % 12 \+ 12\) % 12 \+ 1;/.test(appSrc) &&
+   /Astro\.hasDigBala\(planet\.name, house\)/.test(appSrc));
 /*
  * And only those four. Every yoga the app detects would mark 58 per cent of the
  * cells, raja yoga alone running better than one per divisional chart on two
@@ -1708,10 +1711,16 @@ ok('and that really does thin it out', (function () {
  * the grid cannot disagree with that tab about D9. Only divisions that hold a
  * debilitation are recast at all.
  */
-ok('cancellation is asked of the division being scored, not of the rashi alone',
-   /Yogas\.neechaBhanga\(Astro\.chartInDivision\(chart, d\)\)/.test(appSrc) &&
-   /if \(cells\.some\(function \(row\) \{ return row\[i\] && row\[i\]\.key === 'debilitated'; \}\)\)/
-     .test(appSrc));
+/*
+ * Cancellation comes out of the same per-division pass as the yogas rather than
+ * a sweep of its own: it is one of them, and asking twice was two chances for
+ * the two answers to differ.
+ */
+ok('cancellation is asked of the division being scored, in the same pass',
+   /var chart = Astro\.chartInDivision\(state\.chart, division\);/.test(appSrc) &&
+   /if \(yoga\.yoga === 'Neecha Bhanga' && yoga\.kind === 'raja'\) cancelled\[name\] = true;/
+     .test(appSrc) &&
+   !/function cancelledDebilitations/.test(appSrc));
 ok('and it agrees with the detector, cell by cell, on a chart that has one',
    (function () {
      var c = Astro.chart({ jdUT: Astro.julianDay(1948, 3, 31, 12 + 53 / 60 + 5),
@@ -1998,14 +2007,15 @@ ok('and the panel it controls is unchanged underneath',
  * the markup carries an empty row rather than sixteen divisions typed a second
  * time. This checks the builder walks the engine's list in order.
  */
-ok('the columns are built from whichever scheme is chosen, in its own order', (function () {
-  var head = html.slice(html.indexOf('id="vargas-table"'));
-  head = head.slice(0, head.indexOf('</thead>'));
-  return !/<th scope="col">D\d+<\/th>/.test(head) &&
-    /scheme\.divisions\.forEach\(function \(division\) \{/.test(appSrc) &&
-    /el\('th', keys\.indexOf\(division\) >= 0 \? 'varga-key' : null, 'D' \+ division\)/
-      .test(appSrc);
-})());
+ok('the rows are built from whichever scheme is chosen, in its own order',
+   (function () {
+     var head = html.slice(html.indexOf('id="vargas-table"'));
+     head = head.slice(0, head.indexOf('</thead>'));
+     return !/<th scope="col">D\d+<\/th>/.test(head) &&
+       /scheme\.divisions\.forEach\(function \(division\) \{/.test(appSrc) &&
+       /if \(keys\.indexOf\(division\) >= 0\) tr\.className = 'varga-key';/.test(appSrc) &&
+       /el\('th', null, 'D' \+ division\)/.test(appSrc);
+   })());
 
 /*
  * Each division's share of the twenty vimsopaka points, under its heading. The
@@ -2082,8 +2092,9 @@ ok('Rashi is priced differently in every one of the four', (function () {
  * The score belongs to the graha rather than to either of its two rows, so it
  * spans both, the way the name does.
  */
-ok('the total spans the graha\'s pair of rows',
-   /td\.setAttribute\('rowspan', '2'\);/.test(appSrc) &&
+ok('the total is one cell under its graha\'s column',
+   !/rowspan/.test(appSrc.slice(appSrc.indexOf('function renderVargas(state)'),
+                                appSrc.indexOf('function vargaSummary'))) &&
    /Astro\.vimsopaka\(planet\.name, planet\.longitude, scheme, positionsD1\)/.test(appSrc));
 /*
  * The total sits second, beside the name, not last. Sixteen columns scroll, so
@@ -2092,24 +2103,23 @@ ok('the total spans the graha\'s pair of rows',
  * it was. Both the heading and the cell have to move, and separately, so each is
  * checked where it is built.
  */
-ok('the total closes the row, after the divisions it adds up', (function () {
-  var head = appSrc.slice(appSrc.indexOf('function renderVargasHead'),
-                          appSrc.indexOf('function vargaNote'));
-  var name = head.indexOf("el('th', null, 'Graha')");
-  var divisions = head.indexOf('scheme.divisions.forEach');
-  var total = head.indexOf("'Vimsopaka bala, out of twenty'");
-  return name >= 0 && divisions > name && total > divisions;
+/*
+ * The totals close the table, a row now rather than a column, under the last of
+ * the divisions they add up.
+ */
+ok('the totals close the table, after the divisions they add up', (function () {
+  var body = appSrc.slice(appSrc.indexOf('function renderVargas(state)'),
+                          appSrc.indexOf('function vargaSummary'));
+  var divisions = body.indexOf('scheme.divisions.forEach');
+  var totals = body.indexOf("totals.className = 'varga-totals'");
+  return divisions >= 0 && totals > divisions &&
+    body.indexOf('tbody.appendChild(totals)') > totals;
 })());
-ok('and so does the cell, spanning the graha\u2019s two rows as the name does',
-   (function () {
-     var body = appSrc.slice(appSrc.indexOf('function renderVargas(state)'),
-                             appSrc.indexOf('function vargaSummary'));
-     var name = body.indexOf('signRow.appendChild(th);');
-     var cells = body.indexOf('cells.forEach(function (d, i)');
-     var score = body.indexOf('signRow.appendChild(td);');
-     return name >= 0 && cells > name && score > cells &&
-       /td\.setAttribute\('rowspan', '2'\);/.test(body);
-   })());
+ok('and nothing in the grid spans two rows any more', (function () {
+  var body = appSrc.slice(appSrc.indexOf('function renderVargas(state)'),
+                          appSrc.indexOf('function vargaSummary'));
+  return !/rowspan/.test(body) && !/signRow/.test(body) && !/dignityRow/.test(body);
+})());
 ok('it is banded by Parashara\'s four readings, not by a gradient', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
   return Astro.VIMSOPAKA_BANDS.every(function (b) {
@@ -2127,13 +2137,15 @@ ok('and the title breaks the score into its divisions',
   * Blank to look at is not blank: a th with no accessible name leaves the cells
   * under it associated with nothing, so the name is there and hidden.
   */
-ok('the last column is headed by nothing visible',
-   /el\('th', null, null\)/.test(appSrc) &&
-   !/el\('th', null, 'Vimsopaka'\)/.test(appSrc) &&
-   !/varga-weight', '20'/.test(appSrc));
-ok('but it still has a name, so the scores under it are not orphaned',
-   /el\('span', 'visually-hidden', 'Vimsopaka bala, out of twenty'\)/.test(appSrc) &&
-   /\.visually-hidden \{/.test(fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8')));
+/*
+ * A row can carry its name where a column could not: the heading was blank there
+ * because "Vimsopaka" over a column repeated the panel's own title beside the
+ * widest word in the header row. Down the side it is one cell in a column of
+ * division numbers, and naming it costs nothing.
+ */
+ok('the totals row says what it is, and what it is out of',
+   /var head = el\('th', null, 'Vimsopaka'\);/.test(appSrc) &&
+   /head\.appendChild\(el\('span', 'varga-weight', '20'\)\);/.test(appSrc));
 ok('and the note still says what the column totals, the heading no longer doing it',
    /the last column scores those dignities out of twenty/
      .test(appSrc.replace(/'\s*\+\s*'/g, '')));
@@ -2309,7 +2321,7 @@ ok('the note explains the table and does not teach the measure', (function () {
   var at = appSrc.indexOf('function vargaNote');
   // Comments stripped first: theirs is prose too, and an apostrophe inside one
   // runs the quote-matching below straight through the code between them.
-  var src = appSrc.slice(at, appSrc.indexOf('ABBREVIATE_ABOVE', at))
+  var src = appSrc.slice(at, appSrc.indexOf('function currentScheme', at))
     .replace(/\/\*[\s\S]*?\*\//g, '');
   var flat = src.replace(/'\s*\+\s*'/g, '');
   var words = flat.match(/'[^']*'/g).join(' ').split(/\s+/).length;
@@ -2339,7 +2351,7 @@ ok('it renders whenever a chart does',
 ok('it reads the division list from the engine rather than repeating it',
    (function () {
      var code = appSrc.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
-     return /scheme\.divisions\.map\(function \(division\)/.test(code) &&
+     return /scheme\.divisions\.forEach\(function \(division\)/.test(code) &&
        !/\[1, 2, 3, 4, 7, 9, 10, 12, 16, 20, 24, 27, 30, 40, 45, 60\]/.test(code);
    })());
 ok('and the sixteen are derived from VARGAS rather than retyped beside it', (function () {
@@ -2347,11 +2359,16 @@ ok('and the sixteen are derived from VARGAS rather than retyped beside it', (fun
   return /divisions: VARGAS\.map\(function \(v\) \{ return v\.division; \}\)/.test(astroSrc) &&
     Astro.SHODASAVARGA.join(' ') === '1 2 3 4 7 9 10 12 16 20 24 27 30 40 45 60';
 })());
+/*
+ * The columns are the chart's own planet list, filtered and not reordered, so
+ * they run in the same order as the tables beside them.
+ */
 ok('grahas keep the order of the tables beside it',
-   /state\.chart\.planets\.forEach\(function \(planet\) \{[\s\S]{0,400}vargas-note/.test(appSrc) ||
-   /\/\/ Listed as in the graha tables/.test(appSrc));
-ok('a graha with no reading anywhere is dropped, not shown as a row of dashes',
-   /if \(cells\.every\(function \(c\) \{ return !c; \}\)\) return;/.test(appSrc));
+   /var planets = state\.chart\.planets\.filter\(function \(p\) \{/.test(appSrc));
+ok('a graha with no reading anywhere is dropped, not shown as a column of dashes',
+   /return Astro\.vargaDignity\(p\.name, p\.longitude, 1, positionsD1\);/.test(appSrc) &&
+   /\/\/ Rahu and Ketu keep no friendships, so they have no column to head\./
+     .test(appSrc));
 /*
  * The title used to open by repeating the cell - "D7: Neutral - Cancer, ruled by
  * Moon" - where the division is the column heading, the dignity the row beneath
@@ -2416,8 +2433,7 @@ ok('a cell title does not repeat the cell', (function () {
     !/', ruled by ' \+ d\.lord/.test(block);
 })());
 // The dignity short forms keep their words, in the note, once for the grid.
-ok('and the short forms are still spelt out somewhere',
-   /dignities as ' \+ dignityKey\(\)/.test(appSrc) && /function dignityKey/.test(appSrc));
+
 /*
  * And every mark keeps its own. Each used to assign the title outright and the
  * dignity reading assigned it again below, so whichever ran last won: the marks'
@@ -2426,10 +2442,8 @@ ok('and the short forms are still spelt out somewhere',
  * the one the mark had put there.
  */
 ok('the marks and the reading are collected, not assigned over each other',
-   /var signSays = \[\], dignitySays = \[\];/.test(appSrc) &&
-   /var signTitle = signSays\.concat\(shared \|\| \[\]\)\.join\(' '\);/.test(appSrc) &&
-   (appSrc.match(/signSays\.push\(/g) || []).length === 5 &&
-   (appSrc.match(/dignitySays\.push\(/g) || []).length === 1);
+   /var says = \[\];/.test(appSrc) && /td\.title = says\.join\(' '\);/.test(appSrc) &&
+   (appSrc.match(/says\.push\(/g) || []).length === 8);
 ok('and no mark assigns a title of its own any more', (function () {
   var at = appSrc.indexOf('function renderVargas(state)');
   var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
@@ -2447,24 +2461,32 @@ ok('and no mark assigns a title of its own any more', (function () {
  * will not fit. Ten full-word columns come to about the width of the graha tables
  * beside this one; sixteen do not, so only the sixteen shorten.
  */
-ok('words give way to abbreviations only past ten divisions',
-   /var ABBREVIATE_ABOVE = 10;/.test(appSrc) &&
-   /var brief = scheme\.divisions\.length > ABBREVIATE_ABOVE;/.test(appSrc));
+ok('the table is as wide as the grahas, not as the scheme',
+   /planets\.forEach\(function \(planet\) \{\s*\n\s*var th = el\('th', null, planet\.name\)/
+     .test(appSrc) &&
+   /scheme\.divisions\.forEach\(function \(division\) \{\s*\n\s*var lagna/.test(appSrc));
 ok('so the six, seven and ten keep their words and the sixteen do not', (function () {
   var over = Astro.VARGA_SCHEME_ORDER.filter(function (k) {
     return Astro.VARGA_SCHEMES[k].divisions.length > 10;
   });
   return over.length === 1 && over[0] === 'shodasavarga';
 })());
-ok('the sign is its name in full, or the project abbreviation where names will not fit',
-   /brief \? Astro\.SIGN_ABBR\[d\.sign\] : Astro\.SIGNS\[d\.sign\]/.test(appSrc));
-ok('and the dignity likewise',
-   /brief \? Astro\.VARGA_DIGNITY_SHORT\[d\.key\] : d\.label/.test(appSrc));
-ok('the abbreviated form is set in mono, the full names are not',
+/*
+ * Nothing abbreviates any more. Seven graha columns leave room for Sagittarius
+ * and Great Friend however many divisions the scheme has, so the short forms and
+ * the machinery that chose them went with the scroll they were fighting.
+ */
+ok('the sign and the dignity are written out in full',
+   /el\('span', 'varga-sign', Astro\.SIGNS\[d\.sign\]\)/.test(appSrc) &&
+   /el\('span', 'varga-dignity dig dig-' \+ d\.key, d\.label\)/.test(appSrc));
+ok('and no short form or width test is left to choose between them',
+   !/ABBREVIATE_ABOVE/.test(appSrc) && !/SIGN_ABBR\[d\.sign\]/.test(appSrc) &&
+   !/VARGA_DIGNITY_SHORT/.test(appSrc) && !/\bbrief\b/.test(appSrc));
+ok('the two lines of a cell stack, and neither is set in mono',
    (function () {
      var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-     return /td\.varga-sign-abbr \{[^}]*--font-mono/.test(css) &&
-       !/td\.varga-sign \{[^}]*--font-mono/.test(css);
+     return /#vargas-table \.varga-sign,\s*\n#vargas-table \.varga-dignity \{ display: block/
+       .test(css) && !/varga-sign-abbr/.test(css);
    })());
 ok('every dignity has a short form, each distinct and short enough to fit', (function () {
   var full = Object.keys(Astro.VARGA_DIGNITY_LABELS);
@@ -2479,17 +2501,9 @@ ok('every dignity has a short form, each distinct and short enough to fit', (fun
  * abbreviations and nine words written out by hand is those tables copied, and
  * a rename would have left the sentence quoting the old one.
  */
-ok('each short form is given with the word it stands for', (function () {
-  var key = Object.keys(Astro.VARGA_DIGNITY_LABELS).map(function (k) {
-    return Astro.VARGA_DIGNITY_SHORT[k] + ' (' + Astro.VARGA_DIGNITY_LABELS[k] + ')';
-  });
-  return /function dignityKey\(\)/.test(appSrc) &&
-    /Astro\.VARGA_DIGNITY_SHORT\[k\] \+ ' \(' \+ Astro\.VARGA_DIGNITY_LABELS\[k\] \+ '\)'/
-      .test(appSrc) &&
-    key.length === 9 && key[0] === 'Exal (Exalted)' && key[8] === 'Deb (Debilitated)';
-})());
-ok('and no copy of either table is typed into the sentence',
-   !/Exal, Mool, Own, Gt Fr/.test(appSrc) && !/Gt Enm and Deb/.test(appSrc));
+ok('and the note no longer has short forms to explain',
+   !/dignityKey/.test(appSrc) && !/Exal, Mool, Own, Gt Fr/.test(appSrc) &&
+   !/Gt Enm and Deb/.test(appSrc));
 /*
  * A graha's name is the one thing in the row that is scanned rather than
  * decoded, so sixteen columns give up type size instead of letters: the names
@@ -2498,11 +2512,9 @@ ok('and no copy of either table is typed into the sentence',
 ok('the graha names stay whole at every width',
    /var th = el\('th', null, planet\.name\);/.test(appSrc) &&
    !/brief \? Astro\.grahaAbbr\(planet\.name\)/.test(appSrc));
-ok('and the grid takes a smaller type size instead', (function () {
+ok('and the grid needs no width class at all now', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-  return /table\.className = brief \? 'brief' : '';/.test(appSrc) &&
-    /#vargas-table \{ font-size: 0\.93rem; \}/.test(css) &&
-    /#vargas-table\.brief \{ font-size: 0\.84rem; \}/.test(css);
+  return !/table\.className = brief/.test(appSrc) && !/#vargas-table\.brief/.test(css);
 })());
 /*
  * One knob. Every size inside the grid is relative to the grid, so the wide case
@@ -2511,31 +2523,33 @@ ok('and the grid takes a smaller type size instead', (function () {
  * schemes and 1.08 at sixteen - which is what made D16 read as a different table
  * rather than the same one drawn smaller.
  */
-ok('and every part of the grid is sized relative to the grid', (function () {
+/*
+ * The two lines of a cell are sized against the cell, so they hold their
+ * proportion to it whatever the table is set at.
+ */
+ok('the two lines of a cell are sized against the cell', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-  var block = css.slice(css.indexOf('#vargas-table { font-size:'),
+  return /#vargas-table \.varga-sign \{ color: var\(--ink-soft\); font-size: 0\.92em; \}/
+    .test(css) && /#vargas-table \.varga-dignity \{ font-size: 0\.93em; \}/.test(css);
+})());
+/*
+ * And they hold that proportion whatever the table is set at, both being ems on
+ * the one base. The grid used to give each part its own rem size for the wide
+ * case, which inverted them rather than scaling them - a name ran at 0.80 of a
+ * cell in the narrow schemes and 1.08 at sixteen - and there is no wide case
+ * left to do that in.
+ */
+ok('so the two hold their proportion whatever the table is set at', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var block = css.slice(css.indexOf('#vargas-table td.varga-cell'),
                         css.indexOf('/* Table or charts'));
   var sizes = block.match(/font-size: [0-9.]+(rem|em)/g) || [];
-  var rems = sizes.filter(function (t) { return /rem$/.test(t); });
-  return sizes.length >= 5 && rems.length === 2 &&
-    rems[0] === 'font-size: 0.93rem' && rems[1] === 'font-size: 0.84rem';
+  return sizes.length > 0 && sizes.every(function (t) { return /em$/.test(t); }) &&
+    !/#vargas-table\.brief/.test(css);
 })());
-ok('so the name keeps the same proportion to a cell at either width', (function () {
-  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-  var pick = function (sel) {
-    var at = css.indexOf(sel);
-    return parseFloat(css.slice(at).match(/font-size: ([0-9.]+)em/)[1]);
-  };
-  // Both are ems on the same base, so the ratio cannot differ between schemes.
-  return Math.abs(pick('#vargas-table th {') / pick('#vargas-table td.dig') - 0.785) < 0.02;
-})());
-ok('the note explains the abbreviations where it uses them, and not otherwise', (function () {
-  var flat = appSrc.replace(/'\s*\+\s*'/g, '');
-  return /Signs go as Ari, Tau, Can and dignities as ' \+ dignityKey\(\)/.test(flat) &&
-    // Stated, not justified: that sixteen columns leave no room is visible in them.
-    !/leave no room for words/.test(flat) &&
-    /function vargaNote\(scheme, brief\)/.test(appSrc);
-})());
+ok('the note has no abbreviations to explain, and no width to explain them by',
+   /function vargaNote\(scheme\)/.test(appSrc) &&
+   !/leave no room for words/.test(appSrc.replace(/'\s*\+\s*'/g, '')));
 /*
  * The hovers are pointed at once and in general. Naming the three kinds - a
  * cell, a heading, a total - was a list the reader had to hold in order to
@@ -2545,7 +2559,7 @@ ok('the note explains the abbreviations where it uses them, and not otherwise', 
 ok('and points at the hovers once, in general rather than kind by kind',
    (function () {
      var note = appSrc.slice(appSrc.indexOf('function vargaNote'));
-     note = note.slice(0, note.indexOf('ABBREVIATE_ABOVE'));
+     note = note.slice(0, note.indexOf('function currentScheme'));
      var flat = note.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
      return (flat.match(/hover/gi) || []).length === 1 &&
        /has something to say on hover/.test(flat) &&
@@ -2557,7 +2571,7 @@ ok('and points at the hovers once, in general rather than kind by kind',
  * different places.
  */
 ok('and everything it promises a hover on has one',
-   /if \(signTitle\) sign\.title = signTitle;/.test(appSrc) &&
+   /td\.title = says\.join\(' '\);/.test(appSrc) &&
    /th\.title = \(varga \? varga\.label/.test(appSrc) &&
    /td\.title = planet\.name \+ ' scores '/.test(appSrc));
 ok('and gives the seven-step reading when it differs from the label shown',
@@ -2626,16 +2640,21 @@ ok('the trimsamsa stand-in is explained where it fires',
  * hover before, which made the grid's most obvious question - which sign is that?
  * - answerable one cell at a time.
  */
-ok('each graha takes two rows, its name spanning both',
-   /signRow\.className = 'varga-signs'/.test(appSrc) &&
-   /dignityRow\.className = 'varga-dignities'/.test(appSrc) &&
-   /th\.setAttribute\('rowspan', '2'\)/.test(appSrc) &&
-   /tbody\.appendChild\(signRow\);\s*\n\s*tbody\.appendChild\(dignityRow\);/.test(appSrc));
+/*
+ * A graha in a division is one cell, holding its sign over its dignity. It was
+ * two rows kept in step by hand, which is what made the chip count twice and
+ * the hover band light half of it.
+ */
+ok('a graha in a division is one cell of two lines',
+   /el\('span', 'varga-sign', Astro\.SIGNS\[d\.sign\]\)/.test(appSrc) &&
+   /el\('span', 'varga-dignity dig dig-' \+ d\.key, d\.label\)/.test(appSrc) &&
+   /td\.appendChild\(signLine\);\s*\n\s*td\.appendChild\(dignityLine\);/.test(appSrc));
 ok('the spanning name is a row-group header, not a plain cell',
    /th\.setAttribute\('scope', 'rowgroup'\)/.test(appSrc));
-ok('the sign row and the dignity row read one and the same varga position',
-   /var division = scheme\.divisions\[i\];/.test(appSrc) &&
-   /var detail = d \? vargasDetail\(d, division, planet\.name\) : null;/.test(appSrc));
+ok('both lines read one and the same varga position',
+   /var d = Astro\.vargaDignity\(planet\.name, planet\.longitude, division, positionsD1\);/
+     .test(appSrc) &&
+   /var detail = vargasDetail\(d, division, planet\.name\);/.test(appSrc));
 
 /*
  * Vargottama moved here from the graha flags. A flag on the graha had to stand
@@ -2652,13 +2671,12 @@ ok('but not D1, where every cell would qualify and the mark say nothing',
  * row: which three is the scheme's own answer, read off its share-out of the
  * twenty, not a trio fixed in the markup.
  */
-ok('the three are marked out, in the header and in both rows of the body',
-   /el\('th', keys\.indexOf\(division\) >= 0 \? 'varga-key' : null, 'D' \+ division\)/
-     .test(appSrc) &&
-   (appSrc.match(/keys\.indexOf\(division\) >= 0 \? ' varga-key' : ''/g) || []).length === 2);
+ok('the three are marked out, a whole row at a time',
+   /if \(keys\.indexOf\(division\) >= 0\) tr\.className = 'varga-key';/.test(appSrc) &&
+   (appSrc.match(/varga-key/g) || []).length === 1);
 ok('the set comes from the engine, so the table cannot disagree with the weights',
    /var keys = Astro\.keyDivisions\(scheme\);/.test(appSrc) &&
-   (appSrc.match(/var keys = Astro\.keyDivisions\(scheme\);/g) || []).length === 2 &&
+   (appSrc.match(/var keys = Astro\.keyDivisions\(scheme\);/g) || []).length === 1 &&
    typeof Astro.keyDivisions === 'function');
 ok('and every scheme yields exactly three, all of them its own divisions',
    Astro.VARGA_SCHEME_ORDER.every(function (k) {
@@ -2693,8 +2711,8 @@ ok('the dasavarga third place is a tie broken for the navamsa, not by accident',
 ok('the mark is a tint rather than a colour, so it does not fight the dignities',
    (function () {
      var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-     var block = css.slice(css.indexOf('#vargas-table .varga-key'),
-                           css.indexOf('#vargas-table th.varga-key'));
+     var block = css.slice(css.indexOf('#vargas-table tr.varga-key > * {'));
+     block = block.slice(0, block.indexOf('}'));
      return /background: var\(--varga-key\)/.test(block) &&
        !/(^|[^-])color: /.test(block);
    })());
@@ -2728,7 +2746,8 @@ ok('the rules stay visible inside the band, in both palettes', (function () {
     return ratio(line, tint) >= ratio(soft, surface) * 0.95 &&
       ratio(tint, surface) > 1.05;
   };
-  return /border-bottom-color: var\(--line\)/.test(css) && check(0) && check(dark);
+  // The key row is bracketed top and bottom by --line, so the same check holds.
+  return /border-top: 1px solid var\(--line\)/.test(css) && check(0) && check(dark);
 })());
 
 /*
@@ -2826,8 +2845,33 @@ ok('every mark in the grid is counted in a facet', (function () {
   });
 })());
 
+/*
+ * Run, not read. Almost everything here checks app.js as text, and text cannot
+ * see an identifier that is used and never declared: GOOD_KEYS was deleted with
+ * the abbreviation machinery and vargaSummary went on reading it, so the grid
+ * was fine and the charts threw. This lifts the function out and calls it.
+ */
+ok('vargaSummary runs and counts every mark', (function () {
+  var src = appSrc.slice(appSrc.indexOf('  var GOOD_KEYS'),
+                         appSrc.indexOf('  function svgEl'));
+  var summary;
+  try {
+    summary = new Function('Astro', 'Yogas', src + '; return vargaSummary;')(Astro, Yogas);
+  } catch (e) {
+    return false;
+  }
+  var c = Astro.chart({ jdUT: Astro.julianDay(1946, 7, 6, 19 + 20 / 60 + 4),
+                        latitude: 40.7143, longitude: -74.006, tzOffsetMinutes: -240 });
+  var rows = summary({ chart: c }, Astro.VARGA_SCHEMES.shodasavarga);
+  return rows.length === 7 && rows.every(function (r) {
+    return typeof r.vimsopaka === 'number' && r.good >= 0 &&
+      ['V', 'X', 'S', 'P', 'D'].every(function (k) { return r.marks[k] >= 0; });
+  });
+})());
+
 ok('well placed counts the good rungs and nothing below',
-   /var GOOD_KEYS = \['exalted', 'moolatrikona', 'own', 'adhimitra', 'mitra'\];/.test(appSrc));
+   /GOOD_KEYS\.indexOf\(d\.key\) >= 0/.test(appSrc) &&
+   Astro.VARGA_DIGNITY_LABELS.adhimitra === 'Great Friend');
 ok('and the nodes are left out, keeping no friendships',
    /if \(!score\) return null;/.test(appSrc));
 
@@ -2940,9 +2984,9 @@ ok('and the chart agrees with the Vargas grid, being the same comparison', (func
  * mark stays on the cell it was put against, [V] on the sign and the star on the
  * dignity.
  */
-ok('both halves of a pair carry what the pair has to say',
-   /var shared = \(detail \+ yogaNote\)\.trim\(\);/.test(appSrc) &&
-   /var dignityTitle = dignitySays\.concat\(shared \|\| \[\]\)\.join\(' '\);/.test(appSrc));
+ok('one hover covers the whole cell, both lines with it',
+   /td\.title = says\.join\(' '\);/.test(appSrc) &&
+   !/dignityTitle/.test(appSrc) && !/signTitle/.test(appSrc));
 /*
  * And the same highlight. A yoga belongs to the graha in that division, which is
  * the pair of cells and not either row of it.
@@ -2953,30 +2997,33 @@ ok('both halves of a pair carry what the pair has to say',
  * division, and so does everything else the hover says - so two chips would be
  * counting the drawing rather than the thing.
  */
-ok('and one chip stands for the pair, on the upper of its two rows',
-   /if \(signTitle \|\| dignityTitle\) sign\.className \+= ' has-note';/.test(appSrc) &&
-   !/dignity\.className \+= ' has-note'/.test(appSrc));
-ok('though hovering either row still reads',
-   /if \(signTitle\) sign\.title = signTitle;/.test(appSrc) &&
-   /if \(dignityTitle\) dignity\.title = dignityTitle;/.test(appSrc));
+ok('and one chip stands for the cell, which is now one cell',
+   /td\.className \+= ' has-note';/.test(appSrc) &&
+   (appSrc.match(/has-note/g) || []).length === 1);
 /*
  * Which means a dignity-only note - the star's, or a score its label does not
  * give - still raises the pair's chip, because the pair is what has something
  * to say.
  */
-ok('and a note on the lower row alone still chips the pair', (function () {
-  var at = appSrc.indexOf('var shared = (detail + yogaNote).trim();');
-  var block = appSrc.slice(at, appSrc.indexOf('signRow.appendChild(sign)', at));
-  return /dignitySays\.concat\(shared/.test(block) &&
-    /signTitle \|\| dignityTitle/.test(block);
+ok('and a note about either line still chips the cell', (function () {
+  var at = appSrc.indexOf('var says = [];');
+  var block = appSrc.slice(at, appSrc.indexOf('tr.appendChild(td);', at));
+  // The star is about the dignity and [V] about the sign; both push to one list.
+  return /neecha-bhanga/.test(block) && /flag flag-v/.test(block) &&
+    /if \(says\.length\) \{/.test(block);
 })());
-ok('and a graha with no reading still contributes no rows at all',
-   /if \(cells\.every\(function \(c\) \{ return !c; \}\)\) return;/.test(appSrc));
-ok('the rule sits under the pair rather than between its halves', (function () {
+ok('and a graha with no reading still contributes no column at all',
+   /var planets = state\.chart\.planets\.filter\(function \(p\) \{/.test(appSrc));
+/*
+ * There is no rule to place between the halves any more: the two lines are spans
+ * inside one cell, so the row rule falls where it always should have, under the
+ * whole of it.
+ */
+ok('the two lines sit inside one cell, with no rule between them', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-  return /#vargas-table tr\.varga-signs td \{[^}]*border-bottom: none/.test(css) &&
-    /#vargas-table th\[rowspan\] \{[^}]*vertical-align: middle/.test(css) &&
-    /td\.varga-sign/.test(css);
+  return !/varga-signs/.test(css) && !/varga-dignities/.test(css) &&
+    !/#vargas-table th\[rowspan\]/.test(css) &&
+    /#vargas-table td\.varga-cell \{ vertical-align: top; \}/.test(css);
 })());
 ok('the note says the rows come in pairs, and what each of the two holds',
    /The two rows under a graha give that sign and its dignity there/
