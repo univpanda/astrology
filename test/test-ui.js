@@ -1170,7 +1170,7 @@ ok('and it is laid across the width rather than down a column', (function () {
  * that keep it from being lost in the move: the note explains the table, the
  * library explains the measure, and each is checked where it lives.
  */
-var seeds = ['strength', 'varga', 'dignity'].map(function (name) {
+var seeds = ['strength', 'varga', 'dignity', 'yogas'].map(function (name) {
   return fs.readFileSync(path.join(root, 'supabase/seed/astro_readings_' + name + '.sql'),
                          'utf8');
 }).join('\n').replace(/''/g, "'");
@@ -1285,6 +1285,37 @@ ok('and it is done once, where both sources meet', (function () {
 })());
 ok('so no table sorts for itself',
    (appSrc.match(/inGrahaOrder/g) || []).length === 1);
+
+/*
+ * The nine conditions the detector checks, written down where a reader can find
+ * them. Checked against the detector rather than trusted: a list in the library
+ * that the code does not implement is worse than no list.
+ */
+ok('the library enumerates the cancellations, all nine of them', (function () {
+  var wanted = ['the lord of the sign the graha stands in is in a kendra',
+                'the graha that would be exalted in that sign is in a kendra',
+                'one graha is both of those',
+                'conjunct its dispositor',
+                'its dispositor aspects it',
+                'the graha exalted in that sign aspects it',
+                'exchange signs',
+                'exalted in navamsa',
+                'the debilitated graha itself stands in a kendra'];
+  return wanted.every(function (t) { return seeds.indexOf(t) >= 0; });
+})());
+ok('and the detector really checks each of them', (function () {
+  var src = fs.readFileSync(path.join(root, 'js/yogas.js'), 'utf8');
+  var block = src.slice(src.indexOf('function neechaBhanga'));
+  block = block.slice(0, block.indexOf('function ordinal'));
+  return (block.match(/reasons\.push\(/g) || []).length === 8 &&
+    /both rules this sign and is exalted in it/.test(block);
+})());
+ok('the library says whose enumeration it is, Parashara not having one',
+   /Phaladeepika chapter 7 from verse 26/.test(seeds) &&
+   /it nowhere lists the conditions/.test(seeds));
+ok('and says any one of them cancels, which is what makes it common',
+   /Any one of them cancels, here as in most modern practice/.test(seeds) &&
+   /92 per cent of debilitations in the rashi met at least one of the nine/.test(seeds));
 
 console.log('\nVargas panel');
 /*
