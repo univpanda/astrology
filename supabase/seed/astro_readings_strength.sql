@@ -77,7 +77,72 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'So in D30 the Sun is judged as Mars would be and the Moon as Venus would be, which is what lets a luminary hold a trimsamsa of its own rather than being a guest in every one of them.',
    'The substitution is for ownership only. Everything else about the two - their exaltation, their debilitation, their friendships with the other grahas - is read as the Sun and the Moon, not as their stand-ins.'
  ],
- 'The nodes'' exaltation signs are set out under Dignity.', 705)
+ 'The nodes'' exaltation signs are set out under Dignity.', 705),
+
+-- Shadbala. The panel prints fifteen rows and a verdict; what a reader cannot
+-- get from the panel is what each share is measuring, what the verdict is
+-- measured against, and which of the figures rest on a reading that another
+-- authority contradicts. Those three go here.
+
+('strength', 'Shadbala', 'general',
+ 'What the six strengths are',
+ array[
+   'Shadbala is six separate measures of a graha added into one figure, given in shashtiamsas, of which sixty make a rupa. Parashara sets it out in chapter 27 and B. V. Raman''s Graha and Bhava Balas is the standard English working of it.',
+   'Sthana bala, positional. How far the graha stands from its own debilitation point, how it relates to the lord of the sign it takes in each of seven divisions, whether it sits in the odd or even sign and navamsa it prefers, whether it holds an angle, and whether it holds the third of a sign that matches its sex.',
+   'Dig bala, directional. Each graha has one angle it is strongest on and is worth nothing opposite it: Jupiter and Mercury the ascendant, the Sun and Mars the 10th, Saturn the 7th, the Moon and Venus the 4th. The arc between the graha and its powerless point, divided by three.',
+   'Kala bala, temporal. Eight parts, and a ninth where there is a planetary war: day or night, the lunar fortnight, the third of day or night, the lords of the year, month, weekday and hora, and declination.',
+   'Cheshta bala, motional. Strength from how the graha is moving, which is greatest near retrogression. The Sun and the Moon never retrograde and borrow instead - the Sun its ayana bala, the Moon its paksha bala.',
+   'Naisargika bala, natural. A constant per graha, the same in every chart, running from the Sun''s sixty down to Saturn''s 8.57 in order of brightness.',
+   'Drik bala, aspectual. What the benefics aspecting the graha are worth less what the malefics are, quartered. The only share that can be negative.',
+   'Rahu and Ketu are outside all of it. Shadbala is reckoned for the seven grahas only.'
+ ],
+ 'What a high total does and does not mean is set out under Strength and influence.', 706),
+
+('strength', 'Shadbala', 'reading',
+ 'What a Shadbala total is measured against',
+ array[
+   'The requirement differs by graha, so a total is only ever read against its own minimum and never against another graha''s. Raman gives them as 300 shashtiamsas for the Sun, 360 for the Moon, 300 for Mars, 420 for Mercury, 390 for Jupiter, 330 for Venus and 300 for Saturn - five, six, five, seven, six and a half, five and a half and five rupas.',
+   'That is why Mercury so often reads weak. It is asked for more than any other graha, and a total that would make the Sun comfortably strong leaves Mercury short.',
+   'There is a second set of minimums that the panel does not print. Chapter 27 verses 34-36 give a required figure for each share separately, by group: Jupiter, Mercury and the Sun want 165 sthana, 35 dig, 50 kala, 112 cheshta and 30 ayana; the Moon and Venus want 133, 50, 30, 100 and 40; Mars and Saturn want 96, 30, 40, 67 and 20.',
+   'Santhanam''s note on those verses is that meeting them makes a graha considerably favourable even where the total falls short of the overall requirement. Read the other way, a graha can clear its total while failing several of its parts, which is worth knowing before a single verdict is trusted.',
+   'A war changes the total. Where two of the five starry grahas stand within a degree of each other the loser gives strength to the winner, and a graha''s verdict can turn on it.'
+ ],
+ 'The war is set out under Yuddha bala.', 707),
+
+('strength', 'Yuddha bala', 'general',
+ 'Planetary war, and why the answer is small',
+ array[
+   'Two grahas within one degree of each other are at war. Only the five starry grahas fight - Mars, Mercury, Jupiter, Venus and Saturn - and the Sun and the Moon never take a side. It happens in about one chart in twelve.',
+   'Raman gives the victor as the graha of lesser longitude, sections 76 and 77. Parashara''s chapter 79 instead makes Venus the victor always and otherwise the more northerly graha the victor, which is a different rule and disagrees about who won in half of all wars.',
+   'The size of the correction is where the two readings part company entirely. Chapter 27 verse 20 says the difference between the two Shad-balas is added to the victor and deducted from the vanquished, and taken at that the correction reaches 272 shashtiamsas - more than four rupas, more than any graha''s whole requirement. Where the victor happened to be the weaker of the two, the pair simply exchange totals.',
+   'Raman divides that difference by the difference between the diameters of the two grahas'' discs, which he tabulates as 9.4 for Mars, 6.6 for Mercury, 190.4 for Jupiter, 16.6 for Venus and 158.0 for Saturn. The same war that moved 117 shashtiamsas each way under the bare verse moves 0.7 under Raman.',
+   'The disc diameters are the whole of the difference, and the bare verse does not mention them. A war between Jupiter and Saturn, whose discs are both large and close in size, is divided by a small number and so counts for more; a war between Mercury and Mars, whose discs are small and closer still, counts for more again; a war between Jupiter and Mercury is divided by almost the full 190 and nearly vanishes.',
+   'This site follows Raman. A calculator that applies the difference raw will disagree sharply on any chart that holds a war, and one that omits yuddha bala altogether will disagree in the other direction.'
+ ],
+ 'The aggregate compared is sthana, dig and kala as far as hora bala, so ayana and the war itself stay out of it.', 708),
+
+('strength', 'Drik bala', 'general',
+ 'Aspect strength, and the shape of a drishti',
+ array[
+   'Drishti is not a thing a graha either casts or does not. It rises and falls with the exact angle between two grahas, and Raman gives the curve in sections 114 and 115, from Sripathi, noting that Parashara gives the same rules.',
+   'It is nothing at 30 degrees, fifteen at 60, forty-five at 90, thirty at 120, nothing again at 150, sixty at 180, and falls away to nothing at 300. Between those points it moves in straight lines, so a graha''s drishti changes with every degree it travels.',
+   'The familiar table - a quarter aspect on the 3rd and 10th, a half on the 5th and 9th, three quarters on the 4th and 8th, full on the 7th - is that curve read off at the cusps and nowhere else. It is exact at seven points of the circle and an approximation everywhere between them.',
+   'Visesha drishti, the special aspect, adds to the ordinary value rather than replacing it: fifteen more for Mars on the 4th and 8th, thirty for Jupiter on the 5th and 9th, forty-five for Saturn on the 3rd and 10th. Each brings the total to exactly sixty at the cusp, which is why replacing it with sixty looks right until a graha is anywhere but the cusp.',
+   'The drishti pinda is the sum of all of it over one graha, benefic aspects positive and malefic negative. Drik bala is a quarter of that pinda, and nothing else. Santhanam''s verse 19 adds "super add the entire aspect of Mercury and Jupiter"; Raman''s section 120 has no such clause, and his worked example settles it - his Sun takes a pinda of +63.45 and a drik bala of +15.86, the quarter exactly, with Jupiter among the grahas aspecting it.'
+ ],
+ 'It is the one share that can be negative, so a graha can lose strength by being looked at.', 709),
+
+('strength', 'Shadbala', 'limits',
+ 'Where the authorities disagree, and what this site chose',
+ array[
+   'Shadbala looks like arithmetic and is partly interpretation. Several of its figures rest on a reading that another primary authority contradicts, and a total is only as settled as the choices behind it. These are the ones that move results here.',
+   'The saptavargaja ladder. Santhanam''s translation of chapter 27 gives 45, 30, 20, 15, 10, 4 and 2 for moolatrikona down to a great enemy''s sign, and Saravali gives the same seven figures independently. Raman''s section 30 gives a ladder that halves at each step: 45, 30, 22.5, 15, 7.5, 3.75, 1.875. This site uses Santhanam''s. The two differ by about five shashtiamsas on average and move one verdict in forty.',
+   'Cheshta bala. Raman computes it from the chesta kendra, the graha''s distance from its seeghrocha, which is the classical method. This site reads it off the graha''s motion against its own mean and extremes instead, which tracks the same thing closely but not exactly - the two agree to better than 0.99 for Saturn and Jupiter and about 0.88 for Mars.',
+   'The Moon''s nature. This site treats the Moon as benefic while waxing and malefic while waning, which is what Santhanam states. Raman''s section 53 instead makes it benefic from the eighth day of the bright half to the eighth day of the dark half - a quarter-cycle offset either side. The two disagree in half of all charts, and the Moon''s nature feeds paksha bala, drik bala and every yoga that asks whether a graha is benefic.',
+   'Ayana bala. Raman scales it by a constant 24 degrees after Kesava Daivagna; this site uses the true obliquity. The difference is about half a shashtiamsa.',
+   'None of these is a defect to be patched. They are places where two primary sources say different things, and the useful habit is to know which reading produced a figure before comparing it with a figure from somewhere else.'
+ ],
+ 'What vimsopaka bala cannot see is a separate list, under Vimsopaka Bala.', 710)
 
 on conflict (topic, subject, condition) do update set
   heading = excluded.heading,
