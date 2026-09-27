@@ -1030,8 +1030,14 @@
              : dispositorDetail(r.name, v.sign, positionsD1) },
          { text: dms(v.degreeInSign), cls: 'longitude',
            title: 'Longitude ' + v.longitude.toFixed(4) + '°' },
-         { text: nak.name },
-         { text: String(nak.pada), cls: 'numeric' },
+         /*
+          * The pada had a column of its own, which said nothing on its own: a
+          * bare 3 is only meaningful as the third quarter of some nakshatra, and
+          * the two are read together every time. Joined, they cost one column
+          * instead of two and lose nothing.
+          */
+         { text: nak.name + ' - ' + nak.pada,
+           title: nak.name + ', pada ' + nak.pada + ' of four.' },
          /*
           * Two grahas in one cell, so both go in abbreviated and the words go in
           * the hover. Nothing else in the row needs them spelt out: this pair is

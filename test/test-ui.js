@@ -1778,9 +1778,9 @@ ok('the table is drawn once from both slots, not once per slot',
    /SLOTS\.forEach\(drawSlot\);\s*\n\s*renderGrahaTable\(lastChart\);/.test(appSrc) &&
    !/renderGrahaTable\(state\.chart, set\)/.test(appSrc));
 
-ok('the table carries eleven columns, in order', (function () {
+ok('the table carries ten columns, in order', (function () {
   var wanted = ['Graha', 'Chart', 'Rashi', 'Dignity', 'House', 'Lordship', 'Dispositor',
-                'Longitude', 'Nakshatra', 'Pada', 'Lord / sub lord'];
+                'Longitude', 'Nakshatra - pada', 'Lord / sub lord'];
   return ['graha-table'].every(function (id) {
     var at = html.indexOf('id="' + id + '"');
     var head = html.slice(at, html.indexOf('</thead>', at));
@@ -1794,6 +1794,16 @@ ok('the table carries eleven columns, in order', (function () {
  * built from housesOwned, the same helper isYogakaraka and the raja yoga
  * detector use, rather than from a bespoke function of its own.
  */
+/*
+ * A pada is the quarter of a nakshatra and means nothing apart from it: a column
+ * holding a bare 3 was a column the reader had to join to its neighbour to use.
+ */
+ok('the pada rides with its nakshatra rather than in a column of its own',
+   /nak\.name \+ ' - ' \+ nak\.pada/.test(appSrc) &&
+   !/<th scope="col">Pada<\/th>/.test(html) &&
+   !/text: String\(nak\.pada\)/.test(appSrc));
+ok('and the hover says which quarter it is, the hyphen being terse',
+   /nak\.name \+ ', pada ' \+ nak\.pada \+ ' of four\.'/.test(appSrc));
 ok('lordship comes from the shared helper, not a column-specific one',
    /<th scope="col">Lordship<\/th>/.test(html) && !/function rulership/.test(appSrc) &&
    typeof Astro.housesOwned === 'function');
