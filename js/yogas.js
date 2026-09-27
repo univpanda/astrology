@@ -207,7 +207,14 @@ var Yogas = (function () {
       }
       if (positions[dispositor] &&
           Astro.SIGN_LORDS[positions[dispositor].sign] === graha) {
-        reasons.push(graha + ' exchanges signs with ' + dispositor);
+        /*
+         * The one cancellation that is a named yoga in its own right. The other
+         * eight are clauses of a verse and have no names; this one is
+         * parivartana, and the Yogas tab reports it separately on the same pair,
+         * so naming it here is what connects the two entries.
+         */
+        reasons.push(graha + ' exchanges signs with ' + dispositor +
+          ', which is parivartana yoga');
       }
       /*
        * Only in the rashi chart. Inside a division this longitude is already a

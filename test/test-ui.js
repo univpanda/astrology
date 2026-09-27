@@ -1310,6 +1310,37 @@ ok('and the detector really checks each of them', (function () {
   return (block.match(/reasons\.push\(/g) || []).length === 8 &&
     /both rules this sign and is exalted in it/.test(block);
 })());
+/*
+ * Eight of the nine are clauses of a verse with no names of their own. The
+ * exception is the exchange, which is parivartana yoga, and the Yogas tab
+ * reports it under that name on the same pair - so a cancellation resting on it
+ * appears twice, once under each name, and the clause says so.
+ */
+ok('the one condition with a name of its own is named where it fires', (function () {
+  var src = fs.readFileSync(path.join(root, 'js/yogas.js'), 'utf8');
+  return /exchanges signs with ' \+ dispositor \+\s*\n?\s*', which is parivartana yoga'/
+    .test(src) && typeof Yogas.parivartana === 'function';
+})());
+ok('and every such cancellation really is reported as one', (function () {
+  for (var y = 1900; y < 1980; y++) {
+    var c = Astro.chart({ jdUT: Astro.julianDay(y, (y % 12) + 1, (y % 27) + 1, 9),
+                          latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 });
+    var byExchange = Yogas.neechaBhanga(c).filter(function (x) {
+      return x.reasons.some(function (r) { return /parivartana/.test(r); });
+    });
+    if (!byExchange.length) continue;
+    var pv = Yogas.parivartana(c);
+    var missing = byExchange.filter(function (x) {
+      return !pv.some(function (p) { return (p.grahas || []).indexOf(x.grahas[0]) >= 0; });
+    });
+    if (missing.length) return false;
+  }
+  return true;
+})());
+ok('the library says the other eight have no names',
+   /Eight of the nine have no names of their own/.test(seeds) &&
+   /nicha, the fall, and bhanga, its breaking/.test(seeds));
+
 ok('the library says whose enumeration it is, Parashara not having one',
    /Phaladeepika chapter 7 from verse 26/.test(seeds) &&
    /it nowhere lists the conditions/.test(seeds));
