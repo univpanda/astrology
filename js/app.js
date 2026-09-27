@@ -1189,6 +1189,20 @@
     first.setAttribute('scope', 'col');
     row.appendChild(first);
 
+    /*
+     * The total sits second, beside the name, rather than last. Sixteen columns
+     * scroll, and last meant the one number the grid is adding up was the one
+     * thing off the right-hand edge: the reader had to scroll past the working
+     * to reach the answer, then scroll back to see whose it was.
+     */
+    var total = el('th', null, 'Vimsopaka');
+    total.setAttribute('scope', 'col');
+    total.appendChild(el('span', 'varga-weight', '/ 20'));
+    total.title = 'Verses 26-27: each division\u2019s share of the twenty, scaled by what the ' +
+      'graha keeps of it. Own sign throughout gives the full twenty; a great enemy throughout ' +
+      'gives five, which is the floor rather than nothing.';
+    row.appendChild(total);
+
     scheme.divisions.forEach(function (division) {
       var weight = scheme.weights[division];
       /*
@@ -1216,14 +1230,6 @@
         (elsewhere.length ? '; ' + elsewhere.join(', ') + '.' : '.');
       row.appendChild(th);
     });
-
-    var total = el('th', null, 'Vimsopaka');
-    total.setAttribute('scope', 'col');
-    total.appendChild(el('span', 'varga-weight', '/ 20'));
-    total.title = 'Verses 26-27: each division\u2019s share of the twenty, scaled by what the ' +
-      'graha keeps of it. Own sign throughout gives the full twenty; a great enemy throughout ' +
-      'gives five, which is the floor rather than nothing.';
-    row.appendChild(total);
   }
 
   /*
@@ -1341,6 +1347,27 @@
       th.setAttribute('rowspan', '2');
       signRow.appendChild(th);
 
+      /*
+       * The total belongs to the graha, not to either of its rows, so it spans
+       * both the way the name does, and it sits beside the name rather than past
+       * sixteen columns of the working that produced it.
+       */
+      var score = Astro.vimsopaka(planet.name, planet.longitude, scheme, positionsD1);
+      var td = el('td', 'vimsopaka' + (score ? ' vimsopaka-' + score.band.key : ''),
+        score ? score.total.toFixed(2) : '\u2013');
+      td.setAttribute('rowspan', '2');
+      if (score) {
+        td.title = planet.name + ' scores ' + score.total.toFixed(2) + ' of twenty across the ' +
+          scheme.label.toLowerCase() + ', which Parashara reads as ' + score.band.label +
+          '. That is strength, not benefit: it says how fully ' + planet.name +
+          ' acts in its own nature. ' +
+          score.parts.map(function (part) {
+            return 'D' + part.division + ' ' + vimsopakaFigure(part.weight) + '\u00d7' +
+              part.viswa + '/20';
+          }).join(', ') + '.';
+      }
+      signRow.appendChild(td);
+
       var dignityRow = document.createElement('tr');
       dignityRow.className = 'varga-dignities';
 
@@ -1380,26 +1407,6 @@
         signRow.appendChild(sign);
         dignityRow.appendChild(dignity);
       });
-
-      /*
-       * The total belongs to the graha, not to either of its rows, so it spans
-       * both the way the name does.
-       */
-      var score = Astro.vimsopaka(planet.name, planet.longitude, scheme, positionsD1);
-      var td = el('td', 'vimsopaka' + (score ? ' vimsopaka-' + score.band.key : ''),
-        score ? score.total.toFixed(2) : '\u2013');
-      td.setAttribute('rowspan', '2');
-      if (score) {
-        td.title = planet.name + ' scores ' + score.total.toFixed(2) + ' of twenty across the ' +
-          scheme.label.toLowerCase() + ', which Parashara reads as ' + score.band.label +
-          '. That is strength, not benefit: it says how fully ' + planet.name +
-          ' acts in its own nature. ' +
-          score.parts.map(function (part) {
-            return 'D' + part.division + ' ' + vimsopakaFigure(part.weight) + '\u00d7' +
-              part.viswa + '/20';
-          }).join(', ') + '.';
-      }
-      signRow.appendChild(td);
 
       tbody.appendChild(signRow);
       tbody.appendChild(dignityRow);

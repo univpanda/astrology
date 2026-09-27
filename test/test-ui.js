@@ -1253,6 +1253,31 @@ ok('Rashi is priced differently in every one of the four', (function () {
 ok('the total spans the graha\'s pair of rows',
    /td\.setAttribute\('rowspan', '2'\);/.test(appSrc) &&
    /Astro\.vimsopaka\(planet\.name, planet\.longitude, scheme, positionsD1\)/.test(appSrc));
+/*
+ * The total sits second, beside the name, not last. Sixteen columns scroll, so
+ * last put the one number the grid is adding up off the right-hand edge: the
+ * reader scrolled past the working to reach the answer, then back to see whose
+ * it was. Both the heading and the cell have to move, and separately, so each is
+ * checked where it is built.
+ */
+ok('the total heads the table beside the graha, before the divisions', (function () {
+  var head = appSrc.slice(appSrc.indexOf('function renderVargasHead'),
+                          appSrc.indexOf('function vargaNote'));
+  var name = head.indexOf("el('th', null, 'Graha')");
+  var total = head.indexOf("el('th', null, 'Vimsopaka')");
+  var divisions = head.indexOf('scheme.divisions.forEach');
+  return name >= 0 && total > name && divisions > total;
+})());
+ok('and so does the cell, spanning the graha\u2019s two rows as the name does',
+   (function () {
+     var body = appSrc.slice(appSrc.indexOf('function renderVargas(state)'),
+                             appSrc.indexOf('function vargaSummary'));
+     var name = body.indexOf('signRow.appendChild(th);');
+     var score = body.indexOf('signRow.appendChild(td);');
+     var cells = body.indexOf('cells.forEach(function (d, i)');
+     return name >= 0 && score > name && cells > score &&
+       /td\.setAttribute\('rowspan', '2'\);/.test(body);
+   })());
 ok('it is banded by Parashara\'s four readings, not by a gradient', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
   return Astro.VIMSOPAKA_BANDS.every(function (b) {
