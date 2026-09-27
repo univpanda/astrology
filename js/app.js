@@ -1257,6 +1257,10 @@
    * and not nine, and why the Sun is judged as Mars in one column. Both are
    * visible facts about what is on screen.
    *
+   * The hovers are pointed at once and in general. Naming the three kinds - a
+   * cell, a heading, a total - was a list the reader had to hold in order to
+   * discover that everything has one, which is the shorter thing to say.
+   *
    * No pointer to the Lesson tab either. It is a tab, three along from this one
    * and always on screen, and a note that ends by naming another tab reads as an
    * apology for not being that tab.
@@ -1294,8 +1298,7 @@
        * words is visible in the sixteen columns.
        */
       (brief ? 'Signs go as Ari, Tau, Can and dignities as ' + dignityKey() + '. ' : '') +
-      'Hover any cell for the reading behind it, a heading for what that division is ' +
-      'worth, a total for how it was reached. ' +
+      'Hover over anything to read it in detail. ' +
       'Rahu and Ketu own no sign and keep no friendships, so there is no relation to score ' +
       'and they are left out. No luminary rules a trimsamsa, so in D30 the Sun is judged as ' +
       'Mars and the Moon as Venus.';

@@ -1606,17 +1606,29 @@ ok('the note explains the abbreviations where it uses them, and not otherwise', 
     /function vargaNote\(scheme, brief\)/.test(appSrc);
 })());
 /*
- * One sentence points at every hover the grid has, rather than a mention per
- * thing that has one. Three of them in a note this short would be the note
- * describing the furniture instead of the table.
+ * The hovers are pointed at once and in general. Naming the three kinds - a
+ * cell, a heading, a total - was a list the reader had to hold in order to
+ * arrive at "everything has one", which is the shorter thing to say and the
+ * thing they need.
  */
-ok('and points at the hovers once, not once per kind of hover', (function () {
-  var note = appSrc.slice(appSrc.indexOf('function vargaNote'));
-  note = note.slice(0, note.indexOf('ABBREVIATE_ABOVE'));
-  return (note.match(/hover/gi) || []).length === 1 &&
-    /Hover any cell for the reading behind it, a heading for what that division is/
-      .test(note.replace(/'\s*\+\s*'/g, ''));
-})());
+ok('and points at the hovers once, in general rather than kind by kind',
+   (function () {
+     var note = appSrc.slice(appSrc.indexOf('function vargaNote'));
+     note = note.slice(0, note.indexOf('ABBREVIATE_ABOVE'));
+     var flat = note.replace(/'\s*\+\s*'/g, '');
+     return (note.match(/hover/gi) || []).length === 1 &&
+       /Hover over anything to read it in detail/.test(flat) &&
+       !/a heading for what that division is worth/.test(flat);
+   })());
+/*
+ * Which only holds while everything really does have one. The three the sentence
+ * used to name are built in three different places, so they are checked in three
+ * different places.
+ */
+ok('and everything it promises a hover on has one',
+   /if \(detail\) \{ sign\.title = detail; dignity\.title = detail; \}/.test(appSrc) &&
+   /th\.title = \(varga \? varga\.label/.test(appSrc) &&
+   /td\.title = planet\.name \+ ' scores '/.test(appSrc));
 ok('and gives the seven-step reading when it differs from the label shown',
    /d\.relationLabel !== d\.label/.test(appSrc));
 
