@@ -1352,8 +1352,8 @@
        */
       'The marks are things the score cannot see, each against the value it qualifies: ' +
       '[V] on a sign, * on a dignity. Hover over anything to read it in detail, and a ' +
-      'graha\u2019s name for the two that have no cell to sit in, its yogas and the ' +
-      'divisions it is directionally strong in. ' +
+      'graha\u2019s name where it has either of the two that have no cell to sit in, the ' +
+      'yogas it takes part in or the divisions it is directionally strong in. ' +
       /*
        * Both say what the grid does before why. A reader looking at seven rows
        * wants "they are left out" first and the reason after it, not a clause
@@ -1457,13 +1457,22 @@
         ((v.sign - divisionLagna[division]) % 12 + 12) % 12 + 1);
     });
 
-    return planet.name + (yogas.length
-      ? ' takes part in ' + listOf(yogas.map(function (t) { return t.toLowerCase(); })) + '.'
-      : ' takes part in no yoga this site detects.') +
-      (strong.length
-        ? ' Directionally strong in ' + listOf(strong.map(function (d) { return 'D' + d; })) + '.'
-        : ' Directionally strong in none of these divisions.') +
-      ' The score sees neither.';
+    /*
+     * Nothing to say, no hover. A tooltip that reports an absence trains the
+     * reader to stop opening them, and most grahas in most charts have neither
+     * of these: the mark is worth something only where it is the exception.
+     */
+    var said = [];
+    if (yogas.length) {
+      said.push(planet.name + ' takes part in ' +
+        listOf(yogas.map(function (t) { return t.toLowerCase(); })) + '.');
+    }
+    if (strong.length) {
+      said.push((yogas.length ? '' : planet.name + ' is ') +
+        (yogas.length ? 'Directionally strong in ' : 'directionally strong in ') +
+        listOf(strong.map(function (d) { return 'D' + d; })) + '.');
+    }
+    return said.length ? said.join(' ') : null;
   }
 
   /** "A", "A and B", "A, B and C". */
@@ -1518,7 +1527,8 @@
       var th = el('th', null, planet.name);
       th.setAttribute('scope', 'rowgroup');
       th.setAttribute('rowspan', '2');
-      th.title = grahaFootnote(state, planet, scheme, divisionLagna);
+      var footnote = grahaFootnote(state, planet, scheme, divisionLagna);
+      if (footnote) th.title = footnote;
       signRow.appendChild(th);
 
 
@@ -2228,18 +2238,7 @@
     ayanamsa: 'lahiri',
     trueNode: false,
     gender: 'male',
-    celebrity: true,
-    note: '6:30 pm in Harlem, a time he gave himself rather than one read off a ' +
-      'certificate, which astrologers rate A and not AA. New York did not start ' +
-      'daylight saving in 1947 until 27 April, so this clock reads EST; taking it ' +
-      'as EDT puts the lagna at 20 Virgo instead of 2 Libra, a whole sign out. ' +
-      'Libra ascendant in Chitra, Sun exalted in Aries in the 7th, Moon with Venus ' +
-      'in Aquarius in the 5th, Mercury debilitated in Pisces with Mars, Jupiter ' +
-      'retrograde with Ketu in Scorpio, Rahu exalted in Taurus. Shatabhisha birth ' +
-      'nakshatra leaves 12 years of Rahu dasha to run. Saturn, the yogakaraka for ' +
-      'this lagna, sits in the 10th in Cancer and takes its mahadasha from July ' +
-      '1975 to July 1994: the Lakers trade was that June, and the five ' +
-      'championships and the scoring record all fall inside it.'
+    celebrity: true
   }];
 
   /*

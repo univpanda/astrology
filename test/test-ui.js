@@ -265,9 +265,12 @@ console.log('\nStudy charts that ship with the app');
          Math.abs(hit.lon - entry.longitude) < 1e-4 && hit.zone === entry.zone,
          hit.lat + ', ' + hit.lon + ' / ' + hit.zone);
     }
-    // Notes are prose the user reads; the house style keeps em-dashes out of it.
-    ok(entry.name + ': the note fits the column limit and avoids em-dashes',
-       entry.note.length <= 2000 && !/[\u2013\u2014]/.test(entry.note), entry.note.length + ' chars');
+    // A note is optional. Where there is one it is prose the user reads, so it
+    // stays inside the column limit and keeps em-dashes out.
+    ok(entry.name + (entry.note ? ': the note fits the column limit and avoids em-dashes'
+                                : ': ships without a note, which is allowed'),
+       !entry.note || (entry.note.length <= 2000 && !/[\u2013\u2014]/.test(entry.note)),
+       entry.note ? entry.note.length + ' chars' : 'no note');
   });
 
   var trump = charts.filter(function (c) { return c.name === 'Donald Trump'; })[0];
@@ -1398,11 +1401,11 @@ ok('the note places the marks without defining them again', (function () {
  */
 ok('and sends the reader to the name for the two with no cell', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
-  return /name for the two that have no cell to sit in, its yogas and the divisions it is directionally strong in/
+  return /name where it has either of the two that have no cell to sit in, the yogas it takes part in or the divisions it is directionally strong in/
     .test(flat);
 })());
 ok('which the name really carries',
-   /th\.title = grahaFootnote\(state, planet, scheme, divisionLagna\);/.test(appSrc) &&
+   /if \(footnote\) th\.title = footnote;/.test(appSrc) &&
    /function grahaFootnote\(state, planet, scheme, divisionLagna\)/.test(appSrc));
 /*
  * Names only. The Yogas tab explains a yoga; this is telling the reader that the
@@ -1412,9 +1415,29 @@ ok('and carries yoga names rather than readings',
    /if \(yogas\.indexOf\(yoga\.title\) < 0\) yogas\.push\(yoga\.title\);/.test(appSrc) &&
    !/yoga\.summary/.test(appSrc.slice(appSrc.indexOf('function grahaFootnote'),
                                        appSrc.indexOf('function listOf'))));
-ok('the footnote says both halves even when either is empty',
-   /takes part in no yoga this site detects/.test(appSrc) &&
-   /Directionally strong in none of these divisions/.test(appSrc));
+/*
+ * Nothing to say, no hover. A tooltip reporting an absence teaches the reader to
+ * stop opening them, and most grahas in most charts have neither of these.
+ */
+ok('the footnote reports only what is there, and is null otherwise',
+   /return said\.length \? said\.join\(' '\) : null;/.test(appSrc) &&
+   !/takes part in no yoga/.test(appSrc) &&
+   !/Directionally strong in none/.test(appSrc) &&
+   !/The score sees neither/.test(appSrc));
+ok('and the cell takes no title when there is none',
+   /var footnote = grahaFootnote\(state, planet, scheme, divisionLagna\);/.test(appSrc) &&
+   /if \(footnote\) th\.title = footnote;/.test(appSrc));
+ok('which really happens, and really does not on a graha that has something',
+   (function () {
+     var chart = { planets: [
+       { name: 'Sun', sign: 0, longitude: 5 }, { name: 'Moon', sign: 6, longitude: 186 },
+       { name: 'Jupiter', sign: 11, longitude: 355 }, { name: 'Venus', sign: 1, longitude: 35 }] };
+     // Hemming is the cheapest of the two to construct; the point is the shape
+     // of the answer, that an absence returns nothing at all rather than a
+     // sentence saying so.
+     return Astro.hemmedByBenefics('Sun', 0, chart) &&
+       !Astro.hemmedByBenefics('Venus', 1, chart);
+   })());
 ok('and reads the divisions of the scheme on screen, not a fixed set',
    /scheme\.divisions\.filter\(function \(division\)/.test(appSrc) &&
    /Astro\.hasDigBala\(planet\.name,/.test(appSrc));
