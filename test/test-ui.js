@@ -1172,6 +1172,38 @@ var seeds = ['strength', 'varga', 'dignity'].map(function (name) {
                          'utf8');
 }).join('\n').replace(/''/g, "'");
 
+/*
+ * A note under a table is the table's small print. Set at body size it read as
+ * the panel's main text with the table as an illustration of it, which is the
+ * wrong way round: the table is the thing, the note explains it.
+ */
+ok('every note is set smaller and softer than the body', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var block = css.slice(css.indexOf('.varga-note, .chart-note, .flag-key dd {'));
+  block = block.slice(0, block.indexOf('}'));
+  return /font-size: 0\.82rem/.test(block) && /color: var\(--ink-soft\)/.test(block) &&
+    /max-width: 78ch/.test(block);
+})());
+/*
+ * And at one size. Three sizes of secondary prose in one panel - 0.82 for a
+ * chart note, 0.86 for a flag description, body size for the note under the
+ * table - is a reader being asked to rank three things that are all the same
+ * kind of thing.
+ */
+ok('and all of them at the same size, none carrying one of its own', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  // Only the shared rule sizes them; what is left to each is its own margin.
+  return /\.flag-key dd \{ margin: 0; \}/.test(css) &&
+    /\.chart-note \{ margin: 0\.5rem 0 0; max-width: 68ch; \}/.test(css);
+})());
+ok('every note on the page wears the class', (function () {
+  var notes = html.match(/<p class="varga-note"[^>]*>/g) || [];
+  return notes.length >= 5 &&
+    ['shadbala-note', 'vargas-note', 'yoga-note', 'aspect-note'].every(function (id) {
+      return new RegExp('<p class="varga-note" id="' + id + '">').test(html);
+    });
+})());
+
 console.log('\nVargas panel');
 /*
  * Named for the measure, as Shadbala beside it is, rather than for the columns.

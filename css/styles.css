@@ -1001,7 +1001,20 @@ td.varga-sign-abbr { font-family: var(--font-mono); letter-spacing: 0.01em; }
 .legend-swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
 .legend-swatch.series-good { background: var(--chart-good); }
 .legend-swatch.series-vargottama { background: var(--chart-vargottama); }
-.chart-note { margin: 0.5rem 0 0; font-size: 0.82rem; color: var(--ink-soft); max-width: 68ch; }
+/* One size for every note on the page. A note under a table is the table's small
+   print and was being set at body size, so it read as the main text of the panel
+   and the table read as an illustration of it. The flag key's descriptions join
+   them: three sizes of secondary prose in one panel was two too many.
+
+   Capped at 78ch. A line running the full width of a sixteen-column table loses
+   the reader on the way back to the left margin. */
+.varga-note, .chart-note, .flag-key dd {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  line-height: 1.55;
+  max-width: 78ch;
+}
+.chart-note { margin: 0.5rem 0 0; max-width: 68ch; }
 
 /* The total belongs to the graha, so it sits centred against both its rows, and
    reads as a figure rather than as another dignity. Banded by Parashara's own
@@ -1053,12 +1066,7 @@ td.vimsopaka-poor { color: var(--retro); }
   padding: 0;
 }
 .flag-key dt { color: var(--ink); font-weight: 600; margin-bottom: 0.1rem; }
-.flag-key dd {
-  margin: 0;
-  color: var(--ink-soft);
-  font-size: 0.86rem;
-  line-height: 1.5;
-}
+.flag-key dd { margin: 0; }
 /* A yogakaraka is worth spotting at a glance; the bare house numbers beside it
    are not, so only the named case is picked out. */
 td.rulership, td.dispositor { color: var(--ink-soft); }
