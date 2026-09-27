@@ -1273,7 +1273,7 @@ ok('and the total row is those six added, read off the engine', (function () {
  * hover is eight figures a reader can only see one graha at a time. Its total
  * is the eight added, which the engine is checked on rather than the screen.
  */
-ok('and Kala bala is the eight parts added', (function () {
+ok('and Kala bala is its parts added, the war among them', (function () {
   var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
   var c = Astro.chart({ jdUT: Astro.julianDay(1990, 6, 15, 19 - 5.5),
                         latitude: place.latitude, longitude: place.longitude,
@@ -1284,7 +1284,8 @@ ok('and Kala bala is the eight parts added', (function () {
   var keys = (parts.match(/key: '([a-z]+)'/g) || []).map(function (m) {
     return m.slice(6, -1);
   });
-  if (keys.join(',') !== 'nathonnatha,paksha,tribhaga,abda,masa,vara,hora,ayana') {
+  // Raman's nine, in his order: the war closes the list after ayana.
+  if (keys.join(',') !== 'nathonnatha,paksha,tribhaga,abda,masa,vara,hora,ayana,yuddha') {
     return false;
   }
   return Object.keys(r.grahas).every(function (g) {
@@ -1644,39 +1645,31 @@ ok('the note says when the war row appears rather than that there is none',
    /Yuddha bala has a row only where two of the five starry grahas stand within a degree of each other/
      .test(appSrc.replace(/'\s*\+\s*'/g, '')));
 /*
- * Chapter 27 verse 20: the difference between the two Shad-balas is added to
- * the victor and deducted from the vanquished. Taken off the six shares rather
- * than off the total, which would be the sum defining itself.
+ * Raman sections 76-77: the aggregate compared is sthana, dig and kala as far
+ * as hora bala, and the difference is divided by the difference of the disc
+ * diameters. Stopping at hora keeps ayana and the war itself out of the
+ * comparison, so nothing defines itself.
  */
-ok('and a war is settled on the six shares, not on the total they make', (function () {
-  var shadSrc = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8');
-  return /var gap = Math\.abs\(results\[war\.won\]\.sixShares - results\[war\.lost\]\.sixShares\);/
-    .test(shadSrc) &&
-    /x\.totalShashtiamsa = x\.sixShares \+ x\.yuddha;/.test(shadSrc);
-})());
+ok('and a war is settled on the aggregate Raman names, over the disc gap',
+   (function () {
+     var shadSrc = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8');
+     return /var WAR_KALA_PARTS = \['nathonnatha', 'paksha', 'tribhaga', 'abda', 'masa',\n\s*'vara', 'hora'\];/
+       .test(shadSrc) &&
+       /var discs = Math\.abs\(BIMBA\[war\.won\] - BIMBA\[war\.lost\]\);/.test(shadSrc) &&
+       /war\.value = discs \? gap \/ discs : gap;/.test(shadSrc) &&
+       /BIMBA = \{ Mars: 9\.4, Mercury: 6\.6, Jupiter: 190\.4, Venus: 16\.6, Saturn: 158\.0 \}/
+         .test(shadSrc) && !/sixShares/.test(shadSrc);
+   })());
 /*
- * Which makes it a transfer: what one graha gains the other loses, so the
- * chart's totals are unchanged in sum however many wars it holds. A war that
- * did not net to nothing would be strength appearing from nowhere.
+ * And it lands inside kala bala, which is where Raman lists it - his ninth kala
+ * component, after ayana - rather than outside the six.
  */
-ok('and what the victor gains the vanquished loses, exactly', (function () {
-  var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
-  var fought = 0;
-  for (var y = 1900; y < 1960; y++) {
-    var c = Astro.chart({ jdUT: Astro.julianDay(y, 1 + y % 12, 15, 6.5),
-                          latitude: place.latitude, longitude: place.longitude,
-                          tzOffsetMinutes: place.tzOffsetMinutes });
-    var r = Shadbala.compute(c, place);
-    if (r.wars.length) fought++;
-    var net = Shadbala.GRAHAS.reduce(function (a, g) { return a + r.grahas[g].yuddha; }, 0);
-    if (Math.abs(net) > 1e-9) return false;
-    var closes = Shadbala.GRAHAS.every(function (g) {
-      var x = r.grahas[g];
-      return Math.abs(x.sixShares + x.yuddha - x.totalShashtiamsa) < 1e-9;
-    });
-    if (!closes) return false;
-  }
-  return fought > 0;                    // and the rule really fired in the sample
+ok('and it lands inside kala bala rather than beside it', (function () {
+  var shadSrc = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8');
+  return /results\[war\.won\]\.kala\.yuddha \+= war\.value;/.test(shadSrc) &&
+    /x\.kala\.total \+= x\.kala\.yuddha;/.test(shadSrc) &&
+    /x\.totalShashtiamsa = x\.sthana\.total \+ x\.dig \+ x\.kala\.total \+ x\.cheshta \+/
+      .test(shadSrc);
 })());
 /*
  * The five starry grahas only. Chapter 27 calls them "planets from Mars to
@@ -1693,37 +1686,24 @@ ok('and the luminaries never go to war', (function () {
     });
 })());
 /*
- * Venus conquers standing north or south, and among the other four the more
- * northerly conquers - chapter 79 verse 9. Latitude is asked of the engine by
- * Julian day, a chart from the stored ephemeris carrying longitudes only.
+ * The victor is the graha of lesser longitude. That is Raman's rule, stated
+ * flatly and worked in his examples; the latitude rule this followed before
+ * comes from chapter 79 and the two disagree about who won in half of all wars.
+ * Nothing now asks the engine for a graha's latitude in a war.
  */
-ok('and Venus never loses a war, whoever it stands against', (function () {
+ok('and the victor is the graha of lesser longitude', (function () {
   var shadSrc = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8');
-  if (!/Astro\.eclipticLatitude\(WARRING\[i\]\[1\], T\)/.test(shadSrc)) return false;
-  var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
-  var sawVenus = false;
-  for (var y = 1900; y < 2050; y++) {
-    for (var m = 1; m <= 12; m++) {
-      var c = Astro.chart({ jdUT: Astro.julianDay(y, m, 15, 6.5),
-                            latitude: place.latitude, longitude: place.longitude,
-                            tzOffsetMinutes: place.tzOffsetMinutes });
-      var r = Shadbala.compute(c, place);
-      for (var i = 0; i < r.wars.length; i++) {
-        if (r.wars[i].lost === 'Venus') return false;
-        if (r.wars[i].won === 'Venus') sawVenus = true;
-      }
-    }
-  }
-  return sawVenus;
+  return /var aWins = a\.longitude < b\.longitude;/.test(shadSrc) &&
+    !/eclipticLatitude/.test(shadSrc);
 })());
 /*
  * And the row is shown only where a war was fought, the hover naming who it was
  * with - which no figure in the row can say.
  */
 ok('and the war row appears only in a chart that has one',
-   /if \(bala\.onlyWhenSet && grahas\.every\(function \(graha\) \{/.test(appSrc) &&
+   /if \(part\.onlyWhenSet && grahas\.every\(function \(graha\) \{/.test(appSrc) &&
    /onlyWhenSet: true,/.test(appSrc) &&
-   /if \(bala\.key === 'yuddha' && x\.war\) td\.title = yuddhaTitle\(x\);/.test(appSrc) &&
+   /if \(part\.key === 'yuddha' && x\.war\) td\.title = yuddhaTitle\(x\);/.test(appSrc) &&
    /\(war\.won \? 'Beats ' : 'Loses to '\) \+ war\.against/.test(appSrc));
 
 // What each graha rules, with the yogakaraka named.
@@ -2688,14 +2668,14 @@ ok('every script the page loads parses', (function () {
                                    tzOffsetMinutes: 330 }).wars.length === 1 &&
      Shadbala.compute(peace.chart, { latitude: 28.61, longitude: 77.21,
                                      tzOffsetMinutes: 330 }).wars.length === 0);
-  ok('and the rendered table carries a Yuddha bala row for it', (function () {
+  ok('and the rendered table carries a Yuddha row for it', (function () {
     var names = rowNames(war);
-    return names.some(function (label) { return /^Yuddha bala/.test(label); });
+    return names.some(function (label) { return /^Yuddha/.test(label); });
   })());
   ok('and none for the chart without one', (function () {
     var names = rowNames(peace);
     return names.length > 0 &&
-      !names.some(function (label) { return /^Yuddha bala/.test(label); });
+      !names.some(function (label) { return /^Yuddha/.test(label); });
   })());
 })();
 

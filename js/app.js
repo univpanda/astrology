@@ -1196,11 +1196,24 @@
     { key: 'hora', label: 'Hora', en: 'Planetary hour', max: 60,
       says: 'Sixty to the lord of the planetary hour, the hours running from ' +
         'sunrise in the Chaldean order from that day’s own lord.' },
+    /*
+     * Raman's ninth kala component, and shown only in the charts that have a
+     * war - about one in twelve. Everywhere else it is a row of seven zeroes,
+     * which teaches a reader to skip it.
+     */
     { key: 'ayana', label: 'Ayana', en: 'Declination', max: 120, shows: '60/120',
       says: 'How far north or south of the equator the graha stands. The Sun, ' +
         'Mars, Jupiter and Venus want north and Saturn and the Moon south; ' +
         'Mercury takes either. Sixty is the ceiling for six grahas; the Sun’s ' +
-        'counts double, so the row can reach a hundred and twenty.' }
+        'counts double, so the row can reach a hundred and twenty.' },
+    { key: 'yuddha', label: 'Yuddha', en: 'Planetary war', max: null,
+      onlyWhenSet: true,
+      says: 'Two of the five starry grahas within a degree of each other are at ' +
+        'war, and the one of lesser longitude conquers. Their sthana, dig and ' +
+        'kala strengths as far as hora bala are added up, the difference ' +
+        'between the two is divided by the difference between the diameters of ' +
+        'their discs, and the quotient is added to the victor and taken from ' +
+        'the vanquished.' }
   ];
 
   /*
@@ -1249,20 +1262,6 @@
         'and Saturn up to ninety, since its special aspect adds to the ordinary ' +
         'one rather than replacing it. That bound is approached rather than met: ' +
         'the observed range is about -60 to +39.' },
-    /*
-     * Shown only in the charts that have a war, which is about one in twelve.
-     * Everywhere else it is a row of seven zeroes, and a row that says nothing
-     * in eleven charts out of twelve is a row that teaches a reader to skip it.
-     */
-    { key: 'yuddha', label: 'Yuddha bala', en: 'Planetary war', max: null,
-      onlyWhenSet: true,
-      says: 'Two of the five starry grahas within a degree of each other are at ' +
-        'war. The difference between their six shares is added to the victor ' +
-        'and deducted from the vanquished, so where the victor was the weaker ' +
-        'of the two the pair simply exchange totals. It sits outside the six ' +
-        'rather than inside Kala bala, where Santhanam lists it, because it is ' +
-        'the difference between two totals and cannot be part of what it ' +
-        'measures.' }
   ];
 
   /** One graha's rashi position, or nothing where the chart has none. */
@@ -1314,22 +1313,21 @@
      * reached, so which bala they belong to is never in question.
      */
     BALA_ROWS.forEach(function (bala) {
-      if (bala.onlyWhenSet && grahas.every(function (graha) {
-        return !result.grahas[graha][bala.key];
-      })) return;
       row(bala.label, bala.en, bala.max, bala.says, grahas.map(function (graha) {
         var x = result.grahas[graha];
-        var td = el('td', 'numeric', n(bala.parts ? x[bala.key].total : x[bala.key]));
-        // Who the war was with, which no figure in the row can say.
-        if (bala.key === 'yuddha' && x.war) td.title = yuddhaTitle(x);
-        return td;
+        return el('td', 'numeric', n(bala.parts ? x[bala.key].total : x[bala.key]));
       }), bala.parts ? 'bala-head' : null, bala.shows);
       (bala.parts || []).forEach(function (part) {
+        if (part.onlyWhenSet && grahas.every(function (graha) {
+          return !result.grahas[graha][bala.key][part.key];
+        })) return;
         row(part.label, part.en, part.max, part.says, grahas.map(function (graha) {
           var x = result.grahas[graha];
           var td = el('td', 'numeric', n(x[bala.key][part.key]));
           // The seven divisions behind the figure, which have no row of their own.
           if (part.key === 'saptavargaja') td.title = saptavargajaTitle(x);
+          // Who the war was with, which no figure in the row can say.
+          if (part.key === 'yuddha' && x.war) td.title = yuddhaTitle(x);
           return td;
         }), 'bala-part', part.shows);
       });
@@ -1373,7 +1371,9 @@
       'own requirement rather than against the others. Grahas are in the order of the ' +
       'tables beside this one, and Rahu and Ketu are outside Shadbala. Yuddha bala ' +
       'has a row only where two of the five starry grahas stand within a degree of ' +
-      'each other, which is about one chart in twelve. Saptavargaja uses the ladder ' +
+      'each other, which is about one chart in twelve; it is reckoned as Raman gives ' +
+      'it, the quotient of the two grahas\u2019 aggregates over the difference of ' +
+      'their disc diameters. Saptavargaja uses the ladder ' +
       'in Santhanam’s chapter 27 ' +
       '— 45, 30, 20, 15, 10, 4, 2 — rather than the halving series some ' +
       'calculators use, which is why totals here can differ from theirs by a few ' +
@@ -1445,7 +1445,7 @@
   function yuddhaTitle(x) {
     return x.war.map(function (war) {
       return (war.won ? 'Beats ' : 'Loses to ') + war.against + ' by ' +
-        war.gap.toFixed(1) + ', the two being ' +
+        war.value.toFixed(2) + ', the two being ' +
         (war.separation * 60).toFixed(1) + '\u2032 apart';
     }).join('. ') + '.';
   }

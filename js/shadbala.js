@@ -230,68 +230,73 @@ var Shadbala = (function () {
   /* -------------------------------------------------------- yuddha bala */
 
   /*
-   * Planetary war. Chapter 27 verse 20: "Should there be a war between the
-   * starry planets, the difference between the Shad-balas of the two should be
-   * added to the victor's Shad-bala and deducted from the Shad-bala of the
-   * vanquished."
+   * Planetary war, as B. V. Raman sets it out in sections 76 and 77 of Graha
+   * and Bhava Balas - the standard English treatment of this chapter, and the
+   * one followed here in preference to the bare verse.
    *
-   * Three things the text leaves to be settled, and what is settled here.
+   * "Two planets are said to be in Yuddha or fight when they are in conjunction
+   * and the distance between them is less than one degree. All the planets
+   * excepting Ravi and Chandra may enter into war. The conquering planet is the
+   * one whose longitude is less. ... ascertain the aggregate of the various
+   * Balas, viz., Sthanabala, the Dikbala and the Kalabala (up to Horabala) ...
+   * Find out the difference between the two aggregates ... Divide this
+   * difference by the difference between the diameters of the discs of the two
+   * fighting planets. And the resulting quotient which is the Yuddhabala must be
+   * added to the total of the Kalabala of the victorious planet and must be
+   * subtracted from the total Kalabala of the vanquished planet."
    *
-   * WHO. "Starry planets", which Santhanam glosses as two planets from Mars to
-   * Saturn, and chapter 79 verse 9 names as the same five. The luminaries are
-   * out. His note in chapter 7 says "the luminaries do enter into war", but that
-   * is a remark about houses rather than about this reckoning, and C. G. Rajan,
-   * whom he endorses there, excludes them outright.
+   * Three things that differ from Santhanam's verse 20, and why Raman wins each.
    *
-   * HOW CLOSE. Chapter 79 verse 9 says within one degree, which is the figure
-   * used. Two other readings circulate: the same whole degree, and Rajan's
-   * identical longitudes to the arcminute. The choice is not cosmetic and the
-   * arcminute reading is not usable - across 1800 sample births a war at one
-   * degree occurs in 7.9% of charts, at the same whole degree in 4.6%, and to
-   * the arcminute in none at all.
+   * THE VICTOR is the lesser longitude, not the more northerly. Santhanam gives
+   * the latitude account at length and calls the longitude rule what we are
+   * "normally taught"; Raman states the longitude rule flatly and works his
+   * examples on it. The two disagree about who won in half of all wars.
    *
-   * WHO WINS. Chapter 79 verse 9: Venus conquers whether it stands north or
-   * south, and among the other four the northern one conquers and the southern
-   * is defeated. Rajan's rule, which Santhanam prefers "for practical purposes",
-   * is that the higher latitude wins, and the two agree wherever both grahas lie
-   * on the same side. The older "lesser longitude wins" reading is the one
-   * Santhanam introduces as what we are "normally taught" before setting out the
-   * latitude account at length, so it is not the one followed.
+   * THE SIZE is divided by the difference of the planetary disc diameters, which
+   * Santhanam's verse does not mention at all. This is the whole of the
+   * difference between the two readings: applied raw it is a median 83 virupas
+   * and can reach 272, which exchanges the two grahas' totals outright; divided,
+   * it is a median of 1 and reaches 58.
    *
-   * This is a large correction and it is meant to be. Over the same 1800 births
-   * the median swing is 83 virupas and the worst 272, which is 4.5 rupas - more
-   * than any graha's whole requirement - and it moves 94 strong/weak verdicts.
-   * Calculators that quietly drop yuddha bala will not reconcile with this one
-   * on the 8% of charts that have a war.
+   * WHERE IT LANDS is inside Kala bala, which is where Raman lists it - his
+   * ninth kala component, after ayana - rather than outside the six. The
+   * aggregate it is computed from stops at hora bala, so ayana and the war
+   * itself are both outside the comparison and there is no circularity.
    */
   var WAR_ORB = 1;
-  var WARRING = [['Mars', 'mars'], ['Mercury', 'mercury'], ['Jupiter', 'jupiter'],
-    ['Venus', 'venus'], ['Saturn', 'saturn']];
+  var WARRING = ['Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
 
-  /**
-   * Every war in the chart, each as {won, lost, separation, latitudes}.
-   *
-   * Latitude is asked of the engine by Julian day rather than read off the
-   * chart: a chart assembled from the stored ephemeris carries longitudes only.
+  /*
+   * Bimba parimana, section 77: the diameters of the planetary discs, in arc.
+   * These are the figures Raman tabulates, and nothing else in Shadbala uses
+   * them - a war is the only place a graha's apparent size is asked about.
    */
-  function planetaryWars(chart, positions, T) {
+  var BIMBA = { Mars: 9.4, Mercury: 6.6, Jupiter: 190.4, Venus: 16.6, Saturn: 158.0 };
+
+  /** The aggregate a war is judged on: sthana, dig, and kala as far as hora. */
+  var WAR_KALA_PARTS = ['nathonnatha', 'paksha', 'tribhaga', 'abda', 'masa',
+    'vara', 'hora'];
+
+  function warAggregate(x) {
+    return WAR_KALA_PARTS.reduce(function (sum, key) {
+      return sum + x.kala[key];
+    }, x.sthana.total + x.dig);
+  }
+
+  /** Every war in the chart, each as {won, lost, separation}. */
+  function planetaryWars(positions) {
     var found = [];
     for (var i = 0; i < WARRING.length; i++) {
       for (var j = i + 1; j < WARRING.length; j++) {
-        var a = positions[WARRING[i][0]], b = positions[WARRING[j][0]];
+        var a = positions[WARRING[i]], b = positions[WARRING[j]];
         if (!a || !b) continue;
         var separation = Math.abs(Astro.norm360(a.longitude - b.longitude + 180) - 180);
         if (separation >= WAR_ORB) continue;
-        var la = Astro.eclipticLatitude(WARRING[i][1], T);
-        var lb = Astro.eclipticLatitude(WARRING[j][1], T);
-        var aWins = a.name === 'Venus' ? true
-          : b.name === 'Venus' ? false
-          : la > lb;                       // the more northerly conquers
+        var aWins = a.longitude < b.longitude;     // the lesser longitude conquers
         found.push({
           won: aWins ? a.name : b.name,
           lost: aWins ? b.name : a.name,
-          separation: separation,
-          latitudes: aWins ? [la, lb] : [lb, la]
+          separation: separation
         });
       }
     }
@@ -434,6 +439,13 @@ var Shadbala = (function () {
         hora: horaLord(jd, sunrise, chart.panchang.varaLord) === graha ? 60 : 0,
         ayana: graha === 'Sun' ? ayana * 2 : ayana        // doubled for the Sun
       };
+      /*
+       * Eight parts here and a ninth after the war is settled. Raman lists
+       * yuddha bala as the ninth kala component and has it added to or taken
+       * from the total kala bala, so the total cannot be closed until every
+       * graha's aggregate is known.
+       */
+      kala.yuddha = 0;
       kala.total = kala.nathonnatha + kala.paksha + kala.tribhaga + kala.abda +
         kala.masa + kala.vara + kala.hora + kala.ayana;
 
@@ -442,13 +454,6 @@ var Shadbala = (function () {
       var naisargika = NAISARGIKA[graha];
       var drik = drikBala(graha, positions, benefics);
 
-      /*
-       * The six shares, before any war is settled. Yuddha bala is the difference
-       * between two of these totals, so it cannot be one of them without the
-       * sum defining itself: the six are closed first and the war applied to
-       * what they come to.
-       */
-      var sixShares = sthana.total + dig + kala.total + cheshta + naisargika + drik;
       results[graha] = {
         sthana: sthana,
         saptavargajaDetail: saptavargaja.detail,
@@ -457,26 +462,27 @@ var Shadbala = (function () {
         cheshta: cheshta,
         naisargika: naisargika,
         drik: drik,
-        sixShares: sixShares,
-        yuddha: 0,
         war: null,
         benefic: benefics[graha]
       };
     });
 
     /*
-     * The war, and then the totals. Verse 20 adds the difference to the victor
-     * and deducts it from the vanquished, so a graha in two wars carries both.
+     * The war, then the totals. The quotient is added to the victor's kala bala
+     * and taken from the vanquished's, so a graha in two wars carries both.
      */
-    var wars = planetaryWars(chart, positions, T);
+    var wars = planetaryWars(positions);
     wars.forEach(function (war) {
-      var gap = Math.abs(results[war.won].sixShares - results[war.lost].sixShares);
-      results[war.won].yuddha += gap;
-      results[war.lost].yuddha -= gap;
-      [['won', war.lost], ['lost', war.won]].forEach(function (side) {
-        var me = results[side[0] === 'won' ? war.won : war.lost];
+      var gap = Math.abs(warAggregate(results[war.won]) - warAggregate(results[war.lost]));
+      var discs = Math.abs(BIMBA[war.won] - BIMBA[war.lost]);
+      war.value = discs ? gap / discs : gap;
+      war.gap = gap;
+      results[war.won].kala.yuddha += war.value;
+      results[war.lost].kala.yuddha -= war.value;
+      [[war.won, war.lost, true], [war.lost, war.won, false]].forEach(function (side) {
+        var me = results[side[0]];
         (me.war || (me.war = [])).push({
-          against: side[1], won: side[0] === 'won', gap: gap,
+          against: side[1], won: side[2], value: war.value,
           separation: war.separation
         });
       });
@@ -484,7 +490,9 @@ var Shadbala = (function () {
 
     GRAHAS.forEach(function (graha) {
       var x = results[graha];
-      x.totalShashtiamsa = x.sixShares + x.yuddha;
+      x.kala.total += x.kala.yuddha;
+      x.totalShashtiamsa = x.sthana.total + x.dig + x.kala.total + x.cheshta +
+        x.naisargika + x.drik;
       x.rupas = x.totalShashtiamsa / 60;
       x.required = REQUIRED_RUPAS[graha];
       x.ratio = x.rupas / x.required;

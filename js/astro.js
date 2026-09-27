@@ -546,25 +546,6 @@ var Astro = (function () {
     return { lon: norm360(ofDate.lon + nut.dpsi), lat: ofDate.lat, distance: rho2 };
   }
 
-  /**
-   * Apparent geocentric ecliptic latitude of a graha, degrees, north positive.
-   *
-   * Computed here rather than carried on the chart because a chart does not
-   * always come from the analytic engine: assembleChart takes a sample function
-   * that yields a longitude and nothing else, so a chart read back from the
-   * stored ephemeris has no latitude to carry. Every caller has the Julian day,
-   * which is all this needs.
-   *
-   * The Moon has its own series and is answered from that. The nodes are points
-   * on the ecliptic, so their latitude is zero by construction, and the Sun's is
-   * zero by definition of the ecliptic.
-   */
-  function eclipticLatitude(bodyKey, T) {
-    if (bodyKey === 'moon') return moonLatitude(T);
-    if (bodyKey === 'sun' || bodyKey === 'rahu' || bodyKey === 'ketu') return 0;
-    return apparentLongitude(bodyKey, T, nutation(T)).lat;
-  }
-
   /* --------------------------------------------------- zodiac vocabulary */
 
   var SIGNS = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
@@ -1659,7 +1640,6 @@ var Astro = (function () {
     apparentSiderealTime: apparentSiderealTime,
     moonLongitude: moonLongitude,
     moonLatitude: moonLatitude,
-    eclipticLatitude: eclipticLatitude,
     declination: declination,
     sunriseSunset: sunriseSunset,
     lunarNode: lunarNode,
