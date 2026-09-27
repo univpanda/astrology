@@ -850,14 +850,22 @@
    * even when the sign being judged belongs to a division, which is where the
    * classical rule puts it.
    */
+  /*
+   * The lord goes in abbreviated, the relation in words. What the cell is really
+   * reporting is the relation, and a full name in front of it takes the width
+   * the relation needs: "Great friend" is the answer and "Ve" is enough to say
+   * whose. The full name is in the hover, and in the Rashi column on the same
+   * row where the sign this lord rules is already spelt out.
+   */
   function dispositorOf(graha, sign, positionsD1) {
     var lord = Astro.SIGN_LORDS[sign];
     if (lord === graha) return 'itself';
-    if (!positionsD1[lord] || !positionsD1[graha]) return lord;
+    if (!positionsD1[lord] || !positionsD1[graha]) return Astro.grahaAbbr(lord);
     var relation = Astro.compoundRelation(graha, lord,
       ((positionsD1[lord].sign - positionsD1[graha].sign) % 12 + 12) % 12 + 1);
     // The nodes rule nothing and have no place in the friendship table.
-    return relation ? lord + ' \u00b7 ' + Astro.RELATION_LABELS[relation] : lord;
+    return Astro.grahaAbbr(lord) +
+      (relation ? ' \u00b7 ' + Astro.RELATION_LABELS[relation] : '');
   }
 
   /** "great friend" reads as "a great friend"; "neutral" takes no article. */
@@ -1009,15 +1017,25 @@
                  return Astro.SIGNS[(firstSign + h - 1) % 12] + ', the ' + Yogas.ordinal(h);
                }).join(' and ') + '.' }
            : { text: '–', cls: 'numeric' },
-         { text: r.isAscendant ? Astro.SIGN_LORDS[v.sign]
+         { text: r.isAscendant ? Astro.grahaAbbr(Astro.SIGN_LORDS[v.sign])
              : dispositorOf(r.name, v.sign, positionsD1),
            cls: 'dispositor',
-           title: r.isAscendant ? null : dispositorDetail(r.name, v.sign, positionsD1) },
+           title: r.isAscendant
+             ? Astro.SIGN_LORDS[v.sign] + ' rules ' + Astro.SIGNS[v.sign] + '.'
+             : dispositorDetail(r.name, v.sign, positionsD1) },
          { text: dms(v.degreeInSign), cls: 'longitude',
            title: 'Longitude ' + v.longitude.toFixed(4) + '°' },
          { text: nak.name },
          { text: String(nak.pada), cls: 'numeric' },
-         { text: nak.lord + ' / ' + nak.subLord }
+         /*
+          * Two grahas in one cell, so both go in abbreviated and the words go in
+          * the hover. Nothing else in the row needs them spelt out: this pair is
+          * read as a pair, Vimshottari's lord over its KP sub lord.
+          */
+         { text: Astro.grahaAbbr(nak.lord) + ' / ' + Astro.grahaAbbr(nak.subLord),
+           cls: 'nak-lords',
+           title: nak.name + ' is ruled by ' + nak.lord + ', and its sub lord is ' +
+             nak.subLord + '.' }
         ].forEach(function (cell) {
           var td = el('td', cell.cls, cell.text);
           if (cell.title) td.title = cell.title;

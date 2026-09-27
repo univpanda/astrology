@@ -908,6 +908,29 @@ ok('the dispositor is the lord of the sign shown in that row',
 ok('its relation is the compound one, counted in the rashi chart',
    /Astro\.compoundRelation\(graha, lord,/.test(appSrc) && /positionsD1\[lord\]\.sign/.test(appSrc));
 ok('a graha in its own sign disposits itself', /if \(lord === graha\) return 'itself';/.test(appSrc));
+/*
+ * Grahas named in a cell go in abbreviated: the dispositor's lord, the ascendant
+ * row's lord, and the nakshatra pair. The relation beside the dispositor stays in
+ * words, being the answer the column exists for, and every abbreviation has the
+ * full name in its hover.
+ */
+ok('the dispositor names its lord in the abbreviation, not in full',
+   /return Astro\.grahaAbbr\(lord\) \+/.test(appSrc) &&
+   /if \(!positionsD1\[lord\] \|\| !positionsD1\[graha\]\) return Astro\.grahaAbbr\(lord\);/
+     .test(appSrc) &&
+   /r\.isAscendant \? Astro\.grahaAbbr\(Astro\.SIGN_LORDS\[v\.sign\]\)/.test(appSrc));
+ok('but its relation stays in words, being what the column is for',
+   /' \\u00b7 ' \+ Astro\.RELATION_LABELS\[relation\]/.test(appSrc));
+ok('the nakshatra lord and sub lord are abbreviated too, with the names on hover',
+   /Astro\.grahaAbbr\(nak\.lord\) \+ ' \/ ' \+ Astro\.grahaAbbr\(nak\.subLord\)/.test(appSrc) &&
+   /is ruled by ' \+ nak\.lord \+ ', and its sub lord is ' \+\s*\n?\s*nak\.subLord/.test(appSrc));
+ok('no cell in the table prints a graha name in full where it names one',
+   !/nak\.lord \+ ' \/ ' \+ nak\.subLord/.test(appSrc));
+ok('and the note says so, pointing at the code the kundli already uses', (function () {
+  var flat = html.replace(/\s+/g, ' ');
+  return /Where a cell names a graha rather than describing one, it goes as the two-letter code the kundli uses, with the name on hover/
+    .test(flat);
+})());
 
 console.log('\nVargottama flags');
 /*
@@ -1621,8 +1644,15 @@ ok('an own sign is explained as one', /rules Leo, so this is its own sign/.test(
 ok('a node is said to keep no friendships', /Rahu keeps no friendships/.test(
    Disp.detail('Rahu', 5, { Rahu: { sign: 5 }, Mercury: { sign: 5 } })));
 
-ok('the dispositor cell carries that title, and the ascendant row does not',
-   /title: r\.isAscendant \? null : dispositorDetail\(r\.name, v\.sign, positionsD1\)/.test(appSrc));
+ok('the dispositor cell carries that title',
+   /: dispositorDetail\(r\.name, v\.sign, positionsD1\) \}/.test(appSrc));
+/*
+ * The ascendant has no dignity and no friendships, so its dispositor is a bare
+ * lordship. It used to carry no title at all, which left the abbreviation with
+ * nothing to expand to on the one row where the graha is not named anywhere.
+ */
+ok('and the ascendant row says plainly which sign that lord rules',
+   /Astro\.SIGN_LORDS\[v\.sign\] \+ ' rules ' \+ Astro\.SIGNS\[v\.sign\]/.test(appSrc));
 ok('the table states the direction in view, not only on hover', (function () {
   // Collapsed, so re-wrapping the paragraph cannot fail this on whitespace alone.
   var flat = html.replace(/\s+/g, ' ');
