@@ -1391,10 +1391,10 @@
        * about a third of the cells, a tint is any yoga at all and lands on most.
        */
       'A marked cell is one the score reads wrong and the mark says how, each being ' +
-      'something it cannot see, set against the value in that cell it bears on. A tinted ' +
-      'cell is one where the graha takes part in a yoga in that division: most cells are, ' +
-      'so the tint says where to look rather than what is rare. Hover either for the ' +
-      'reading, and the Yogas tab reads a division in full. ' +
+      'something it cannot see, set against the value in that cell it bears on. A cell ' +
+      'with a chip in its corner has something to say on hover: the yogas its graha takes ' +
+      'part in that division, or a score that its own word does not give. The Yogas tab ' +
+      'reads a division in full. ' +
       /*
        * Both say what the grid does before why. A reader looking at seven rows
        * wants "they are left out" first and the reason after it, not a clause
@@ -1673,12 +1673,23 @@
         var shared = (detail + yogaNote).trim();
         var signTitle = signSays.concat(shared || []).join(' ');
         var dignityTitle = dignitySays.concat(shared || []).join(' ');
-        if (signTitle) sign.title = signTitle;
-        if (dignityTitle) dignity.title = dignityTitle;
-        if (yogas.length) {
-          sign.className += ' varga-yoga';
-          dignity.className += ' varga-yoga';
+        /*
+         * A corner chip where a cell has something to say. It marks the presence
+         * of a hover rather than any one kind of thing in it, which is what a
+         * reader needs to know before hovering: the marks advertise themselves
+         * in letters, and a yoga or a score that disagrees with its label has
+         * nothing visible at all without this.
+         *
+         * A tint was tried here and taken out. Two thirds of the cells carry a
+         * yoga, so tinting them coloured most of the grid and made the dignities
+         * harder to read for a signal that was nearly always on.
+         */
+        if (signTitle) { sign.title = signTitle; sign.className += ' has-note'; }
+        if (dignityTitle) {
+          dignity.title = dignityTitle;
+          dignity.className += ' has-note';
         }
+
         /*
          * A star on a debilitation the chart cancels. It rides the word rather
          * than replacing it: the graha is still debilitated by sign, which is

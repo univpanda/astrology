@@ -1500,8 +1500,7 @@ ok('the note separates the two channels without naming a mark', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
   return /A marked cell is one the score reads wrong and the mark says how, each being something it cannot see/
     .test(flat) &&
-    /A tinted cell is one where the graha takes part in a yoga in that division: most cells are, so the tint says where to look rather than what is rare/
-      .test(flat);
+    /A cell with a chip in its corner has something to say on hover/.test(flat);
 })());
 ok('and names none of them, the key doing that', (function () {
   var at = appSrc.indexOf('function vargaNote');
@@ -1511,10 +1510,20 @@ ok('and names none of them, the key doing that', (function () {
     /<dt><span class="flag flag-v">\[V\]<\/span> Vargottama<\/dt>/
       .test(html.replace(/\s+/g, ' '));
 })());
-ok('and the tint is a background where the marks are letters', (function () {
+/*
+ * A tint was tried and taken out. Two thirds of the cells carry a yoga, so
+ * tinting them coloured most of the grid and made the dignities harder to read
+ * for a signal that was nearly always on. A corner chip says the same without
+ * touching the cell's ground or its colour.
+ */
+ok('the chip is a corner mark, not a fill', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-  return /#vargas-table td\.varga-yoga \{[^}]*background: var\(--varga-yoga\)/.test(css) &&
-    /--varga-yoga: #fcf3e0;/.test(css) && /--varga-yoga: #2e2a1c;/.test(css);
+  var block = css.slice(css.indexOf('#vargas-table td.has-note::after'));
+  block = block.slice(0, block.indexOf('}'));
+  return /border-top: 5px solid var\(--ink-faint\)/.test(block) &&
+    /border-left: 5px solid transparent/.test(block) &&
+    /top: 0;/.test(block) && /right: 0;/.test(block) &&
+    !/background/.test(block) && !/--varga-yoga/.test(css);
 })());
 /*
  * A key column keeps its identity in the two vertical rules either side, which
@@ -1528,11 +1537,9 @@ ok('so a key column that also holds a yoga keeps both signals', (function () {
   return /border-left: 1px solid var\(--line\)/.test(key) &&
     /border-right: 1px solid var\(--line\)/.test(key);
 })());
-ok('and the row rules stay visible through the yoga tint too', (function () {
+ok('and it needs nothing of the cell but a corner to sit in', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-  var block = css.slice(css.indexOf('#vargas-table td.varga-yoga {'));
-  block = block.slice(0, block.indexOf('}'));
-  return /border-bottom-color: var\(--line\)/.test(block);
+  return /#vargas-table td\.has-note \{ position: relative; \}/.test(css);
 })());
 ok('a graha in two yogas in one division is named once for each', (function () {
   var at = appSrc.indexOf('var list = yogasIn[division][name]');
@@ -1566,7 +1573,7 @@ ok('and no yoga becomes a sixth mark', (function () {
   var at = appSrc.indexOf('function renderVargas(state)');
   var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
   var marks = (block.match(/'flag flag-[a-z]+'/g) || []);
-  return marks.length === 5 && /varga-yoga/.test(block) &&
+  return marks.length === 5 && /has-note/.test(block) &&
     !/function grahaFootnote/.test(appSrc);
 })());
 ok('which is measurably a third of the cells rather than three fifths', (function () {
@@ -2478,8 +2485,8 @@ ok('and points at the hovers once, in general rather than kind by kind',
      var note = appSrc.slice(appSrc.indexOf('function vargaNote'));
      note = note.slice(0, note.indexOf('ABBREVIATE_ABOVE'));
      var flat = note.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
-     return (flat.match(/Hover/g) || []).length === 1 &&
-       /Hover either for the reading, and the Yogas tab reads a division in full/.test(flat) &&
+     return (flat.match(/hover/gi) || []).length === 1 &&
+       /has something to say on hover/.test(flat) &&
        !/a heading for what that division is worth/.test(flat);
    })());
 /*
@@ -2488,7 +2495,8 @@ ok('and points at the hovers once, in general rather than kind by kind',
  * different places.
  */
 ok('and everything it promises a hover on has one',
-   /if \(signTitle\) sign\.title = signTitle;/.test(appSrc) &&
+   /if \(signTitle\) \{ sign\.title = signTitle; sign\.className \+= ' has-note'; \}/
+     .test(appSrc) &&
    /th\.title = \(varga \? varga\.label/.test(appSrc) &&
    /td\.title = planet\.name \+ ' scores '/.test(appSrc));
 ok('and gives the seven-step reading when it differs from the label shown',
@@ -2878,9 +2886,15 @@ ok('both halves of a pair carry what the pair has to say',
  * And the same highlight. A yoga belongs to the graha in that division, which is
  * the pair of cells and not either row of it.
  */
-ok('and the same highlight, a yoga being the pair\u2019s and not a row\u2019s',
-   /sign\.className \+= ' varga-yoga';\s*\n\s*dignity\.className \+= ' varga-yoga';/
-     .test(appSrc));
+/*
+ * A chip goes on whichever half has something, which is usually both - the
+ * reading and the yogas belong to the pair - and only one where a mark put
+ * something on one of them alone.
+ */
+ok('and a chip goes on whichever half has something to say',
+   /if \(signTitle\) \{ sign\.title = signTitle; sign\.className \+= ' has-note'; \}/
+     .test(appSrc) &&
+   /dignity\.className \+= ' has-note';/.test(appSrc));
 ok('and a graha with no reading still contributes no rows at all',
    /if \(cells\.every\(function \(c\) \{ return !c; \}\)\) return;/.test(appSrc));
 ok('the rule sits under the pair rather than between its halves', (function () {
