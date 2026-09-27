@@ -1284,9 +1284,15 @@
   }
 
   function vargaNote(scheme, brief) {
-    return 'Where each graha stands in the ' + scheme.count + ' divisions of the ' +
-      scheme.label + ', judged against the lord of the sign each one gives. Every graha ' +
-      'takes two rows, the sign above its dignity there, and the last column scores those ' +
+    /*
+     * One idea a sentence. It had been "Where each graha stands in the 16
+     * divisions of the Shodasavarga, judged against the lord of the sign each
+     * one gives" - a fragment with no verb of its own, trailing a clause whose
+     * "each one" meant the divisions three lines back.
+     */
+    return 'Each of the ' + scheme.count + ' divisions of the ' + scheme.label +
+      ' puts a graha in a sign. The two rows under a graha give that sign and its dignity ' +
+      'there, judged against the sign\u2019s lord, and the last column scores those ' +
       'dignities out of twenty. ' +
       /*
        * The short forms with their words, built from the engine's own two tables

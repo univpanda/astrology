@@ -976,11 +976,14 @@ ok('the nakshatra lord and sub lord are abbreviated too, with the names on hover
    /is ruled by ' \+ nak\.lord \+ ', and its sub lord is ' \+\s*\n?\s*nak\.subLord/.test(appSrc));
 ok('no cell in the table prints a graha name in full where it names one',
    !/nak\.lord \+ ' \/ ' \+ nak\.subLord/.test(appSrc));
-ok('and the note says so, pointing at the code the kundli already uses', (function () {
-  var flat = html.replace(/\s+/g, ' ');
-  return /Where a cell names a graha rather than describing one, it goes as the two-letter code the kundli uses, with the name on hover/
-    .test(flat);
-})());
+/*
+  * No note says so. Two letters beside a relation in words is not a puzzle, the
+  * kundli above the table already labels its cells the same way, and every one
+  * of them carries the full name on hover.
+  */
+ok('and no note under the table explains the codes',
+   !/two-letter code the kundli uses/.test(html) &&
+   /title: nak\.name \+ ', pada '/.test(appSrc));
 
 console.log('\nVargottama flags');
 /*
@@ -2025,8 +2028,24 @@ ok('the rule sits under the pair rather than between its halves', (function () {
     /#vargas-table th\[rowspan\] \{[^}]*vertical-align: middle/.test(css) &&
     /td\.varga-sign/.test(css);
 })());
-ok('the note says the rows come in pairs',
-   /Every graha takes two rows/.test(appSrc.replace(/'\s*\+\s*'/g, '')));
+ok('the note says the rows come in pairs, and what each of the two holds',
+   /The two rows under a graha give that sign and its dignity there/
+     .test(appSrc.replace(/'\s*\+\s*'/g, '')));
+/*
+ * One idea a sentence. The opening had been a fragment with no verb of its own -
+ * "Where each graha stands in the 16 divisions of the Shodasavarga" - trailing a
+ * clause whose "each one" referred to the divisions three lines back.
+ */
+ok('and opens with a sentence rather than a fragment', (function () {
+  var at = appSrc.indexOf('function vargaNote');
+  // Collapsed on both counts: the string joins, then the line wrapping between
+  // them, so re-wrapping the expression cannot fail this.
+  var flat = appSrc.slice(at, appSrc.indexOf('ABBREVIATE_ABOVE', at))
+    .replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
+  return /Each of the ' \+ scheme\.count \+ ' divisions of the ' \+ scheme\.label \+ ' puts a graha in a sign\./
+    .test(flat) && !/Where each graha stands in/.test(flat) &&
+    !/the lord of the sign each one gives/.test(flat);
+})());
 
 /*
  * The dispositor relation is asymmetric, so the cell has to say whose view it
@@ -2075,11 +2094,24 @@ ok('the dispositor cell carries that title',
  */
 ok('and the ascendant row says plainly which sign that lord rules',
    /Astro\.SIGN_LORDS\[v\.sign\] \+ ' rules ' \+ Astro\.SIGNS\[v\.sign\]/.test(appSrc));
-ok('the table states the direction in view, not only on hover', (function () {
-  // Collapsed, so re-wrapping the paragraph cannot fail this on whitespace alone.
-  var flat = html.replace(/\s+/g, ' ');
-  return (flat.match(/the graha's own view of the lord whose sign it occupies/g) || []).length === 1;
+/*
+ * The panel carries no note at all now. Which direction the dispositor relation
+ * is read in was stated there and is stated in the cell's own hover, on every
+ * row, which is where a reader who wonders about one cell will look. That leaves
+ * it explained once rather than in two places that can disagree - but it does
+ * mean the hover is now the only statement of it, so the hover has to say both
+ * directions, and that is what is checked here.
+ */
+ok('the panel carries no note under the table', (function () {
+  var at = html.indexOf('id="panel-grahas"');
+  var panel = html.slice(at, html.indexOf('id="panel-shadbala"'));
+  return !/varga-note/.test(panel) && /id="graha-table"/.test(panel);
 })());
+ok('so the dispositor hover carries the direction, and both directions',
+   /This is the direction shown\./.test(moonInVirgo) &&
+   /Read the other way it differs: Mercury regards Moon as a great enemy\./
+     .test(moonInVirgo) &&
+   /title: r\.isAscendant/.test(appSrc), moonInVirgo);
 ok('friendship is defined once, in the engine', (function () {
   var astroSrc = fs.readFileSync(path.join(root, 'js/astro.js'), 'utf8');
   var shadSrc = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8');
