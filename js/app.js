@@ -1122,8 +1122,71 @@
     return state.shadbala;
   }
 
+  /*
+   * The five shares Sthana bala is made of, in the order Parashara gives them,
+   * each with the most it can be worth. The maximum is beside the name rather
+   * than left to be known: a row reading 60.0 says nothing until it is read
+   * against 60 for Kendradi and 315 for Saptavargaja, and the two rows look the
+   * same until it is.
+   */
+  var STHANA_PARTS = [
+    { key: 'uchcha', label: 'Uchcha', max: 60,
+      says: 'How far the graha stands from its own debilitation point: nothing at ' +
+        'that degree, sixty half a circle away from it.' },
+    { key: 'saptavargaja', label: 'Saptavargaja', max: 315,
+      says: 'The graha against the lord of the sign it takes in each of the seven ' +
+        'divisions, 45 for moolatrikona down to 2 in a great enemy’s, added ' +
+        'over all seven.' },
+    { key: 'ojhayugma', label: 'Ojhayugma', max: 30,
+      says: 'Fifteen for standing in the odd or even sign the graha wants, and ' +
+        'fifteen again for the navamsa. The Moon and Venus want even signs, the ' +
+        'other five odd.' },
+    { key: 'kendradi', label: 'Kendradi', max: 60,
+      says: 'Sixty in an angle, thirty in a succedent house, fifteen in a cadent ' +
+        'one. The only share of Sthana bala that reads the houses.' },
+    { key: 'drekkana', label: 'Drekkana', max: 15,
+      says: 'Fifteen in the third of a sign that matches the graha’s sex: the ' +
+        'first third for the Sun, Mars and Jupiter, the middle for Mercury and ' +
+        'Saturn, the last for the Moon and Venus.' }
+  ];
+
+  /*
+   * The six shares of Shadbala. Sthana is the total of the five above it rather
+   * than a figure of its own, so it closes that block instead of opening it -
+   * the parts are read, then what they come to.
+   */
+  var BALA_ROWS = [
+    { key: 'sthana', label: 'Sthana bala', total: true, max: 480,
+      says: 'Positional strength: the five rows above it added.' },
+    { key: 'dig', label: 'Dig bala', max: 60,
+      says: 'Directional strength. Each graha has one angle it is strongest on and ' +
+        'is worth nothing opposite it: Jupiter and Mercury the 1st, the Sun and ' +
+        'Mars the 10th, Saturn the 7th, the Moon and Venus the 4th.' },
+    /*
+     * The one share with no ceiling to quote. Its eight parts cap at 390
+     * together, but the Moon's paksha and the Sun's ayana are each counted
+     * double, which lifts those two to 450 - so a single figure in the column
+     * would be wrong for two of the seven grahas under it.
+     */
+    { key: 'kala', label: 'Kala bala', max: null,
+      says: 'Temporal strength, eight parts of it, on hover. They cap at 390 ' +
+        'together, or 450 for the Moon and the Sun, whose paksha and ayana ' +
+        'count double - which is why no one ceiling is given here.' },
+    { key: 'cheshta', label: 'Cheshta bala', max: 60,
+      says: 'Motional strength, read off how far the graha is from its mean motion ' +
+        'and deepest retrograde. The Sun and Moon never retrograde, so theirs is ' +
+        'taken from ayana and paksha bala instead.' },
+    { key: 'naisargika', label: 'Naisargika bala', max: 60,
+      says: 'Natural strength, a constant per graha: the same figure in every ' +
+        'chart, running from the Sun’s sixty down to Saturn’s 8.57.' },
+    { key: 'drik', label: 'Drik bala', max: null,
+      says: 'Aspectual strength, the only share that can be negative: what the ' +
+        'benefics aspecting the graha are worth, less what the malefics are.' }
+  ];
+
   function renderShadbala(state) {
-    var tbody = document.querySelector('#shadbala-table tbody');
+    var table = document.getElementById('shadbala-table');
+    var tbody = table.querySelector('tbody');
     tbody.innerHTML = '';
     var result = strengthsFor(state);
 
@@ -1131,52 +1194,133 @@
      * Listed in the same order as the graha tables rather than strongest first.
      * Reading across from one table to the other is the common move, and a list
      * that reorders itself per chart makes that a search each time. The module
-     * still returns its ranking; the Rupas and Needs columns carry the same
+     * still returns its ranking; the Rupas and Needs rows carry the same
      * comparison for anyone who wants it.
      */
-    state.chart.planets.forEach(function (planet) {
-      var graha = planet.name;
-      var x = result.grahas[graha];
-      if (!x) return;         // Rahu and Ketu are outside Shadbala
+    var grahas = state.chart.planets.map(function (p) { return p.name; })
+      .filter(function (name) { return result.grahas[name]; });
+    renderShadbalaHead(table, grahas, result);
+
+    var n = function (v) { return v.toFixed(1); };
+    var row = function (label, max, says, cells, cls) {
       var tr = document.createElement('tr');
-      if (!x.strong) tr.className = 'weak-graha';
-      var n = function (v) { return v.toFixed(1); };
-      [[graha, null],
-       [n(x.sthana.total), 'numeric'], [n(x.dig), 'numeric'],
-       [n(x.kala.total), 'numeric'], [n(x.cheshta), 'numeric'],
-       [n(x.naisargika), 'numeric'], [n(x.drik), 'numeric'],
-       [x.totalShashtiamsa.toFixed(0), 'numeric'],
-       [x.rupas.toFixed(2), 'numeric'],
-       [String(x.required), 'numeric'],
-       [x.strong ? 'Strong' : 'Weak', x.strong ? 'strong-flag' : 'weak-flag']
-      ].forEach(function (cell, i) {
-        var td = el(i === 0 ? 'th' : 'td', cell[1], cell[0]);
-        if (i === 0) td.setAttribute('scope', 'row');
-        if (i === 1) {
-          td.title = 'Uchcha ' + n(x.sthana.uchcha) + ', saptavargaja ' + n(x.sthana.saptavargaja) +
-            ', ojhayugma ' + n(x.sthana.ojhayugma) + ', kendradi ' + n(x.sthana.kendradi) +
-            ', drekkana ' + n(x.sthana.drekkana);
-        }
-        if (i === 3) {
-          td.title = 'Nathonnatha ' + n(x.kala.nathonnatha) + ', paksha ' + n(x.kala.paksha) +
-            ', tribhaga ' + n(x.kala.tribhaga) + ', abda ' + n(x.kala.abda) +
-            ', masa ' + n(x.kala.masa) + ', vara ' + n(x.kala.vara) +
-            ', hora ' + n(x.kala.hora) + ', ayana ' + n(x.kala.ayana);
-        }
-        tr.appendChild(td);
-      });
+      if (cls) tr.className = cls;
+      tr.appendChild(measureHead(label, max, says));
+      cells.forEach(function (cell) { tr.appendChild(cell); });
       tbody.appendChild(tr);
+      return tr;
+    };
+
+    /*
+     * Sthana bala opened into its parts. It was one figure with the five in a
+     * hover, which put the only place they could be compared behind a mouse and
+     * one graha at a time: a reader wanting to know why Mercury is positionally
+     * weak had to hover seven cells and hold the answers.
+     */
+    STHANA_PARTS.forEach(function (part) {
+      row(part.label, part.max, part.says, grahas.map(function (graha) {
+        var x = result.grahas[graha];
+        var td = el('td', 'numeric', n(x.sthana[part.key]));
+        if (part.key === 'saptavargaja') td.title = saptavargajaTitle(x);
+        return td;
+      }), 'bala-part');
     });
 
+    BALA_ROWS.forEach(function (bala) {
+      row(bala.label, bala.max, bala.says, grahas.map(function (graha) {
+        var x = result.grahas[graha];
+        var value = bala.key === 'sthana' ? x.sthana.total
+          : bala.key === 'kala' ? x.kala.total : x[bala.key];
+        var td = el('td', 'numeric', n(value));
+        if (bala.key === 'kala') td.title = kalaTitle(x);
+        return td;
+      }), bala.total ? 'bala-total' : null);
+    });
+
+    /*
+     * The close: what the six come to, in shashtiamsas and then in rupas, what
+     * this graha needs, and the verdict that comparing the two gives. The
+     * verdict used to colour the whole of a graha's row; a graha is a column
+     * now, and colouring a column would paint every part of a strength that is
+     * only weak in total.
+     */
+    row('Total', null, 'The six shares added, in shashtiamsas.',
+      grahas.map(function (graha) {
+        return el('td', 'numeric', result.grahas[graha].totalShashtiamsa.toFixed(0));
+      }), 'bala-sum');
+    row('Rupas', null, 'The total divided by sixty.', grahas.map(function (graha) {
+      return el('td', 'numeric', result.grahas[graha].rupas.toFixed(2));
+    }));
+    row('Needs', null, 'The minimum Parashara sets for this graha, which differs ' +
+      'by graha: compare a total with the figure under it rather than with the ' +
+      'other grahas.', grahas.map(function (graha) {
+      return el('td', 'numeric', String(result.grahas[graha].required));
+    }));
+    row('Verdict', null, 'Strong where the rupas meet what the graha needs.',
+      grahas.map(function (graha) {
+        var x = result.grahas[graha];
+        return el('td', x.strong ? 'strong-flag' : 'weak-flag',
+          x.strong ? 'Strong' : 'Weak');
+      }));
+
     document.getElementById('shadbala-note').textContent =
-      'In shashtiamsas; sixty make one Rupa. A graha is strong when it meets the minimum ' +
-      'Parashara sets for it, which differs by graha, so compare each total against its own ' +
-      'requirement rather than against the others. Grahas are listed as in the tables beside ' +
-      'this one. Hover the Sthana and Kala figures for their parts. Yuddha bala is not ' +
-      'included, and Rahu and Ketu are outside Shadbala. Saptavargaja uses the ladder in ' +
-      'Santhanam\u2019s chapter 27 \u2014 45, 30, 20, 15, 10, 4, 2 \u2014 rather than the ' +
-      'halving series some calculators use, which is why totals here can differ from theirs ' +
-      'by a few virupas.';
+      'In shashtiamsas; sixty make one Rupa, and the figure beside a row name is the ' +
+      'most that row can be worth. A graha is strong when it meets the minimum ' +
+      'Parashara sets for it, which differs by graha, so compare each total against its ' +
+      'own requirement rather than against the others. Grahas are in the order of the ' +
+      'tables beside this one. Yuddha bala is not included, and Rahu and Ketu are ' +
+      'outside Shadbala. Saptavargaja uses the ladder in Santhanam’s chapter 27 ' +
+      '— 45, 30, 20, 15, 10, 4, 2 — rather than the halving series some ' +
+      'calculators use, which is why totals here can differ from theirs by a few ' +
+      'virupas.';
+  }
+
+  /*
+   * Grahas across the top, the measures down the side. It was the other way
+   * round, which is the shape the arithmetic has - a graha is a sum of its
+   * shares - but not the shape the question has: Sthana bala opened into five
+   * rows makes fifteen measures, and fifteen columns is a table that scrolls.
+   * Turned, the width is seven grahas however many measures are shown.
+   */
+  function renderShadbalaHead(table, grahas, result) {
+    var row = table.querySelector('thead tr');
+    row.innerHTML = '';
+    var first = el('th', null, 'Measure');
+    first.setAttribute('scope', 'col');
+    row.appendChild(first);
+    grahas.forEach(function (graha) {
+      var th = el('th', result.grahas[graha].strong ? null : 'weak-graha', graha);
+      th.setAttribute('scope', 'col');
+      row.appendChild(th);
+    });
+  }
+
+  /** A measure's name, the most it can be worth, and what it measures. */
+  function measureHead(label, max, says) {
+    var th = el('th', null, label);
+    th.setAttribute('scope', 'row');
+    if (max !== null && max !== undefined) {
+      th.appendChild(el('span', 'varga-weight', String(max)));
+    }
+    if (says) th.title = says;
+    return th;
+  }
+
+  /** One graha's seven divisions, the figure each was worth and why. */
+  function saptavargajaTitle(x) {
+    return x.saptavargajaDetail.map(function (part) {
+      return 'D' + part.division + ' ' + Astro.SIGN_ABBR[part.sign] + ' ' +
+        Astro.titleCase(Astro.VARGA_DIGNITY_LABELS[part.relation] || part.relation);
+    }).join(', ') + '.';
+  }
+
+  /** One graha's eight parts of Kala bala. */
+  function kalaTitle(x) {
+    var n = function (v) { return v.toFixed(1); };
+    return 'Nathonnatha ' + n(x.kala.nathonnatha) + ', paksha ' + n(x.kala.paksha) +
+      ', tribhaga ' + n(x.kala.tribhaga) + ', abda ' + n(x.kala.abda) +
+      ', masa ' + n(x.kala.masa) + ', vara ' + n(x.kala.vara) +
+      ', hora ' + n(x.kala.hora) + ', ayana ' + n(x.kala.ayana) + '.';
   }
 
   /* ----------------------------------------------------------- vargas */

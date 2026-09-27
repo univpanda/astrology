@@ -565,10 +565,11 @@ ok('the heading corner sits above the column it heads', (function () {
  * above, so nothing there is frozen by accident.
  */
 ok('and every scrolling table really does head its rows with a th', (function () {
-  // The grid heads its rows with a division now; the rest with a graha.
+  // Two grids head their rows with what they measure - a division, a share of
+  // Shadbala - and the rest with a graha.
   return (appSrc.match(/setAttribute\('scope', 'row'\)/g) || []).length === 5 &&
     (appSrc.match(/setAttribute\('scope', 'rowgroup'\)/g) || []).length === 1 &&
-    (appSrc.match(/el\(i === 0 \? 'th' : 'td'/g) || []).length === 2;
+    (appSrc.match(/el\(i === 0 \? 'th' : 'td'/g) || []).length === 1;
 })());
 ok('the frozen cell joins the hover band, except where it spans a group',
    (function () {
@@ -1172,21 +1173,134 @@ ok('the note names the nodes as a modern convention',
 // Shadbala: the breakdown, not just a total.
 ok('the page loads the shadbala module', /<script src="js\/shadbala\.js"><\/script>/.test(html));
 ok('shadbala no longer has a card to itself', !/<h3>Shadbala<\/h3>/.test(html));
-ok('all six components have their own column', (function () {
-  var head = html.slice(html.indexOf('id="shadbala-table"'), html.indexOf('shadbala-note'));
-  return ['Sthana', 'Dig', 'Kala', 'Cheshta', 'Naisargika', 'Drik', 'Total', 'Rupas', 'Needs']
-    .every(function (c) { return head.indexOf('>' + c + '<') >= 0; });
+/*
+ * Grahas across the top, measures down the side - the shape of the Vimsopaka
+ * grid beside it, and for the same reason. Opening Sthana bala makes fifteen
+ * measures, and fifteen columns is a table that scrolls; turned, the width is
+ * whatever grahas Shadbala reckons however many measures are shown.
+ */
+ok('all six shares have a row of their own, the five parts of Sthana above it',
+   (function () {
+     var at = appSrc.indexOf('var BALA_ROWS = [');
+     var block = appSrc.slice(at, appSrc.indexOf('function renderShadbala', at));
+     var shares = ['sthana', 'dig', 'kala', 'cheshta', 'naisargika', 'drik']
+       .every(function (k) { return block.indexOf("key: '" + k + "'") >= 0; });
+     var parts = appSrc.slice(appSrc.indexOf('var STHANA_PARTS = ['),
+                              appSrc.indexOf('var BALA_ROWS = ['));
+     return shares &&
+       ['uchcha', 'saptavargaja', 'ojhayugma', 'kendradi', 'drekkana']
+         .every(function (k) { return parts.indexOf("key: '" + k + "'") >= 0; }) &&
+       /<table id="shadbala-table">\s*<thead><tr><\/tr><\/thead>/
+         .test(html.replace(/\s+/g, ' ').replace(/> </g, '><'));
+   })());
+/*
+ * The five are what the row under them is made of, not five more shares of
+ * Shadbala, so they are recessive and indented and the rule falls under them
+ * rather than over: a reader running down the column meets the parts and then
+ * what they come to.
+ */
+ok('and the parts read as parts of the row they add up to', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  return /#shadbala-table tr\.bala-part > \* \{ color: var\(--ink-soft\); \}/.test(css) &&
+    /#shadbala-table tr\.bala-part th\[scope="row"\] \{ padding-left: 1\.1rem; \}/.test(css) &&
+    /#shadbala-table tr\.bala-total > \* \{ border-top: 1px solid var\(--line\); \}/.test(css);
 })());
-ok('sthana and kala expose their parts on hover',
-   /Uchcha ' \+ n\(x\.sthana\.uchcha\)/.test(appSrc) &&
-   /Nathonnatha ' \+ n\(x\.kala\.nathonnatha\)/.test(appSrc));
-ok('shadbala rows follow the graha order of the tables beside it',
-   /state\.chart\.planets\.forEach\(function \(planet\) \{/.test(appSrc) &&
-   !/result\.ranking\.forEach/.test(appSrc));
-ok('the nodes are skipped rather than shown blank',
-   /if \(!x\) return;\s*\/\/ Rahu and Ketu are outside Shadbala/.test(appSrc));
+/*
+ * And the Sthana row is the five added rather than a figure of its own, so the
+ * block cannot show parts that do not come to their total.
+ */
+ok('and the total row is those five added, read off the engine', (function () {
+  var c = Astro.chart({ jdUT: Astro.julianDay(1946, 7, 6, 19 + 20 / 60 + 4),
+                        latitude: 40.7128, longitude: -74.0060, tzOffsetMinutes: -240 });
+  var r = Shadbala.compute(c, { latitude: 40.7128, longitude: -74.0060,
+                                tzOffsetMinutes: -240 });
+  return Object.keys(r.grahas).every(function (g) {
+    var st = r.grahas[g].sthana;
+    var sum = st.uchcha + st.saptavargaja + st.ojhayugma + st.kendradi + st.drekkana;
+    return Math.abs(sum - st.total) < 1e-9;
+  }) && /bala\.key === 'sthana' \? x\.sthana\.total/.test(appSrc);
+})());
+/*
+ * A figure alone says nothing: 60.0 is everything Kendradi can give and a fifth
+ * of what Saptavargaja can, and the two rows look the same until the maximum is
+ * beside the name. The same span the Vimsopaka grid uses for a division's share.
+ */
+ok('and every measure with a ceiling carries it beside its name',
+   /th\.appendChild\(el\('span', 'varga-weight', String\(max\)\)\)/.test(appSrc) &&
+   /the figure beside a row name is the most that row can be worth/
+     .test(appSrc.replace(/'\s*\+\s*'/g, '')));
+/*
+ * And it really is the most: a ceiling in the column is a claim about the
+ * engine, so it is checked against the engine rather than believed. Kala bala
+ * is the one share with none to give - its eight parts cap at 390 together, but
+ * the Moon's paksha and the Sun's ayana count double, which puts those two at
+ * 450, so a single figure would be wrong for two of the seven columns under it.
+ */
+ok('and no measure ever exceeds the ceiling it claims', (function () {
+  var declared = {};
+  var parts = appSrc.slice(appSrc.indexOf('var STHANA_PARTS = ['),
+                           appSrc.indexOf('function renderShadbala'));
+  var m, re = /key: '([a-z]+)', label: '[^']*', (?:total: true, )?max: (\d+|null)/g;
+  while ((m = re.exec(parts))) declared[m[1]] = m[2] === 'null' ? null : Number(m[2]);
+  if (declared.sthana !== 60 + 315 + 30 + 60 + 15) return false;
+  if (declared.kala !== null || declared.drik !== null) return false;
+
+  var worst = {};
+  for (var y = 1950; y < 2000; y++) {
+    var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+    var c = Astro.chart({ jdUT: Astro.julianDay(y, 1 + y % 12, 1 + y % 28, (y % 24)),
+                          latitude: place.latitude, longitude: place.longitude,
+                          tzOffsetMinutes: place.tzOffsetMinutes });
+    var r = Shadbala.compute(c, place);
+    Object.keys(r.grahas).forEach(function (g) {
+      var x = r.grahas[g];
+      var seen = { uchcha: x.sthana.uchcha, saptavargaja: x.sthana.saptavargaja,
+        ojhayugma: x.sthana.ojhayugma, kendradi: x.sthana.kendradi,
+        drekkana: x.sthana.drekkana, sthana: x.sthana.total, dig: x.dig,
+        cheshta: x.cheshta, naisargika: x.naisargika };
+      Object.keys(seen).forEach(function (k) {
+        worst[k] = Math.max(worst[k] === undefined ? -Infinity : worst[k], seen[k]);
+      });
+    });
+  }
+  return Object.keys(worst).every(function (k) {
+    return declared[k] === undefined || declared[k] === null ||
+      worst[k] <= declared[k] + 1e-9;
+  });
+})());
+/*
+ * Sthana's parts are rows now, so hovering the total to read them would be the
+ * grid saying the same thing twice. Kala's eight are still only in a hover, and
+ * Saptavargaja's seven divisions have never been anywhere else.
+ */
+ok('the parts that have no row of their own are the ones on hover',
+   /td\.title = kalaTitle\(x\)/.test(appSrc) &&
+   /td\.title = saptavargajaTitle\(x\)/.test(appSrc) &&
+   /Nathonnatha ' \+ n\(x\.kala\.nathonnatha\)/.test(appSrc) &&
+   !/Uchcha ' \+ n\(x\.sthana\.uchcha\)/.test(appSrc));
+ok('and each measure says what it measures, once for the row',
+   /if \(says\) th\.title = says;/.test(appSrc) &&
+   /function measureHead\(label, max, says\)/.test(appSrc));
+ok('shadbala columns follow the graha order of the tables beside it',
+   /var grahas = state\.chart\.planets\.map\(function \(p\) \{ return p\.name; \}\)/
+     .test(appSrc) && !/result\.ranking\.forEach/.test(appSrc));
+ok('the nodes are skipped rather than shown as a column of blanks',
+   /\.filter\(function \(name\) \{ return result\.grahas\[name\]; \}\)/.test(appSrc));
 ok('each graha is judged against its own minimum',
-   /x\.strong \? 'Strong' : 'Weak'/.test(appSrc) && /String\(x\.required\)/.test(appSrc));
+   /x\.strong \? 'Strong' : 'Weak'/.test(appSrc) &&
+   /String\(result\.grahas\[graha\]\.required\)/.test(appSrc));
+/*
+ * And the verdict colours that graha's heading, not a band across the table. A
+ * graha was a row and the row was tinted; a graha is a column now, and tinting
+ * one end to end would paint every share of a strength that is only short in
+ * total.
+ */
+ok('and a weak verdict marks that graha alone', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  return /result\.grahas\[graha\]\.strong \? null : 'weak-graha'/.test(appSrc) &&
+    /#shadbala-table thead th\.weak-graha \{ color: var\(--retro\); \}/.test(css) &&
+    !/tr\.weak-graha \{ background/.test(css);
+})());
 ok('the shadbala note names the ladder it uses, since totals differ between readings',
    /45, 30, 20, 15, 10, 4, 2/.test(appSrc.replace(/'\s*\+\s*'/g, '')) &&
    /halving series some calculators use/.test(appSrc.replace(/'\s*\+\s*'/g, '')));

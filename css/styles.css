@@ -921,6 +921,38 @@ td .retro-flag, td.retro-flag, th .retro-flag { color: var(--retro); }
    one division: its sign over its dignity, two lines in one td rather than two
    rows to be kept in step. Seven columns however many divisions the scheme has,
    which is what took the horizontal scroll out. */
+/* ------------------------------------------------------- shadbala grid */
+
+/* Grahas across the top and the measures down the side, the same shape as the
+   Vimsopaka grid beside it, so the two are read the same way. Every figure is a
+   number under a graha's name, so every figure centres under it; the measure
+   names stay left, being the column a reader runs down. */
+#shadbala-table th, #shadbala-table td { text-align: center; }
+#shadbala-table tbody th[scope="row"] { text-align: left; white-space: nowrap; }
+#shadbala-table td.numeric { font-variant-numeric: tabular-nums; }
+/* Fifteen rows is a lot of table; let it breathe less than the others. */
+#shadbala-table th, #shadbala-table td { padding-top: 0.4rem; padding-bottom: 0.4rem; }
+
+/* The five parts of Sthana bala are recessive: they are what the row under them
+   is made of, not six measures of equal standing, and reading them as equals is
+   what makes the block look like eleven shares of Shadbala rather than six. */
+#shadbala-table tr.bala-part > * { color: var(--ink-soft); }
+#shadbala-table tr.bala-part th[scope="row"] { padding-left: 1.1rem; }
+
+/* And the row they come to closes the block rather than opening it, with the
+   rule under the parts rather than over them. */
+#shadbala-table tr.bala-total > * { border-top: 1px solid var(--line); }
+#shadbala-table tr.bala-sum > * {
+  border-top: 1px solid var(--line);
+  font-weight: 600;
+}
+
+/* A verdict is one graha's, so it colours that graha's heading and its own cell
+   and nothing between. It used to colour a whole row, which was that graha when
+   a graha was a row; a column tinted end to end would paint every share of a
+   strength that is only short in total. */
+#shadbala-table thead th.weak-graha { color: var(--retro); }
+
 #vargas-table td.varga-cell { vertical-align: top; }
 #vargas-table .varga-sign,
 #vargas-table .varga-dignity { display: block; white-space: nowrap; }
@@ -1209,7 +1241,6 @@ tbody tr:hover th[rowspan] { background: var(--surface); }
    spanning cell belonging to all of its rows and to none. */
 tbody tr:hover th[scope]:not([rowspan]) { background: var(--row-hover); }
 
-tr.weak-graha { background: rgba(184, 72, 58, 0.06); }
 td.strong-flag { color: var(--green-deep); font-weight: 600; }
 td.weak-flag { color: var(--retro); font-weight: 600; }
 
@@ -1291,7 +1322,6 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
   .add-kundali:hover { background: #2a4435; }
   tbody tr:hover { background: var(--row-hover); }
   tr.current-dasha { background: rgba(88, 192, 138, 0.13); }
-  tr.weak-graha { background: rgba(232, 134, 122, 0.08); }
 }
 
 /* ------------------------------------------------------------------- print */
