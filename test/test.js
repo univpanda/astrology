@@ -515,24 +515,38 @@ ok('and a graha the order has never heard of keeps its place at the end', (funct
 
 console.log('\nBenefic and malefic nature');
 /*
- * Santhanam's note at chapter 2 separates two things this function had run
- * together: a waning Moon is a malefic and a waxing one a benefic, while the
- * 120-to-240 band some commentators quote is the Yavana view of her strength.
- * The code tested brightness, 90 to 270, which is the second wearing the name
- * of the first.
+ * Chapter 2 verse 11 names "decreasing Moon" among the malefics and leaves
+ * decreasing undefined. The two glosses put the boundary in different places,
+ * and the difference is half of all charts.
+ *
+ * Santhanam reads it as the dark fortnight, so the boundary is 180 degrees, and
+ * sets the other view aside in his note as belonging to the Moon's strength
+ * rather than her nature. Raman reads it as the thin Moon and fixes the
+ * boundary at the eighth day either side - Hindu Predictive Astrology page 55,
+ * "From the eighth day of bright half of the lunar month the Moon is full and
+ * strong. She is weak from the eighth day of the dark half", and section 53 of
+ * Graha and Bhava Balas says the same. That is 90 degrees to 270.
+ *
+ * Raman is followed. The verse is Parashara's and both glosses are commentary,
+ * but only one of the two commentators is writing from inside the Parashari
+ * tradition this site follows throughout.
  */
-ok('the Moon is benefic by waxing, not by brightness', (function () {
+ok('the Moon is benefic while full, by Raman\'s eighth-day boundary', (function () {
   var chart = function (elongation) {
     return { planets: [
       { name: 'Sun', sign: 0, longitude: 0 },
       { name: 'Moon', sign: Math.floor(elongation / 30) % 12, longitude: elongation }] };
   };
-  // 60 degrees on: waxing and dim, so benefic by the rule and not by brightness.
-  // 200 degrees on: waning and bright, so the reverse.
-  return A.naturalBenefics(chart(60)).Moon === true &&
-    A.naturalBenefics(chart(200)).Moon === false;
+  // 60 degrees on: waxing but still thin, so malefic by Raman and benefic by
+  // Santhanam. 200 degrees on: waning but still full, so the reverse.
+  return A.naturalBenefics(chart(60)).Moon === false &&
+    A.naturalBenefics(chart(200)).Moon === true &&
+    A.naturalBenefics(chart(90)).Moon === false &&
+    A.naturalBenefics(chart(91)).Moon === true &&
+    A.naturalBenefics(chart(269)).Moon === true &&
+    A.naturalBenefics(chart(270)).Moon === false;
 })());
-ok('and the two rules disagree about half of all charts', (function () {
+ok('and the two glosses disagree about half of all charts', (function () {
   var differ = 0, charts = 0;
   for (var y = 1900; y < 2020; y++) {
     for (var h = 1; h < 24; h += 7) {
@@ -548,42 +562,33 @@ ok('and the two rules disagree about half of all charts', (function () {
   return differ / charts > 0.45 && differ / charts < 0.55;
 })());
 /*
- * Two clauses follow it in the same note, and both are Parashara's own.
+ * And the Moon's nature no longer depends on anything but the Sun. Santhanam's
+ * note carried two rescues - a waning Moon conjunct or aspected by a benefic
+ * turns benefic, and a waning Moon with Mercury makes both benefic - which are
+ * his commentary rather than the verse, and Raman carries neither. They fired
+ * on 23% and 4% of charts. Dropping them also removes the circularity that made
+ * the Moon's nature depend on Mercury's and Mercury's on the Moon's.
  */
-ok('a waning Moon conjunct a benefic turns benefic', (function () {
-  var chart = { planets: [
-    { name: 'Sun', sign: 0, longitude: 0 },
-    { name: 'Moon', sign: 8, longitude: 260 },
-    { name: 'Jupiter', sign: 8, longitude: 265 }] };
-  return A.naturalBenefics(chart).Moon === true;
-})());
-ok('and so does one a benefic aspects', (function () {
-  // Jupiter in Aries sees the 9th from itself, Sagittarius.
-  var chart = { planets: [
-    { name: 'Sun', sign: 0, longitude: 0 },
-    { name: 'Moon', sign: 8, longitude: 260 },
-    { name: 'Jupiter', sign: 0, longitude: 5 }] };
-  return A.aspects('Jupiter', 0, 8) && A.naturalBenefics(chart).Moon === true;
-})());
-ok('but a waning Moon a malefic aspects stays malefic', (function () {
-  var chart = { planets: [
-    { name: 'Sun', sign: 0, longitude: 0 },
-    { name: 'Moon', sign: 8, longitude: 260 },
-    { name: 'Saturn', sign: 5, longitude: 155 }] };
-  return A.naturalBenefics(chart).Moon === false;
+ok('a thin Moon is not rescued by the company it keeps', (function () {
+  var thin = function (extra) {
+    return { planets: [
+      { name: 'Sun', sign: 0, longitude: 0 },
+      { name: 'Moon', sign: 1, longitude: 40 }].concat(extra) };
+  };
+  return A.naturalBenefics(thin([{ name: 'Jupiter', sign: 1, longitude: 45 }])).Moon === false &&
+    A.naturalBenefics(thin([{ name: 'Venus', sign: 1, longitude: 45 }])).Moon === false &&
+    A.naturalBenefics(thin([{ name: 'Mercury', sign: 1, longitude: 42 }])).Moon === false;
 })());
 /*
- * "If waning Moon and Mercury are together, both are benefics." It is the one
- * place the circularity between these two - the Moon's nature depending on
- * Mercury's and Mercury's on the Moon's - is settled by the text.
+ * Mercury keeps the one clause the verse does give: "Mercury, however, is a
+ * malefic if he joins a malefic."
  */
-ok('a waning Moon with Mercury makes both benefic', (function () {
-  var chart = { planets: [
-    { name: 'Sun', sign: 0, longitude: 0 },
-    { name: 'Moon', sign: 8, longitude: 260 },
+ok('Mercury is benefic alone and malefic beside a malefic', (function () {
+  var full = { name: 'Moon', sign: 5, longitude: 160 };   // 160 degrees on, so benefic
+  var alone = { planets: [
+    { name: 'Sun', sign: 0, longitude: 0 }, full,
     { name: 'Mercury', sign: 8, longitude: 262 }] };
-  var b = A.naturalBenefics(chart);
-  return b.Moon === true && b.Mercury === true;
+  return A.naturalBenefics(alone).Mercury === true;
 })());
 ok('Mercury is still malefic in the company of a plain malefic', (function () {
   var chart = { planets: [
@@ -796,11 +801,12 @@ ok('the Moon\u2019s phase is a fact about the sky, not about a division', (funct
   return A.naturalBenefics(c).Moon === true &&
     A.naturalBenefics(A.chartInDivision(c, 7)).Moon === false;
 })());
-ok('and a waning Moon can be read as waxing the same way', (function () {
-  var c = A.chart({ jdUT: 2429896.5416666665, latitude: 40.7143, longitude: -74.006,
+ok('and a thin Moon can be read as full the same way', (function () {
+  // Ten degrees from the Sun, so as thin as a Moon gets, and eleven of the
+  // fifteen other divisions read it as full.
+  var c = A.chart({ jdUT: 2429904.75, latitude: 40.7143, longitude: -74.006,
                     tzOffsetMinutes: -240 });
   var rashi = A.naturalBenefics(c).Moon;
-  // Fourteen of the fifteen other divisions disagree with the sky on this one.
   var differ = [2, 3, 4, 7, 9, 10, 12, 16, 20, 24, 27, 30, 40, 45, 60]
     .filter(function (d) { return A.naturalBenefics(A.chartInDivision(c, d)).Moon !== rashi; });
   return rashi === false && differ.length > 10;

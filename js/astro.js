@@ -1262,30 +1262,46 @@ var Astro = (function () {
     chart.planets.forEach(function (p) { positions[p.name] = p; });
     if (!positions.Sun || !positions.Moon) return {};
 
-    var elongation = norm360(positions.Moon.longitude - positions.Sun.longitude);
     var benefics = { Jupiter: true, Venus: true, Sun: false, Mars: false, Saturn: false };
-    var waxing = elongation < 180;
-    var moon = positions.Moon, mercury = positions.Mercury;
-    var withMercury = !!mercury && mercury.sign === moon.sign;
+    var elongation = norm360(positions.Moon.longitude - positions.Sun.longitude);
 
     /*
-     * Settled first, because everything below depends on which of the two this
-     * pairing makes benefic and the text answers it outright.
+     * The Moon is benefic while it is full, and full is the middle half of the
+     * cycle: from the eighth day of the bright half to the eighth of the dark
+     * half, which is 90 degrees of elongation to 270.
+     *
+     * This followed the other reading - benefic while waxing, malefic while
+     * waning, so the boundary at 180 - and that reading is Santhanam's note on
+     * chapter 2 verse 11, not the verse. The verse says only that the
+     * "decreasing Moon" is malefic and leaves decreasing undefined; Santhanam
+     * glosses it as the dark fortnight and sets the other view aside as being
+     * about strength rather than nature. Raman glosses the same word as the thin
+     * Moon and fixes the boundary at the eighth day, in Hindu Predictive
+     * Astrology page 55 - "Jupiter, Venus, Full Moon and well-associated Mercury
+     * are held to be good planets ... From the eighth day of bright half of the
+     * lunar month the Moon is full and strong. She is weak from the eighth day
+     * of the dark half" - and again in section 53 of Graha and Bhava Balas.
+     *
+     * Raman's is followed. The two disagree in a little over half of all charts,
+     * and the Moon's nature reaches paksha bala, drik bala, the kartari marks
+     * and every yoga that asks whether a graha is benefic.
      */
-    if (!waxing && withMercury) {
-      benefics.Moon = true;
-      benefics.Mercury = true;
-      return benefics;
-    }
+    benefics.Moon = elongation > 90 && elongation < 270;
 
-    // Jupiter and Venus are the unconditional benefics, so they are the two that
-    // can rescue a waning Moon; Mercury joins them when it is benefic itself.
-    var rescues = ['Jupiter', 'Venus'];
-    benefics.Moon = waxing || rescues.some(function (g) {
-      var p = positions[g];
-      return p && (p.sign === moon.sign || aspects(g, p.sign, moon.sign));
-    });
-
+    /*
+     * Mercury is benefic unless it keeps bad company, which is the one clause
+     * the verse itself gives: "Mercury, however, is a malefic if he joins a
+     * malefic." Read after the Moon rather than with it, since a Moon in
+     * Mercury's sign may be either and the Moon's own nature no longer depends
+     * on Mercury.
+     *
+     * Santhanam's two rescue clauses are gone with the boundary they belonged
+     * to. A waning Moon conjunct or aspected by a benefic turning benefic, and a
+     * waning Moon with Mercury making both benefic, are his notes on verse 11
+     * and not the verse, and Raman carries neither. They fired on 23% and 4% of
+     * charts respectively.
+     */
+    var mercury = positions.Mercury;
     benefics.Mercury = !mercury || !Object.keys(benefics).some(function (g) {
       return !benefics[g] && positions[g] && positions[g].sign === mercury.sign;
     });
