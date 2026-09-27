@@ -935,7 +935,16 @@ td.varga-sign-abbr { font-family: var(--font-mono); letter-spacing: 0.01em; }
   box-shadow: var(--shadow);
 }
 
-.varga-figure { margin: 0 0 1.6rem; }
+/* The two are compared graha by graha, so they sit side by side where there is
+   room and stack where there is not. min-width: 0 lets a figure shrink to its
+   track instead of holding the grid open at the svg's natural width. */
+#vargas-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
+  gap: 1.4rem 1.8rem;
+  align-items: start;
+}
+.varga-figure { margin: 0; min-width: 0; }
 .chart-title {
   font-family: var(--font-display);
   font-weight: 500;

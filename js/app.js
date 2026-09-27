@@ -1469,7 +1469,14 @@
    * surface colour between paired bars, and recessive gridlines.
    */
   function barChart(opts) {
-    var W = 760, H = 210, left = 30, right = 10, top = 18, bottom = 34;
+    /*
+     * Drawn to half the width it used to be, the two charts now sitting side by
+     * side. The viewBox scales to whatever the column is, so the number that
+     * matters is the ratio of text to plot: at 760 across a half column the 12px
+     * labels came out nearer 8. Narrowing the box rather than enlarging the type
+     * keeps one set of sizes for both layouts.
+     */
+    var W = 500, H = 215, left = 28, right = 8, top = 18, bottom = 34;
     var plotW = W - left - right, plotH = H - top - bottom;
     var svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H, class: 'varga-chart',
                              role: 'img', 'aria-label': opts.title });
@@ -1551,7 +1558,7 @@
 
     // A score out of twenty. One series, so the title names it and no legend is drawn.
     host.appendChild(barChart({
-      title: 'Vimsopaka bala over the ' + scheme.label.toLowerCase(),
+      title: 'Vimsopaka bala',
       rows: rows, max: 20, outOf: 20,
       series: [{ label: 'Vimsopaka', cls: 'series-vimsopaka',
                  value: function (r) { return r.vimsopaka; },

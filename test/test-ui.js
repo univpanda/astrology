@@ -1778,6 +1778,30 @@ ok('the table is drawn once from both slots, not once per slot',
    /SLOTS\.forEach\(drawSlot\);\s*\n\s*renderGrahaTable\(lastChart\);/.test(appSrc) &&
    !/renderGrahaTable\(state\.chart, set\)/.test(appSrc));
 
+/*
+ * The scheme is named in the picker above and in the note beside it, so the
+ * chart title repeating it was a third statement of the same thing in the same
+ * view. The other title keeps its count, that being the bars' denominator.
+ */
+ok('the vimsopaka chart is titled by what it measures, not by the scheme',
+   /title: 'Vimsopaka bala',/.test(appSrc) &&
+   !/Vimsopaka bala over the/.test(appSrc) &&
+   /title: 'Placements across the ' \+ scheme\.count \+ ' divisions'/.test(appSrc));
+/*
+ * Side by side, so each figure gets half the width and the svg is drawn to half
+ * the box. Enlarging the type instead would have needed one set of sizes for the
+ * wide layout and another for the stacked one.
+ */
+ok('the two charts sit side by side where there is room, and stack where not',
+   (function () {
+     var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+     return /#vargas-charts \{[^}]*display: grid/.test(css) &&
+       /#vargas-charts \{[^}]*repeat\(auto-fit, minmax\(/.test(css) &&
+       /\.varga-figure \{[^}]*min-width: 0/.test(css);
+   })());
+ok('and the box is drawn to that half width, not the old full one',
+   /var W = 500, H = 215/.test(appSrc) && !/var W = 760/.test(appSrc));
+
 ok('the table carries ten columns, in order', (function () {
   var wanted = ['Graha', 'Chart', 'Rashi', 'Dignity', 'House', 'Lordship', 'Dispositor',
                 'Longitude', 'Nakshatra - pada', 'Lord / sub lord'];
