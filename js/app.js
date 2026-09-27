@@ -1341,8 +1341,7 @@
        * No excuse for the shortening: that sixteen columns leave no room for
        * words is visible in the sixteen columns.
        */
-      (brief ? 'Grahas go as Su, Mo, Ma and the rest, signs as Ari, Tau, Can, and ' +
-        'dignities as ' + dignityKey() + '. ' : '') +
+      (brief ? 'Signs go as Ari, Tau, Can and dignities as ' + dignityKey() + '. ' : '') +
       /*
        * Placement, not definition. The flag key at the top of the tab defines
        * [V] and *, so the note says only where they sit and why they are here:
@@ -1352,11 +1351,12 @@
        * house, and the grid prints neither - so they hang on the graha's name.
        */
       'A marked cell is one the score reads wrong, and the mark says how. [V] repeats the ' +
-      'rashi sign, [P] is an exchange of signs, + is the house the graha is strongest in ' +
-      'by direction, and * on a dignity is a debilitation cancelled into a raja yoga. ' +
-      'Those are the four things vimsopaka cannot see, each against the value in that cell ' +
-      'it bears on, so an unmarked cell is one the score has whole. Hover any of them for ' +
-      'the reading. ' +
+      'rashi sign, [P] is an exchange of signs, [H] is a benefic in the sign either side, ' +
+      '+ is the house the graha is strongest in by direction, and * on a dignity is a ' +
+      'debilitation cancelled into a raja yoga. Every one of them is something the score ' +
+      'cannot see, counting dignity a division at a time, and each sits against the value ' +
+      'in that cell it bears on, so an unmarked cell is one the score has whole. Hover any ' +
+      'of them for the reading. ' +
       /*
        * Both say what the grid does before why. A reader looking at seven rows
        * wants "they are left out" first and the reason after it, not a clause
@@ -1441,6 +1441,8 @@
     var brief = scheme.divisions.length > ABBREVIATE_ABOVE;
     var keys = Astro.keyDivisions(scheme);
     var table = document.getElementById('vargas-table');
+    // Sixteen columns take a smaller type size rather than shorter words.
+    table.className = brief ? 'brief' : '';
     renderVargasHead(table, scheme);
     var tbody = table.querySelector('tbody');
     tbody.innerHTML = '';
@@ -1460,17 +1462,17 @@
      * from, and which grahas that division puts in an exchange. Computed once
      * per division rather than once per cell.
      */
-    var divisionLagna = {}, exchanging = {};
+    var divisionLagna = {}, exchanging = {}, divisionCharts = {};
     scheme.divisions.forEach(function (division) {
       divisionLagna[division] =
         Astro.vargaPosition(state.chart.ascendant.longitude, division).sign;
+      divisionCharts[division] = Astro.chartInDivision(state.chart, division);
       exchanging[division] = {};
-      Yogas.parivartana(Astro.chartInDivision(state.chart, division))
-        .forEach(function (yoga) {
-          (yoga.grahas || []).forEach(function (name) {
-            exchanging[division][name] = yoga.title;
-          });
+      Yogas.parivartana(divisionCharts[division]).forEach(function (yoga) {
+        (yoga.grahas || []).forEach(function (name) {
+          exchanging[division][name] = yoga.title;
         });
+      });
     });
 
     // Listed as in the graha tables, for reading across from one to the other.
@@ -1488,15 +1490,14 @@
       var signRow = document.createElement('tr');
       signRow.className = 'varga-signs';
       /*
-       * The names shorten where everything else does. Sixteen columns already
-       * cost the signs and the dignities their words, and a full graha name
-       * beside Ari and Gt Fr is the one column still spending width it has not
-       * got. Six and seven columns leave room, and keep it.
+       * Names in full at every width. Sixteen columns are tight, but a name is
+       * the one thing in the row a reader scans for rather than decodes, and
+       * the grid gives up a little type size for it instead - see the brief
+       * class on the table.
        */
-      var th = el('th', null, brief ? Astro.grahaAbbr(planet.name) : planet.name);
+      var th = el('th', null, planet.name);
       th.setAttribute('scope', 'rowgroup');
       th.setAttribute('rowspan', '2');
-      if (brief) th.title = planet.name;
       signRow.appendChild(th);
 
 
@@ -1550,6 +1551,12 @@
             ', which is ' + exchanging[division][planet.name].toLowerCase() +
             '. The score judges it against the lord of this sign and never asks what ' +
             'that lord is doing.';
+        }
+        if (d && Astro.hemmedByBenefics(planet.name, d.sign, divisionCharts[division])) {
+          sign.appendChild(el('span', 'flag flag-h', ' [H]'));
+          sign.title = planet.name + ' has a benefic in the sign either side of it in D' +
+            division + '. The score judges the sign it stands in and never looks at the ' +
+            'two beside it.';
         }
         if (d) {
           var cellHouse = ((d.sign - divisionLagna[division]) % 12 + 12) % 12 + 1;

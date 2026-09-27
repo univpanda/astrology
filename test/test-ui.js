@@ -1291,17 +1291,17 @@ ok('and the page says which surface carries which marks', (function () {
   var flat = html.replace(/\s+/g, ' ');
   return /The kundli carries \[R\], \[V\], \[Y\] and \[C\]/.test(flat) &&
     /a corner triangle will not hold more/.test(flat) &&
-    /The Vimsopaka Bala grid carries \[V\], \[P\], \+ and \*/.test(flat) &&
-    /the four things that score cannot see/.test(flat);
+    /The Vimsopaka Bala grid carries \[V\], \[P\], \[H\], \+ and \*/.test(flat) &&
+    /every one of them something that score cannot see/.test(flat);
 })());
-ok('and the grid really carries those four and no others', (function () {
+ok('and the grid really carries those five and no others', (function () {
   var at = appSrc.indexOf('function renderVargas(state)');
   var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
   var marks = (block.match(/'flag flag-[a-z]+'/g) || [])
     .concat(block.match(/'neecha-bhanga'/g) || []);
-  return marks.length === 4 && block.indexOf("'flag flag-v'") >= 0 &&
-    block.indexOf("'flag flag-p'") >= 0 && block.indexOf("'flag flag-dig'") >= 0 &&
-    block.indexOf("'neecha-bhanga'") >= 0;
+  return marks.length === 5 && block.indexOf("'flag flag-v'") >= 0 &&
+    block.indexOf("'flag flag-p'") >= 0 && block.indexOf("'flag flag-h'") >= 0 &&
+    block.indexOf("'flag flag-dig'") >= 0 && block.indexOf("'neecha-bhanga'") >= 0;
 })());
 /*
  * The two that turn on the division alone are read from that division's own
@@ -1406,14 +1406,15 @@ ok('the note says a mark means the score reads that cell wrong', (function () {
   return /A marked cell is one the score reads wrong, and the mark says how/.test(flat) &&
     /so an unmarked cell is one the score has whole/.test(flat);
 })());
-ok('and names all four without defining any, the key doing that', (function () {
+ok('and names them all without defining any, the key doing that', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
-  return /\[V\] repeats the rashi sign, \[P\] is an exchange of signs, \+ is the house the graha is strongest in by direction, and \* on a dignity is a debilitation cancelled into a raja yoga/
+  return /\[V\] repeats the rashi sign, \[P\] is an exchange of signs, \[H\] is a benefic in the sign either side, \+ is the house the graha is strongest in by direction, and \* on a dignity is a debilitation cancelled into a raja yoga/
     .test(flat) &&
     !/A sign marked \[V\] is one the division has landed/.test(flat);
 })());
-ok('all four are computed per division, not once for the chart',
-   /Yogas\.parivartana\(Astro\.chartInDivision\(state\.chart, division\)\)/.test(appSrc) &&
+ok('every one is computed per division, not once for the chart',
+   /Yogas\.parivartana\(divisionCharts\[division\]\)/.test(appSrc) &&
+   /Astro\.hemmedByBenefics\(planet\.name, d\.sign, divisionCharts\[division\]\)/.test(appSrc) &&
    /var cellHouse = \(\(d\.sign - divisionLagna\[division\]\) % 12 \+ 12\) % 12 \+ 1;/
      .test(appSrc) &&
    /Astro\.hasDigBala\(planet\.name, cellHouse\)/.test(appSrc));
@@ -2148,17 +2149,22 @@ ok('each short form is given with the word it stands for', (function () {
 ok('and no copy of either table is typed into the sentence',
    !/Exal, Mool, Own, Gt Fr/.test(appSrc) && !/Gt Enm and Deb/.test(appSrc));
 /*
- * The names shorten where everything else does. Sixteen columns already cost the
- * signs and the dignities their words; a full graha name beside Ari and Gt Fr is
- * the one column still spending width it has not got. Six and seven keep theirs.
+ * A graha's name is the one thing in the row that is scanned rather than
+ * decoded, so sixteen columns give up type size instead of letters: the names
+ * stay whole at every width and the grid drops about a tenth when it is brief.
  */
-ok('the graha names shorten only where the rest of the row has',
-   /el\('th', null, brief \? Astro\.grahaAbbr\(planet\.name\) : planet\.name\)/.test(appSrc) &&
-   /if \(brief\) th\.title = planet\.name;/.test(appSrc));
+ok('the graha names stay whole at every width',
+   /var th = el\('th', null, planet\.name\);/.test(appSrc) &&
+   !/brief \? Astro\.grahaAbbr\(planet\.name\)/.test(appSrc));
+ok('and the grid takes a smaller type size instead', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  return /table\.className = brief \? 'brief' : '';/.test(appSrc) &&
+    /#vargas-table\.brief th\[scope="rowgroup"\] \{ font-size: 0\.84rem; \}/.test(css) &&
+    /#vargas-table\.brief td\.varga-sign \{ font-size: 0\.78rem; \}/.test(css);
+})());
 ok('the note explains the abbreviations where it uses them, and not otherwise', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');
-  return /Grahas go as Su, Mo, Ma and the rest, signs as Ari, Tau, Can, and dignities as ' \+ dignityKey\(\)/
-    .test(flat.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ')) &&
+  return /Signs go as Ari, Tau, Can and dignities as ' \+ dignityKey\(\)/.test(flat) &&
     // Stated, not justified: that sixteen columns leave no room is visible in them.
     !/leave no room for words/.test(flat) &&
     /function vargaNote\(scheme, brief\)/.test(appSrc);
