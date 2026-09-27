@@ -966,11 +966,11 @@ td .retro-flag, td.retro-flag, th .retro-flag { color: var(--retro); }
   font-weight: 600;
 }
 
-/* A verdict is one graha's, so it colours that graha's heading and its own cell
-   and nothing between. It used to colour a whole row, which was that graha when
-   a graha was a row; a column tinted end to end would paint every share of a
-   strength that is only short in total. */
-#shadbala-table thead th.weak-graha { color: var(--retro); }
+/* A verdict is stated once, in the Verdict row, in words. It was also tinting
+   the graha's heading, which is the same fact in two places and in a colour that
+   is spoken for: red is retrograde and debilitated everywhere else on the page,
+   so a weak Mercury read as a retrograde one. The heading carries [R] and [C]
+   instead, the same two flags the Vimsopaka grid puts there. */
 
 #vargas-table td.varga-cell { vertical-align: top; }
 #vargas-table .varga-sign,

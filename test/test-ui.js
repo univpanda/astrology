@@ -1365,25 +1365,27 @@ ok('and it is set as a translation rather than a second name', (function () {
 ok('and the rows that are already English carry no gloss',
    (appSrc.match(/row\('(?:Total|Rupas|Needs|Verdict)', null, null,/g) || []).length === 4);
 ok('shadbala columns follow the graha order of the tables beside it',
-   /var grahas = state\.chart\.planets\.map\(function \(p\) \{ return p\.name; \}\)/
-     .test(appSrc) && !/result\.ranking\.forEach/.test(appSrc));
+   /var planets = state\.chart\.planets\.filter\(function \(p\) \{/.test(appSrc) &&
+   /var grahas = planets\.map\(function \(p\) \{ return p\.name; \}\);/.test(appSrc) &&
+   !/result\.ranking\.forEach/.test(appSrc));
 ok('the nodes are skipped rather than shown as a column of blanks',
-   /\.filter\(function \(name\) \{ return result\.grahas\[name\]; \}\)/.test(appSrc));
+   /return result\.grahas\[p\.name\];/.test(appSrc));
 ok('each graha is judged against its own minimum',
    /x\.strong \? 'Strong' : 'Weak'/.test(appSrc) &&
    /String\(result\.grahas\[graha\]\.required\)/.test(appSrc));
 /*
- * And the verdict colours that graha's heading, not a band across the table. A
- * graha was a row and the row was tinted; a graha is a column now, and tinting
- * one end to end would paint every share of a strength that is only short in
- * total.
+ * And the verdict is stated once, in the Verdict row, in words. It also tinted
+ * the graha's heading red, which is the same fact in two places and in a colour
+ * that is spoken for: red is retrograde and debilitated everywhere else on this
+ * page, so a weak Mercury read as a retrograde one. The heading carries [R] and
+ * [C] now, which is what red there would mean.
  */
-ok('and a weak verdict marks that graha alone', (function () {
-  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-  return /result\.grahas\[graha\]\.strong \? null : 'weak-graha'/.test(appSrc) &&
-    /#shadbala-table thead th\.weak-graha \{ color: var\(--retro\); \}/.test(css) &&
-    !/tr\.weak-graha \{ background/.test(css);
-})());
+ok('and a weak verdict is said once, in words, not in the colour of a name',
+   (function () {
+     var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+     return !/weak-graha/.test(appSrc) && !/weak-graha/.test(css) &&
+       /x\.strong \? 'strong-flag' : 'weak-flag'/.test(appSrc);
+   })());
 ok('the shadbala note names the ladder it uses, since totals differ between readings',
    /45, 30, 20, 15, 10, 4, 2/.test(appSrc.replace(/'\s*\+\s*'/g, '')) &&
    /halving series some calculators use/.test(appSrc.replace(/'\s*\+\s*'/g, '')));
@@ -1617,17 +1619,28 @@ ok('and the page says which surface carries which marks', (function () {
  */
 ok('the grid marks retrogression and combustion on the column heading',
    (function () {
-     var at = appSrc.indexOf('function renderVargasHead');
-     var block = appSrc.slice(at, appSrc.indexOf('function divisionHead', at));
+     var at = appSrc.indexOf('function grahaColumnHead');
+     var block = appSrc.slice(at, appSrc.indexOf('function renderVargasHead', at));
      return /\[planet\.retrograde \? 'R' : null,/.test(block) &&
        /sun && Astro\.isCombust\(planet\.name, planet\.longitude, sun\.longitude,/.test(block) &&
        block.indexOf('th.appendChild') > 0;
    })());
+/*
+ * And both grids get them from the same cell. They are facts about the graha in
+ * the rashi, so they hold for every row under the name whichever grid it heads,
+ * and the two grids had the same heading with only one of them flagged - a
+ * retrograde graha marked in Vimsopaka Bala and unmarked in Shadbala beside it.
+ */
+ok('and the two grids head a graha the same way, from one place',
+   /function grahaColumnHead\(planet, sun\)/.test(appSrc) &&
+   (appSrc.match(/row\.appendChild\(grahaColumnHead\(planet, sun\)\);/g) || [])
+     .length === 2 &&
+   (appSrc.match(/planet\.retrograde \? 'R' : null/g) || []).length === 1);
 ok('and both tables keep them on a th rather than in a cell', (function () {
   var graha = appSrc.slice(appSrc.indexOf('function renderGrahaTable'),
                            appSrc.indexOf('function strengthsFor'));
-  var head = appSrc.slice(appSrc.indexOf('function renderVargasHead'),
-                          appSrc.indexOf('function divisionHead'));
+  var head = appSrc.slice(appSrc.indexOf('function grahaColumnHead'),
+                          appSrc.indexOf('function renderVargasHead'));
   return /th\.appendChild\(el\('span', 'flag flag-' \+ f\.toLowerCase\(\)/.test(graha) &&
     /th\.appendChild\(el\('span', 'flag flag-' \+ f\.toLowerCase\(\)/.test(head);
 })());
@@ -2764,7 +2777,7 @@ ok('and no mark assigns a title of its own any more', (function () {
  * beside this one; sixteen do not, so only the sixteen shorten.
  */
 ok('the table is as wide as the grahas, not as the scheme',
-   /planets\.forEach\(function \(planet\) \{\s*\n\s*var th = el\('th', null, planet\.name\)/
+   /planets\.forEach\(function \(planet\) \{\s*\n\s*row\.appendChild\(grahaColumnHead\(planet, sun\)\);/
      .test(appSrc) &&
    /scheme\.divisions\.forEach\(function \(division\) \{\s*\n\s*var lagna/.test(appSrc));
 ok('so the six, seven and ten keep their words and the sixteen do not', (function () {

@@ -1196,6 +1196,11 @@
         'benefics aspecting the graha are worth, less what the malefics are.' }
   ];
 
+  /** One graha's rashi position, or nothing where the chart has none. */
+  function positionOf(state, name) {
+    return state.chart.planets.filter(function (p) { return p.name === name; })[0];
+  }
+
   function renderShadbala(state) {
     var table = document.getElementById('shadbala-table');
     var tbody = table.querySelector('tbody');
@@ -1209,9 +1214,11 @@
      * still returns its ranking; the Rupas and Needs rows carry the same
      * comparison for anyone who wants it.
      */
-    var grahas = state.chart.planets.map(function (p) { return p.name; })
-      .filter(function (name) { return result.grahas[name]; });
-    renderShadbalaHead(table, grahas, result);
+    var planets = state.chart.planets.filter(function (p) {
+      return result.grahas[p.name];
+    });
+    var grahas = planets.map(function (p) { return p.name; });
+    renderShadbalaHead(table, planets, positionOf(state, 'Sun'));
 
     var n = function (v) { return v.toFixed(1); };
     var row = function (label, en, max, says, cells, cls) {
@@ -1296,16 +1303,21 @@
    * rows makes fifteen measures, and fifteen columns is a table that scrolls.
    * Turned, the width is seven grahas however many measures are shown.
    */
-  function renderShadbalaHead(table, grahas, result) {
+  function renderShadbalaHead(table, planets, sun) {
     var row = table.querySelector('thead tr');
     row.innerHTML = '';
     var first = el('th', null, 'Measure');
     first.setAttribute('scope', 'col');
     row.appendChild(first);
-    grahas.forEach(function (graha) {
-      var th = el('th', result.grahas[graha].strong ? null : 'weak-graha', graha);
-      th.setAttribute('scope', 'col');
-      row.appendChild(th);
+    /*
+     * The name is the name and nothing else. It was tinted where the graha came
+     * out weak, which put the verdict in two places and in a colour that means
+     * something else everywhere on this page: red is retrograde and debilitated
+     * here, so a weak Mercury read as a retrograde one. The Verdict row says
+     * weak, in words, once.
+     */
+    planets.forEach(function (planet) {
+      row.appendChild(grahaColumnHead(planet, sun));
     });
   }
 
@@ -1399,29 +1411,36 @@
    * and Great Friend, so the short forms and the machinery that chose them are
    * gone with the scroll they were there to fight.
    */
+  /*
+   * One graha at the head of a column, with what is true of it everywhere below.
+   *
+   * [R] and [C] are facts about the graha in the rashi, so they hold for every
+   * row under the name whichever grid it heads - divisions in one, shares of
+   * Shadbala in the other. Shared rather than written twice: the two grids had
+   * the same heading and only one of them had the flags, so a retrograde graha
+   * was marked in Vimsopaka Bala and unmarked in Shadbala beside it.
+   */
+  function grahaColumnHead(planet, sun) {
+    var th = el('th', null, planet.name);
+    th.setAttribute('scope', 'col');
+    [planet.retrograde ? 'R' : null,
+     sun && Astro.isCombust(planet.name, planet.longitude, sun.longitude,
+       planet.retrograde) ? 'C' : null]
+      .filter(Boolean).forEach(function (f, n) {
+        th.appendChild(el('span', 'flag flag-' + f.toLowerCase(),
+          (n === 0 ? ' ' : '') + '[' + f + ']'));
+      });
+    return th;
+  }
+
   function renderVargasHead(table, scheme, planets, sun) {
     var row = table.querySelector('thead tr');
     row.innerHTML = '';
     var first = el('th', null, 'Division');
     first.setAttribute('scope', 'col');
     row.appendChild(first);
-
     planets.forEach(function (planet) {
-      var th = el('th', null, planet.name);
-      th.setAttribute('scope', 'col');
-      /*
-       * [R] and [C] head the column, being true of the graha in every division
-       * below. They were on the name when the name was a row; the name is a
-       * column heading now and they have come with it.
-       */
-      [planet.retrograde ? 'R' : null,
-       sun && Astro.isCombust(planet.name, planet.longitude, sun.longitude,
-         planet.retrograde) ? 'C' : null]
-        .filter(Boolean).forEach(function (f, n) {
-          th.appendChild(el('span', 'flag flag-' + f.toLowerCase(),
-            (n === 0 ? ' ' : '') + '[' + f + ']'));
-        });
-      row.appendChild(th);
+      row.appendChild(grahaColumnHead(planet, sun));
     });
   }
 
