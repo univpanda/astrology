@@ -1257,6 +1257,10 @@
    * and not nine, and why the Sun is judged as Mars in one column. Both are
    * visible facts about what is on screen.
    *
+   * No pointer to the Lesson tab either. It is a tab, three along from this one
+   * and always on screen, and a note that ends by naming another tab reads as an
+   * apology for not being that tab.
+   *
    * The verse citation went with the doctrine. Which verses a scheme's share-out
    * comes from is worth knowing and is worth checking, but it is a fact about
    * the text rather than about the grid, and a reader looking at the grid is not
@@ -1294,8 +1298,7 @@
       'worth, a total for how it was reached. ' +
       'Rahu and Ketu own no sign and keep no friendships, so there is no relation to score ' +
       'and they are left out. No luminary rules a trimsamsa, so in D30 the Sun is judged as ' +
-      'Mars and the Moon as Venus. ' +
-      'The Lesson tab carries the scoring itself, under Vimsopaka Bala.';
+      'Mars and the Moon as Venus.';
   }
 
   /*

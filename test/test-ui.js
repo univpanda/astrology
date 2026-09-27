@@ -1510,9 +1510,13 @@ ok('the note explains the table and does not teach the measure', (function () {
 ok('and there is no second copy of the scoring left in the panel',
    !/function vargaDetail/.test(appSrc) && !/vargas-detail/.test(html) &&
    !/How vimsopaka is scored/.test(html));
-ok('the note sends the reader to the library for the rest',
-   /The Lesson tab carries the scoring itself, under Vimsopaka Bala/
-     .test(appSrc.replace(/'\s*\+\s*'/g, '')) &&
+/*
+ * And no pointer to the library either. The Lesson tab is three along from this
+ * one and always on screen, so a note ending by naming another tab reads as an
+ * apology for not being that tab.
+ */
+ok('the note does not end by pointing at another tab',
+   !/The Lesson tab carries/.test(appSrc) &&
    /'strength', 'Vimsopaka Bala'/.test(seeds));
 ok('the shares are pointed at rather than recited, each heading printing its own',
    !/var shares = scheme\.divisions\.map/.test(appSrc) &&
