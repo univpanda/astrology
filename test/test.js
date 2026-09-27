@@ -561,6 +561,60 @@ ok('and the signs wrap, Pisces and Taurus hemming Aries', (function () {
   return A.hemmedByBenefics('Mars', 0, chart);
 })());
 /*
+ * Who is a benefic is settled in the rashi and handed to every division.
+ * naturalBenefics reads the Moon's phase off the Sun-Moon elongation, and a
+ * varga longitude is a position within a division stretched back across thirty
+ * degrees: a real number that is not a real longitude. An elongation taken from
+ * two of them is an angle about nothing, and it moves from division to division.
+ */
+ok('the Moon\u2019s phase is a fact about the sky, not about a division', (function () {
+  var c = A.chart({ jdUT: A.julianDay(1946, 7, 6, 19 + 20 / 60 + 4), latitude: 40.7143,
+                    longitude: -74.006, tzOffsetMinutes: -240 });
+  var rashi = A.naturalBenefics(c);
+  var d10 = A.naturalBenefics(A.chartInDivision(c, 10));
+  // The bug this guards: the same Moon, waxing in the rashi and waning in D10.
+  return rashi.Moon === true && d10.Moon === false;
+})());
+ok('so hemming takes the rashi\u2019s benefics and the division\u2019s neighbours',
+   (function () {
+     var c = A.chart({ jdUT: A.julianDay(1946, 7, 6, 19 + 20 / 60 + 4), latitude: 40.7143,
+                       longitude: -74.006, tzOffsetMinutes: -240 });
+     var ben = A.naturalBenefics(c);
+     var d10 = A.chartInDivision(c, 10);
+     var jup = d10.planets.filter(function (p) { return p.name === 'Jupiter'; })[0];
+     // Venus on one side and the Moon on the other, so hemmed - and not hemmed
+     // at all if the Moon's phase is recomputed from D10's own longitudes.
+     return A.hemmedByBenefics('Jupiter', jup.sign, d10, ben) === true &&
+       A.hemmedByBenefics('Jupiter', jup.sign, d10) === false;
+   })());
+ok('and every caller passes one, so no division recomputes it', (function () {
+  var appSrc = require('fs').readFileSync(__dirname + '/../js/app.js', 'utf8');
+  var calls = appSrc.replace(/\s+/g, ' ').match(/hemmedByBenefics\([^;]*?\)\s*[?)]/g) || [];
+  return calls.length === 2 && calls.every(function (call) {
+    return /benefics\)/.test(call) || /naturalBenefics\(c\)\)/.test(call);
+  });
+})());
+/*
+ * Left to itself the bug is quiet: it needs the Moon or Mercury to be one of the
+ * two neighbours, and only then does the answer move. It is not rare, though.
+ */
+ok('the bug it fixes was reaching most divisions', (function () {
+  var wrong = 0, divisions = 0;
+  for (var y = 1960; y < 2000; y++) {
+    var c = A.chart({ jdUT: A.julianDay(y, (y % 12) + 1, (y % 27) + 1, 9), latitude: 28.61,
+                      longitude: 77.21, tzOffsetMinutes: 330 });
+    var ben = A.naturalBenefics(c);
+    A.VARGA_SCHEMES.shodasavarga.divisions.forEach(function (d) {
+      if (d === 1) return;
+      divisions++;
+      var db = A.naturalBenefics(A.chartInDivision(c, d));
+      if (db.Moon !== ben.Moon || db.Mercury !== ben.Mercury) wrong++;
+    });
+  }
+  return wrong / divisions > 0.5;
+})());
+
+/*
  * Rates over a long run, so neither flag is quietly always or never on. One
  * house in twelve is 8.3 per cent; hemming needs both neighbouring signs filled
  * by benefics, which is rarer.

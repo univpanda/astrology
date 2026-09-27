@@ -1030,7 +1030,8 @@
           'Houses counted from ' +
           (view.reference === 'Ascendant' ? 'the ascendant' : view.reference) + '.';
         [view.division !== 1 && v.sign === Astro.signOf(r.longitude) ? 'V' : null,
-         !r.isAscendant && Astro.hemmedByBenefics(r.name, v.sign, divisionChart) ? 'H' : null,
+         !r.isAscendant && Astro.hemmedByBenefics(r.name, v.sign, divisionChart,
+           Astro.naturalBenefics(c)) ? 'H' : null,
          !r.isAscendant && Astro.isYogakaraka(r.name, firstSign) ? 'Y' : null,
          !r.isAscendant && Astro.hasDigBala(r.name, house) ? 'D' : null]
           .filter(Boolean).forEach(function (f, n) {
@@ -1461,6 +1462,8 @@
      * from, and which grahas that division puts in an exchange. Computed once
      * per division rather than once per cell.
      */
+    // Settled in the rashi and handed to every division: see hemmedByBenefics.
+    var benefics = Astro.naturalBenefics(state.chart);
     var divisionLagna = {}, exchanging = {}, divisionCharts = {};
     scheme.divisions.forEach(function (division) {
       divisionLagna[division] =
@@ -1551,7 +1554,8 @@
             '. The score judges it against the lord of this sign and never asks what ' +
             'that lord is doing.';
         }
-        if (d && Astro.hemmedByBenefics(planet.name, d.sign, divisionCharts[division])) {
+        if (d && Astro.hemmedByBenefics(planet.name, d.sign, divisionCharts[division],
+              benefics)) {
           sign.appendChild(el('span', 'flag flag-h', ' [H]'));
           sign.title = planet.name + ' has a benefic in the sign either side of it in D' +
             division + '. The score judges the sign it stands in and never looks at the ' +

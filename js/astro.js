@@ -1265,12 +1265,21 @@ var Astro = (function () {
    * so it reads the same however a chart is rotated, and everything to do with
    * the division, since a varga rearranges which grahas are neighbours.
    *
-   * A graha cannot hem itself, and benefic status is read as naturalBenefics
-   * reads it everywhere else here: the Moon by its phase, Mercury by the company
-   * it keeps.
+   * `benefics` is passed in rather than read off the chart, and inside a
+   * division it has to be. naturalBenefics takes the Moon's phase from the
+   * Sun-Moon elongation, and a varga longitude is a position within a division
+   * stretched back across thirty degrees - a real number that is not a real
+   * longitude. Taking an elongation from two of them gives an angle that means
+   * nothing, and it moves from division to division: the same chart reported the
+   * Moon waxing in D9 and waning in D10, on a fact about the sky at birth that
+   * cannot differ between two ways of dividing a sign.
+   *
+   * So who is a benefic is settled once, in the rashi, and the division decides
+   * only who the neighbours are. Callers that pass no map are reading the rashi
+   * itself, where computing from the chart is the same thing.
    */
-  function hemmedByBenefics(name, sign, chart) {
-    var benefics = naturalBenefics(chart);
+  function hemmedByBenefics(name, sign, chart, benefics) {
+    benefics = benefics || naturalBenefics(chart);
     var before = false, after = false;
     chart.planets.forEach(function (p) {
       if (p.name === name || !benefics[p.name]) return;

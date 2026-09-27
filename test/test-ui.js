@@ -1308,8 +1308,14 @@ ok('and the grid really carries those five and no others', (function () {
  * chart, not from the rashi: a varga rearranges which grahas are neighbours, so
  * asking the rashi who hems a graha in D9 would answer a different question.
  */
-ok('hemming is read from the division being shown',
-   /Astro\.hemmedByBenefics\(r\.name, v\.sign, divisionChart\)/.test(appSrc) &&
+/*
+ * The division decides who the neighbours are; the rashi decides who is a
+ * benefic. Reading both off the division made the Moon's phase a property of the
+ * varga, which it cannot be.
+ */
+ok('hemming reads its neighbours from the division and its benefics from the rashi',
+   /Astro\.hemmedByBenefics\(r\.name, v\.sign, divisionChart,\s*\n?\s*Astro\.naturalBenefics\(c\)\)/
+     .test(appSrc) &&
    /var divisionChart = Astro\.chartInDivision\(c, view\.division\);/.test(appSrc));
 ok('and directional strength from the house, which the row already computes',
    /Astro\.hasDigBala\(r\.name, house\)/.test(appSrc) &&
@@ -1414,7 +1420,9 @@ ok('and names them all without defining any, the key doing that', (function () {
 })());
 ok('every one is computed per division, not once for the chart',
    /Yogas\.parivartana\(divisionCharts\[division\]\)/.test(appSrc) &&
-   /Astro\.hemmedByBenefics\(planet\.name, d\.sign, divisionCharts\[division\]\)/.test(appSrc) &&
+   /Astro\.hemmedByBenefics\(planet\.name, d\.sign, divisionCharts\[division\],\s*\n?\s*benefics\)/
+     .test(appSrc) &&
+   /var benefics = Astro\.naturalBenefics\(state\.chart\);/.test(appSrc) &&
    /var cellHouse = \(\(d\.sign - divisionLagna\[division\]\) % 12 \+ 12\) % 12 \+ 1;/
      .test(appSrc) &&
    /Astro\.hasDigBala\(planet\.name, cellHouse\)/.test(appSrc));
