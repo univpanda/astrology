@@ -951,6 +951,24 @@
            (set.reference === 'Ascendant' ? 'the ascendant' : set.reference) + ' in ' +
            (Astro.VARGAS.filter(function (x) { return x.division === set.division; })[0] || {}).name +
            ', as the chart beside this table is.' },
+       /*
+        * The houses this graha owns, counted from the same house 1 as the column
+        * beside it. Where it sits and what it owns are the two halves of reading
+        * a graha, and the second is the one usually left to be worked out.
+        *
+        * The lagna is a point and the nodes rule no sign, so all three show a
+        * dash rather than an empty cell.
+        */
+       (function () {
+         var owned = r.isAscendant ? [] : Astro.housesOwned(r.name, firstSign);
+         if (!owned.length) return { text: '\u2013', cls: 'numeric' };
+         return {
+           text: owned.join(', '), cls: 'numeric',
+           title: r.name + ' rules ' + owned.map(function (h) {
+             return Astro.SIGNS[(firstSign + h - 1) % 12] + ', the ' + Yogas.ordinal(h);
+           }).join(' and ') + '.'
+         };
+       })(),
        { text: r.isAscendant ? Astro.SIGN_LORDS[v.sign] : dispositorOf(r.name, v.sign, positionsD1),
          cls: 'dispositor',
          title: r.isAscendant ? null : dispositorDetail(r.name, v.sign, positionsD1) },

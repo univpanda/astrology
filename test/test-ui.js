@@ -1517,8 +1517,8 @@ ok('friendship is defined once, in the engine', (function () {
 })());
 
 // The columns, in the order they read.
-ok('both tables carry the same nine columns, in order', (function () {
-  var wanted = ['Graha', 'Rashi', 'Dignity', 'House', 'Dispositor', 'Longitude',
+ok('both tables carry the same ten columns, in order', (function () {
+  var wanted = ['Graha', 'Rashi', 'Dignity', 'House', 'Lordship', 'Dispositor', 'Longitude',
                 'Nakshatra', 'Pada', 'Lord / sub lord'];
   return ['table-a', 'table-b'].every(function (id) {
     var at = html.indexOf('id="' + id + '"');
@@ -1528,11 +1528,36 @@ ok('both tables carry the same nine columns, in order', (function () {
     return found.join('|') === wanted.join('|');
   });
 })());
-ok('the rules column stayed gone when house came back',
-   !/<th scope="col">Rules<\/th>/.test(html) && !/function rulership/.test(appSrc));
+/*
+ * Lordship was removed as a "Rules" column and has come back as this one. It is
+ * built from housesOwned, the same helper isYogakaraka and the raja yoga
+ * detector use, rather than from a bespoke function of its own.
+ */
+ok('lordship comes from the shared helper, not a column-specific one',
+   /<th scope="col">Lordship<\/th>/.test(html) && !/function rulership/.test(appSrc) &&
+   typeof Astro.housesOwned === 'function');
 ok('the house column says what it is counted from',
    /Whole sign house, counted from/.test(appSrc) &&
    /as the chart beside this table is\./.test(appSrc));
+
+/*
+ * Where a graha sits and what it owns are the two halves of reading it, and the
+ * second was left to be worked out. Counted from the same house 1 as the House
+ * column, so the two cannot disagree - which is also why Mars showing 4 and 9
+ * from a Leo lagna is the same fact as the [Y] on its name.
+ */
+ok('lordship is counted from the same house 1 as the house column',
+   /Astro\.housesOwned\(r\.name, firstSign\)/.test(appSrc));
+ok('the lagna and the nodes show a dash, owning nothing',
+   /r\.isAscendant \? \[\] : Astro\.housesOwned/.test(appSrc) &&
+   /if \(!owned\.length\) return \{ text: '\\u2013', cls: 'numeric' \}/.test(appSrc));
+ok('and the cell names the signs behind the numbers',
+   /Astro\.SIGNS\[\(firstSign \+ h - 1\) % 12\] \+ ', the ' \+ Yogas\.ordinal\(h\)/.test(appSrc));
+ok('a yogakaraka owns an angle and a trine, which the column now shows', (function () {
+  // Leo lagna: Mars owns Aries, the 9th, and Scorpio, the 4th.
+  var owned = Astro.housesOwned('Mars', 4);
+  return owned.join(',') === '4,9' && Astro.isYogakaraka('Mars', 4);
+})());
 ok('what a graha is comes before where it is', (function () {
   var at = html.indexOf('id="table-a"');
   var head = html.slice(at, html.indexOf('</thead>', at));
