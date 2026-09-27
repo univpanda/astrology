@@ -1337,6 +1337,26 @@ ok('and every such cancellation really is reported as one', (function () {
   }
   return true;
 })());
+/*
+ * Raman's definition is two of the nine and no more, and a fifth of what this
+ * site reports as a cancellation rests on conditions he does not accept. Worth
+ * recording, because the app's list is the union of several authorities and is
+ * the loosest reading any of them gives.
+ */
+ok('the library gives Raman\u2019s narrower definition, and what it costs',
+   /His definition is two conditions and no more/.test(seeds) &&
+   /Raman's two conditions cancel 72 per cent of rashi debilitations against 92 per cent for all nine/
+     .test(seeds));
+ok('and the two it names are the two the detector checks first',
+   (function () {
+     var src = fs.readFileSync(path.join(root, 'js/yogas.js'), 'utf8');
+     var block = src.slice(src.indexOf('var reasons = [];'));
+     block = block.slice(0, block.indexOf('if (!reasons.length)'));
+     var first = block.indexOf('is in a kendra from');
+     var rest = block.indexOf('is conjunct');
+     return first >= 0 && rest > first;
+   })());
+
 ok('the library says the other eight have no names',
    /Eight of the nine have no names of their own/.test(seeds) &&
    /nicha, the fall, and bhanga, its breaking/.test(seeds));
