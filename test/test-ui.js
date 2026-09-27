@@ -1181,8 +1181,7 @@ ok('every note is set smaller and softer than the body', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
   var block = css.slice(css.indexOf('.varga-note, .chart-note, .flag-key dd {'));
   block = block.slice(0, block.indexOf('}'));
-  return /font-size: 0\.82rem/.test(block) && /color: var\(--ink-soft\)/.test(block) &&
-    /max-width: 78ch/.test(block);
+  return /font-size: 0\.82rem/.test(block) && /color: var\(--ink-soft\)/.test(block);
 })());
 /*
  * And at one size. Three sizes of secondary prose in one panel - 0.82 for a
@@ -1194,7 +1193,20 @@ ok('and all of them at the same size, none carrying one of its own', (function (
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
   // Only the shared rule sizes them; what is left to each is its own margin.
   return /\.flag-key dd \{ margin: 0; \}/.test(css) &&
-    /\.chart-note \{ margin: 0\.5rem 0 0; max-width: 68ch; \}/.test(css);
+    /\.chart-note \{ margin: 0\.5rem 0 0; \}/.test(css);
+})());
+/*
+ * And no measure cap on any of them. A cap left a third of the card empty beside
+ * a note already short and already small, and deliberate empty space reads the
+ * same as accidental empty space. What bounds each note is what holds it, and
+ * those widths were chosen for reading already.
+ */
+ok('no note is capped short of what holds it', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var block = css.slice(css.indexOf('.varga-note, .chart-note, .flag-key dd {'));
+  return !/max-width/.test(block.slice(0, block.indexOf('}'))) &&
+    !/\.chart-note \{[^}]*max-width/.test(css) &&
+    !/\.varga-note \{[^}]*max-width/.test(css);
 })());
 ok('every note on the page wears the class', (function () {
   var notes = html.match(/<p class="varga-note"[^>]*>/g) || [];

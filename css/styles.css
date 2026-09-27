@@ -1006,15 +1006,18 @@ td.varga-sign-abbr { font-family: var(--font-mono); letter-spacing: 0.01em; }
    and the table read as an illustration of it. The flag key's descriptions join
    them: three sizes of secondary prose in one panel was two too many.
 
-   Capped at 78ch. A line running the full width of a sixteen-column table loses
-   the reader on the way back to the left margin. */
+   No measure cap. A cap left a third of the card empty beside a note that is
+   already short and already small, and empty space put there on purpose reads
+   the same as empty space left by mistake. Each note is bounded by what holds
+   it: the card for a panel note, its own column for a chart note, its grid
+   track for a flag description, and those are the widths that were chosen for
+   reading in the first place. */
 .varga-note, .chart-note, .flag-key dd {
   font-size: 0.82rem;
   color: var(--ink-soft);
   line-height: 1.55;
-  max-width: 78ch;
 }
-.chart-note { margin: 0.5rem 0 0; max-width: 68ch; }
+.chart-note { margin: 0.5rem 0 0; }
 
 /* The total belongs to the graha, so it sits centred against both its rows, and
    reads as a figure rather than as another dignity. Banded by Parashara's own
