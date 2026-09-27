@@ -42,6 +42,8 @@
   --chart-vimsopaka: #2f8f5f;
   --chart-good: #a8710c;
   --chart-vargottama: #6d4aa8;
+  --chart-exchange: #1d5fa8;
+  --chart-papa: #b8483a;
 
   --radius: 16px;
   --radius-sm: 10px;
@@ -1067,6 +1069,21 @@ td.vimsopaka-poor { color: var(--retro); }
 /* A facet carries one series, so its title is the identity and the fill has
    nothing to tell apart. One colour for all five. */
 .series-mark rect { fill: var(--chart-vimsopaka); }
+/* Each bar in a graha's profile is a mark, so it wears that mark's own colour -
+   the hue its letter wears in the grid above, so a reader crossing from table to
+   chart carries one vocabulary rather than two. The fill steps are the chart-
+   tuned siblings of the text hues: a letter and a filled bar want different
+   lightness, and the text greens and reds sit above the band on a dark surface.
+   The validator cannot separate the purple from the blue - 1.6 deutan, 10.5 to
+   normal vision - so the colour here is redundant, not the encoding: every bar
+   is labelled with its own letter underneath and names itself on hover. [S], [D]
+   and [N] share the green in both places; the letter is what separates them. */
+.chart-bar.mark-v rect { fill: var(--chart-vargottama); }
+.chart-bar.mark-x rect { fill: var(--chart-exchange); }
+.chart-bar.mark-s rect,
+.chart-bar.mark-d rect,
+.chart-bar.mark-n rect { fill: var(--chart-vimsopaka); }
+.chart-bar.mark-p rect { fill: var(--chart-papa); }
 /* Five small charts where two large ones sit, so they take a narrower track.
    min-width: 0 lets each shrink to its own rather than holding the row open. */
 .varga-facets {
@@ -1237,6 +1254,8 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
     --chart-vimsopaka: #3d9468;
     --chart-good: #b8801f;
     --chart-vargottama: #8b72c8;
+    --chart-exchange: #4a86d8;
+    --chart-papa: #cf6354;
 
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.32);
     --shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.35), 0 18px 40px rgba(0, 0, 0, 0.45);

@@ -450,6 +450,7 @@ console.log('\nStylesheet traps');
 console.log('\nDOM contract between app.js and index.html');
 var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 var appSrc = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
+var cssSrc = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
 
 var htmlIds = {};
 (html.match(/\sid="[^"]+"/g) || []).forEach(function (m) { htmlIds[m.slice(5, -1)] = true; });
@@ -2942,15 +2943,15 @@ ok('the score and the counts are on separate plots', (function () {
 ok('the five marks are facetted rather than crowded onto one axis', (function () {
   var at = appSrc.indexOf('function renderVargaCharts');
   var block = appSrc.slice(at, appSrc.indexOf('function svgEl', at));
-  var marks = (block.match(/\{ key: '[VXSPD]', label: '\[[VXSPD]\]/g) || []);
-  return marks.length === 5 && /compact: true/.test(block) &&
+  var marks = (block.match(/\{ key: '[VXSPDN]', label: '\[[VXSPDN]\]/g) || []);
+  return marks.length === 6 && /compact: true/.test(block) &&
     /cls: 'series-mark'/.test(block);
 })());
 ok('and every facet carries exactly one series', (function () {
   var at = appSrc.indexOf('var MARKS = [');
   var block = appSrc.slice(at, appSrc.indexOf('host.appendChild(facets)', at));
   return (block.match(/series: \[\{/g) || []).length === 1 &&
-    (block.match(/cls: /g) || []).length === 1;
+    (block.match(/cls: 'series-/g) || []).length === 1;
 })());
 /*
  * One scale across the five, taken from the largest count any reaches, so a tall
@@ -2967,7 +2968,7 @@ ok('and a count axis is labelled in whole numbers', (function () {
 ok('every mark in the grid is counted in a facet', (function () {
   var at = appSrc.indexOf('var MARKS = [');
   var block = appSrc.slice(at, appSrc.indexOf('var ceiling', at));
-  return ['V', 'X', 'S', 'P', 'D'].every(function (k) {
+  return ['V', 'X', 'S', 'P', 'D', 'N'].every(function (k) {
     return block.indexOf("key: '" + k + "'") >= 0;
   });
 })());
@@ -3320,7 +3321,56 @@ ok('the vargottama mark is named, not described',
 ok('and every facet is titled by its graha, the marks running along the bottom',
    /title: row\.graha,/.test(appSrc) &&
    /rows: MARKS\.map\(function \(m\) \{/.test(appSrc) &&
-   /return \{ graha: m\.label, name: m\.name, count: row\.marks\[m\.key\] \};/.test(appSrc));
+   /return \{ graha: m\.label, axis: m\.label, name: m\.name,/.test(appSrc) &&
+   /count: row\.marks\[m\.key\] \};/.test(appSrc));
+/*
+ * "[V" was what the chart showed. The axis label ran through grahaAbbr, which
+ * takes two letters because a graha's name is long and a mark's is three
+ * characters of which the last is a bracket. A row that knows its own label says
+ * so; only a row without one is abbreviated.
+ */
+ok('and a mark labels its own bar rather than being abbreviated to two letters',
+   /row\.axis \|\| Astro\.grahaAbbr\(row\.graha\)/.test(appSrc) &&
+   /axis: m\.label/.test(appSrc));
+/*
+ * Papa kartari is the one mark here that reports an affliction, so it closes the
+ * row rather than sitting among the five that help.
+ */
+ok('and the affliction closes the row', (function () {
+  var at = appSrc.indexOf('var MARKS = [');
+  var block = appSrc.slice(at, appSrc.indexOf('];', at));
+  var keys = (block.match(/key: '([VXSPDN])'/g) || []).map(function (m) {
+    return m.slice(-2, -1);
+  });
+  return keys.join('') === 'VXSDNP';
+})());
+/*
+ * A bar takes the colour of its own mark - the same colour that mark's letter
+ * wears in the grid - so a reader crossing from table to chart carries one
+ * vocabulary of colour rather than two. [S], [D] and [N] share the green in both
+ * places; the axis letter is what separates them.
+ */
+ok('and each bar wears the colour of its own mark',
+   /cls: 'mark-' \+ m\.key\.toLowerCase\(\)/.test(appSrc) &&
+   /'chart-bar ' \+ s\.cls \+ \(row\.cls \? ' ' \+ row\.cls : ''\)/.test(appSrc) &&
+   /\.chart-bar\.mark-v rect \{ fill: var\(--chart-vargottama\); \}/.test(cssSrc) &&
+   /\.chart-bar\.mark-x rect \{ fill: var\(--chart-exchange\); \}/.test(cssSrc) &&
+   /\.chart-bar\.mark-p rect \{ fill: var\(--chart-papa\); \}/.test(cssSrc) &&
+   /\.chart-bar\.mark-s rect,\n\.chart-bar\.mark-d rect,\n\.chart-bar\.mark-n rect \{ fill: var\(--chart-vimsopaka\); \}/
+     .test(cssSrc));
+/*
+ * A filled bar and a coloured letter want different lightness. The text hues for
+ * green and red sit above the lightness band as fills on the dark surface - the
+ * validator puts --green-deep dark at L 0.80 - so the bars take the chart-tuned
+ * siblings, which pass the band, the chroma floor and contrast in both modes.
+ * What neither set can pass is purple against blue, so no bar is identified by
+ * its colour alone: the letter under it says which mark it is.
+ */
+ok('and every bar fill is declared for both modes',
+   ['--chart-vargottama', '--chart-exchange', '--chart-vimsopaka', '--chart-papa']
+     .every(function (token) {
+       return (cssSrc.match(new RegExp(token + ': #', 'g')) || []).length === 2;
+     }));
 ok('and every mark has a letter for the axis and a word for the hover',
    ['V', 'X', 'S', 'P', 'D', 'N'].every(function (k) {
      return new RegExp("\\{ key: '" + k + "', label: '\\[" + k + "\\]', name: '").test(appSrc);

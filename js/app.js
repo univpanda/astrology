@@ -1713,7 +1713,9 @@
          * and the bottom corners filled back in, rather than rounding all four
          * and floating the bar off its baseline.
          */
-        var g = svgEl('g', { class: 'chart-bar ' + s.cls });
+        // A row may colour its own bar: in the per-graha facets each bar is a
+        // mark, and a mark has a colour already, the one its letter wears.
+        var g = svgEl('g', { class: 'chart-bar ' + s.cls + (row.cls ? ' ' + row.cls : '') });
         if (h > 0) {
           g.appendChild(svgEl('rect', { x: x, y: y, width: barW, height: h,
                                         rx: Math.min(4, barW / 2) }));
@@ -1739,7 +1741,13 @@
 
       svg.appendChild(svgEl('text', { x: left + band * i + band / 2, y: H - 12,
                                       class: 'chart-name', 'text-anchor': 'middle' },
-                            Astro.grahaAbbr(row.graha)));
+                            /*
+                             * A row labels its own bar where it has a label to
+                             * give. The abbreviation is for grahas, and it takes
+                             * the first two letters, so a mark came out as "[V"
+                             * with its bracket cut off.
+                             */
+                            row.axis || Astro.grahaAbbr(row.graha)));
     });
 
     var figure = el('figure', 'varga-figure');
@@ -1818,13 +1826,20 @@
      * on any mark, so a tall bar is tall against the other grahas and not only
      * against the rest of its own chart.
      */
+    /*
+     * The five that help, then the one that harms. Papa kartari is the only mark
+     * here that reports an affliction, so it closes the row rather than sitting
+     * third among the rest, and it wears the red its letter wears in the grid.
+     * Every bar takes the colour of its own mark for the same reason: a reader
+     * coming from the table already knows what the purple and the blue mean.
+     */
     var MARKS = [
       { key: 'V', label: '[V]', name: 'Vargottama' },
       { key: 'X', label: '[X]', name: 'Exchange of signs' },
       { key: 'S', label: '[S]', name: 'Shubha kartari' },
-      { key: 'P', label: '[P]', name: 'Papa kartari' },
       { key: 'D', label: '[D]', name: 'Directional strength' },
-      { key: 'N', label: '[N]', name: 'Neecha bhanga raja yoga' }
+      { key: 'N', label: '[N]', name: 'Neecha bhanga raja yoga' },
+      { key: 'P', label: '[P]', name: 'Papa kartari' }
     ];
     var ceiling = 1;
     rows.forEach(function (r) {
@@ -1837,7 +1852,8 @@
         title: row.graha,
         // barChart labels a bar by row.graha, so here the mark plays that part.
         rows: MARKS.map(function (m) {
-          return { graha: m.label, name: m.name, count: row.marks[m.key] };
+          return { graha: m.label, axis: m.label, name: m.name,
+                   cls: 'mark-' + m.key.toLowerCase(), count: row.marks[m.key] };
         }),
         max: ceiling, outOf: scheme.count, compact: true,
         series: [{ label: row.graha, cls: 'series-mark',
