@@ -58,12 +58,18 @@
     'August', 'September', 'October', 'November', 'December'];
 
   /** Degrees as d° mm' ss". */
-  function dms(deg) {
+  /** Degrees, minutes and seconds of an angle, rounded once and split. */
+  function dmsParts(deg) {
     var total = Math.round(deg * 3600);
     var d = Math.floor(total / 3600);
     var m = Math.floor((total - d * 3600) / 60);
-    var s = total - d * 3600 - m * 60;
-    return d + '° ' + String(m).padStart(2, '0') + "' " + String(s).padStart(2, '0') + '"';
+    return { d: d, m: m, s: total - d * 3600 - m * 60 };
+  }
+
+  function dms(deg) {
+    var p = dmsParts(deg);
+    return p.d + '° ' + String(p.m).padStart(2, '0') + "' " +
+      String(p.s).padStart(2, '0') + '"';
   }
 
   function hhmm(hours) {
@@ -1060,7 +1066,15 @@
     { label: 'Lordship', says: 'Which houses the graha rules, counted from the same house 1 as the row above.' },
     { label: 'Dispositor', says: 'The lord of the sign the graha stands in.' },
     { label: 'Relationship', says: 'What the graha makes of its dispositor - the compound relation, natural and temporary together. The graha’s own view, which is not always returned.' },
-    { label: 'Longitude', says: 'Degrees, minutes and seconds within the sign.' },
+    /*
+     * Three rows rather than one cell reading 29° 39' 38". The unit is in the
+     * label, as the pada's is, so the cells carry the figure alone - and a
+     * column that held eleven characters for this now holds two, which is what
+     * the Moon's, Jupiter's and Saturn's columns were sized by.
+     */
+    { label: 'Degrees', says: 'Whole degrees into the sign, from 0 to 29.' },
+    { label: 'Minutes', says: 'Minutes of arc, a sixtieth of a degree each.' },
+    { label: 'Seconds', says: 'Seconds of arc, a sixtieth of a minute each.' },
     { label: 'Nakshatra', says: 'Which of the 27 nakshatras the graha falls in.' },
     { label: 'Pada', says: 'Which quarter of that nakshatra, of four. Read with the row above it: a bare 3 means nothing on its own.' },
     { label: 'Lord / sub lord', says: 'The nakshatra’s Vimshottari lord, over its KP sub lord.' }
@@ -1121,6 +1135,7 @@
       var nak = Astro.nakshatraOf(v.longitude);
       var house = ((v.sign - firstSign) % 12 + 12) % 12 + 1;
       var owned = r.isAscendant ? [] : Astro.housesOwned(r.name, firstSign);
+      var arc = dmsParts(v.degreeInSign);
       return {
         entity: r,
         cells: [
@@ -1150,8 +1165,13 @@
             title: r.isAscendant
               ? 'The lagna is a point rather than a graha, so it keeps no friendships.'
               : dispositorDetail(r.name, v.sign, positionsD1) },
-          { text: dms(v.degreeInSign), cls: 'longitude',
-            title: 'Longitude ' + v.longitude.toFixed(4) + '°' },
+          { text: String(arc.d), cls: 'longitude',
+            title: Astro.SIGNS[v.sign] + ' ' + dms(v.degreeInSign) +
+              '. Longitude ' + v.longitude.toFixed(4) + '°.' },
+          { text: String(arc.m).padStart(2, '0'), cls: 'longitude',
+            title: Astro.SIGNS[v.sign] + ' ' + dms(v.degreeInSign) + '.' },
+          { text: String(arc.s).padStart(2, '0'), cls: 'longitude',
+            title: Astro.SIGNS[v.sign] + ' ' + dms(v.degreeInSign) + '.' },
           /*
            * Two rows, where they were one cell reading "Rohini - 1". Joined was
            * right while they were a column each and a column cost width; turned,

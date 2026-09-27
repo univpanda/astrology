@@ -4106,18 +4106,19 @@ ok('and the box is drawn to that half width, not the old full one',
    !/var W = 760/.test(appSrc));
 
 /*
- * Ten rows now rather than nine columns, the table having been turned to
+ * Twelve rows now rather than nine columns, the table having been turned to
  * match the two grids beside it. The Graha heading went with the turn: the
  * grahas are the columns, so the corner above their names is blank.
  */
-ok('the table carries ten rows, in order', (function () {
+ok('the table carries twelve rows, in order', (function () {
   var at = appSrc.indexOf('var GRAHA_ROWS = [');
   if (at < 0) return false;
   var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
   var found = (block.match(/label: '[^']+'/g) || [])
     .map(function (t) { return t.slice(8, -1); });
   return found.join('|') === ['Rashi', 'Dignity', 'House', 'Lordship', 'Dispositor',
-    'Relationship', 'Longitude', 'Nakshatra', 'Pada', 'Lord / sub lord'].join('|') &&
+    'Relationship', 'Degrees', 'Minutes', 'Seconds', 'Nakshatra', 'Pada',
+    'Lord / sub lord'].join('|') &&
     !/<th scope="col">Chart<\/th>/.test(html);
 })());
 /*
@@ -4218,10 +4219,33 @@ ok('a yogakaraka owns an angle and a trine, which the column now shows', (functi
 ok('what a graha is comes before where it is', (function () {
   var at = appSrc.indexOf('var GRAHA_ROWS = [');
   var head = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
-  return head.indexOf("'Dignity'") < head.indexOf("'Longitude'") &&
+  return head.indexOf("'Dignity'") < head.indexOf("'Degrees'") &&
          head.indexOf("'Rashi'") < head.indexOf("'Dignity'") &&
-         head.indexOf("'Lordship'") < head.indexOf("'Longitude'");
+         head.indexOf("'Lordship'") < head.indexOf("'Degrees'");
 })());
+/*
+ * Degrees, minutes and seconds are three rows, the unit living in the label as
+ * the pada's does. They are split from one rounding rather than rounded three
+ * times, so 29 59' 60" cannot appear.
+ */
+ok('the position splits into three rows from one rounding', (function () {
+  var at = appSrc.indexOf('var GRAHA_ROWS = [');
+  var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
+  var rows = (block.match(/label: '[^']+'/g) || [])
+    .map(function (t) { return t.slice(8, -1); });
+  return rows.indexOf('Minutes') === rows.indexOf('Degrees') + 1 &&
+    rows.indexOf('Seconds') === rows.indexOf('Minutes') + 1 &&
+    /function dmsParts\(deg\)/.test(appSrc) &&
+    /var arc = dmsParts\(v\.degreeInSign\);/.test(appSrc) &&
+    /var p = dmsParts\(deg\);/.test(appSrc);
+})());
+/*
+ * And a cell holding a bare 39 still says what it is a part of: every one of
+ * the three carries the whole position in its hover.
+ */
+ok('and each of the three names the whole position on hover',
+   (appSrc.match(/Astro\.SIGNS\[v\.sign\] \+ ' ' \+ dms\(v\.degreeInSign\)/g) || [])
+     .length === 3);
 /*
  * Cells were positional until House and Vargottama went in mid-table, which moved
  * every title onto the wrong column. They are named now, so this checks the names
