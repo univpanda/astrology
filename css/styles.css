@@ -899,7 +899,7 @@ td.dig-debilitated { color: var(--retro); font-weight: 600; }
    columns line up whatever the digits. */
 td.varga-sign { color: var(--ink-soft); font-size: 0.85rem; }
 /* Only the numbered form wants tabular figures; sign names want the body face. */
-td.varga-sign-number { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+td.varga-sign-abbr { font-family: var(--font-mono); letter-spacing: 0.01em; }
 /* Sixteen columns is a lot of table; let it breathe less than the others. */
 #vargas-table th, #vargas-table td { padding-left: 0.45rem; padding-right: 0.45rem; }
 #vargas-table td.dig { font-size: 0.86rem; }

@@ -476,6 +476,50 @@ console.log('\nWhat a second of clock time is worth');
      'day ' + withSeconds.d + ', ' + withSeconds.hours.toFixed(4) + 'h');
 })();
 
+console.log('\nAbbreviations');
+/*
+ * Two rules, one per list: the first two letters of a graha's name, the first
+ * three of a sign's. The tests pin the rules and what follows from them rather
+ * than a table of answers, a table here being the second copy of the names that
+ * the rules exist to avoid.
+ */
+var GRAHA_NAMES = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn',
+                   'Rahu', 'Ketu', 'Ascendant'];
+ok('a graha abbreviates to its first two letters, and nothing else',
+   GRAHA_NAMES.every(function (name) {
+     return A.grahaAbbr(name) === name.slice(0, 2) && A.grahaAbbr(name).length === 2;
+   }));
+ok('a sign abbreviates to its first three',
+   A.SIGNS.every(function (name) {
+     return A.signAbbr(name) === name.slice(0, 3) && A.signAbbr(name).length === 3;
+   }));
+ok('which gives the grahas the codes Vedic software prints, As for the lagna',
+   GRAHA_NAMES.map(A.grahaAbbr).join(' ') === 'Su Mo Ma Me Ju Ve Sa Ra Ke As',
+   GRAHA_NAMES.map(A.grahaAbbr).join(' '));
+ok('and the signs theirs',
+   A.SIGN_ABBR.join(' ') === 'Ari Tau Gem Can Leo Vir Lib Sco Sag Cap Aqu Pis',
+   A.SIGN_ABBR.join(' '));
+/*
+ * Truncation is only usable while it stays injective, and the two lists run out
+ * of room at different lengths, which is the whole reason for two rules. The
+ * grahas are already distinct at two letters. The signs are not: Cancer and
+ * Capricorn are both Ca, and it takes a third letter to part them.
+ */
+ok('no two grahas collide at two letters',
+   new Set(GRAHA_NAMES.map(A.grahaAbbr)).size === GRAHA_NAMES.length);
+ok('no two signs collide at three',
+   new Set(A.SIGN_ABBR).size === A.SIGNS.length);
+ok('but two would not do for the signs, Cancer and Capricorn meeting at Ca', (function () {
+  var two = A.SIGNS.map(function (name) { return name.slice(0, 2); });
+  return new Set(two).size < A.SIGNS.length && two[3] === 'Ca' && two[9] === 'Ca';
+})());
+ok('abbreviating an abbreviation leaves it alone, so applying either twice is safe',
+   A.SIGNS.every(function (n) { return A.signAbbr(A.signAbbr(n)) === A.signAbbr(n); }) &&
+   GRAHA_NAMES.every(function (n) { return A.grahaAbbr(A.grahaAbbr(n)) === A.grahaAbbr(n); }));
+ok('SIGN_ABBR is the sign rule applied to SIGNS, in the same order',
+   A.SIGN_ABBR.length === 12 &&
+   A.SIGNS.every(function (name, i) { return A.SIGN_ABBR[i] === A.signAbbr(name); }));
+
 console.log('\nDivisional longitudes');
 /*
  * A varga maps a slice of a sign onto a whole sign, and the position inside the

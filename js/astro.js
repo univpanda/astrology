@@ -555,6 +555,23 @@ var Astro = (function () {
   var SIGN_LORDS = ['Mars', 'Venus', 'Mercury', 'Moon', 'Sun', 'Mercury',
     'Venus', 'Mars', 'Jupiter', 'Saturn', 'Saturn', 'Jupiter'];
 
+  /*
+   * Abbreviations for the whole project: the first two letters of a graha's
+   * name, the first three of a sign's. A rule rather than a hand-written table,
+   * because a table is a second copy of these names and the two drift apart.
+   *
+   * Two lengths because the two lists run out of room at different points. The
+   * grahas are already distinct at two - Su Mo Ma Me Ju Ve Sa Ra Ke, with As
+   * for the ascendant, which is what Vedic software has printed for decades -
+   * while the signs are not: Cancer and Capricorn are both Ca. At three they
+   * separate, and give the set the same software prints for them: Ari Tau Gem
+   * Can Leo Vir Lib Sco Sag Cap Aqu Pis.
+   */
+  function grahaAbbr(name) { return String(name).slice(0, 2); }
+  function signAbbr(name) { return String(name).slice(0, 3); }
+
+  var SIGN_ABBR = SIGNS.map(signAbbr);
+
   var NAKSHATRAS = ['Ashwini', 'Bharani', 'Krittika', 'Rohini', 'Mrigashira', 'Ardra',
     'Punarvasu', 'Pushya', 'Ashlesha', 'Magha', 'Purva Phalguni', 'Uttara Phalguni',
     'Hasta', 'Chitra', 'Swati', 'Vishakha', 'Anuradha', 'Jyeshtha', 'Mula',
@@ -1498,6 +1515,9 @@ var Astro = (function () {
     norm360: norm360,
     SIGNS: SIGNS,
     SIGNS_SA: SIGNS_SA,
+    SIGN_ABBR: SIGN_ABBR,
+    grahaAbbr: grahaAbbr,
+    signAbbr: signAbbr,
     SIGN_LORDS: SIGN_LORDS,
     NAKSHATRAS: NAKSHATRAS,
     DASHA_ORDER: DASHA_ORDER,

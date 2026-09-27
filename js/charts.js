@@ -10,11 +10,6 @@ var Charts = (function () {
   'use strict';
 
   var SIZE = 440;
-  var ABBR = {
-    Sun: 'Su', Moon: 'Mo', Mercury: 'Me', Venus: 'Ve', Mars: 'Ma',
-    Jupiter: 'Ju', Saturn: 'Sa', Rahu: 'Ra', Ketu: 'Ke', Ascendant: 'As'
-  };
-  var SIGN_ABBR = ['Ar', 'Ta', 'Ge', 'Cn', 'Le', 'Vi', 'Li', 'Sc', 'Sg', 'Cp', 'Aq', 'Pi'];
 
   // Each graha gets its own colour, the way a hand-drawn kundli distinguishes
   // them. Kept muted so the chart still sits inside the page's palette; the
@@ -73,7 +68,7 @@ var Charts = (function () {
   function planetText(p) {
     var flags = (p.retrograde ? '[R]' : '') + (p.vargottama ? '[V]' : '') +
       (p.yogakaraka ? '[Y]' : '') + (p.combust ? '[C]' : '');
-    return ABBR[p.name] + (flags ? ' ' + flags : '');
+    return Astro.grahaAbbr(p.name) + (flags ? ' ' + flags : '');
   }
 
   /**
@@ -239,7 +234,7 @@ var Charts = (function () {
         }));
       }
       g.appendChild(el('text', { x: x + cell - 6, y: y + 14, class: 'sign-num', 'text-anchor': 'end' },
-        SIGN_ABBR[i] + ' · ' + house));
+        Astro.SIGN_ABBR[i] + ' · ' + house));
       drawOccupants(g, data.bySign[i], x + cell / 2, y + cell / 2 + 6, cell * 0.82);
       g.appendChild(el('title', {}, Astro.SIGNS[i] + ' (' + Astro.SIGNS_SA[i] + ') - house ' + house));
       svg.appendChild(g);
@@ -255,5 +250,5 @@ var Charts = (function () {
     fn(container, opts.planets, opts.ascendant, opts.division || 1, opts.reference);
   }
 
-  return { render: render, ABBR: ABBR, SIGN_ABBR: SIGN_ABBR };
+  return { render: render };
 })();

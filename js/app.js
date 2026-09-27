@@ -1212,11 +1212,12 @@
     return 'Where each graha stands in the ' + scheme.count + ' divisions of the ' +
       scheme.label + ', judged against the lord of the sign each one gives. Every graha ' +
       'takes two rows: the sign' +
-      (brief ? ', numbered 1 to 12 from Aries as the chart above numbers its ' : ', ') +
+      (brief ? ' in the three letters that label the kundli\u2019s own cells' : ', ') +
       (brief
-        ? 'boxes, then its dignity there. Sixteen columns leave no room for the words, so ' +
-          'signs go as numbers and dignities shorten to Exal, Mool, Own, Gt Fr, Fr, Neut, ' +
-          'Enm, Gt Enm and Deb; hover a cell for the words themselves, and for the lord. '
+        ? ', then its dignity there. Sixteen columns leave no room for the words, so signs go ' +
+          'as Ari, Tau, Can and the rest, and dignities shorten to Exal, Mool, Own, Gt Fr, ' +
+          'Fr, Neut, Enm, Gt Enm and Deb; hover a cell for the words themselves, and for the ' +
+          'lord. '
         : 'then its dignity there. Hover a cell for the sign\u2019s lord and the reading ' +
           'behind it. ') +
       'A sign marked [V] is one the division has landed the graha back in, the same sign it ' +
@@ -1318,15 +1319,14 @@
         var division = scheme.divisions[i];
         var detail = d ? vargasDetail(d, division, planet.name) : null;
         /*
-         * Where a name will not fit, the sign goes as its number - 1 for Aries
-         * through 12 for Pisces, which is how the chart above already labels its
-         * boxes, so it is a number the reader already uses rather than an
-         * abbreviation invented for this table. Both words stay in the title
-         * either way.
+         * Where a name will not fit, the sign goes as the project's
+         * abbreviation, the first three letters: Ari, Tau, Can, Sco. The same
+         * codes label the kundli's cells above, so the reader is not learning a
+         * second shorthand for this table. The full name stays in the title.
          */
-        var sign = el('td', 'varga-sign' + (brief ? ' varga-sign-number' : '') +
+        var sign = el('td', 'varga-sign' + (brief ? ' varga-sign-abbr' : '') +
           (division === 9 ? ' varga-d9' : ''),
-          d ? (brief ? String(d.sign + 1) : Astro.SIGNS[d.sign]) : '\u2013');
+          d ? (brief ? Astro.SIGN_ABBR[d.sign] : Astro.SIGNS[d.sign]) : '\u2013');
 
         /*
          * The division has landed the graha back in the sign it holds in the
@@ -1494,7 +1494,7 @@
 
       svg.appendChild(svgEl('text', { x: left + band * i + band / 2, y: H - 12,
                                       class: 'chart-name', 'text-anchor': 'middle' },
-                            Charts.ABBR[row.graha] || row.graha));
+                            Astro.grahaAbbr(row.graha)));
     });
 
     var figure = el('figure', 'varga-figure');

@@ -142,7 +142,8 @@ var chart = Astro.chart({ jdUT: jdUT, latitude: delhi.lat, longitude: delhi.lon,
     ok(tag + ': twelve houses drawn', (svg.match(/class="house/g) || []).length === 12,
        (svg.match(/class="house/g) || []).length + ' groups');
     ok(tag + ': all nine grahas plus lagna placed',
-       ['Su', 'Mo', 'Me', 'Ve', 'Ma', 'Ju', 'Sa', 'Ra', 'Ke', 'As'].every(function (a) {
+       ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Rahu', 'Ketu',
+        'Ascendant'].map(Astro.grahaAbbr).every(function (a) {
          return new RegExp('>' + a + '(R|\\s|<)').test(svg);
        }));
     ok(tag + ': lagna highlighted once', (svg.match(/first-house/g) || []).length === 1);
@@ -182,14 +183,14 @@ var chart = Astro.chart({ jdUT: jdUT, latitude: delhi.lat, longitude: delhi.lon,
 var southContainer = makeNode('div');
 Charts.render(southContainer, { style: 'south', planets: chart.planets, ascendant: chart.ascendant.longitude });
 var southSvg = serialise(southContainer);
-ok('south: Aries cell is second in the top row', /x="114[^"]*" y="4"|x="114/.test(southSvg) || /Ar ·/.test(southSvg));
+ok('south: Aries cell is second in the top row', /x="114[^"]*" y="4"|x="114/.test(southSvg) || /Ari ·/.test(southSvg));
 ok('the ascendant is never marked retrograde', (function () {
   var c = makeNode('div');
   Charts.render(c, { style: 'north', planets: chart.planets, ascendant: chart.ascendant.longitude });
   return !/>As \[R\]/.test(serialise(c));
 })());
 ok('south: all twelve sign labels present',
-   Charts.SIGN_ABBR.every(function (a) { return southSvg.indexOf('>' + a + ' ·') >= 0; }));
+   Astro.SIGN_ABBR.every(function (a) { return southSvg.indexOf('>' + a + ' ·') >= 0; }));
 
 console.log('\nHistorical reference chart');
 /*
@@ -1322,15 +1323,15 @@ ok('so the six, seven and ten keep their words and the sixteen do not', (functio
   });
   return over.length === 1 && over[0] === 'shodasavarga';
 })());
-ok('the sign is its name in full, or its number where names will not fit',
-   /brief \? String\(d\.sign \+ 1\) : Astro\.SIGNS\[d\.sign\]/.test(appSrc));
+ok('the sign is its name in full, or the project abbreviation where names will not fit',
+   /brief \? Astro\.SIGN_ABBR\[d\.sign\] : Astro\.SIGNS\[d\.sign\]/.test(appSrc));
 ok('and the dignity likewise',
    /brief \? Astro\.VARGA_DIGNITY_SHORT\[d\.key\] : d\.label/.test(appSrc));
-ok('tabular figures are applied to the numbered form only, not to sign names',
+ok('the abbreviated form is set in mono, the full names are not',
    (function () {
      var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-     return /td\.varga-sign-number \{[^}]*tabular-nums/.test(css) &&
-       !/td\.varga-sign \{[^}]*tabular-nums/.test(css);
+     return /td\.varga-sign-abbr \{[^}]*--font-mono/.test(css) &&
+       !/td\.varga-sign \{[^}]*--font-mono/.test(css);
    })());
 ok('every dignity has a short form, each distinct and short enough to fit', (function () {
   var full = Object.keys(Astro.VARGA_DIGNITY_LABELS);
@@ -1343,7 +1344,7 @@ ok('the note explains the abbreviations where it uses them, and not otherwise', 
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');
   return /Sixteen columns leave no room for the words/.test(flat) &&
     /dignities shorten to Exal, Mool, Own, Gt Fr, Fr, Neut, Enm, Gt Enm and Deb/.test(flat) &&
-    /numbered 1 to 12 from Aries/.test(flat) &&
+    /signs go as Ari, Tau, Can and the rest/.test(flat) &&
     /function vargaNote\(scheme, brief\)/.test(appSrc);
 })());
 /*
@@ -1563,7 +1564,7 @@ ok('and the chart agrees with the Vargas grid, being the same comparison', (func
     var svg = serialise(box);
     return c.planets.every(function (p) {
       var repeats = Astro.vargaPosition(p.longitude, division).sign === Astro.signOf(p.longitude);
-      var abbr = Charts.ABBR[p.name];
+      var abbr = Astro.grahaAbbr(p.name);
       var flagged = new RegExp('>' + abbr + ' \\[[RVYC\\]\\[]*V').test(svg);
       return repeats === flagged;
     });
