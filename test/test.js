@@ -516,6 +516,24 @@ ok('but two would not do for the signs, Cancer and Capricorn meeting at Ca', (fu
 ok('abbreviating an abbreviation leaves it alone, so applying either twice is safe',
    A.SIGNS.every(function (n) { return A.signAbbr(A.signAbbr(n)) === A.signAbbr(n); }) &&
    GRAHA_NAMES.every(function (n) { return A.grahaAbbr(A.grahaAbbr(n)) === A.grahaAbbr(n); }));
+/*
+ * Labels are Title Case, prose is not, and the two forms are one string plus a
+ * rule rather than two strings.
+ */
+ok('titleCase capitalises every word, leaving the rest alone',
+   A.titleCase('great friend') === 'Great Friend' && A.titleCase('friend') === 'Friend' &&
+   A.titleCase('great enemy') === 'Great Enemy' && A.titleCase('neutral') === 'Neutral');
+ok('and it is idempotent, so a label already capitalised is left as it is',
+   Object.keys(A.VARGA_DIGNITY_LABELS).every(function (k) {
+     var label = A.VARGA_DIGNITY_LABELS[k];
+     return A.titleCase(label) === label;
+   }));
+ok('every dignity label is Title Case, including the two-word ones',
+   A.VARGA_DIGNITY_LABELS.own === 'Own Sign' &&
+   A.VARGA_DIGNITY_LABELS.adhimitra === 'Great Friend' &&
+   A.VARGA_DIGNITY_LABELS.adhishatru === 'Great Enemy' &&
+   A.dignityOf('Sun', 4, 25) === 'Own Sign');
+
 ok('SIGN_ABBR is the sign rule applied to SIGNS, in the same order',
    A.SIGN_ABBR.length === 12 &&
    A.SIGNS.every(function (name, i) { return A.SIGN_ABBR[i] === A.signAbbr(name); }));
@@ -1595,13 +1613,13 @@ console.log('\nDignities');
  * Moon through and past 3 degrees of Taurus, and Mercury across 15 and 20 of
  * Virgo.
  */
-[['Sun', 0, 5, 'Exalted'], ['Sun', 4, 10, 'Mooltrikona'], ['Sun', 4, 25, 'Own sign'], ['Sun', 6, 15, 'Debilitated'],
- ['Moon', 1, 2, 'Exalted'], ['Moon', 1, 20, 'Mooltrikona'], ['Moon', 3, 10, 'Own sign'], ['Moon', 7, 10, 'Debilitated'],
- ['Mercury', 5, 10, 'Exalted'], ['Mercury', 5, 18, 'Mooltrikona'], ['Mercury', 5, 25, 'Own sign'], ['Mercury', 11, 5, 'Debilitated'],
- ['Mars', 0, 6, 'Mooltrikona'], ['Mars', 0, 20, 'Own sign'], ['Mars', 9, 28, 'Exalted'], ['Mars', 3, 10, 'Debilitated'],
- ['Jupiter', 8, 5, 'Mooltrikona'], ['Jupiter', 8, 20, 'Own sign'], ['Jupiter', 3, 5, 'Exalted'], ['Jupiter', 9, 10, 'Debilitated'],
- ['Venus', 6, 10, 'Mooltrikona'], ['Venus', 6, 20, 'Own sign'], ['Venus', 11, 27, 'Exalted'], ['Venus', 5, 10, 'Debilitated'],
- ['Saturn', 10, 10, 'Mooltrikona'], ['Saturn', 10, 25, 'Own sign'], ['Saturn', 6, 20, 'Exalted'], ['Saturn', 0, 5, 'Debilitated']
+[['Sun', 0, 5, 'Exalted'], ['Sun', 4, 10, 'Mooltrikona'], ['Sun', 4, 25, 'Own Sign'], ['Sun', 6, 15, 'Debilitated'],
+ ['Moon', 1, 2, 'Exalted'], ['Moon', 1, 20, 'Mooltrikona'], ['Moon', 3, 10, 'Own Sign'], ['Moon', 7, 10, 'Debilitated'],
+ ['Mercury', 5, 10, 'Exalted'], ['Mercury', 5, 18, 'Mooltrikona'], ['Mercury', 5, 25, 'Own Sign'], ['Mercury', 11, 5, 'Debilitated'],
+ ['Mars', 0, 6, 'Mooltrikona'], ['Mars', 0, 20, 'Own Sign'], ['Mars', 9, 28, 'Exalted'], ['Mars', 3, 10, 'Debilitated'],
+ ['Jupiter', 8, 5, 'Mooltrikona'], ['Jupiter', 8, 20, 'Own Sign'], ['Jupiter', 3, 5, 'Exalted'], ['Jupiter', 9, 10, 'Debilitated'],
+ ['Venus', 6, 10, 'Mooltrikona'], ['Venus', 6, 20, 'Own Sign'], ['Venus', 11, 27, 'Exalted'], ['Venus', 5, 10, 'Debilitated'],
+ ['Saturn', 10, 10, 'Mooltrikona'], ['Saturn', 10, 25, 'Own Sign'], ['Saturn', 6, 20, 'Exalted'], ['Saturn', 0, 5, 'Debilitated']
 ].forEach(function (t) {
   var got = A.dignityOf(t[0], t[1], t[2]);
   ok(t[0] + ' at ' + A.SIGNS[t[1]] + ' ' + t[2] + ' is ' + t[3], got === t[3], got || '(none)');
@@ -1658,7 +1676,7 @@ ok('all four dignities are reachable for each of the seven', Object.keys(A.DIGNI
   for (var sign = 0; sign < 12; sign++) {
     for (var deg = 0; deg < 30; deg++) seen[A.dignityOf(graha, sign, deg)] = true;
   }
-  return seen.Exalted && seen.Debilitated && seen.Mooltrikona && seen['Own sign'];
+  return seen.Exalted && seen.Debilitated && seen.Mooltrikona && seen['Own Sign'];
 }));
 /*
  * The nodes are always opposite each other, and Raman's exaltation signs are

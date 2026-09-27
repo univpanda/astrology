@@ -413,10 +413,10 @@ var Yogas = (function () {
 
   var KENDRAS = [1, 4, 7, 10];
   var TRIKONAS = [1, 5, 9];
-  var DIGNIFIED = ['Mooltrikona', 'Own sign', 'Exalted'];
+  var DIGNIFIED = ['Mooltrikona', 'Own Sign', 'Exalted'];
   // "in its Exalted" does not read; these are the phrases the sentences want.
   var SEAT_PHRASE = {
-    Mooltrikona: 'moolatrikona', 'Own sign': 'own sign', Exalted: 'exaltation sign'
+    Mooltrikona: 'moolatrikona', 'Own Sign': 'own sign', Exalted: 'exaltation sign'
   };
 
   /**

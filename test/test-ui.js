@@ -955,7 +955,22 @@ ok('the dispositor names its lord in the abbreviation, not in full',
      .test(appSrc) &&
    /r\.isAscendant \? Astro\.grahaAbbr\(Astro\.SIGN_LORDS\[v\.sign\]\)/.test(appSrc));
 ok('but its relation stays in words, being what the column is for',
-   /' \\u00b7 ' \+ Astro\.RELATION_LABELS\[relation\]/.test(appSrc));
+   /' \\u00b7 ' \+ Astro\.titleCase\(Astro\.RELATION_LABELS\[relation\]\)/.test(appSrc));
+/*
+ * The relation words are stored in the prose form, most of what reads them being
+ * a sentence, and capitalised where a cell prints one. Storing both forms would
+ * be the second table again.
+ */
+ok('the cell capitalises them rather than a second table holding them capitalised',
+   (function () {
+     var astroSrc = fs.readFileSync(path.join(root, 'js/astro.js'), 'utf8');
+     return Object.keys(Astro.RELATION_LABELS).every(function (k) {
+       return Astro.RELATION_LABELS[k] === Astro.RELATION_LABELS[k].toLowerCase();
+     }) && !/adhimitra: 'Great Friend'/.test(astroSrc.split('VARGA_DIGNITY_LABELS')[0]);
+   })());
+ok('and the prose still reads as prose, the article taking the lower-case form',
+   /withArticle\(Astro\.RELATION_LABELS\[out\]\)/.test(appSrc) &&
+   Astro.titleCase(Astro.RELATION_LABELS.adhimitra) === 'Great Friend');
 ok('the nakshatra lord and sub lord are abbreviated too, with the names on hover',
    /Astro\.grahaAbbr\(nak\.lord\) \+ ' \/ ' \+ Astro\.grahaAbbr\(nak\.subLord\)/.test(appSrc) &&
    /is ruled by ' \+ nak\.lord \+ ', and its sub lord is ' \+\s*\n?\s*nak\.subLord/.test(appSrc));

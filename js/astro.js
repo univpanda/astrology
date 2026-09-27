@@ -705,7 +705,7 @@ var Astro = (function () {
     if (d.mool && sign === d.mool.sign && deg >= d.mool.from && deg < d.mool.to) return 'Mooltrikona';
     if (sign === d.exalt.sign && deg < d.exalt.to) return 'Exalted';
     if (sign === d.debil) return 'Debilitated';
-    if (d.own.indexOf(sign) >= 0) return 'Own sign';
+    if (d.own.indexOf(sign) >= 0) return 'Own Sign';
     return '';
   }
 
@@ -762,10 +762,21 @@ var Astro = (function () {
     Saturn: { friends: ['Mercury', 'Venus'], enemies: ['Sun', 'Moon', 'Mars'] }
   };
 
+  /*
+   * Kept in the prose form, lower case, because most of what reads these is a
+   * sentence: "regards Mars as a great friend". A cell wants Title Case instead,
+   * so the capital is put on at the point of display by titleCase rather than
+   * stored here a second time in a second table.
+   */
   var RELATION_LABELS = {
     adhimitra: 'great friend', mitra: 'friend', sama: 'neutral',
     shatru: 'enemy', adhishatru: 'great enemy'
   };
+
+  /** Every word capitalised: "great friend" as a label rather than as prose. */
+  function titleCase(text) {
+    return String(text).replace(/\b[a-z]/g, function (ch) { return ch.toUpperCase(); });
+  }
 
   /** Natural relation: 1 friend, 0 neutral, -1 enemy. Null for the nodes. */
   function naturalRelation(graha, other) {
@@ -1042,9 +1053,9 @@ var Astro = (function () {
   }
 
   var VARGA_DIGNITY_LABELS = {
-    exalted: 'Exalted', moolatrikona: 'Mooltrikona', own: 'Own sign',
-    adhimitra: 'Great friend', mitra: 'Friend', sama: 'Neutral',
-    shatru: 'Enemy', adhishatru: 'Great enemy', debilitated: 'Debilitated'
+    exalted: 'Exalted', moolatrikona: 'Mooltrikona', own: 'Own Sign',
+    adhimitra: 'Great Friend', mitra: 'Friend', sama: 'Neutral',
+    shatru: 'Enemy', adhishatru: 'Great Enemy', debilitated: 'Debilitated'
   };
 
   /*
@@ -1508,6 +1519,7 @@ var Astro = (function () {
     compoundRelation: compoundRelation,
     NATURAL_FRIENDS: NATURAL_FRIENDS,
     RELATION_LABELS: RELATION_LABELS,
+    titleCase: titleCase,
     isYogakaraka: isYogakaraka,
     DIGNITY: DIGNITY,
     NODES: NODES,

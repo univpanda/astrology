@@ -865,7 +865,7 @@
       ((positionsD1[lord].sign - positionsD1[graha].sign) % 12 + 12) % 12 + 1);
     // The nodes rule nothing and have no place in the friendship table.
     return Astro.grahaAbbr(lord) +
-      (relation ? ' \u00b7 ' + Astro.RELATION_LABELS[relation] : '');
+      (relation ? ' \u00b7 ' + Astro.titleCase(Astro.RELATION_LABELS[relation]) : '');
   }
 
   /** "great friend" reads as "a great friend"; "neutral" takes no article. */
