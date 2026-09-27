@@ -1323,6 +1323,45 @@ var Astro = (function () {
    * everything downstream - ascendant, houses, nakshatras, panchang, dashas - is
    * one implementation rather than two that can drift apart.
    */
+  /*
+   * The order everything downstream is listed in: the graha tables, Shadbala,
+   * the Vimsopaka Bala grid and the aspects all walk it, so it is the one place
+   * the sequence is decided.
+   *
+   * Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, which is the order of the
+   * weekday lords and the one the classical lists use. Ketu follows Rahu because
+   * it is derived from it rather than sampled.
+   *
+   * Outside assembleChart because a chart does not always come from here. The
+   * Edge Function returns one assembled by whatever copy of this file was
+   * deployed with it, and a copy a few weeks behind puts the grahas in the order
+   * it knew. GRAHA_ORDER is what the app sorts an arriving chart into, so the
+   * sequence is this file's answer whichever side of the wire built the chart.
+   */
+  var BODIES = [
+    { key: 'sun', name: 'Sun' }, { key: 'moon', name: 'Moon' },
+    { key: 'mars', name: 'Mars' }, { key: 'mercury', name: 'Mercury' },
+    { key: 'jupiter', name: 'Jupiter' }, { key: 'venus', name: 'Venus' },
+    { key: 'saturn', name: 'Saturn' }, { key: 'rahu', name: 'Rahu' }
+  ];
+  var GRAHA_ORDER = BODIES.map(function (b) { return b.name; }).concat('Ketu');
+
+  /**
+   * A chart's grahas in GRAHA_ORDER, whatever order they arrived in. Anything
+   * the list does not name keeps its place at the end rather than being dropped.
+   */
+  function inGrahaOrder(planets) {
+    var rank = {};
+    GRAHA_ORDER.forEach(function (name, i) { rank[name] = i; });
+    return planets.slice().sort(function (a, b) {
+      var x = rank[a.name], y = rank[b.name];
+      if (x === undefined && y === undefined) return 0;
+      if (x === undefined) return 1;
+      if (y === undefined) return -1;
+      return x - y;
+    });
+  }
+
   function assembleChart(sample, o) {
     var jdUT = o.jdUT;
     var jdTT = jdUT + deltaT(jdUT) / 86400;
@@ -1343,21 +1382,7 @@ var Astro = (function () {
     // Grahas arrive as mean tropical longitudes, so they take the plain ayanamsa;
     // the ascendant below is an apparent (true equinox) angle and takes ayanTrue.
     // Listed in the order a Vedic table reads them, with Ketu following Rahu.
-    /*
-     * The order everything downstream is listed in: the graha tables, Shadbala,
-     * the Vargas grid and the aspects all walk this array, so it is the one
-     * place the sequence is decided.
-     *
-     * Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, which is the order of
-     * the weekday lords and the one the classical lists use. Ketu follows Rahu
-     * because it is derived from it rather than sampled.
-     */
-    var bodies = [
-      { key: 'sun', name: 'Sun' }, { key: 'moon', name: 'Moon' },
-      { key: 'mars', name: 'Mars' }, { key: 'mercury', name: 'Mercury' },
-      { key: 'jupiter', name: 'Jupiter' }, { key: 'venus', name: 'Venus' },
-      { key: 'saturn', name: 'Saturn' }, { key: 'rahu', name: 'Rahu' }
-    ];
+    var bodies = BODIES;
 
     // Ascendant and Midheaven, tropical then sidereal.
     var gast = apparentSiderealTime(jdUT, T, nut, eps);
@@ -1549,6 +1574,8 @@ var Astro = (function () {
     SIGNS: SIGNS,
     SIGNS_SA: SIGNS_SA,
     SIGN_ABBR: SIGN_ABBR,
+    GRAHA_ORDER: GRAHA_ORDER,
+    inGrahaOrder: inGrahaOrder,
     grahaAbbr: grahaAbbr,
     signAbbr: signAbbr,
     SIGN_LORDS: SIGN_LORDS,

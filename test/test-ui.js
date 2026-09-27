@@ -1219,6 +1219,26 @@ ok('every note on the page wears the class', (function () {
     });
 })());
 
+/*
+ * Every table walks chart.planets, so the order they read in is whatever built
+ * the chart - and the Edge Function builds with the copy of astro.js that was
+ * deployed alongside it, not the one the browser loaded. That is how the tables
+ * stayed listed Sun, Moon, Mars, Jupiter, Venus, Mercury, Saturn long after the
+ * engine here had been changed: the reorder was real and never reached the page.
+ */
+ok('an arriving chart is put into the engine order, whichever side built it',
+   /chart\.planets = Astro\.inGrahaOrder\(chart\.planets\)/.test(appSrc) &&
+   typeof Astro.inGrahaOrder === 'function');
+ok('and it is done once, where both sources meet', (function () {
+  var at = appSrc.indexOf('function computeChart');
+  var block = appSrc.slice(at, appSrc.indexOf('function fail', at));
+  return (block.match(/inGrahaOrder/g) || []).length === 1 &&
+    /var finish = function \(chart, source\)/.test(block) &&
+    block.indexOf('inGrahaOrder') < block.indexOf('var local = function');
+})());
+ok('so no table sorts for itself',
+   (appSrc.match(/inGrahaOrder/g) || []).length === 1);
+
 console.log('\nVargas panel');
 /*
  * Named for the measure, as Shadbala beside it is, rather than for the columns.

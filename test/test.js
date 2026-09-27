@@ -476,6 +476,43 @@ console.log('\nWhat a second of clock time is worth');
      'day ' + withSeconds.d + ', ' + withSeconds.hours.toFixed(4) + 'h');
 })();
 
+console.log('\nGraha order');
+/*
+ * The sequence every table reads in. It lives outside assembleChart because a
+ * chart does not always come from assembleChart: the Edge Function assembles
+ * with whatever copy of this file was deployed with it, and a copy behind the
+ * browser's returns the grahas in the order it knew.
+ */
+ok('the order is the weekday lords, Ketu after Rahu',
+   A.GRAHA_ORDER.join(' ') === 'Sun Moon Mars Mercury Jupiter Venus Saturn Rahu Ketu',
+   A.GRAHA_ORDER.join(' '));
+ok('and a chart built here already comes in it', (function () {
+  var c = A.chart({ jdUT: A.julianDay(1985, 3, 22, 10 + 55 / 60 - 5.5),
+                    latitude: 23.55, longitude: 87.32, tzOffsetMinutes: 330 });
+  return c.planets.map(function (p) { return p.name; }).join(' ') === A.GRAHA_ORDER.join(' ');
+})());
+// The order the deployed service was returning when this was found.
+ok('a chart that does not is put into it', (function () {
+  var stale = ['Sun', 'Moon', 'Mars', 'Jupiter', 'Venus', 'Mercury', 'Saturn', 'Rahu', 'Ketu']
+    .map(function (n) { return { name: n }; });
+  return A.inGrahaOrder(stale).map(function (p) { return p.name; }).join(' ') ===
+    A.GRAHA_ORDER.join(' ');
+})());
+ok('sorting leaves the array it was given alone', (function () {
+  var given = [{ name: 'Saturn' }, { name: 'Sun' }];
+  A.inGrahaOrder(given);
+  return given[0].name === 'Saturn';
+})());
+/*
+ * A name the order does not know must not vanish. Upagrahas and the outer
+ * planets are the cases that would come from a newer service than this file.
+ */
+ok('and a graha the order has never heard of keeps its place at the end', (function () {
+  var withExtra = [{ name: 'Gulika' }, { name: 'Saturn' }, { name: 'Sun' }];
+  var sorted = A.inGrahaOrder(withExtra).map(function (p) { return p.name; });
+  return sorted.join(' ') === 'Sun Saturn Gulika' && sorted.length === 3;
+})());
+
 console.log('\nKey divisions');
 /*
  * The three a scheme leans on hardest, read off its own share-out of the twenty

@@ -676,9 +676,20 @@
    */
   function computeChart(params, done) {
     var settled = false;
+    /*
+     * Every chart passes through here, from the service or from this browser,
+     * and leaves with its grahas in the engine's order. The service assembles
+     * with whatever copy of astro.js was deployed alongside it, so a copy a few
+     * weeks behind returned them in the order it knew - which is how the tables
+     * came to be listed Sun, Moon, Mars, Jupiter, Venus, Mercury, Saturn long
+     * after the engine here had been changed. Sorting on arrival makes the
+     * order this file's answer rather than the answer of whichever side of the
+     * wire happened to build the chart.
+     */
     var finish = function (chart, source) {
       if (settled) return;
       settled = true;
+      if (chart && chart.planets) chart.planets = Astro.inGrahaOrder(chart.planets);
       done(chart, source);
     };
     var local = function (why) {
