@@ -1029,7 +1029,37 @@
     });
   }
 
-  /** One chart's table: the ascendant, then every graha, one row each. */
+  /*
+   * The rows of one chart's table: what is asked about every graha, in the
+   * order a reader asks it. Sign first, then what the graha is worth there,
+   * then where that puts it and what it owns from there; the precise position
+   * and its nakshatra close, being the detail rather than the reading.
+   */
+  var GRAHA_ROWS = [
+    { label: 'Rashi', says: 'The sign this chart puts the graha in.' },
+    { label: 'Dignity', says: 'What the graha is worth in that sign: exalted, its own, a friend’s, and so on down to debilitated.' },
+    { label: 'House', says: 'Counted from this chart’s own house 1, which the tab above says what is counted from.' },
+    { label: 'Lordship', says: 'Which houses the graha rules, counted from the same house 1 as the row above.' },
+    { label: 'Dispositor', says: 'The lord of the sign the graha stands in, and what the graha makes of it.' },
+    { label: 'Longitude', says: 'Degrees, minutes and seconds within the sign.' },
+    { label: 'Nakshatra - pada', says: 'Which of the 27 nakshatras the graha falls in, and which quarter of it.' },
+    { label: 'Lord / sub lord', says: 'The nakshatra’s Vimshottari lord, over its KP sub lord.' }
+  ];
+
+  /**
+   * One chart's table: grahas across the top, what is asked of them down the
+   * side.
+   *
+   * Turned to match the two grids beside it. It read the other way, a row per
+   * graha, which is the shape of the data - but the question a reader brings is
+   * usually about one thing across all the grahas, "who is exalted", "who owns
+   * the tenth", and that is a row to scan rather than a column to hunt down.
+   *
+   * It costs width. Each graha column has to be as wide as that graha's longest
+   * field, and the longest field is nearly always its nakshatra, so the table
+   * runs about half as wide again as it did. The scroll container is what pays
+   * for it.
+   */
   function grahaTableFor(state, view) {
     var c = state.chart;
     var positionsD1 = {};
@@ -1053,22 +1083,7 @@
       if (anchor) firstSign = Astro.vargaPosition(anchor.longitude, view.division).sign;
     }
 
-    var table = el('table', 'graha-table');
-    table.id = 'graha-table-d' + view.division;
-    var thead = el('thead');
-    var headRow = el('tr');
-    ['Graha', 'Rashi', 'Dignity', 'House', 'Lordship', 'Dispositor', 'Longitude',
-     'Nakshatra - pada', 'Lord / sub lord'].forEach(function (name) {
-      var th = el('th', null, name);
-      th.setAttribute('scope', 'col');
-      headRow.appendChild(th);
-    });
-    thead.appendChild(headRow);
-    table.appendChild(thead);
-    var tbody = el('tbody');
-    table.appendChild(tbody);
-
-    var rows = [{ name: 'Ascendant', longitude: c.ascendant.longitude, isAscendant: true }]
+    var entities = [{ name: 'Ascendant', longitude: c.ascendant.longitude, isAscendant: true }]
       .concat(c.planets.map(function (p) {
         return { name: p.name, longitude: p.longitude, retrograde: p.retrograde };
       }));
@@ -1080,65 +1095,92 @@
       });
     };
 
-    rows.forEach(function (r) {
+    /* Everything one column needs, worked out once and read down the rows. */
+    var columns = entities.map(function (r) {
       var v = Astro.vargaPosition(r.longitude, view.division);
       var nak = Astro.nakshatraOf(v.longitude);
       var house = ((v.sign - firstSign) % 12 + 12) % 12 + 1;
       var owned = r.isAscendant ? [] : Astro.housesOwned(r.name, firstSign);
+      return {
+        entity: r,
+        cells: [
+          { text: Astro.SIGNS[v.sign],
+            flags: [view.division !== 1 && v.sign === Astro.signOf(r.longitude) ? 'V' : null,
+              !r.isAscendant && Astro.hemmedByBenefics(r.name, v.sign, divisionChart,
+                benefics) ? 'S' : null,
+              !r.isAscendant && Astro.hemmedByMalefics(r.name, v.sign, divisionChart,
+                benefics) ? 'P' : null] },
+          { text: (r.isAscendant ? '' : Astro.dignityOf(r.name, v.sign, v.degreeInSign)) || '–',
+            star: !r.isAscendant && cancelledHere[r.name] },
+          { text: String(house), cls: 'numeric',
+            flags: [!r.isAscendant && Astro.hasDigBala(r.name, house) ? 'D' : null] },
+          owned.length
+            ? { text: owned.join(', '), cls: 'numeric',
+                flags: [Astro.isYogakaraka(r.name, firstSign) ? 'Y' : null],
+                title: r.name + ' rules ' + owned.map(function (h) {
+                  return Astro.SIGNS[(firstSign + h - 1) % 12] + ', the ' + Yogas.ordinal(h);
+                }).join(' and ') + '.' }
+            : { text: '–', cls: 'numeric' },
+          { text: r.isAscendant ? Astro.grahaAbbr(Astro.SIGN_LORDS[v.sign])
+              : dispositorOf(r.name, v.sign, positionsD1),
+            cls: 'dispositor',
+            title: r.isAscendant
+              ? Astro.SIGN_LORDS[v.sign] + ' rules ' + Astro.SIGNS[v.sign] + '.'
+              : dispositorDetail(r.name, v.sign, positionsD1) },
+          { text: dms(v.degreeInSign), cls: 'longitude',
+            title: 'Longitude ' + v.longitude.toFixed(4) + '°' },
+          /*
+           * The pada had a column of its own, which said nothing on its own: a
+           * bare 3 is only meaningful as the third quarter of some nakshatra,
+           * and the two are read together every time.
+           */
+          { text: nak.name + ' - ' + nak.pada,
+            title: nak.name + ', pada ' + nak.pada + ' of four.' },
+          /*
+           * Two grahas in one cell, so both go in abbreviated and the words go
+           * in the hover: this pair is read as a pair, Vimshottari's lord over
+           * its KP sub lord.
+           */
+          { text: Astro.grahaAbbr(nak.lord) + ' / ' + Astro.grahaAbbr(nak.subLord),
+            cls: 'nak-lords',
+            title: nak.name + ' is ruled by ' + nak.lord + ', and its sub lord is ' +
+              nak.subLord + '.' }
+        ]
+      };
+    });
 
+    var table = el('table', 'graha-table');
+    table.id = 'graha-table-d' + view.division;
+
+    var thead = el('thead');
+    var headRow = el('tr');
+    // Blank, the row headings under it naming themselves.
+    var corner = el('th');
+    corner.setAttribute('scope', 'col');
+    headRow.appendChild(corner);
+    columns.forEach(function (col) {
+      if (col.entity.isAscendant) {
+        var th = el('th', null, col.entity.name);
+        th.setAttribute('scope', 'col');
+        headRow.appendChild(th);
+        return;
+      }
+      // The same cell the Vimsopaka and Shadbala grids head a graha with, so
+      // [R] and [C] are in one place for all three.
+      headRow.appendChild(grahaColumnHead(col.entity, sun));
+    });
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    var tbody = el('tbody');
+    GRAHA_ROWS.forEach(function (row, i) {
       var tr = document.createElement('tr');
-      var th = el('th', null, r.name);
+      var th = el('th', null, row.label);
       th.setAttribute('scope', 'row');
-      flag(th, [r.retrograde ? 'R' : null,
-        !r.isAscendant && sun && Astro.isCombust(r.name, r.longitude, sun.longitude,
-          r.retrograde) ? 'C' : null]);
+      th.title = row.says;
       tr.appendChild(th);
-
-      var cells = [
-        { text: Astro.SIGNS[v.sign],
-          flags: [view.division !== 1 && v.sign === Astro.signOf(r.longitude) ? 'V' : null,
-            !r.isAscendant && Astro.hemmedByBenefics(r.name, v.sign, divisionChart,
-              benefics) ? 'S' : null,
-            !r.isAscendant && Astro.hemmedByMalefics(r.name, v.sign, divisionChart,
-              benefics) ? 'P' : null] },
-        { text: (r.isAscendant ? '' : Astro.dignityOf(r.name, v.sign, v.degreeInSign)) || '–',
-          star: !r.isAscendant && cancelledHere[r.name] },
-        { text: String(house), cls: 'numeric',
-          flags: [!r.isAscendant && Astro.hasDigBala(r.name, house) ? 'D' : null] },
-        owned.length
-          ? { text: owned.join(', '), cls: 'numeric',
-              flags: [Astro.isYogakaraka(r.name, firstSign) ? 'Y' : null],
-              title: r.name + ' rules ' + owned.map(function (h) {
-                return Astro.SIGNS[(firstSign + h - 1) % 12] + ', the ' + Yogas.ordinal(h);
-              }).join(' and ') + '.' }
-          : { text: '–', cls: 'numeric' },
-        { text: r.isAscendant ? Astro.grahaAbbr(Astro.SIGN_LORDS[v.sign])
-            : dispositorOf(r.name, v.sign, positionsD1),
-          cls: 'dispositor',
-          title: r.isAscendant
-            ? Astro.SIGN_LORDS[v.sign] + ' rules ' + Astro.SIGNS[v.sign] + '.'
-            : dispositorDetail(r.name, v.sign, positionsD1) },
-        { text: dms(v.degreeInSign), cls: 'longitude',
-          title: 'Longitude ' + v.longitude.toFixed(4) + '°' },
-        /*
-         * The pada had a column of its own, which said nothing on its own: a
-         * bare 3 is only meaningful as the third quarter of some nakshatra, and
-         * the two are read together every time.
-         */
-        { text: nak.name + ' - ' + nak.pada,
-          title: nak.name + ', pada ' + nak.pada + ' of four.' },
-        /*
-         * Two grahas in one cell, so both go in abbreviated and the words go in
-         * the hover: this pair is read as a pair, Vimshottari's lord over its
-         * KP sub lord.
-         */
-        { text: Astro.grahaAbbr(nak.lord) + ' / ' + Astro.grahaAbbr(nak.subLord),
-          cls: 'nak-lords',
-          title: nak.name + ' is ruled by ' + nak.lord + ', and its sub lord is ' +
-            nak.subLord + '.' }
-      ];
-
-      cells.forEach(function (cell) {
+      columns.forEach(function (col) {
+        var cell = col.cells[i];
         var td = el('td', cell.cls, cell.text);
         if (cell.title) td.title = cell.title;
         /*
@@ -1147,16 +1189,15 @@
          */
         if (cell.star) {
           td.appendChild(el('span', 'flag flag-n', ' [N]'));
-          td.title = r.name + '’s debilitation is cancelled and the graha stands in ' +
-            'an angle or a trine, which is neecha bhanga raja yoga.';
+          td.title = col.entity.name + '’s debilitation is cancelled and the graha ' +
+            'stands in an angle or a trine, which is neecha bhanga raja yoga.';
         }
         if (cell.flags) flag(td, cell.flags);
         tr.appendChild(td);
       });
-
       tbody.appendChild(tr);
     });
-
+    table.appendChild(tbody);
     return table;
   }
 

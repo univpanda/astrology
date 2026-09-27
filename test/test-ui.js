@@ -609,15 +609,14 @@ ok('and the rule is not written for one table, both grids spanning a name',
 ok('every flag rides on the value it qualifies', (function () {
   var at = appSrc.indexOf('function grahaTableFor');
   var block = appSrc.slice(at, appSrc.indexOf('function renderShadbala', at));
-  var nameFlags = block.slice(block.indexOf("var th = el('th', null, r.name)"),
-                              block.indexOf('tr.appendChild(th)'));
-  var cells = block.slice(block.indexOf('var cells = ['), block.indexOf('cells.forEach'));
+  var cells = block.slice(block.indexOf('cells: ['), block.indexOf('var table = el('));
   var after = function (label) {
     var i = cells.indexOf(label);
     return cells.slice(i, cells.indexOf('{ text:', i + 10));
   };
-  return /r\.retrograde \? 'R' : null/.test(nameFlags) &&
-    /Astro\.isCombust/.test(nameFlags) && !/'Y' : null/.test(nameFlags) &&
+  return /headRow\.appendChild\(grahaColumnHead\(col\.entity, sun\)\);/.test(block) &&
+    !/'Y' : null/.test(block.slice(block.indexOf('headRow.appendChild(grahaColumnHead'),
+                                   block.indexOf('thead.appendChild'))) &&
     /'V' : null/.test(after('Astro.SIGNS[v.sign]')) &&
     /'S' : null/.test(after('Astro.SIGNS[v.sign]')) &&
     /'P' : null/.test(after('Astro.SIGNS[v.sign]')) &&
@@ -815,7 +814,7 @@ function stripHtml(label) {
   ok('houses are counted from whatever that table\'s chart is rotated onto',
      /var firstSign = Astro\.vargaPosition\(c\.ascendant\.longitude, view\.division\)\.sign;/.test(appSrc) &&
      /view\.reference !== 'Ascendant'/.test(appSrc) &&
-     /'House', 'Lordship'/.test(appSrc));
+     /\{ label: 'House', says:/.test(appSrc));
 })();
 
 /*
@@ -1882,7 +1881,7 @@ ok('and the nodes are never one either, owning no sign',
  */
 ok('the chart and the table both flag combustion',
    /\(p\.combust \? '\[C\]' : ''\)/.test(fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8')) &&
-   /Astro\.isCombust\(r\.name, r\.longitude/.test(appSrc));
+   /Astro\.isCombust\(planet\.name, planet\.longitude/.test(appSrc));
 /*
  * A real distance from the Sun, so it is read off the rashi longitudes whichever
  * division a row is showing - which is also why it sits on the graha's name
@@ -1891,7 +1890,7 @@ ok('the chart and the table both flag combustion',
 ok('measured from the Sun, and on the rashi longitudes',
    /combust: !!sun && Astro\.isCombust\(p\.name, p\.longitude, sun\.longitude, p\.retrograde\)/
      .test(fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8')) &&
-   /Astro\.isCombust\(r\.name, r\.longitude, sun\.longitude,/.test(appSrc));
+   /Astro\.isCombust\(planet\.name, planet\.longitude, sun\.longitude,/.test(appSrc));
 ok('the nodes are never flagged, being points', (function () {
   // Rahu sits 2.2 degrees from the Sun in one of the saved charts and must stay clean.
   return !Astro.isCombust('Rahu', 2, 0, true) && !Astro.isCombust('Ketu', 182, 0, true) &&
@@ -1981,16 +1980,17 @@ ok('and the two grids head a graha the same way, from one place',
  * five different cells rather than all in one. What matters is unchanged: the
  * name's flags go on the row header and not into a cell beside it.
  */
-ok('and both tables keep them on a th rather than in a cell', (function () {
-  var graha = appSrc.slice(appSrc.indexOf('function grahaTableFor'),
-                           appSrc.indexOf('function strengthsFor'));
-  var head = appSrc.slice(appSrc.indexOf('function grahaColumnHead'),
-                          appSrc.indexOf('function renderVargasHead'));
-  return /cell\.appendChild\(el\('span', 'flag flag-' \+ f\.toLowerCase\(\)/.test(graha) &&
-    /flag\(th, \[r\.retrograde \? 'R' : null,/.test(graha) &&
-    /th\.setAttribute\('scope', 'row'\);\s*\n\s*flag\(th,/.test(graha) &&
-    /th\.appendChild\(el\('span', 'flag flag-' \+ f\.toLowerCase\(\)/.test(head);
-})());
+/*
+ * All three grids head a graha with the same cell now, so [R] and [C] are
+ * written in one place and cannot reach one table and miss another.
+ */
+ok('and all three tables head a graha with the same cell',
+   /function grahaColumnHead\(planet, sun\)/.test(appSrc) &&
+   (appSrc.match(/appendChild\(grahaColumnHead\((?:planet|col\.entity), sun\)\)/g) || [])
+     .length === 3 &&
+   /th\.appendChild\(el\('span', 'flag flag-' \+ f\.toLowerCase\(\)/
+     .test(appSrc.slice(appSrc.indexOf('function grahaColumnHead'),
+                        appSrc.indexOf('function renderVargasHead'))));
 
 ok('and the grid really carries those six and no others', (function () {
   var at = appSrc.indexOf('function renderVargas(state)');
@@ -4087,17 +4087,30 @@ ok('and the box is drawn to that half width, not the old full one',
    !/var W = 760/.test(appSrc));
 
 /*
- * Nine columns, the Chart column gone with the rows it distinguished. Built in
- * app.js now, so the list is read from there rather than from the markup.
+ * Eight rows now rather than nine columns, the table having been turned to
+ * match the two grids beside it. The Graha heading went with the turn: the
+ * grahas are the columns, so the corner above their names is blank.
  */
-ok('the table carries nine columns, in order', (function () {
-  var at = appSrc.indexOf("['Graha', 'Rashi'");
+ok('the table carries eight rows, in order', (function () {
+  var at = appSrc.indexOf('var GRAHA_ROWS = [');
   if (at < 0) return false;
-  var block = appSrc.slice(at, appSrc.indexOf('].forEach', at));
-  var found = (block.match(/'[^']+'/g) || []).map(function (t) { return t.slice(1, -1); });
-  return found.join('|') === ['Graha', 'Rashi', 'Dignity', 'House', 'Lordship',
-    'Dispositor', 'Longitude', 'Nakshatra - pada', 'Lord / sub lord'].join('|') &&
+  var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
+  var found = (block.match(/label: '[^']+'/g) || [])
+    .map(function (t) { return t.slice(8, -1); });
+  return found.join('|') === ['Rashi', 'Dignity', 'House', 'Lordship', 'Dispositor',
+    'Longitude', 'Nakshatra - pada', 'Lord / sub lord'].join('|') &&
     !/<th scope="col">Chart<\/th>/.test(html);
+})());
+/*
+ * And every row says what it is on hover, there being no space for more than a
+ * label down the side.
+ */
+ok('and every row says what it measures', (function () {
+  var at = appSrc.indexOf('var GRAHA_ROWS = [');
+  var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
+  return (block.match(/label: '/g) || []).length ===
+    (block.match(/says: '/g) || []).length &&
+    /th\.title = row\.says;/.test(appSrc);
 })());
 /*
  * Lordship was removed as a "Rules" column and has come back as this one. It is
@@ -4150,8 +4163,8 @@ ok('a yogakaraka owns an angle and a trine, which the column now shows', (functi
  * onto the name, so dignity is what has to lead the position columns now.
  */
 ok('what a graha is comes before where it is', (function () {
-  var at = appSrc.indexOf("['Graha', 'Rashi'");
-  var head = appSrc.slice(at, appSrc.indexOf('].forEach', at));
+  var at = appSrc.indexOf('var GRAHA_ROWS = [');
+  var head = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
   return head.indexOf("'Dignity'") < head.indexOf("'Longitude'") &&
          head.indexOf("'Rashi'") < head.indexOf("'Dignity'") &&
          head.indexOf("'Lordship'") < head.indexOf("'Longitude'");
