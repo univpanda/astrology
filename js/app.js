@@ -1299,9 +1299,13 @@
        */
       (brief ? 'Signs go as Ari, Tau, Can and dignities as ' + dignityKey() + '. ' : '') +
       'Hover over anything to read it in detail. ' +
-      'Rahu and Ketu own no sign and keep no friendships, so there is no relation to score ' +
-      'and they are left out. No luminary rules a trimsamsa, so in D30 the Sun is judged as ' +
-      'Mars and the Moon as Venus.';
+      /*
+       * Both say what the grid does before why. A reader looking at seven rows
+       * wants "they are left out" first and the reason after it, not a clause
+       * about friendship to hold until the sentence gets to the point.
+       */
+      'Rahu and Ketu are left out: they own no sign and keep no friendships. In D30 the Sun ' +
+      'is judged as Mars and the Moon as Venus, no luminary ruling a trimsamsa.';
   }
 
   /*

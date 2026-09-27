@@ -1709,13 +1709,27 @@ ok('and says outright that moolatrikona is not one of the six',
  * find out why two grahas are missing from it.
  */
 ok('the note still says why the trimsamsa needs a stand-in',
-   /No luminary rules a trimsamsa, so in D30 the Sun is judged as Mars and the Moon as Venus/
+   /In D30 the Sun is judged as Mars and the Moon as Venus, no luminary ruling a trimsamsa/
      .test(appSrc.replace(/'\s*\+\s*'/g, '')) &&
    /the Sun and the Moon rule no trimsamsa at all/.test(seeds));
 ok('and that the nodes are left out, in the note and at length in the library',
-   /Rahu and Ketu own no sign and keep no friendships, so there is no relation to score/
+   /Rahu and Ketu are left out: they own no sign and keep no friendships/
      .test(appSrc.replace(/'\s*\+\s*'/g, '')) &&
    /A row for them would be blank in every column and totalled in none/.test(seeds));
+/*
+ * Both of these say what the grid does before why it does it. A reader counting
+ * seven rows wants "they are left out" first; the reason is what they read next,
+ * not a clause to hold until the sentence arrives at the point.
+ */
+ok('and both exceptions lead with the fact, not the reason', (function () {
+  var at = appSrc.indexOf('function vargaNote');
+  var flat = appSrc.slice(at, appSrc.indexOf('ABBREVIATE_ABOVE', at))
+    .replace(/'\s*\+\s*'/g, '');
+  return !/own no sign and keep no friendships, so/.test(flat) &&
+    !/No luminary rules a trimsamsa, so/.test(flat) &&
+    flat.indexOf('Rahu and Ketu are left out') < flat.indexOf('they own no sign') &&
+    flat.indexOf('In D30 the Sun is judged') < flat.indexOf('no luminary ruling');
+})());
 
 ok('the trimsamsa stand-in is explained where it fires',
    /stands in as ' \+ d\.viaProxy/.test(appSrc));
