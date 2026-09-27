@@ -1350,10 +1350,12 @@
        * exchange is about a pair of grahas and directional strength about a
        * house, and the grid prints neither - so they hang on the graha's name.
        */
-      'The marks are things the score cannot see, each against the value it qualifies: ' +
-      '[V] on a sign, * on a dignity. Hover over anything to read it in detail, and a ' +
-      'graha\u2019s name where it has either of the two that have no cell to sit in, the ' +
-      'yogas it takes part in or the divisions it is directionally strong in. ' +
+      'A marked cell is one the score reads wrong, and the mark says how. [V] repeats the ' +
+      'rashi sign, [P] is an exchange of signs, + is the house the graha is strongest in ' +
+      'by direction, and * on a dignity is a debilitation cancelled into a raja yoga. ' +
+      'Those are the four things vimsopaka cannot see, each against the value in that cell ' +
+      'it bears on, so an unmarked cell is one the score has whole. Hover any of them for ' +
+      'the reading. ' +
       /*
        * Both say what the grid does before why. A reader looking at seven rows
        * wants "they are left out" first and the reason after it, not a clause
@@ -1433,54 +1435,6 @@
     return found;
   }
 
-  /*
-   * What the grid cannot put in a cell, hung on the graha's name instead.
-   *
-   * Two of the four things vimsopaka is blind to have a value to sit against and
-   * are marked there: [V] on a sign, the star on a dignity. The other two have
-   * none. An exchange of signs is a fact about a pair of grahas, and directional
-   * strength is a fact about a house, and the grid prints neither pairs nor
-   * houses. Both end up here, where a graha is named once for all its columns.
-   *
-   * Names only, no readings. The Yogas tab is where a yoga is explained; this is
-   * only telling the reader that the number beside it is not the whole account.
-   */
-  function grahaFootnote(state, planet, scheme, divisionLagna) {
-    var yogas = [];
-    Yogas.detect(state.chart, strengthsFor(state)).forEach(function (yoga) {
-      if ((yoga.grahas || []).indexOf(planet.name) < 0) return;
-      if (yogas.indexOf(yoga.title) < 0) yogas.push(yoga.title);
-    });
-    var strong = scheme.divisions.filter(function (division) {
-      var v = Astro.vargaPosition(planet.longitude, division);
-      return Astro.hasDigBala(planet.name,
-        ((v.sign - divisionLagna[division]) % 12 + 12) % 12 + 1);
-    });
-
-    /*
-     * Nothing to say, no hover. A tooltip that reports an absence trains the
-     * reader to stop opening them, and most grahas in most charts have neither
-     * of these: the mark is worth something only where it is the exception.
-     */
-    var said = [];
-    if (yogas.length) {
-      said.push(planet.name + ' takes part in ' +
-        listOf(yogas.map(function (t) { return t.toLowerCase(); })) + '.');
-    }
-    if (strong.length) {
-      said.push((yogas.length ? '' : planet.name + ' is ') +
-        (yogas.length ? 'Directionally strong in ' : 'directionally strong in ') +
-        listOf(strong.map(function (d) { return 'D' + d; })) + '.');
-    }
-    return said.length ? said.join(' ') : null;
-  }
-
-  /** "A", "A and B", "A, B and C". */
-  function listOf(items) {
-    if (items.length < 2) return items[0] || '';
-    return items.slice(0, -1).join(', ') + ' and ' + items[items.length - 1];
-  }
-
   function renderVargas(state) {
     var scheme = currentScheme();
     var brief = scheme.divisions.length > ABBREVIATE_ABOVE;
@@ -1502,12 +1456,20 @@
 
     /*
      * Each division's own ascending sign, which is what its houses are counted
-     * from. Computed once per division rather than once per cell.
+     * from, and which grahas that division puts in an exchange. Computed once
+     * per division rather than once per cell.
      */
-    var divisionLagna = {};
+    var divisionLagna = {}, exchanging = {};
     scheme.divisions.forEach(function (division) {
       divisionLagna[division] =
         Astro.vargaPosition(state.chart.ascendant.longitude, division).sign;
+      exchanging[division] = {};
+      Yogas.parivartana(Astro.chartInDivision(state.chart, division))
+        .forEach(function (yoga) {
+          (yoga.grahas || []).forEach(function (name) {
+            exchanging[division][name] = yoga.title;
+          });
+        });
     });
 
     // Listed as in the graha tables, for reading across from one to the other.
@@ -1527,8 +1489,6 @@
       var th = el('th', null, planet.name);
       th.setAttribute('scope', 'rowgroup');
       th.setAttribute('rowspan', '2');
-      var footnote = grahaFootnote(state, planet, scheme, divisionLagna);
-      if (footnote) th.title = footnote;
       signRow.appendChild(th);
 
 
@@ -1563,6 +1523,34 @@
           sign.title = planet.name + ' holds ' + Astro.SIGNS[d.sign] + ' in D' + division +
             ' as well as in the rashi.' +
             (division === 9 ? ' In D9 that is vargottama proper.' : '');
+        }
+        /*
+         * The other two the score cannot see, per cell rather than per graha.
+         * Each says something true of this graha in this division and nowhere
+         * else: an exchange rearranges who disposits whom, and a house belongs
+         * to the division's own lagna.
+         *
+         * Only these four are marked. Every yoga the app detects would mark 58
+         * per cent of the cells - raja yoga alone is better than one per
+         * divisional chart, on two grahas each - and a mark on three cells in
+         * five is a decoration rather than a finding. The Yogas tab reads a
+         * division in full; the grid marks what this score is blind to.
+         */
+        if (d && exchanging[division][planet.name]) {
+          sign.appendChild(el('span', 'flag flag-p', ' [P]'));
+          sign.title = planet.name + ' is in an exchange of signs in D' + division +
+            ', which is ' + exchanging[division][planet.name].toLowerCase() +
+            '. The score judges it against the lord of this sign and never asks what ' +
+            'that lord is doing.';
+        }
+        if (d) {
+          var cellHouse = ((d.sign - divisionLagna[division]) % 12 + 12) % 12 + 1;
+          if (Astro.hasDigBala(planet.name, cellHouse)) {
+            sign.appendChild(el('span', 'flag flag-dig', ' +'));
+            sign.title = planet.name + ' stands in the ' + Yogas.ordinal(cellHouse) +
+              ' of D' + division + ', the house it is strongest in by direction. The score ' +
+              'counts dignity and never looks at houses.';
+          }
         }
         var dignity = el('td', (d ? 'dig dig-' + d.key : '') +
           (keys.indexOf(division) >= 0 ? ' varga-key' : ''),

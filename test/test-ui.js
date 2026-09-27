@@ -1260,8 +1260,8 @@ ok('the key has an entry per mark, and every mark has one', (function () {
   var flat = html.replace(/\s+/g, ' ');
   var dl = flat.match(/<dl class="flag-key">.*?<\/dl>/);
   if (!dl) return false;
-  return (dl[0].match(/<dt>/g) || []).length === 7 &&
-    (dl[0].match(/<dd>/g) || []).length === 7;
+  return (dl[0].match(/<dt>/g) || []).length === 8 &&
+    (dl[0].match(/<dd>/g) || []).length === 8;
 })());
 /*
  * Seven marks on three surfaces, and each entry says which surface it is on.
@@ -1283,11 +1283,25 @@ ok('each mark says which of the three surfaces it sits on', (function () {
     /A house, so it moves with the rotation as \[Y\] does/.test(flat) &&
     /On a dignity, not on a graha or a chart/.test(flat);
 })());
-ok('and the kundli says which four it shows, and why not six', (function () {
+/*
+ * Eight marks and three surfaces that each take a different subset, so the page
+ * says which goes where rather than leaving a reader to infer it from absence.
+ */
+ok('and the page says which surface carries which marks', (function () {
   var flat = html.replace(/\s+/g, ' ');
-  return /The kundli carries \[R\], \[V\], \[Y\] and \[C\] only/.test(flat) &&
-    /will not fit a corner triangle/.test(flat) &&
-    /\[H\], \+ and \* are left to the table/.test(flat);
+  return /The kundli carries \[R\], \[V\], \[Y\] and \[C\]/.test(flat) &&
+    /a corner triangle will not hold more/.test(flat) &&
+    /The Vimsopaka Bala grid carries \[V\], \[P\], \+ and \*/.test(flat) &&
+    /the four things that score cannot see/.test(flat);
+})());
+ok('and the grid really carries those four and no others', (function () {
+  var at = appSrc.indexOf('function renderVargas(state)');
+  var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
+  var marks = (block.match(/'flag flag-[a-z]+'/g) || [])
+    .concat(block.match(/'neecha-bhanga'/g) || []);
+  return marks.length === 4 && block.indexOf("'flag flag-v'") >= 0 &&
+    block.indexOf("'flag flag-p'") >= 0 && block.indexOf("'flag flag-dig'") >= 0 &&
+    block.indexOf("'neecha-bhanga'") >= 0;
 })());
 /*
  * The two that turn on the division alone are read from that division's own
@@ -1383,64 +1397,67 @@ ok('and the hover says the score is the floor for a graha that is not weak',
    /is cancelled and the graha stands in an angle or a trine, which is neecha bhanga raja yoga, so the score below is the floor for a graha that is not weak/
      .test(appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ')));
 /*
- * The note places the marks and leaves defining them to the flag key, which
- * defines all seven. Saying what [V] means under the grid as well was the same
- * duplication that took the scoring out to the library.
+ * Every mark is per cell, a cell being one graha in one division, and every mark
+ * is one of the four things vimsopaka cannot see. A marked cell is one the score
+ * reads wrong; an unmarked cell is one it has whole.
  */
-ok('the note places the marks without defining them again', (function () {
+ok('the note says a mark means the score reads that cell wrong', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
-  return /The marks are things the score cannot see, each against the value it qualifies: \[V\] on a sign, \* on a dignity/
+  return /A marked cell is one the score reads wrong, and the mark says how/.test(flat) &&
+    /so an unmarked cell is one the score has whole/.test(flat);
+})());
+ok('and names all four without defining any, the key doing that', (function () {
+  var flat = appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
+  return /\[V\] repeats the rashi sign, \[P\] is an exchange of signs, \+ is the house the graha is strongest in by direction, and \* on a dignity is a debilitation cancelled into a raja yoga/
     .test(flat) &&
-    !/A sign marked \[V\] is one the division has landed/.test(flat) &&
-    !/A debilitation marked \* is one the chart cancels/.test(flat);
+    !/A sign marked \[V\] is one the division has landed/.test(flat);
 })());
+ok('all four are computed per division, not once for the chart',
+   /Yogas\.parivartana\(Astro\.chartInDivision\(state\.chart, division\)\)/.test(appSrc) &&
+   /var cellHouse = \(\(d\.sign - divisionLagna\[division\]\) % 12 \+ 12\) % 12 \+ 1;/
+     .test(appSrc) &&
+   /Astro\.hasDigBala\(planet\.name, cellHouse\)/.test(appSrc));
 /*
- * Two of the four blind spots have a value to sit against and are marked there.
- * An exchange is about a pair of grahas and directional strength about a house,
- * and the grid prints neither, so both hang on the graha's name instead.
+ * And only those four. Every yoga the app detects would mark 58 per cent of the
+ * cells, raja yoga alone running better than one per divisional chart on two
+ * grahas each, and a mark on three cells in five is decoration.
  */
-ok('and sends the reader to the name for the two with no cell', (function () {
-  var flat = appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
-  return /name where it has either of the two that have no cell to sit in, the yogas it takes part in or the divisions it is directionally strong in/
-    .test(flat);
+ok('and nothing wider than the four is marked', (function () {
+  var at = appSrc.indexOf('function renderVargas(state)');
+  var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
+  return !/Yogas\.detect\(/.test(block) && !/function grahaFootnote/.test(appSrc) &&
+    /a mark on three cells in\s*\n?\s*\* five is a decoration/.test(appSrc);
 })());
-ok('which the name really carries',
-   /if \(footnote\) th\.title = footnote;/.test(appSrc) &&
-   /function grahaFootnote\(state, planet, scheme, divisionLagna\)/.test(appSrc));
-/*
- * Names only. The Yogas tab explains a yoga; this is telling the reader that the
- * number beside the graha is not the whole account of it.
- */
-ok('and carries yoga names rather than readings',
-   /if \(yogas\.indexOf\(yoga\.title\) < 0\) yogas\.push\(yoga\.title\);/.test(appSrc) &&
-   !/yoga\.summary/.test(appSrc.slice(appSrc.indexOf('function grahaFootnote'),
-                                       appSrc.indexOf('function listOf'))));
-/*
- * Nothing to say, no hover. A tooltip reporting an absence teaches the reader to
- * stop opening them, and most grahas in most charts have neither of these.
- */
-ok('the footnote reports only what is there, and is null otherwise',
-   /return said\.length \? said\.join\(' '\) : null;/.test(appSrc) &&
-   !/takes part in no yoga/.test(appSrc) &&
-   !/Directionally strong in none/.test(appSrc) &&
-   !/The score sees neither/.test(appSrc));
-ok('and the cell takes no title when there is none',
-   /var footnote = grahaFootnote\(state, planet, scheme, divisionLagna\);/.test(appSrc) &&
-   /if \(footnote\) th\.title = footnote;/.test(appSrc));
-ok('which really happens, and really does not on a graha that has something',
-   (function () {
-     var chart = { planets: [
-       { name: 'Sun', sign: 0, longitude: 5 }, { name: 'Moon', sign: 6, longitude: 186 },
-       { name: 'Jupiter', sign: 11, longitude: 355 }, { name: 'Venus', sign: 1, longitude: 35 }] };
-     // Hemming is the cheapest of the two to construct; the point is the shape
-     // of the answer, that an absence returns nothing at all rather than a
-     // sentence saying so.
-     return Astro.hemmedByBenefics('Sun', 0, chart) &&
-       !Astro.hemmedByBenefics('Venus', 1, chart);
-   })());
-ok('and reads the divisions of the scheme on screen, not a fixed set',
-   /scheme\.divisions\.filter\(function \(division\)/.test(appSrc) &&
-   /Astro\.hasDigBala\(planet\.name,/.test(appSrc));
+ok('which is measurably a third of the cells rather than three fifths', (function () {
+  var scheme = Astro.VARGA_SCHEMES.shodasavarga, cells = 0, marked = 0;
+  for (var y = 1950; y < 1990; y += 4) {
+    var c = Astro.chart({ jdUT: Astro.julianDay(y, 5, 17, 9), latitude: 28.61,
+                          longitude: 77.21, tzOffsetMinutes: 330 });
+    var pos = {};
+    c.planets.forEach(function (p) { pos[p.name] = p; });
+    scheme.divisions.forEach(function (d) {
+      var lagna = Astro.vargaPosition(c.ascendant.longitude, d).sign;
+      var dc = Astro.chartInDivision(c, d), par = {}, nb = {};
+      Yogas.parivartana(dc).forEach(function (yoga) {
+        (yoga.grahas || []).forEach(function (n) { par[n] = true; });
+      });
+      Yogas.neechaBhanga(dc).forEach(function (yoga) {
+        if (yoga.kind !== 'raja') return;
+        (yoga.grahas || []).forEach(function (n) { nb[n] = true; });
+      });
+      c.planets.forEach(function (p) {
+        var dig = Astro.vargaDignity(p.name, p.longitude, d, pos);
+        if (!dig) return;
+        cells++;
+        var v = Astro.vargaPosition(p.longitude, d);
+        if ((d !== 1 && v.sign === Astro.signOf(p.longitude)) || par[p.name] ||
+            (dig.key === 'debilitated' && nb[p.name]) ||
+            Astro.hasDigBala(p.name, ((v.sign - lagna) % 12 + 12) % 12 + 1)) marked++;
+      });
+    });
+  }
+  return cells > 300 && marked / cells > 0.2 && marked / cells < 0.45;
+})());
 /*
  * The raja form only. A plain cancellation lifts the weakness and leaves the
  * graha with nowhere to act from, so a score near the floor is not far wrong for
@@ -2149,7 +2166,7 @@ ok('and points at the hovers once, in general rather than kind by kind',
      note = note.slice(0, note.indexOf('ABBREVIATE_ABOVE'));
      var flat = note.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
      return (flat.match(/Hover/g) || []).length === 1 &&
-       /Hover over anything to read it in detail, and a graha/.test(flat) &&
+       /Hover any of them for the reading/.test(flat) &&
        !/a heading for what that division is worth/.test(flat);
    })());
 /*

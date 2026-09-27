@@ -34,6 +34,7 @@
   --flag-vargottama: #6d4aa8;
   --flag-yogakaraka: #a8710c;
   --flag-combust: #7a8a99;
+  --flag-exchange: #1d5fa8;
   /* Chart series. Validated against the light surface for lightness, chroma,
      CVD separation and contrast; the dark steps below are chosen for the dark
      surface rather than lightened from these. */
@@ -876,6 +877,7 @@ td .retro-flag, td.retro-flag, th .retro-flag { color: var(--retro); }
    this marks something done to it. So it is dimmed rather than given a fourth
    accent, which is also what a burnt graha is. */
 .flag-c { color: var(--flag-combust); }
+.flag-p { color: var(--flag-exchange); }
 /* Hemming is a benefic's doing, so it takes the page's own green rather than a
    sixth hue; directional strength takes the same, being a strength and not a
    fact about the graha. Two marks in one colour is safe because one is a
@@ -1146,6 +1148,7 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
     --flag-vargottama: #b69ae0;
     --flag-yogakaraka: #e0b563;
     --flag-combust: #8fa0ad;
+    --flag-exchange: #6fb0f5;
     --chart-vimsopaka: #3d9468;
     --chart-good: #b8801f;
     --chart-vargottama: #8b72c8;
