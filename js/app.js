@@ -1881,7 +1881,6 @@
       'the five, so a tall bar is tall against the others and not only against its own ' +
       'chart. The grid above says which divisions they are.'));
   }
-  }
 
   /* --------------------------------------------------------------- yogas */
 

@@ -1831,6 +1831,32 @@ ok('and that the site declines the looser reading rather than never meeting it',
    /Few authorities give all of them and they do not agree on how many must hold/
      .test(seeds));
 
+/*
+ * Every script the page loads has to parse. Most of what this file checks about
+ * app.js is its source read as text, which a regex is perfectly happy to match
+ * inside a file the browser cannot run at all - a stray brace shipped once
+ * exactly that way, with 1031 tests green and the page dead, the saved kundalis
+ * included because nothing after the error ever ran.
+ *
+ * new Function parses without executing, which is what is wanted: these are
+ * classic scripts that expect a document.
+ */
+ok('every script the page loads parses', (function () {
+  var scripts = (html.match(/<script src="([^"]+)"/g) || [])
+    .map(function (t) { return t.replace(/.*src="([^"]+)".*/, '$1'); })
+    .filter(function (src) { return src.indexOf('js/') === 0 || src.indexOf('data/') === 0; });
+  if (scripts.length < 5) return false;
+  return scripts.every(function (src) {
+    try {
+      new Function(fs.readFileSync(path.join(root, src), 'utf8'));
+      return true;
+    } catch (e) {
+      console.log('       ' + src + ': ' + e.message);
+      return false;
+    }
+  });
+})());
+
 console.log('\nVargas panel');
 /*
  * Named for the measure, as Shadbala beside it is, rather than for the columns.
