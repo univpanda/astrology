@@ -1172,7 +1172,8 @@ ok('the columns are built from whichever scheme is chosen, in its own order', (f
   head = head.slice(0, head.indexOf('</thead>'));
   return !/<th scope="col">D\d+<\/th>/.test(head) &&
     /scheme\.divisions\.forEach\(function \(division\) \{/.test(appSrc) &&
-    /el\('th', division === 9 \? 'varga-d9' : null, 'D' \+ division\)/.test(appSrc);
+    /el\('th', keys\.indexOf\(division\) >= 0 \? 'varga-key' : null, 'D' \+ division\)/
+      .test(appSrc);
 })());
 
 /*
@@ -1363,7 +1364,7 @@ ok('and that it measures magnitude rather than direction', (function () {
 
 ok('the note explains the totalling and the four readings', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');
-  return /The last column totals them, verses 26-27/.test(flat) &&
+  return /The column beside the name totals them, verses 26-27/.test(flat) &&
     /below 5 as incapable of auspicious results, 5 to 10 as some good, up to 15 as mediocre and above 15 as wholly favourable/.test(flat);
 })());
 
@@ -1557,23 +1558,53 @@ ok('the grid marks a division that repeats the rashi sign',
 ok('but not D1, where every cell would qualify and the mark say nothing',
    /division !== 1 && d\.sign === Astro\.signOf/.test(appSrc));
 /*
- * The navamsha is picked out of the row: it is the division read beside the
- * rashi as a matter of course, and the column where [V] carries the classical
- * meaning rather than the widened one.
+ * The three divisions the chosen scheme leans on hardest are picked out of the
+ * row: which three is the scheme's own answer, read off its share-out of the
+ * twenty, not a trio fixed in the markup.
  */
-ok('the D9 column is marked out, in the header and in both its rows',
-   /el\('th', division === 9 \? 'varga-d9' : null, 'D' \+ division\)/.test(appSrc) &&
-   /\(division === 9 \? ' varga-d9' : ''\)/.test(appSrc) &&
-   (appSrc.match(/division === 9 \? ' varga-d9' : ''/g) || []).length === 2);
-ok('and it is there to mark whichever scheme is chosen', (function () {
-  return Astro.VARGA_SCHEME_ORDER.every(function (k) {
-    return Astro.VARGA_SCHEMES[k].divisions.indexOf(9) >= 0;
-  });
-})());
+ok('the three are marked out, in the header and in both rows of the body',
+   /el\('th', keys\.indexOf\(division\) >= 0 \? 'varga-key' : null, 'D' \+ division\)/
+     .test(appSrc) &&
+   (appSrc.match(/keys\.indexOf\(division\) >= 0 \? ' varga-key' : ''/g) || []).length === 2);
+ok('the set comes from the engine, so the table cannot disagree with the weights',
+   /var keys = Astro\.keyDivisions\(scheme\);/.test(appSrc) &&
+   (appSrc.match(/var keys = Astro\.keyDivisions\(scheme\);/g) || []).length === 2 &&
+   typeof Astro.keyDivisions === 'function');
+ok('and every scheme yields exactly three, all of them its own divisions',
+   Astro.VARGA_SCHEME_ORDER.every(function (k) {
+     var scheme = Astro.VARGA_SCHEMES[k];
+     var keys = Astro.keyDivisions(scheme);
+     return keys.length === 3 && new Set(keys).size === 3 &&
+       keys.every(function (d) { return scheme.divisions.indexOf(d) >= 0; });
+   }));
+/*
+ * What the weights actually say, scheme by scheme. Worth pinning as answers
+ * rather than as a re-run of the sort: these are the columns a reader is told to
+ * look at first, and a weight edited by mistake would move them silently.
+ */
+ok('the shadvarga and the saptavarga lean on D1, D9 and D3',
+   Astro.keyDivisions(Astro.VARGA_SCHEMES.shadvarga).join() === '1,9,3' &&
+   Astro.keyDivisions(Astro.VARGA_SCHEMES.saptavarga).join() === '1,9,3');
+ok('the dasavarga and the shodasavarga on D60, D1 and D9',
+   Astro.keyDivisions(Astro.VARGA_SCHEMES.dasavarga).join() === '60,1,9' &&
+   Astro.keyDivisions(Astro.VARGA_SCHEMES.shodasavarga).join() === '60,1,9');
+/*
+ * The dasavarga is the one the weights cannot settle: past D60 at five and D1 at
+ * three it splits the rest eight ways at 1.5, so eight divisions tie for third.
+ * The tie goes to the navamsa rather than to whichever the sort reached first.
+ */
+ok('the dasavarga third place is a tie broken for the navamsa, not by accident',
+   (function () {
+     var scheme = Astro.VARGA_SCHEMES.dasavarga;
+     var tied = scheme.divisions.filter(function (d) { return scheme.weights[d] === 1.5; });
+     return tied.length === 8 && tied.indexOf(9) >= 0 &&
+       Astro.keyDivisions(scheme)[2] === 9;
+   })());
 ok('the mark is a tint rather than a colour, so it does not fight the dignities',
    (function () {
      var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-     var block = css.slice(css.indexOf('#vargas-table .varga-d9'), css.indexOf('#vargas-table th.varga-d9'));
+     var block = css.slice(css.indexOf('#vargas-table .varga-key'),
+                           css.indexOf('#vargas-table th.varga-key'));
      return /background: var\(--green-soft\)/.test(block) && !/(^|[^-])color:/.test(block);
    })());
 

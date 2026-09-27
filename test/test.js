@@ -476,6 +476,62 @@ console.log('\nWhat a second of clock time is worth');
      'day ' + withSeconds.d + ', ' + withSeconds.hours.toFixed(4) + 'h');
 })();
 
+console.log('\nKey divisions');
+/*
+ * The three a scheme leans on hardest, read off its own share-out of the twenty
+ * rather than fixed. Ties are the interesting part, so they are pinned as well
+ * as the answers.
+ */
+ok('three per scheme, all of them divisions that scheme actually carries',
+   A.VARGA_SCHEME_ORDER.every(function (k) {
+     var scheme = A.VARGA_SCHEMES[k];
+     var keys = A.keyDivisions(scheme);
+     return keys.length === 3 && new Set(keys).size === 3 &&
+       keys.every(function (d) { return scheme.divisions.indexOf(d) >= 0; });
+   }));
+ok('each is heaviest first, and no division outside the three outweighs one in it',
+   A.VARGA_SCHEME_ORDER.every(function (k) {
+     var scheme = A.VARGA_SCHEMES[k];
+     var keys = A.keyDivisions(scheme);
+     var floor = scheme.weights[keys[2]];
+     return scheme.weights[keys[0]] >= scheme.weights[keys[1]] &&
+       scheme.weights[keys[1]] >= floor &&
+       scheme.divisions.every(function (d) {
+         return keys.indexOf(d) >= 0 || scheme.weights[d] <= floor;
+       });
+   }));
+ok('the six and the seven lean on D1, D9, D3',
+   A.keyDivisions(A.VARGA_SCHEMES.shadvarga).join() === '1,9,3' &&
+   A.keyDivisions(A.VARGA_SCHEMES.saptavarga).join() === '1,9,3');
+ok('the ten and the sixteen on D60, D1, D9',
+   A.keyDivisions(A.VARGA_SCHEMES.dasavarga).join() === '60,1,9' &&
+   A.keyDivisions(A.VARGA_SCHEMES.shodasavarga).join() === '60,1,9');
+/*
+ * The dasavarga gives D60 five and D1 three and splits the remaining twelve
+ * eight ways at 1.5, so eight divisions tie for third and the weights have
+ * nothing left to say. The navamsa takes it: third in all three other schemes,
+ * and the division read beside the rashi as a matter of course.
+ */
+ok('the dasavarga ties eight ways for third, and the navamsa takes it',
+   (function () {
+     var scheme = A.VARGA_SCHEMES.dasavarga;
+     var tied = scheme.divisions.filter(function (d) { return scheme.weights[d] === 1.5; });
+     return tied.length === 8 && tied.indexOf(9) >= 0 && A.keyDivisions(scheme)[2] === 9;
+   })());
+ok('and the tie-break is the navamsa itself, not the lowest number that ties',
+   (function () {
+     var scheme = A.VARGA_SCHEMES.dasavarga;
+     var tied = scheme.divisions.filter(function (d) { return scheme.weights[d] === 1.5; });
+     return Math.min.apply(null, tied) !== 9 && A.keyDivisions(scheme)[2] === 9;
+   })());
+ok('reading the set does not disturb the scheme it was read from',
+   (function () {
+     var scheme = A.VARGA_SCHEMES.shodasavarga;
+     var before = scheme.divisions.join();
+     A.keyDivisions(scheme);
+     return scheme.divisions.join() === before;
+   })());
+
 console.log('\nAbbreviations');
 /*
  * Two rules, one per list: the first two letters of a graha's name, the first

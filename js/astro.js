@@ -1000,6 +1000,26 @@ var Astro = (function () {
    * absent, so an exalted graha is scored by its relation to the sign's lord -
    * which is exactly why vargaDignity reports that relation underneath the label.
    */
+  /*
+   * The three divisions a scheme leans on hardest, by its own share-out of the
+   * twenty. Three of the four settle it on weight alone: the shadvarga and the
+   * saptavarga both give D1, D9, D3, and the shodasavarga gives D60, D1, D9.
+   *
+   * The dasavarga cannot settle it. Past D60 at five and D1 at three it splits
+   * the remaining twelve points eight ways at 1.5 each, so eight divisions tie
+   * for third and the weights have nothing more to say. The tie goes to the
+   * navamsa: it is the third in every other scheme and the one division read
+   * beside the rashi as a matter of course.
+   */
+  function keyDivisions(scheme) {
+    return scheme.divisions.slice().sort(function (a, b) {
+      var byWeight = scheme.weights[b] - scheme.weights[a];
+      if (byWeight) return byWeight;
+      if (a === 9 || b === 9) return a === 9 ? -1 : 1;
+      return a - b;
+    }).slice(0, 3);
+  }
+
   var VARGA_VISWA = {
     moolatrikona: 20, own: 20, adhimitra: 18, mitra: 15,
     sama: 10, shatru: 7, adhishatru: 5
@@ -1505,6 +1525,7 @@ var Astro = (function () {
     VIMSOPAKA_BANDS: VIMSOPAKA_BANDS,
     vimsopaka: vimsopaka,
     VARGA_SCHEME_ORDER: VARGA_SCHEME_ORDER,
+    keyDivisions: keyDivisions,
     VIMSOPAKA_DASAVARGA: VIMSOPAKA_DASAVARGA,
     VIMSOPAKA_SHODASAVARGA: VIMSOPAKA_SHODASAVARGA,
     VARGA_DIGNITY_SHORT: VARGA_DIGNITY_SHORT,

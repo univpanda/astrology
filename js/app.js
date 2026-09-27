@@ -1203,14 +1203,17 @@
       'gives five, which is the floor rather than nothing.';
     row.appendChild(total);
 
+    /*
+     * The three the scheme leans on hardest, picked out of the row. Which three
+     * is the scheme's own answer rather than a fixed trio: the shadvarga and the
+     * saptavarga lean on D1, D9 and D3, the dasavarga and shodasavarga on D60,
+     * D1 and D9.
+     */
+    var keys = Astro.keyDivisions(scheme);
+
     scheme.divisions.forEach(function (division) {
       var weight = scheme.weights[division];
-      /*
-       * The navamsha is picked out of the row. It is the one division read beside
-       * the rashi as a matter of course, and it is the column where [V] means
-       * vargottama in the sense the texts use the word.
-       */
-      var th = el('th', division === 9 ? 'varga-d9' : null, 'D' + division);
+      var th = el('th', keys.indexOf(division) >= 0 ? 'varga-key' : null, 'D' + division);
       th.setAttribute('scope', 'col');
       th.appendChild(el('span', 'varga-weight', vimsopakaFigure(weight)));
       var varga = Astro.VARGAS.filter(function (v) { return v.division === division; })[0];
@@ -1265,7 +1268,7 @@
       'is that division\u2019s share of the twenty in this scheme \u2014 ' + shares +
       ', from ' + scheme.source + '. The ' + others.join(', ') + ' share them out ' +
       'differently, which is the usual reason a vimsopaka total will not reconcile; hover a ' +
-      'heading for its figure in each. The last column totals them, verses 26-27: ' +
+      'heading for its figure in each. The column beside the name totals them, verses 26-27: ' +
       'each share scaled by what the graha keeps of it, own sign counting the full twenty and ' +
       'a great enemy five. Parashara reads below 5 as incapable of auspicious results, 5 to 10 ' +
       'as some good, up to 15 as mediocre and above 15 as wholly favourable. Read those as ' +
@@ -1318,6 +1321,7 @@
   function renderVargas(state) {
     var scheme = currentScheme();
     var brief = scheme.divisions.length > ABBREVIATE_ABOVE;
+    var keys = Astro.keyDivisions(scheme);
     var table = document.getElementById('vargas-table');
     renderVargasHead(table, scheme);
     var tbody = table.querySelector('tbody');
@@ -1381,7 +1385,7 @@
          * second shorthand for this table. The full name stays in the title.
          */
         var sign = el('td', 'varga-sign' + (brief ? ' varga-sign-abbr' : '') +
-          (division === 9 ? ' varga-d9' : ''),
+          (keys.indexOf(division) >= 0 ? ' varga-key' : ''),
           d ? (brief ? Astro.SIGN_ABBR[d.sign] : Astro.SIGNS[d.sign]) : '\u2013');
 
         /*
@@ -1401,7 +1405,7 @@
             (division === 9 ? ' In D9 that is vargottama proper.' : '');
         }
         var dignity = el('td', (d ? 'dig dig-' + d.key : '') +
-          (division === 9 ? ' varga-d9' : ''),
+          (keys.indexOf(division) >= 0 ? ' varga-key' : ''),
           d ? (brief ? Astro.VARGA_DIGNITY_SHORT[d.key] : d.label) : '\u2013');
         if (detail) { sign.title = detail; dignity.title = detail; }
         signRow.appendChild(sign);
