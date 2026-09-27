@@ -1379,9 +1379,45 @@ ok('a cancelled debilitation is starred where it is scored',
 ok('and the hover says the score is the floor for a graha that is not weak',
    /is cancelled and the graha stands in an angle or a trine, which is neecha bhanga raja yoga, so the score below is the floor for a graha that is not weak/
      .test(appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ')));
-ok('the note explains the star, and that the score does not know',
-   /A debilitation marked \* is one the chart cancels into a raja yoga\. The score does not know that/
-     .test(appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ')));
+/*
+ * The note places the marks and leaves defining them to the flag key, which
+ * defines all seven. Saying what [V] means under the grid as well was the same
+ * duplication that took the scoring out to the library.
+ */
+ok('the note places the marks without defining them again', (function () {
+  var flat = appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
+  return /The marks are things the score cannot see, each against the value it qualifies: \[V\] on a sign, \* on a dignity/
+    .test(flat) &&
+    !/A sign marked \[V\] is one the division has landed/.test(flat) &&
+    !/A debilitation marked \* is one the chart cancels/.test(flat);
+})());
+/*
+ * Two of the four blind spots have a value to sit against and are marked there.
+ * An exchange is about a pair of grahas and directional strength about a house,
+ * and the grid prints neither, so both hang on the graha's name instead.
+ */
+ok('and sends the reader to the name for the two with no cell', (function () {
+  var flat = appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
+  return /name for the two that have no cell to sit in, its yogas and the divisions it is directionally strong in/
+    .test(flat);
+})());
+ok('which the name really carries',
+   /th\.title = grahaFootnote\(state, planet, scheme, divisionLagna\);/.test(appSrc) &&
+   /function grahaFootnote\(state, planet, scheme, divisionLagna\)/.test(appSrc));
+/*
+ * Names only. The Yogas tab explains a yoga; this is telling the reader that the
+ * number beside the graha is not the whole account of it.
+ */
+ok('and carries yoga names rather than readings',
+   /if \(yogas\.indexOf\(yoga\.title\) < 0\) yogas\.push\(yoga\.title\);/.test(appSrc) &&
+   !/yoga\.summary/.test(appSrc.slice(appSrc.indexOf('function grahaFootnote'),
+                                       appSrc.indexOf('function listOf'))));
+ok('the footnote says both halves even when either is empty',
+   /takes part in no yoga this site detects/.test(appSrc) &&
+   /Directionally strong in none of these divisions/.test(appSrc));
+ok('and reads the divisions of the scheme on screen, not a fixed set',
+   /scheme\.divisions\.filter\(function \(division\)/.test(appSrc) &&
+   /Astro\.hasDigBala\(planet\.name,/.test(appSrc));
 /*
  * The raja form only. A plain cancellation lifts the weakness and leaves the
  * graha with nowhere to act from, so a score near the floor is not far wrong for
@@ -1970,7 +2006,10 @@ ok('the heading says its figure here and in every other scheme that carries it',
  */
 ok('the note explains the table and does not teach the measure', (function () {
   var at = appSrc.indexOf('function vargaNote');
-  var src = appSrc.slice(at, appSrc.indexOf('ABBREVIATE_ABOVE', at));
+  // Comments stripped first: theirs is prose too, and an apostrophe inside one
+  // runs the quote-matching below straight through the code between them.
+  var src = appSrc.slice(at, appSrc.indexOf('ABBREVIATE_ABOVE', at))
+    .replace(/\/\*[\s\S]*?\*\//g, '');
   var flat = src.replace(/'\s*\+\s*'/g, '');
   var words = flat.match(/'[^']*'/g).join(' ').split(/\s+/).length;
   return words < 200 &&
@@ -2085,9 +2124,9 @@ ok('and points at the hovers once, in general rather than kind by kind',
    (function () {
      var note = appSrc.slice(appSrc.indexOf('function vargaNote'));
      note = note.slice(0, note.indexOf('ABBREVIATE_ABOVE'));
-     var flat = note.replace(/'\s*\+\s*'/g, '');
-     return (note.match(/hover/gi) || []).length === 1 &&
-       /Hover over anything to read it in detail/.test(flat) &&
+     var flat = note.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
+     return (flat.match(/Hover/g) || []).length === 1 &&
+       /Hover over anything to read it in detail, and a graha/.test(flat) &&
        !/a heading for what that division is worth/.test(flat);
    })());
 /*
@@ -2392,7 +2431,7 @@ ok('and the table is what a reader sees first',
  * the note under the grid defining it again was the same duplication in
  * miniature that moved the scoring out to the library.
  */
-ok('the key explains the mark, and the note does not explain it again', (function () {
+ok('the key explains the mark, and no note explains it again', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');
   return /The division has landed the graha back in the sign it holds in the rashi/
     .test(html.replace(/\s+/g, ' ')) &&

@@ -1342,15 +1342,23 @@
        * words is visible in the sixteen columns.
        */
       (brief ? 'Signs go as Ari, Tau, Can and dignities as ' + dignityKey() + '. ' : '') +
-      'Hover over anything to read it in detail. ' +
+      /*
+       * Placement, not definition. The flag key at the top of the tab defines
+       * [V] and *, so the note says only where they sit and why they are here:
+       * each is one of the four things vimsopaka cannot see, put against the
+       * value it qualifies. The other two have no value to sit against - an
+       * exchange is about a pair of grahas and directional strength about a
+       * house, and the grid prints neither - so they hang on the graha's name.
+       */
+      'The marks are things the score cannot see, each against the value it qualifies: ' +
+      '[V] on a sign, * on a dignity. Hover over anything to read it in detail, and a ' +
+      'graha\u2019s name for the two that have no cell to sit in, its yogas and the ' +
+      'divisions it is directionally strong in. ' +
       /*
        * Both say what the grid does before why. A reader looking at seven rows
        * wants "they are left out" first and the reason after it, not a clause
        * about friendship to hold until the sentence gets to the point.
        */
-      'A debilitation marked * is one the chart cancels into a raja yoga. The score does ' +
-      'not know that: it counts dignity a division at a time, so a cancelled debilitation ' +
-      'still scores the floor. ' +
       'Rahu and Ketu are left out: they own no sign and keep no friendships. In D30 the Sun ' +
       'is judged as Mars and the Moon as Venus, no luminary ruling a trimsamsa.';
   }
@@ -1425,6 +1433,45 @@
     return found;
   }
 
+  /*
+   * What the grid cannot put in a cell, hung on the graha's name instead.
+   *
+   * Two of the four things vimsopaka is blind to have a value to sit against and
+   * are marked there: [V] on a sign, the star on a dignity. The other two have
+   * none. An exchange of signs is a fact about a pair of grahas, and directional
+   * strength is a fact about a house, and the grid prints neither pairs nor
+   * houses. Both end up here, where a graha is named once for all its columns.
+   *
+   * Names only, no readings. The Yogas tab is where a yoga is explained; this is
+   * only telling the reader that the number beside it is not the whole account.
+   */
+  function grahaFootnote(state, planet, scheme, divisionLagna) {
+    var yogas = [];
+    Yogas.detect(state.chart, strengthsFor(state)).forEach(function (yoga) {
+      if ((yoga.grahas || []).indexOf(planet.name) < 0) return;
+      if (yogas.indexOf(yoga.title) < 0) yogas.push(yoga.title);
+    });
+    var strong = scheme.divisions.filter(function (division) {
+      var v = Astro.vargaPosition(planet.longitude, division);
+      return Astro.hasDigBala(planet.name,
+        ((v.sign - divisionLagna[division]) % 12 + 12) % 12 + 1);
+    });
+
+    return planet.name + (yogas.length
+      ? ' takes part in ' + listOf(yogas.map(function (t) { return t.toLowerCase(); })) + '.'
+      : ' takes part in no yoga this site detects.') +
+      (strong.length
+        ? ' Directionally strong in ' + listOf(strong.map(function (d) { return 'D' + d; })) + '.'
+        : ' Directionally strong in none of these divisions.') +
+      ' The score sees neither.';
+  }
+
+  /** "A", "A and B", "A, B and C". */
+  function listOf(items) {
+    if (items.length < 2) return items[0] || '';
+    return items.slice(0, -1).join(', ') + ' and ' + items[items.length - 1];
+  }
+
   function renderVargas(state) {
     var scheme = currentScheme();
     var brief = scheme.divisions.length > ABBREVIATE_ABOVE;
@@ -1444,6 +1491,16 @@
     });
     var cancelled = cancelledDebilitations(state.chart, scheme.divisions, rows);
 
+    /*
+     * Each division's own ascending sign, which is what its houses are counted
+     * from. Computed once per division rather than once per cell.
+     */
+    var divisionLagna = {};
+    scheme.divisions.forEach(function (division) {
+      divisionLagna[division] =
+        Astro.vargaPosition(state.chart.ascendant.longitude, division).sign;
+    });
+
     // Listed as in the graha tables, for reading across from one to the other.
     state.chart.planets.forEach(function (planet, row) {
       var cells = rows[row];
@@ -1461,6 +1518,7 @@
       var th = el('th', null, planet.name);
       th.setAttribute('scope', 'rowgroup');
       th.setAttribute('rowspan', '2');
+      th.title = grahaFootnote(state, planet, scheme, divisionLagna);
       signRow.appendChild(th);
 
 
