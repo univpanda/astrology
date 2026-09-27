@@ -895,7 +895,9 @@
    */
   function dispositorRelation(graha, sign, positionsD1) {
     var lord = Astro.SIGN_LORDS[sign];
-    if (lord === graha) return 'Own sign';
+    // 'Own Sign' as Astro.dignityOf spells it, the two sitting in rows that
+    // touch and the same words meaning the same thing in both.
+    if (lord === graha) return 'Own Sign';
     if (!positionsD1[lord] || !positionsD1[graha]) return '\u2013';
     var relation = Astro.compoundRelation(graha, lord,
       ((positionsD1[lord].sign - positionsD1[graha].sign) % 12 + 12) % 12 + 1);
@@ -1154,7 +1156,7 @@
               !r.isAscendant && Astro.hemmedByMalefics(r.name, v.sign, divisionChart,
                 benefics) ? 'P' : null] },
           { text: (r.isAscendant ? '' : Astro.dignityOf(r.name, v.sign, v.degreeInSign)) || '–',
-            star: !r.isAscendant && cancelledHere[r.name] },
+            stack: true, star: !r.isAscendant && cancelledHere[r.name] },
           { text: String(house), cls: 'numeric',
             flags: [!r.isAscendant && Astro.hasDigBala(r.name, house) ? 'D' : null] },
           owned.length
@@ -1167,9 +1169,15 @@
           { text: r.isAscendant ? Astro.SIGN_LORDS[v.sign] : dispositorOf(r.name, v.sign),
             cls: 'dispositor',
             title: Astro.SIGN_LORDS[v.sign] + ' rules ' + Astro.SIGNS[v.sign] + '.' },
+          /*
+           * Stacked like the dignity above it and the nakshatra below: Great
+           * Friend is twelve characters and its longer word is six, and one
+           * graha in a great friend's sign was setting that column's width for
+           * every row in it.
+           */
           { text: r.isAscendant ? '\u2013'
               : dispositorRelation(r.name, v.sign, positionsD1),
-            cls: 'dispositor',
+            cls: 'dispositor', stack: true,
             title: r.isAscendant
               ? 'The lagna is a point rather than a graha, so it keeps no friendships.'
               : dispositorDetail(r.name, v.sign, positionsD1) },

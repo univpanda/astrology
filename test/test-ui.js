@@ -1769,9 +1769,37 @@ ok('and the relation it keeps has a row to itself', (function () {
  * point rather than a graha.
  */
 ok('and says own sign where there is no relation to keep',
-   /if \(lord === graha\) return 'Own sign';/.test(appSrc) &&
+   /if \(lord === graha\) return 'Own Sign';/.test(appSrc) &&
    /'The lagna is a point rather than a graha, so it keeps no friendships\.'/
      .test(appSrc));
+/*
+ * Spelt as Astro.dignityOf spells it. The two rows touch and a graha in its own
+ * sign reads Own Sign in both, so the same words had better be the same words.
+ */
+ok('and spells it as the dignity row does', (function () {
+  var seen = {};
+  ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'].forEach(function (g) {
+    for (var sign = 0; sign < 12; sign++) {
+      var d = Astro.dignityOf(g, sign, 5);
+      if (d) seen[d] = true;
+    }
+  });
+  return seen['Own Sign'] === true && !/return 'Own sign'/.test(appSrc);
+})());
+/*
+ * Great Friend is twelve characters and its longer word is six. Dignity and
+ * Relationship carry the same kind of value - a two-word name in a column too
+ * narrow for it - so both stack, as the nakshatra below them does.
+ */
+ok('and a two-word label stacks, as the nakshatra does', (function () {
+  var block = appSrc.slice(appSrc.indexOf('cells: ['),
+                           appSrc.indexOf('var table = el('));
+  var stacked = (block.match(/stack: true/g) || []).length;
+  return stacked === 3 &&
+    /Astro\.dignityOf\(r\.name, v\.sign, v\.degreeInSign\)\) \|\| '–',\s*\n\s*stack: true,/
+      .test(block) &&
+    /cls: 'dispositor', stack: true,/.test(block);
+})());
 /*
  * The relation words are stored in the prose form, most of what reads them being
  * a sentence, and capitalised where a cell prints one. Storing both forms would
