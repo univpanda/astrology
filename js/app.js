@@ -868,15 +868,33 @@
    * whose. The full name is in the hover, and in the Rashi column on the same
    * row where the sign this lord rules is already spelt out.
    */
-  function dispositorOf(graha, sign, positionsD1) {
+  /*
+   * The dispositor's name, in full. It was abbreviated, and shared its cell with
+   * the relation - "Me · Great Friend" - because the two had one column between
+   * them and the column had to hold both. They are two rows now, so the name has
+   * the width to be a name.
+   */
+  function dispositorOf(graha, sign) {
     var lord = Astro.SIGN_LORDS[sign];
-    if (lord === graha) return 'itself';
-    if (!positionsD1[lord] || !positionsD1[graha]) return Astro.grahaAbbr(lord);
+    return lord === graha ? 'itself' : lord;
+  }
+
+  /**
+   * What the graha makes of the lord of the sign it stands in.
+   *
+   * The graha's own view, which is the one that governs its dignity and its
+   * saptavargaja bala. Natural friendship is not mutual and eleven of the
+   * twenty-one pairs disagree, so the other direction is in the hover rather
+   * than lost.
+   */
+  function dispositorRelation(graha, sign, positionsD1) {
+    var lord = Astro.SIGN_LORDS[sign];
+    if (lord === graha) return 'Own sign';
+    if (!positionsD1[lord] || !positionsD1[graha]) return '\u2013';
     var relation = Astro.compoundRelation(graha, lord,
       ((positionsD1[lord].sign - positionsD1[graha].sign) % 12 + 12) % 12 + 1);
     // The nodes rule nothing and have no place in the friendship table.
-    return Astro.grahaAbbr(lord) +
-      (relation ? ' \u00b7 ' + Astro.titleCase(Astro.RELATION_LABELS[relation]) : '');
+    return relation ? Astro.titleCase(Astro.RELATION_LABELS[relation]) : '\u2013';
   }
 
   /** "great friend" reads as "a great friend"; "neutral" takes no article. */
@@ -1040,7 +1058,8 @@
     { label: 'Dignity', says: 'What the graha is worth in that sign: exalted, its own, a friend’s, and so on down to debilitated.' },
     { label: 'House', says: 'Counted from this chart’s own house 1, which the tab above says what is counted from.' },
     { label: 'Lordship', says: 'Which houses the graha rules, counted from the same house 1 as the row above.' },
-    { label: 'Dispositor', says: 'The lord of the sign the graha stands in, and what the graha makes of it.' },
+    { label: 'Dispositor', says: 'The lord of the sign the graha stands in.' },
+    { label: 'Relationship', says: 'What the graha makes of its dispositor - the compound relation, natural and temporary together. The graha’s own view, which is not always returned.' },
     { label: 'Longitude', says: 'Degrees, minutes and seconds within the sign.' },
     { label: 'Nakshatra', says: 'Which of the 27 nakshatras the graha falls in.' },
     { label: 'Pada', says: 'Which quarter of that nakshatra, of four. Read with the row above it: a bare 3 means nothing on its own.' },
@@ -1122,11 +1141,14 @@
                   return Astro.SIGNS[(firstSign + h - 1) % 12] + ', the ' + Yogas.ordinal(h);
                 }).join(' and ') + '.' }
             : { text: '–', cls: 'numeric' },
-          { text: r.isAscendant ? Astro.grahaAbbr(Astro.SIGN_LORDS[v.sign])
-              : dispositorOf(r.name, v.sign, positionsD1),
+          { text: r.isAscendant ? Astro.SIGN_LORDS[v.sign] : dispositorOf(r.name, v.sign),
+            cls: 'dispositor',
+            title: Astro.SIGN_LORDS[v.sign] + ' rules ' + Astro.SIGNS[v.sign] + '.' },
+          { text: r.isAscendant ? '\u2013'
+              : dispositorRelation(r.name, v.sign, positionsD1),
             cls: 'dispositor',
             title: r.isAscendant
-              ? Astro.SIGN_LORDS[v.sign] + ' rules ' + Astro.SIGNS[v.sign] + '.'
+              ? 'The lagna is a point rather than a graha, so it keeps no friendships.'
               : dispositorDetail(r.name, v.sign, positionsD1) },
           { text: dms(v.degreeInSign), cls: 'longitude',
             title: 'Longitude ' + v.longitude.toFixed(4) + '°' },

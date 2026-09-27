@@ -1734,24 +1734,43 @@ ok('and the war row appears only in a chart that has one',
 ok('the tables carry one dispositor column each, built once',
    (appSrc.match(/'Dispositor'/g) || []).length === 1 &&
    !/<th scope="col">Dispositor<\/th>/.test(html));
-ok('the dispositor is the lord of the sign shown in that row',
-   /Astro\.SIGN_LORDS\[sign\]/.test(appSrc) && /dispositorOf\(r\.name, v\.sign, positionsD1\)/.test(appSrc));
+ok('the dispositor is the lord of the sign shown in that column',
+   /Astro\.SIGN_LORDS\[sign\]/.test(appSrc) &&
+   /dispositorOf\(r\.name, v\.sign\)/.test(appSrc));
 ok('its relation is the compound one, counted in the rashi chart',
    /Astro\.compoundRelation\(graha, lord,/.test(appSrc) && /positionsD1\[lord\]\.sign/.test(appSrc));
-ok('a graha in its own sign disposits itself', /if \(lord === graha\) return 'itself';/.test(appSrc));
+ok('a graha in its own sign disposits itself',
+   /return lord === graha \? 'itself' : lord;/.test(appSrc));
 /*
- * Grahas named in a cell go in abbreviated: the dispositor's lord, the ascendant
- * row's lord, and the nakshatra pair. The relation beside the dispositor stays in
- * words, being the answer the column exists for, and every abbreviation has the
- * full name in its hover.
+ * The dispositor's name goes in full, and its relation has a row of its own.
+ * The two shared a cell - "Me · Great Friend" - for as long as they shared a
+ * column and the column had to hold both. Turned, a row costs no width, so the
+ * name has room to be a name.
  */
-ok('the dispositor names its lord in the abbreviation, not in full',
-   /return Astro\.grahaAbbr\(lord\) \+/.test(appSrc) &&
-   /if \(!positionsD1\[lord\] \|\| !positionsD1\[graha\]\) return Astro\.grahaAbbr\(lord\);/
+ok('the dispositor names its lord in full, not in the abbreviation',
+   /return lord === graha \? 'itself' : lord;/.test(appSrc) &&
+   /r\.isAscendant \? Astro\.SIGN_LORDS\[v\.sign\] : dispositorOf\(r\.name, v\.sign\)/
      .test(appSrc) &&
-   /r\.isAscendant \? Astro\.grahaAbbr\(Astro\.SIGN_LORDS\[v\.sign\]\)/.test(appSrc));
-ok('but its relation stays in words, being what the column is for',
-   /' \\u00b7 ' \+ Astro\.titleCase\(Astro\.RELATION_LABELS\[relation\]\)/.test(appSrc));
+   !/Astro\.grahaAbbr\(Astro\.SIGN_LORDS\[v\.sign\]\)/.test(appSrc));
+ok('and the relation it keeps has a row to itself', (function () {
+  var at = appSrc.indexOf('var GRAHA_ROWS = [');
+  var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
+  var rows = (block.match(/label: '[^']+'/g) || [])
+    .map(function (t) { return t.slice(8, -1); });
+  return rows.indexOf('Relationship') === rows.indexOf('Dispositor') + 1 &&
+    /function dispositorRelation\(graha, sign, positionsD1\)/.test(appSrc) &&
+    /return relation \? Astro\.titleCase\(Astro\.RELATION_LABELS\[relation\]\) : '\\u2013';/
+      .test(appSrc);
+})());
+/*
+ * Own sign rather than a relation, a graha having no opinion of itself; and a
+ * dash for the nodes, which keep no friendships, and for the lagna, which is a
+ * point rather than a graha.
+ */
+ok('and says own sign where there is no relation to keep',
+   /if \(lord === graha\) return 'Own sign';/.test(appSrc) &&
+   /'The lagna is a point rather than a graha, so it keeps no friendships\.'/
+     .test(appSrc));
 /*
  * The relation words are stored in the prose form, most of what reads them being
  * a sentence, and capitalised where a cell prints one. Storing both forms would
@@ -4087,18 +4106,18 @@ ok('and the box is drawn to that half width, not the old full one',
    !/var W = 760/.test(appSrc));
 
 /*
- * Nine rows now rather than nine columns, the table having been turned to
+ * Ten rows now rather than nine columns, the table having been turned to
  * match the two grids beside it. The Graha heading went with the turn: the
  * grahas are the columns, so the corner above their names is blank.
  */
-ok('the table carries nine rows, in order', (function () {
+ok('the table carries ten rows, in order', (function () {
   var at = appSrc.indexOf('var GRAHA_ROWS = [');
   if (at < 0) return false;
   var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
   var found = (block.match(/label: '[^']+'/g) || [])
     .map(function (t) { return t.slice(8, -1); });
   return found.join('|') === ['Rashi', 'Dignity', 'House', 'Lordship', 'Dispositor',
-    'Longitude', 'Nakshatra', 'Pada', 'Lord / sub lord'].join('|') &&
+    'Relationship', 'Longitude', 'Nakshatra', 'Pada', 'Lord / sub lord'].join('|') &&
     !/<th scope="col">Chart<\/th>/.test(html);
 })());
 /*
