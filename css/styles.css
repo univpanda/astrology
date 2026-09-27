@@ -1006,6 +1006,16 @@ td.rulership, td.dispositor { color: var(--ink-soft); }
 /* A named modern rule rather than a classical one, so it reads as an aside. */
 td.rao-aspects { color: var(--ink-soft); font-style: italic; }
 tr td.rulership:not(:empty) { white-space: nowrap; }
+/* A graha spans its chart rows, so the name sits centred against them and the
+   rule belongs under the group rather than between its lines. */
+#graha-table th[rowspan] { vertical-align: middle; }
+#graha-table tbody tr:not(.graha-first) th,
+#graha-table tbody tr:not(.graha-first) td { border-top: none; }
+#graha-table tbody tr:not(:last-child) td { border-bottom: none; }
+#graha-table tr.graha-first:not(:first-child) th,
+#graha-table tr.graha-first:not(:first-child) td { border-top: 1px solid var(--line-soft); }
+#graha-table td.graha-chart { color: var(--ink-soft); font-size: 0.82rem; white-space: nowrap; }
+
 /* The lagna heads the table but is not a graha, so it reads as a header row. */
 tr.ascendant-row { background: var(--green-soft); }
 tr.ascendant-row th:first-child { color: var(--green-deep); font-weight: 700; }

@@ -788,13 +788,21 @@
       });
       // The rashi chart beside the navamsa is the pairing people reach for.
       varga.value = i === 0 ? '1' : '9';
-      ref.addEventListener('change', function () { if (lastChart) drawSlot(slot); });
+      ref.addEventListener('change', function () {
+        if (!lastChart) return;
+        drawSlot(slot);
+        renderGrahaTable(lastChart);       // houses and [Y] are counted from house 1
+      });
       /*
        * Changing the division redraws the yogas and the aspects too, both being
        * read from whatever is on screen. Rotation does not: which graha house 1
        * is counted from changes the picture, not the division being read.
        */
-      varga.addEventListener('change', function () { if (lastChart) drawSlot(slot); });
+      varga.addEventListener('change', function () {
+        if (!lastChart) return;
+        drawSlot(slot);
+        renderGrahaTable(lastChart);       // a different division is a different row
+      });
     });
   }
 
@@ -822,12 +830,16 @@
     var from = set.reference === 'Ascendant' ? 'from the ascendant' : 'from the ' + set.reference;
     document.getElementById('caption-' + slot).textContent =
       varga.name + ' \u00b7 ' + varga.label + ' \u2014 ' + varga.about + ', ' + from;
-    document.getElementById('tab-table-' + slot).textContent = varga.name + ' \u00b7 ' + varga.label;
-    renderSlotTable(slot, state.chart, set);
   }
 
+  /*
+   * The graha table reads both slots plus the rashi, so it is drawn once after
+   * them rather than per slot. Drawing it inside drawSlot would rebuild it twice
+   * and, worse, rebuild it from one slot's settings while the other was stale.
+   */
   function drawCharts() {
     SLOTS.forEach(drawSlot);
+    renderGrahaTable(lastChart);
   }
 
   /**
@@ -892,16 +904,49 @@
    * the two always agree. Retrogression is carried over unchanged: it belongs
    * to the graha, not to the division it is being viewed in.
    */
-  function renderSlotTable(slot, c, set) {
-    var tbody = document.querySelector('#table-' + slot + ' tbody');
+  /**
+   * Which charts the graha table shows, D1 first.
+   *
+   * The rashi is always there, whatever the two charts above are set to: it is
+   * the chart every other one is a division of, and reading D7 beside D10
+   * without it means holding the rashi in your head. Where a slot is already
+   * showing D1 that slot's rotation is used rather than a second D1 row being
+   * added, so two charts on D7 and D1 give two rows, not three.
+   */
+  function grahaViews() {
+    var settings = SLOTS.map(slotSettings);
+    var onD1 = settings.filter(function (s) { return s.division === 1; })[0];
+    var views = [onD1 || { division: 1, reference: 'Ascendant' }];
+    var seen = { 1: true };
+    settings.forEach(function (set) {
+      if (seen[set.division]) return;
+      seen[set.division] = true;
+      views.push(set);
+    });
+    return views;
+  }
+
+  /**
+   * Every graha, once, with a row for each chart being shown.
+   *
+   * It was two tables in two tabs, which made comparing a graha across divisions
+   * a matter of switching back and forth and remembering. The name spans its
+   * rows so the pair reads as one entry.
+   *
+   * The flags divide by what they belong to. Retrogression and combustion are
+   * facts about the graha, true whichever division is being looked at, so they
+   * ride on the name. Vargottama is a fact about one division and yogakaraka is
+   * lordship counted from that chart's house 1, so both ride on the chart row
+   * and can differ from line to line.
+   */
+  function renderGrahaTable(state) {
+    var c = state.chart;
+    var tbody = document.querySelector('#graha-table tbody');
     tbody.innerHTML = '';
 
-    var positionOf = function (longitude) { return Astro.vargaPosition(longitude, set.division); };
-
+    var views = grahaViews();
     var positionsD1 = {};
     c.planets.forEach(function (p) { positionsD1[p.name] = p; });
-    // Combustion is the real distance from the Sun, so it is read off the rashi
-    // longitudes whatever division the table is showing.
     var sun = positionsD1.Sun;
 
     var rows = [{ name: 'Ascendant', longitude: c.ascendant.longitude, isAscendant: true }]
@@ -909,99 +954,78 @@
         return { name: p.name, longitude: p.longitude, retrograde: p.retrograde };
       }));
 
-    /*
-     * House 1 is whatever the chart beside this table is rotated onto, worked out
-     * in the division on show so the two always agree. Counting from the
-     * ascendant while the chart is rotated onto the Moon would put every number
-     * in this column at odds with the picture above it.
-     */
-    var firstSign = positionOf(c.ascendant.longitude).sign;
-    if (set.reference && set.reference !== 'Ascendant') {
-      var anchor = c.planets.filter(function (p) { return p.name === set.reference; })[0];
-      if (anchor) firstSign = positionOf(anchor.longitude).sign;
-    }
-    /*
-     * Yogakaraka is lordship counted from house 1, so it moves with the rotation
-     * exactly as the House column does: the two are the same question asked
-     * twice. The lagna is a point and owns nothing, so it is never one.
-     */
-
     rows.forEach(function (r) {
-      var v = positionOf(r.longitude);
-      var nak = Astro.nakshatraOf(v.longitude);
-      var tr = document.createElement('tr');
-      if (r.isAscendant) tr.className = 'ascendant-row';
+      views.forEach(function (view, i) {
+        var v = Astro.vargaPosition(r.longitude, view.division);
+        var nak = Astro.nakshatraOf(v.longitude);
+        var varga = Astro.VARGAS.filter(function (x) { return x.division === view.division; })[0];
 
-      /*
-       * Cells are named rather than positional. They were indexed until this
-       * column was added, and inserting one in the middle silently moved the
-       * titles onto the wrong cells.
-       *
-       * What a graha is comes before where it is: sign, dignity and dispositor
-       * first, then the position that produced them.
-       */
-      [{ text: r.name, header: true,
-         flags: [
-           r.retrograde ? 'R' : null,
-           // This division has landed it back in its rashi sign. Never on D1,
-           // where every graha qualifies and the mark says nothing.
-           set.division !== 1 && v.sign === Astro.signOf(r.longitude) ? 'V' : null,
-           !r.isAscendant && Astro.isYogakaraka(r.name, firstSign) ? 'Y' : null,
-           !r.isAscendant && sun && Astro.isCombust(r.name, r.longitude, sun.longitude,
-             r.retrograde) ? 'C' : null
-         ].filter(Boolean) },
-       { text: Astro.SIGNS[v.sign] },
-       { text: (r.isAscendant ? '' : Astro.dignityOf(r.name, v.sign, v.degreeInSign)) || '\u2013' },
-       { text: String(((v.sign - firstSign) % 12 + 12) % 12 + 1), cls: 'numeric',
-         title: 'Whole sign house, counted from ' +
-           (set.reference === 'Ascendant' ? 'the ascendant' : set.reference) + ' in ' +
-           (Astro.VARGAS.filter(function (x) { return x.division === set.division; })[0] || {}).name +
-           ', as the chart beside this table is.' },
-       /*
-        * The houses this graha owns, counted from the same house 1 as the column
-        * beside it. Where it sits and what it owns are the two halves of reading
-        * a graha, and the second is the one usually left to be worked out.
-        *
-        * The lagna is a point and the nodes rule no sign, so all three show a
-        * dash rather than an empty cell.
-        */
-       (function () {
-         var owned = r.isAscendant ? [] : Astro.housesOwned(r.name, firstSign);
-         if (!owned.length) return { text: '\u2013', cls: 'numeric' };
-         return {
-           text: owned.join(', '), cls: 'numeric',
-           title: r.name + ' rules ' + owned.map(function (h) {
-             return Astro.SIGNS[(firstSign + h - 1) % 12] + ', the ' + Yogas.ordinal(h);
-           }).join(' and ') + '.'
-         };
-       })(),
-       { text: r.isAscendant ? Astro.SIGN_LORDS[v.sign] : dispositorOf(r.name, v.sign, positionsD1),
-         cls: 'dispositor',
-         title: r.isAscendant ? null : dispositorDetail(r.name, v.sign, positionsD1) },
-       { text: dms(v.degreeInSign), cls: 'longitude',
-         title: 'Longitude ' + v.longitude.toFixed(4) + '\u00b0' },
-       { text: nak.name },
-       { text: String(nak.pada), cls: 'numeric' },
-       { text: nak.lord + ' / ' + nak.subLord }
-      ].forEach(function (cell) {
-        var td = el(cell.header ? 'th' : 'td', cell.cls, cell.text);
-        if (cell.header) td.setAttribute('scope', 'row');
-        /*
-         * The same three flags the chart writes, in the same order: [R][V][Y].
-         * Spans rather than text, so each can be coloured without the name
-         * taking the colour, and so retrogression keeps its red while the other
-         * two stay quiet.
-         */
-        if (cell.flags) {
-          cell.flags.forEach(function (f, i) {
-            td.appendChild(el('span', 'flag flag-' + f.toLowerCase(),
-              (i === 0 ? ' ' : '') + '[' + f + ']'));
-          });
+        // House 1 for this row: the ascendant, or the graha the chart is turned onto.
+        var firstSign = Astro.vargaPosition(c.ascendant.longitude, view.division).sign;
+        if (view.reference && view.reference !== 'Ascendant') {
+          var anchor = c.planets.filter(function (p) { return p.name === view.reference; })[0];
+          if (anchor) firstSign = Astro.vargaPosition(anchor.longitude, view.division).sign;
         }
-        if (cell.title) td.title = cell.title;
-        tr.appendChild(td);
+
+        var tr = document.createElement('tr');
+        if (r.isAscendant) tr.className = 'ascendant-row';
+        if (i === 0) tr.className += ' graha-first';
+
+        if (i === 0) {
+          var th = el('th', null, r.name);
+          th.setAttribute('scope', 'rowgroup');
+          th.setAttribute('rowspan', String(views.length));
+          // Graha-level flags: true of the graha itself, not of any one chart.
+          [r.retrograde ? 'R' : null,
+           !r.isAscendant && sun && Astro.isCombust(r.name, r.longitude, sun.longitude,
+             r.retrograde) ? 'C' : null]
+            .filter(Boolean).forEach(function (f, n) {
+              th.appendChild(el('span', 'flag flag-' + f.toLowerCase(),
+                (n === 0 ? ' ' : '') + '[' + f + ']'));
+            });
+          tr.appendChild(th);
+        }
+
+        // Chart-level flags: these change from row to row.
+        var chartCell = el('td', 'graha-chart', varga ? varga.name : 'D' + view.division);
+        chartCell.title = (varga ? varga.label + ', ' + varga.about + '. ' : '') +
+          'Houses counted from ' +
+          (view.reference === 'Ascendant' ? 'the ascendant' : view.reference) + '.';
+        [view.division !== 1 && v.sign === Astro.signOf(r.longitude) ? 'V' : null,
+         !r.isAscendant && Astro.isYogakaraka(r.name, firstSign) ? 'Y' : null]
+          .filter(Boolean).forEach(function (f, n) {
+            chartCell.appendChild(el('span', 'flag flag-' + f.toLowerCase(),
+              (n === 0 ? ' ' : '') + '[' + f + ']'));
+          });
+        tr.appendChild(chartCell);
+
+        var owned = r.isAscendant ? [] : Astro.housesOwned(r.name, firstSign);
+        [{ text: Astro.SIGNS[v.sign] },
+         { text: (r.isAscendant ? '' : Astro.dignityOf(r.name, v.sign, v.degreeInSign)) || '–' },
+         { text: String(((v.sign - firstSign) % 12 + 12) % 12 + 1), cls: 'numeric' },
+         owned.length
+           ? { text: owned.join(', '), cls: 'numeric',
+               title: r.name + ' rules ' + owned.map(function (h) {
+                 return Astro.SIGNS[(firstSign + h - 1) % 12] + ', the ' + Yogas.ordinal(h);
+               }).join(' and ') + '.' }
+           : { text: '–', cls: 'numeric' },
+         { text: r.isAscendant ? Astro.SIGN_LORDS[v.sign]
+             : dispositorOf(r.name, v.sign, positionsD1),
+           cls: 'dispositor',
+           title: r.isAscendant ? null : dispositorDetail(r.name, v.sign, positionsD1) },
+         { text: dms(v.degreeInSign), cls: 'longitude',
+           title: 'Longitude ' + v.longitude.toFixed(4) + '°' },
+         { text: nak.name },
+         { text: String(nak.pada), cls: 'numeric' },
+         { text: nak.lord + ' / ' + nak.subLord }
+        ].forEach(function (cell) {
+          var td = el('td', cell.cls, cell.text);
+          if (cell.title) td.title = cell.title;
+          tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
       });
-      tbody.appendChild(tr);
     });
   }
 
@@ -2327,7 +2351,7 @@
    * charts are set to. Fixed D1/D9 labels would have lied the moment either
    * select moved.
    */
-  var tableTabs = setupTabs(['table-a', 'table-b', 'shadbala', 'vargas', 'yogas', 'aspects'],
+  var tableTabs = setupTabs(['grahas', 'shadbala', 'vargas', 'yogas', 'aspects'],
     document.querySelector('.tabs.subtabs'));
 
   function activateTab(name, moveFocus) { sections.activate(name, moveFocus); }

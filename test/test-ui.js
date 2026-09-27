@@ -311,14 +311,24 @@ ok('the lagna is the first row of the table, not a summary tile',
  * the two say the same thing the same way. [R] keeps its red; [V] and [Y] stay
  * quiet, being facts rather than warnings.
  */
-ok('the table flags the graha [R][V][Y][C], as the chart does', (function () {
-  var at = appSrc.indexOf('function renderSlotTable');
+/*
+ * The flags divide by what they belong to. Retrogression and combustion are true
+ * of the graha whichever division is looked at, so they ride on the name that
+ * spans the rows. Vargottama is a fact about one division and yogakaraka is
+ * lordship counted from that chart's house 1, so both ride on the chart row and
+ * can differ from line to line.
+ */
+ok('graha-level flags ride on the name, chart-level flags on the row', (function () {
+  var at = appSrc.indexOf('function renderGrahaTable');
   var block = appSrc.slice(at, appSrc.indexOf('function renderShadbala'));
-  return /r\.retrograde \? 'R' : null/.test(block) &&
-    /set\.division !== 1 && v\.sign === Astro\.signOf\(r\.longitude\) \? 'V' : null/.test(block) &&
-    /Astro\.isYogakaraka\(r\.name, firstSign\) \? 'Y' : null/.test(block) &&
-    /Astro\.isCombust\(r\.name, r\.longitude, sun\.longitude,/.test(block) &&
-    /'\[' \+ f \+ '\]'/.test(block);
+  var nameFlags = block.slice(block.indexOf('rowspan'), block.indexOf('tr.appendChild(th)'));
+  var rowFlags = block.slice(block.indexOf('var chartCell'),
+                             block.indexOf('tr.appendChild(chartCell)'));
+  return /r\.retrograde \? 'R' : null/.test(nameFlags) && /Astro\.isCombust/.test(nameFlags) &&
+    !/'Y' : null/.test(nameFlags) &&
+    /'V' : null/.test(rowFlags) &&
+    /Astro\.isYogakaraka\(r\.name, firstSign\) \? 'Y' : null/.test(rowFlags) &&
+    !/retrograde \? 'R'/.test(rowFlags);
 })());
 /*
  * Three tokens sitting together have to read as three different facts, so each
@@ -408,38 +418,45 @@ function stripHtml(label) {
   ok('the table tabs carry no label in the markup',
      /id="tab-table-a"[^>]*>\s*<\/button>/.test(html.replace(/\n\s*/g, ' ')) ||
      />\s*<\/button>/.test(html));
-  ok('the table tabs are labelled from the chosen division',
-     /document\.getElementById\('tab-table-' \+ slot\)\.textContent = varga\.name/.test(appSrc));
+  /*
+   * One table in place of two, so there is nothing to label from a division any
+   * more: the Chart column names each row's division instead.
+   */
+  ok('the graha tab is one tab, and the rows name their own charts',
+     /id="tab-grahas"/.test(html) && !/tab-table-/.test(appSrc) &&
+     /el\('td', 'graha-chart', varga \? varga\.name/.test(appSrc));
   ok('shadbala shares the table strip rather than a card of its own',
      /id="tab-shadbala"[\s\S]{0,140}aria-controls="panel-shadbala"/.test(html) &&
      html.indexOf('id="panel-shadbala"') > html.indexOf('id="panel-table-b"') &&
      html.indexOf('id="panel-shadbala"') < html.indexOf('class="two-col"'));
-  ok('the table strip holds six tabs', (function () {
+  ok('the table strip holds five tabs', (function () {
     var strip = stripHtml('Graha tables');
-    return (strip.match(/role="tab"/g) || []).length === 6;
+    return (strip.match(/role="tab"/g) || []).length === 5;
   })());
   ok('the table strip is a real tablist',
-     ['table-a', 'table-b', 'shadbala', 'vargas', 'yogas', 'aspects'].every(function (n) {
+     ['grahas', 'shadbala', 'vargas', 'yogas', 'aspects'].every(function (n) {
     return new RegExp('id="tab-' + n + '"[\\s\\S]{0,140}aria-controls="panel-' + n + '"').test(html) &&
            new RegExp('id="panel-' + n + '"[^>]*aria-labelledby="tab-' + n + '"').test(html);
   }));
   ok('only the first panel starts visible',
-     /id="panel-table-b"[^>]*hidden/.test(html) && /id="panel-shadbala"[^>]*hidden/.test(html) &&
-     !/id="panel-table-a"[^>]*hidden/.test(html));
+     /id="panel-shadbala"[^>]*hidden/.test(html) && /id="panel-vargas"[^>]*hidden/.test(html) &&
+     !/id="panel-grahas"[^>]*hidden/.test(html));
   ok('one tab implementation still serves every strip',
      (appSrc.match(/function setupTabs/g) || []).length === 1 &&
      (appSrc.match(/setupTabs\(/g) || []).length === 3 &&
-     /setupTabs\(\['table-a', 'table-b', 'shadbala', 'vargas', 'yogas', 'aspects'\]/.test(appSrc));
+     /setupTabs\(\['grahas', 'shadbala', 'vargas', 'yogas', 'aspects'\]/.test(appSrc));
+  // Two chart slots, and one table reading both of them plus the rashi.
   ok('there are two chart slots, each with two selects', ['a', 'b'].every(function (slot) {
     return new RegExp('id="ref-' + slot + '"').test(html) &&
            new RegExp('id="varga-' + slot + '"').test(html) &&
-           new RegExp('id="chart-' + slot + '"').test(html) &&
-           new RegExp('id="table-' + slot + '"').test(html);
+           new RegExp('id="chart-' + slot + '"').test(html);
   }));
+  ok('and one table serving both, rather than one each',
+     /id="graha-table"/.test(html) && !/id="table-a"/.test(html) && !/id="table-b"/.test(html));
   ok('both charts sit in one row, not behind each other',
      /class="chart-pair"/.test(html) &&
      html.indexOf('id="chart-a"') < html.indexOf('id="chart-b"') &&
-     html.indexOf('id="chart-b"') < html.indexOf('id="table-a"'));
+     html.indexOf('id="chart-b"') < html.indexOf('id="graha-table"'));
   ok('every select is labelled', ['ref-a', 'varga-a', 'ref-b', 'varga-b'].every(function (id) {
     return new RegExp('<label[^>]*for="' + id + '"').test(html);
   }));
@@ -449,8 +466,15 @@ function stripHtml(label) {
  * Rotation redraws one chart; changing the division redraws the yogas and the
  * aspects too, since both are read from whichever divisions are on screen.
  */
-  ok('rotating redraws only that chart',
-     /ref\.addEventListener\('change', function \(\) \{ if \(lastChart\) drawSlot\(slot\); \}\)/.test(appSrc));
+  /*
+   * The table reads both slots, so either control has to redraw it. Rotation
+   * moves house 1, which moves the House column, the Lordship column and [Y].
+   */
+  ok('rotating redraws that chart and the table that reads it', (function () {
+    var at = appSrc.indexOf("ref.addEventListener('change'");
+    var block = appSrc.slice(at, at + 300);
+    return /drawSlot\(slot\);/.test(block) && /renderGrahaTable\(lastChart\);/.test(block);
+  })());
 
 
   // Rotation: house 1 moves to the chosen graha's sign, in the chosen division.
@@ -472,9 +496,9 @@ function stripHtml(label) {
     var chartsSrc = fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8');
     return /data\.firstSign/.test(chartsSrc) && /signOfBody\(anchor\.longitude\)/.test(chartsSrc);
   })());
-  ok('houses are counted from whatever the chart beside the table is rotated onto',
-     /var firstSign = positionOf\(c\.ascendant\.longitude\)\.sign;/.test(appSrc) &&
-     /set\.reference !== 'Ascendant'/.test(appSrc) &&
+  ok('houses are counted from whatever that row\'s chart is rotated onto',
+     /var firstSign = Astro\.vargaPosition\(c\.ascendant\.longitude, view\.division\)\.sign;/.test(appSrc) &&
+     /view\.reference !== 'Ascendant'/.test(appSrc) &&
      /<th scope="col">House<\/th>/.test(html));
 })();
 
@@ -812,9 +836,11 @@ ok('each picker redraws only its own panel', (function () {
  * And the charts above no longer drive them. Changing a chart's division redraws
  * that chart and nothing else, the panels having a division of their own.
  */
-ok('changing a chart division redraws only that chart',
-   /varga\.addEventListener\('change', function \(\) \{ if \(lastChart\) drawSlot\(slot\); \}\)/
-     .test(appSrc));
+ok('changing a chart division redraws that chart and the table', (function () {
+  var at = appSrc.indexOf("varga.addEventListener('change'");
+  var block = appSrc.slice(at, at + 300);
+  return /drawSlot\(slot\);/.test(block) && /renderGrahaTable\(lastChart\);/.test(block);
+})());
 ok('an empty division says which one it was', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');
   return /No yoga among those this page looks for is present in / .test(flat) &&
@@ -874,9 +900,9 @@ ok('the note says what is left out rather than hiding it',
    /Yuddha bala is not ' \+\s*\n?\s*'included/.test(appSrc) || /Yuddha bala is not/.test(appSrc));
 
 // What each graha rules, with the yogakaraka named.
-ok('both tables carry a dispositor column',
-   (html.match(/<th scope="col">Dispositor<\/th>/g) || []).length === 2);
-ok('the dispositor is the lord of the sign shown in that table',
+ok('the one table carries a dispositor column',
+   (html.match(/<th scope="col">Dispositor<\/th>/g) || []).length === 1);
+ok('the dispositor is the lord of the sign shown in that row',
    /Astro\.SIGN_LORDS\[sign\]/.test(appSrc) && /dispositorOf\(r\.name, v\.sign, positionsD1\)/.test(appSrc));
 ok('its relation is the compound one, counted in the rashi chart',
    /Astro\.compoundRelation\(graha, lord,/.test(appSrc) && /positionsD1\[lord\]\.sign/.test(appSrc));
@@ -983,10 +1009,15 @@ ok('and the nodes are never one either, owning no sign',
 ok('the chart and the table both flag combustion',
    /\(p\.combust \? '\[C\]' : ''\)/.test(fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8')) &&
    /Astro\.isCombust\(r\.name, r\.longitude/.test(appSrc));
+/*
+ * A real distance from the Sun, so it is read off the rashi longitudes whichever
+ * division a row is showing - which is also why it sits on the graha's name
+ * rather than on any one chart row.
+ */
 ok('measured from the Sun, and on the rashi longitudes',
    /combust: !!sun && Astro\.isCombust\(p\.name, p\.longitude, sun\.longitude, p\.retrograde\)/
      .test(fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8')) &&
-   /Combustion is the real distance from the Sun/.test(appSrc));
+   /Astro\.isCombust\(r\.name, r\.longitude, sun\.longitude,/.test(appSrc));
 ok('the nodes are never flagged, being points', (function () {
   // Rahu sits 2.2 degrees from the Sun in one of the saved charts and must stay clean.
   return !Astro.isCombust('Rahu', 2, 0, true) && !Astro.isCombust('Ketu', 182, 0, true) &&
@@ -995,6 +1026,12 @@ ok('the nodes are never flagged, being points', (function () {
 ok('and neither is the lagna, nor the Sun itself',
    !Astro.isCombust('Sun', 0, 0, false) && Astro.COMBUSTION.Sun === undefined &&
    /yogakaraka: false, combust: false/.test(fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8')));
+ok('the key says which flags belong to the graha and which to the chart', (function () {
+  var flat = html.replace(/\s+/g, ' ');
+  return /In the table \[R\] and \[C\] sit on the graha, being true of it whichever chart is read/
+    .test(flat) && /while \[V\] and \[Y\] sit on each chart row, being true of that division alone/
+    .test(flat);
+})());
 ok('the key explains [C] too', (function () {
   var flat = html.replace(/\s+/g, ' ');
   return /\[C\] is combust, burnt by being too near the Sun/.test(flat);
@@ -1551,7 +1588,7 @@ ok('the note says the rows come in pairs',
  * than only checking that the source mentions them.
  */
 var dispSrc = appSrc.slice(appSrc.indexOf('function withArticle'),
-                           appSrc.indexOf('function renderSlotTable'));
+                           appSrc.indexOf('function grahaViews'));
 var Disp = new Function('Astro', dispSrc +
   '\nreturn { withArticle: withArticle, detail: dispositorDetail };')(Astro);
 
@@ -1585,8 +1622,11 @@ ok('a node is said to keep no friendships', /Rahu keeps no friendships/.test(
 
 ok('the dispositor cell carries that title, and the ascendant row does not',
    /title: r\.isAscendant \? null : dispositorDetail\(r\.name, v\.sign, positionsD1\)/.test(appSrc));
-ok('both tables state the direction in view, not only on hover',
-   (html.match(/the graha's own view of the lord whose sign it occupies/g) || []).length === 2);
+ok('the table states the direction in view, not only on hover', (function () {
+  // Collapsed, so re-wrapping the paragraph cannot fail this on whitespace alone.
+  var flat = html.replace(/\s+/g, ' ');
+  return (flat.match(/the graha's own view of the lord whose sign it occupies/g) || []).length === 1;
+})());
 ok('friendship is defined once, in the engine', (function () {
   var astroSrc = fs.readFileSync(path.join(root, 'js/astro.js'), 'utf8');
   var shadSrc = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8');
@@ -1594,10 +1634,41 @@ ok('friendship is defined once, in the engine', (function () {
 })());
 
 // The columns, in the order they read.
-ok('both tables carry the same ten columns, in order', (function () {
-  var wanted = ['Graha', 'Rashi', 'Dignity', 'House', 'Lordship', 'Dispositor', 'Longitude',
-                'Nakshatra', 'Pada', 'Lord / sub lord'];
-  return ['table-a', 'table-b'].every(function (id) {
+/*
+ * A Chart column now sits second, naming the division each row belongs to, since
+ * one table holds what two used to.
+ */
+/*
+ * One table in place of two tabs, a row per chart, the name spanning them. The
+ * rashi is always one of those rows whatever the two charts above are set to:
+ * it is the chart every other is a division of, and reading D7 beside D10
+ * without it means holding the rashi in your head.
+ */
+ok('the rashi is always a row, however the charts are set',
+   /var views = \[onD1 \|\| \{ division: 1, reference: 'Ascendant' \}\];/.test(appSrc) &&
+   /var seen = \{ 1: true \};/.test(appSrc));
+ok('and a chart already on D1 gives two rows, not three',
+   /var onD1 = settings\.filter\(function \(s\) \{ return s\.division === 1; \}\)\[0\];/.test(appSrc) &&
+   /if \(seen\[set\.division\]\) return;/.test(appSrc));
+ok('a chart on D1 lends its own rotation to that row, rather than a second row appearing',
+   /onD1 \|\| \{ division: 1, reference: 'Ascendant' \}/.test(appSrc));
+ok('the name spans its rows, so a graha reads as one entry',
+   /th\.setAttribute\('rowspan', String\(views\.length\)\)/.test(appSrc) &&
+   /th\.setAttribute\('scope', 'rowgroup'\)/.test(appSrc));
+ok('and the rule sits under the group rather than between its lines', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  return /#graha-table th\[rowspan\] \{[^}]*vertical-align: middle/.test(css) &&
+    /#graha-table tbody tr:not\(\.graha-first\) td \{ border-top: none/.test(css.replace(/\s+/g, ' ')) ||
+    /graha-first/.test(css);
+})());
+ok('the table is drawn once from both slots, not once per slot',
+   /SLOTS\.forEach\(drawSlot\);\s*\n\s*renderGrahaTable\(lastChart\);/.test(appSrc) &&
+   !/renderGrahaTable\(state\.chart, set\)/.test(appSrc));
+
+ok('the table carries eleven columns, in order', (function () {
+  var wanted = ['Graha', 'Chart', 'Rashi', 'Dignity', 'House', 'Lordship', 'Dispositor',
+                'Longitude', 'Nakshatra', 'Pada', 'Lord / sub lord'];
+  return ['graha-table'].every(function (id) {
     var at = html.indexOf('id="' + id + '"');
     var head = html.slice(at, html.indexOf('</thead>', at));
     var found = (head.match(/<th scope="col">([^<]+)<\/th>/g) || [])
@@ -1613,9 +1684,9 @@ ok('both tables carry the same ten columns, in order', (function () {
 ok('lordship comes from the shared helper, not a column-specific one',
    /<th scope="col">Lordship<\/th>/.test(html) && !/function rulership/.test(appSrc) &&
    typeof Astro.housesOwned === 'function');
-ok('the house column says what it is counted from',
-   /Whole sign house, counted from/.test(appSrc) &&
-   /as the chart beside this table is\./.test(appSrc));
+ok('each row says which chart it is and what its houses are counted from',
+   /'Houses counted from ' \+/.test(appSrc) &&
+   /view\.reference === 'Ascendant' \? 'the ascendant' : view\.reference/.test(appSrc));
 
 /*
  * Where a graha sits and what it owns are the two halves of reading it, and the
@@ -1626,8 +1697,8 @@ ok('the house column says what it is counted from',
 ok('lordship is counted from the same house 1 as the house column',
    /Astro\.housesOwned\(r\.name, firstSign\)/.test(appSrc));
 ok('the lagna and the nodes show a dash, owning nothing',
-   /r\.isAscendant \? \[\] : Astro\.housesOwned/.test(appSrc) &&
-   /if \(!owned\.length\) return \{ text: '\\u2013', cls: 'numeric' \}/.test(appSrc));
+   /var owned = r\.isAscendant \? \[\] : Astro\.housesOwned\(r\.name, firstSign\);/.test(appSrc) &&
+   /owned\.length\s*\n?\s*\? \{ text: owned\.join\(', '\)/.test(appSrc));
 ok('and the cell names the signs behind the numbers',
    /Astro\.SIGNS\[\(firstSign \+ h - 1\) % 12\] \+ ', the ' \+ Yogas\.ordinal\(h\)/.test(appSrc));
 ok('a yogakaraka owns an angle and a trine, which the column now shows', (function () {
@@ -1635,11 +1706,16 @@ ok('a yogakaraka owns an angle and a trine, which the column now shows', (functi
   var owned = Astro.housesOwned('Mars', 4);
   return owned.join(',') === '4,9' && Astro.isYogakaraka('Mars', 4);
 })());
+/*
+ * What a graha is comes before where it is. Motion left the table when [R] moved
+ * onto the name, so dignity is what has to lead the position columns now.
+ */
 ok('what a graha is comes before where it is', (function () {
-  var at = html.indexOf('id="table-a"');
+  var at = html.indexOf('id="graha-table"');
   var head = html.slice(at, html.indexOf('</thead>', at));
-  return head.indexOf('>Motion<') < head.indexOf('>Longitude<') &&
-         head.indexOf('>Dignity<') < head.indexOf('>Longitude<');
+  return head.indexOf('>Dignity<') < head.indexOf('>Longitude<') &&
+         head.indexOf('>Chart<') < head.indexOf('>Dignity<') &&
+         head.indexOf('>Lordship<') < head.indexOf('>Longitude<');
 })());
 /*
  * Cells were positional until House and Vargottama went in mid-table, which moved
