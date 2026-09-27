@@ -1463,16 +1463,36 @@ ok('and the detector applies those two and nothing else', (function () {
  * more" on secondary sources alone was a claim this site could not support.
  */
 ok('the attribution to Raman says what was and was not verified',
-   /the attribution is worth taking with some care/.test(seeds) &&
+   /has not been checked against his own text/.test(seeds) &&
    /both break off around the hundred and sixtieth combination/.test(seeds));
+/*
+ * De Fouw and Svoboda were read, so they are cited to the page and quoted. Their
+ * four are the best-sourced list here, and two of them are the two applied.
+ */
+ok('the one source read in the original is cited to the page',
+   /at page 295 of Light on Life/.test(seeds) &&
+   /Their own worked example is Saturn in Aries/.test(seeds) &&
+   /Their first and fourth are the two applied here/.test(seeds));
+/*
+ * And they settle the raja yoga test the app already used, in their own words:
+ * occupies a kendra or kona, not owns one.
+ */
+ok('and they settle the raja yoga test, which the detector already matched',
+   /creates a Raja Yoga only when the debilitated graha occupies a kendra or a kona/
+     .test(seeds) && /Occupies, not owns/.test(seeds) &&
+   (function () {
+     var src = fs.readFileSync(path.join(root, 'js/yogas.js'), 'utf8');
+     return /var royal = KENDRA_HOUSES\.indexOf\(house\) >= 0 \|\| TRIKONA_HOUSES\.indexOf\(house\) >= 0;/
+       .test(src);
+   })());
 /*
  * And the third condition some sources give him is named, with the reason it is
  * a different rule rather than a restatement: the graha exalted in the sign of
  * debilitation and the lord of the sign of exaltation are never the same graha.
  */
-ok('the third condition some sources add is named and distinguished',
-   /the lord of the sign in which the debilitated graha would be exalted/.test(seeds) &&
-   /The two readings differ for all seven grahas/.test(seeds));
+ok('the condition easily mistaken for one of ours is named and distinguished',
+   /the lord of the rashi where that graha is exalted, in a kendra from either/.test(seeds) &&
+   /The two differ for all seven grahas/.test(seeds));
 ok('and they really do differ for all seven', (function () {
   return Astro.GRAHA_ORDER.slice(0, 7).every(function (g) {
     var d = Astro.DIGNITY[g];
