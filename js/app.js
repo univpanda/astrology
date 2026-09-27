@@ -1235,16 +1235,20 @@
       says: 'Natural strength, a constant per graha: the same figure in every ' +
         'chart, running from the Sun’s sixty down to Saturn’s 8.57.' },
     /*
-     * The one share with no ceiling to give. It is a sum of whatever aspects
-     * happen to fall on the graha less whatever malefic ones do, so it is
-     * bounded only by how many grahas can reach it at once, and the text sets no
-     * figure. Over 1800 sample births it runs from -56 to +53.
+     * The text sets no figure for this one, but the reckoning does: six other
+     * grahas can each cast at most a full drishti of sixty, and the sum is
+     * quartered, so ninety bounds it in either direction. Shown as a bound
+     * rather than a ceiling because this is the one share that goes negative -
+     * over 1800 sample births it runs from -56 to +53, so ninety is a limit
+     * approached rather than met.
      */
-    { key: 'drik', label: 'Drik bala', en: 'Aspectual', max: null,
+    { key: 'drik', label: 'Drik bala', en: 'Aspectual', max: 90, shows: '\u00b190',
       says: 'What the benefics aspecting the graha are worth, less what the ' +
-        'malefics are. The one share with no ceiling, and the only one that can ' +
-        'go negative: it is bounded by how many grahas reach the sign at once ' +
-        'rather than by a figure the text gives.' },
+        'malefics are, quartered. The only share that can go negative. The text ' +
+        'sets no ceiling; the reckoning does, six grahas each casting at most a ' +
+        'full drishti of sixty, so ninety bounds it either way - though it is a ' +
+        'bound approached rather than met, the observed range being about -56 ' +
+        'to +53.' },
     /*
      * Shown only in the charts that have a war, which is about one in twelve.
      * Everywhere else it is a row of seven zeroes, and a row that says nothing
@@ -1362,8 +1366,8 @@
       'In shashtiamsas; sixty make one Rupa. Where a row name carries a second ' +
       'figure, that is the most the row can be worth, and a pair of figures means ' +
       'the ceiling differs by graha: paksha is doubled for the Moon and ayana for ' +
-      'the Sun, which lifts those two rows and the Kala bala they feed. Only Drik ' +
-      'bala has none, being a sum of whatever aspects reach the graha. A graha is ' +
+      'the Sun, which lifts those two rows and the Kala bala they feed. Drik bala ' +
+      'is given with a sign, being the one share that goes negative. A graha is ' +
       'strong when it meets the minimum ' +
       'Parashara sets for it, which differs by graha, so compare each total against its ' +
       'own requirement rather than against the others. Grahas are in the order of the ' +

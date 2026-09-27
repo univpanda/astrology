@@ -1346,8 +1346,8 @@ ok('and a ceiling that differs by graha prints both figures', (function () {
   return /key: 'paksha'[^}]*max: 120, shows: '60\/120'/.test(block) &&
     /key: 'ayana'[^}]*max: 120, shows: '60\/120'/.test(block) &&
     /key: 'kala'[\s\S]{0,140}max: 450, shows: '390\/450'/.test(block) &&
-    // Drik alone keeps a blank, the text setting no figure for it at all.
-    /key: 'drik'[^}]*max: null/.test(block);
+    // Drik is a bound rather than a ceiling, being the share that goes negative.
+    /key: 'drik'[^}]*max: 90, shows: '\\u00b190'/.test(block);
 })());
 /*
  * And the upper figure of each pair is reached, so it is the row's ceiling and
@@ -1372,11 +1372,26 @@ ok('and the doubled ceiling is one the engine actually reaches', (function () {
  * And the note says which rows have none and why, rather than making a claim
  * about "the figure beside a row name" that six of the fifteen rows do not have.
  */
-ok('and says what a pair of figures means, and which row has none',
+ok('and says what a pair of figures means, and why one carries a sign',
    /a pair of figures means the ceiling differs by graha: paksha is doubled for the Moon and ayana for the Sun/
      .test(appSrc.replace(/'\s*\+\s*'/g, '')) &&
-   /Only Drik bala has none, being a sum of whatever aspects reach the graha/
+   /Drik bala is given with a sign, being the one share that goes negative/
      .test(appSrc.replace(/'\s*\+\s*'/g, '')));
+/*
+ * Every row carries a figure now. Drik bala's is the reckoning's own bound
+ * rather than one the text gives - six other grahas can each cast at most a
+ * full drishti of sixty and the sum is quartered - so it is checked against the
+ * arithmetic that produces it rather than against a remembered number.
+ */
+ok('and drik bala\'s bound is what its own formula allows', (function () {
+  var shadSrc = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8');
+  var others = Shadbala.GRAHAS.length - 1;
+  var full = Math.max.apply(null, Object.keys(
+    { 3: 15, 10: 15, 5: 30, 9: 30, 4: 45, 8: 45, 7: 60 }).map(function (k) {
+      return ({ 3: 15, 10: 15, 5: 30, 9: 30, 4: 45, 8: 45, 7: 60 })[k];
+    }));
+  return /return total \/ 4;/.test(shadSrc) && others * full / 4 === 90;
+})());
 /*
  * Which is four and not three: the doubling really does carry those two rows
  * past sixty, so a ceiling of sixty there would be a figure the table's own
@@ -1404,8 +1419,8 @@ ok('and no measure ever exceeds the ceiling it claims', (function () {
   var m, re = /key: '([A-Za-z]+)', label: '[^']*', en: '[^']*',(?:\s*parts: [A-Z_]+,)?\s*(?:total: true,)?\s*max: (\d+|null)/g;
   while ((m = re.exec(parts))) declared[m[1]] = m[2] === 'null' ? null : Number(m[2]);
   if (declared.sthana !== 60 + 315 + 15 + 15 + 60 + 15) return false;
-  // Drik alone claims none; the three that differ by graha claim their upper figure.
-  if (declared.drik !== null) return false;
+  // The three that differ by graha claim their upper figure; drik claims its bound.
+  if (declared.drik !== 90) return false;
   if (declared.kala !== 450 || declared.paksha !== 120 || declared.ayana !== 120) {
     return false;
   }
@@ -1427,7 +1442,7 @@ ok('and no measure ever exceeds the ceiling it claims', (function () {
         nathonnatha: x.kala.nathonnatha, tribhaga: x.kala.tribhaga,
         abda: x.kala.abda, masa: x.kala.masa, vara: x.kala.vara,
         hora: x.kala.hora, paksha: x.kala.paksha, ayana: x.kala.ayana,
-        kala: x.kala.total };
+        kala: x.kala.total, drik: Math.abs(x.drik) };
       Object.keys(seen).forEach(function (k) {
         worst[k] = Math.max(worst[k] === undefined ? -Infinity : worst[k], seen[k]);
       });
