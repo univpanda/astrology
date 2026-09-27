@@ -1242,13 +1242,13 @@
      * over 1800 sample births it runs from -56 to +53, so ninety is a limit
      * approached rather than met.
      */
-    { key: 'drik', label: 'Drik bala', en: 'Aspectual', max: 90, shows: '\u00b190',
+    { key: 'drik', label: 'Drik bala', en: 'Aspectual', max: 97.5, shows: '\u00b197.5',
       says: 'What the benefics aspecting the graha are worth, less what the ' +
         'malefics are, quartered. The only share that can go negative. The text ' +
-        'sets no ceiling; the reckoning does, six grahas each casting at most a ' +
-        'full drishti of sixty, so ninety bounds it either way - though it is a ' +
-        'bound approached rather than met, the observed range being about -56 ' +
-        'to +53.' },
+        'sets no ceiling; the reckoning does - five grahas casting a full sixty ' +
+        'and Saturn up to ninety, since its special aspect adds to the ordinary ' +
+        'one rather than replacing it. That bound is approached rather than met: ' +
+        'the observed range is about -60 to +39.' },
     /*
      * Shown only in the charts that have a war, which is about one in twelve.
      * Everywhere else it is a row of seven zeroes, and a row that says nothing

@@ -300,22 +300,70 @@ var Shadbala = (function () {
 
   /* --------------------------------------------------------- drik bala */
 
-  // Quarter on the 3rd and 10th, half on the 5th and 9th, three-quarters on the
-  // 4th and 8th, full on the 7th, and each graha's own aspects at full.
-  var ASPECT_BY_HOUSE = { 3: 15, 10: 15, 5: 30, 9: 30, 4: 45, 8: 45, 7: 60 };
-  var SPECIAL_ASPECTS = { Mars: [4, 8], Jupiter: [5, 9], Saturn: [3, 10] };
+  /*
+   * Drishti as a continuous function of the exact angle between two grahas, not
+   * a value per whole sign.
+   *
+   * Raman gives it in sections 114-115, quoting Sripathi and noting that
+   * Parashara gives the same rules: the drishti kendra is the aspected graha's
+   * longitude less the aspecting one's, and the value rises and falls in six
+   * straight segments across the circle. The joints are continuous - 0 at 30
+   * degrees, 15 at 60, 45 at 90, 30 at 120, 0 at 150, 60 at 180, 0 again at 300
+   * - so a graha's drishti changes with every degree it moves.
+   *
+   * This was a step table keyed on whole-sign distance: 15 on the 3rd and 10th,
+   * 30 on the 5th and 9th, 45 on the 4th and 8th, 60 on the 7th. Those are
+   * exactly the values of this function at the cusps, so the table was right at
+   * seven points of the circle and an approximation everywhere between them -
+   * and silent over 150 to 180 degrees, where the curve climbs from 0 to 60 and
+   * the table gave nothing at all because the 6th house is not in it.
+   */
+  function drishtiValue(dk) {
+    dk = Astro.norm360(dk);
+    if (dk >= 30 && dk < 60) return (dk - 30) / 2;
+    if (dk >= 60 && dk < 90) return dk - 60 + 15;
+    if (dk >= 90 && dk < 120) return (120 - dk) / 2 + 30;
+    if (dk >= 120 && dk < 150) return 150 - dk;
+    if (dk >= 150 && dk < 180) return (dk - 150) * 2;
+    if (dk >= 180 && dk <= 300) return (300 - dk) / 2;
+    return 0;
+  }
 
+  /*
+   * Visesha drishti, section 115: added to the ordinary drishti rather than
+   * replacing it. Mars gets 15 more on the 4th and 8th, Jupiter 30 on the 5th
+   * and 9th, Saturn 45 on the 3rd and 10th - each of which brings the total to
+   * exactly 60 at the cusp, which is why replacing it with 60 looked right for
+   * as long as only cusps were tested.
+   */
+  var VISESHA = {
+    Mars: { at: [[90, 120], [210, 240]], value: 15 },
+    Jupiter: { at: [[120, 150], [240, 270]], value: 30 },
+    Saturn: { at: [[60, 90], [270, 300]], value: 45 }
+  };
+
+  /*
+   * Section 120: "The Drik Bala of a Graha is one-fourth of the Drishti Pinda on
+   * it. It is positive or negative according as the Drishti Pinda is positive or
+   * negative." Nothing else - Santhanam's verse 19 adds "super add the entire
+   * aspect of Mercury and Jupiter", and Raman's own worked example rules it out:
+   * his Sun takes a drishti pinda of +63.45 and a drik bala of +15.86, which is
+   * the quarter exactly, with Jupiter among the grahas aspecting it.
+   */
   function drikBala(graha, positions, benefics) {
-    var total = 0;
+    var pinda = 0;
     GRAHAS.forEach(function (other) {
       if (other === graha) return;
-      var apart = ((positions[graha].sign - positions[other].sign) % 12 + 12) % 12 + 1;
-      var strength = ASPECT_BY_HOUSE[apart] || 0;
-      if ((SPECIAL_ASPECTS[other] || []).indexOf(apart) >= 0) strength = 60;
-      if (!strength) return;
-      total += benefics[other] ? strength : -strength;
+      var dk = Astro.norm360(positions[graha].longitude - positions[other].longitude);
+      var value = drishtiValue(dk);
+      var special = VISESHA[other];
+      if (special && special.at.some(function (span) {
+        return dk >= span[0] && dk < span[1];
+      })) value += special.value;
+      if (!value) return;
+      pinda += benefics[other] ? value : -value;
     });
-    return total / 4;
+    return pinda / 4;
   }
 
   /* ------------------------------------------------------------ totals */

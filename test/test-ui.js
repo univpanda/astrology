@@ -1347,7 +1347,7 @@ ok('and a ceiling that differs by graha prints both figures', (function () {
     /key: 'ayana'[^}]*max: 120, shows: '60\/120'/.test(block) &&
     /key: 'kala'[\s\S]{0,140}max: 450, shows: '390\/450'/.test(block) &&
     // Drik is a bound rather than a ceiling, being the share that goes negative.
-    /key: 'drik'[^}]*max: 90, shows: '\\u00b190'/.test(block);
+    /key: 'drik'[^}]*max: 97\.5, shows: '\\u00b197\.5'/.test(block);
 })());
 /*
  * And the upper figure of each pair is reached, so it is the row's ceiling and
@@ -1385,12 +1385,93 @@ ok('and says what a pair of figures means, and why one carries a sign',
  */
 ok('and drik bala\'s bound is what its own formula allows', (function () {
   var shadSrc = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8');
-  var others = Shadbala.GRAHAS.length - 1;
-  var full = Math.max.apply(null, Object.keys(
-    { 3: 15, 10: 15, 5: 30, 9: 30, 4: 45, 8: 45, 7: 60 }).map(function (k) {
-      return ({ 3: 15, 10: 15, 5: 30, 9: 30, 4: 45, 8: 45, 7: 60 })[k];
-    }));
-  return /return total \/ 4;/.test(shadSrc) && others * full / 4 === 90;
+  if (!/return pinda \/ 4;/.test(shadSrc)) return false;
+  // The most one graha can cast: the curve peaks at 60 on the 7th, and only
+  // Saturn's visesha reaches a sign the curve has not already taken to 60.
+  var peak = 0;
+  for (var dk = 0; dk <= 360; dk += 0.25) {
+    var v = (function (d) {
+      if (d >= 30 && d < 60) return (d - 30) / 2;
+      if (d >= 60 && d < 90) return d - 60 + 15;
+      if (d >= 90 && d < 120) return (120 - d) / 2 + 30;
+      if (d >= 120 && d < 150) return 150 - d;
+      if (d >= 150 && d < 180) return (d - 150) * 2;
+      if (d >= 180 && d <= 300) return (300 - d) / 2;
+      return 0;
+    })(dk);
+    [[[90, 120], [210, 240], 15], [[120, 150], [240, 270], 30],
+     [[60, 90], [270, 300], 45]].forEach(function (vis) {
+      var inSpan = (dk >= vis[0][0] && dk < vis[0][1]) ||
+                   (dk >= vis[1][0] && dk < vis[1][1]);
+      peak = Math.max(peak, v + (inSpan ? vis[2] : 0));
+    });
+  }
+  /*
+   * Saturn is the one graha that passes sixty: its visesha of 45 adds to an
+   * ordinary drishti already climbing to 45 across the same span, so the pair
+   * approach 90 together as the span closes. Ninety is a supremum rather than a
+   * maximum - the span stops short of its own end - so the peak is tested as
+   * approached, and the bound is Saturn's ninety with the other five at sixty.
+   */
+  return peak > 89.7 && peak <= 90 &&
+    (90 + (Shadbala.GRAHAS.length - 2) * 60) / 4 === 97.5;
+})());
+/*
+ * The curve, and that it is a curve. Raman gives drishti as a continuous
+ * function of the exact angle - sections 114-115, from Sripathi, and he says
+ * Parashara gives the same - where this had a value per whole sign. The table
+ * was the curve's value at seven cusps, so it was right at those seven points
+ * and an approximation everywhere between, and gave nothing at all across 150
+ * to 180 degrees where the curve climbs from zero to sixty.
+ */
+ok('drishti is read off the exact angle, not the whole sign', (function () {
+  var shadSrc = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8');
+  return /function drishtiValue\(dk\)/.test(shadSrc) &&
+    /var dk = Astro\.norm360\(positions\[graha\]\.longitude - positions\[other\]\.longitude\);/
+      .test(shadSrc) &&
+    !/ASPECT_BY_HOUSE/.test(shadSrc) && !/SPECIAL_ASPECTS/.test(shadSrc);
+})());
+ok('and it still meets the old table at every cusp it shared', (function () {
+  var shadSrc = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8');
+  var f = new Function('Astro', 'return (function(){' +
+    shadSrc.slice(shadSrc.indexOf('  function drishtiValue'),
+                  shadSrc.indexOf('  var VISESHA')) +
+    '; return drishtiValue;})()')(Astro);
+  var cusps = { 30: 0, 60: 15, 90: 45, 120: 30, 150: 0, 180: 60, 210: 45,
+                240: 30, 270: 15, 300: 0 };
+  return Object.keys(cusps).every(function (dk) {
+    return Math.abs(f(Number(dk)) - cusps[dk]) < 1e-9;
+  }) && Math.abs(f(160) - 20) < 1e-9;      // and is no longer silent on the 6th
+})());
+/*
+ * Visesha drishti adds to the ordinary value rather than replacing it - Mars 15
+ * on the 4th and 8th, Jupiter 30 on the 5th and 9th, Saturn 45 on the 3rd and
+ * 10th. Each brings the total to exactly 60 at the cusp, which is why setting
+ * it to 60 outright looked right for as long as only cusps were tested.
+ */
+ok('and a special aspect adds to the ordinary one rather than replacing it',
+   (function () {
+     var shadSrc = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8');
+     var block = shadSrc.slice(shadSrc.indexOf('var VISESHA = {'),
+                               shadSrc.indexOf('function drikBala'));
+     return /Mars: \{ at: \[\[90, 120\], \[210, 240\]\], value: 15 \}/.test(block) &&
+       /Jupiter: \{ at: \[\[120, 150\], \[240, 270\]\], value: 30 \}/.test(block) &&
+       /Saturn: \{ at: \[\[60, 90\], \[270, 300\]\], value: 45 \}/.test(block) &&
+       /value \+= special\.value;/.test(shadSrc);
+   })());
+/*
+ * And nothing is added for Mercury or Jupiter beyond their own drishti.
+ * Santhanam's verse 19 reads "super add the entire aspect of Mercury and
+ * Jupiter"; Raman's section 120 is the quarter and nothing else, and his worked
+ * example settles it - his Sun takes a drishti pinda of +63.45 and a drik bala
+ * of +15.86, the quarter exactly, with Jupiter among the grahas aspecting it.
+ */
+ok('and no graha is counted twice for being a benefic', (function () {
+  var shadSrc = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8');
+  var block = shadSrc.slice(shadSrc.indexOf('function drikBala'),
+                            shadSrc.indexOf('/* ------------------------------------------------------------ totals */'));
+  return !/Mercury/.test(block) && (block.match(/pinda \+=/g) || []).length === 1 &&
+    Math.abs(63.45 / 4 - 15.8625) < 1e-9;   // Raman's own figures reconcile
 })());
 /*
  * Which is four and not three: the doubling really does carry those two rows
@@ -1416,11 +1497,11 @@ ok('and no measure ever exceeds the ceiling it claims', (function () {
   var declared = {};
   var parts = appSrc.slice(appSrc.indexOf('var STHANA_PARTS = ['),
                            appSrc.indexOf('function renderShadbala'));
-  var m, re = /key: '([A-Za-z]+)', label: '[^']*', en: '[^']*',(?:\s*parts: [A-Z_]+,)?\s*(?:total: true,)?\s*max: (\d+|null)/g;
+  var m, re = /key: '([A-Za-z]+)', label: '[^']*', en: '[^']*',(?:\s*parts: [A-Z_]+,)?\s*(?:total: true,)?\s*max: ([\d.]+|null)/g;
   while ((m = re.exec(parts))) declared[m[1]] = m[2] === 'null' ? null : Number(m[2]);
   if (declared.sthana !== 60 + 315 + 15 + 15 + 60 + 15) return false;
   // The three that differ by graha claim their upper figure; drik claims its bound.
-  if (declared.drik !== 90) return false;
+  if (declared.drik !== 97.5) return false;
   if (declared.kala !== 450 || declared.paksha !== 120 || declared.ayana !== 120) {
     return false;
   }
