@@ -1194,6 +1194,20 @@
    * reporting an exalted graha as a great friend's guest would hide the more
    * useful fact. The relation underneath is kept in the cell's title.
    */
+  /*
+   * The two labels that are not steps of the scale the score uses, as nouns: a
+   * sentence about what exaltation is worth cannot open "Exalted has no rung".
+   */
+  var FALLS_OUTSIDE = { exalted: 'Exaltation', debilitated: 'Debilitation' };
+
+  /** The seven steps as they read in "this scores as ...". */
+  var VISWA_PHRASE = {
+    moolatrikona: 'its moolatrikona sign', own: 'its own sign',
+    adhimitra: 'a great friend\u2019s sign', mitra: 'a friend\u2019s sign',
+    sama: 'a neutral\u2019s sign', shatru: 'an enemy\u2019s sign',
+    adhishatru: 'a great enemy\u2019s sign'
+  };
+
   /** What one cell of the grid is saying, in full. */
   function vargasDetail(d, division, graha) {
     /*
@@ -1208,9 +1222,17 @@
       said.push('Neither luminary rules a trimsamsa, so for this division ' + graha +
         ' stands in as ' + d.viaProxy + ', which is what lets it hold one of its own.');
     }
+    /*
+     * Only exaltation and debilitation ever reach this, and it is the one thing
+     * a cell can say that its own word contradicts: the score is always taken
+     * from the seven-step relation, never from the label, so a Deb can be worth
+     * 18 of 20 and an Exal 7. It used to be put as "on the seven-step varga
+     * scale that counts as friend", which names a scale the panel no longer
+     * explains and leaves the reader to guess what it costs.
+     */
     if (d.relationLabel && d.relationLabel !== d.label) {
-      said.push('On the seven-step varga scale that counts as ' +
-        d.relationLabel.toLowerCase() + '.');
+      said.push(FALLS_OUTSIDE[d.key] + ' has no rung in varga viswa, so this scores as ' +
+        VISWA_PHRASE[d.relation] + ': ' + Astro.VARGA_VISWA[d.relation] + ' of 20.');
     }
     return said.join(' ');
   }

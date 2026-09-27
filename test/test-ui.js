@@ -2289,6 +2289,57 @@ ok('a graha with no reading anywhere is dropped, not shown as a row of dashes',
  * and the sign the cell itself. Three quarters of it was the screen read back.
  * The dignity short forms are spelt out in the note instead, once for the grid.
  */
+/*
+ * Only exaltation and debilitation reach this clause, and it is the one thing a
+ * cell can say that its own word contradicts: the score is always taken from the
+ * seven-step relation and never from the label, so a Deb can be worth 18 of 20
+ * and an Exal 7. "On the seven-step varga scale that counts as friend" named a
+ * scale the panel no longer explains and left the cost to be guessed.
+ */
+ok('a cell whose label is not what it scored says what it scored', (function () {
+  var at = appSrc.indexOf('function vargasDetail');
+  var block = appSrc.slice(at, appSrc.indexOf('function vimsopakaFigure', at));
+  return /FALLS_OUTSIDE\[d\.key\] \+ ' has no rung in varga viswa, so this scores as '/
+    .test(block) &&
+    /VISWA_PHRASE\[d\.relation\] \+ ': ' \+ Astro\.VARGA_VISWA\[d\.relation\] \+ ' of 20\.'/
+      .test(block) &&
+    !/seven-step varga scale/.test(appSrc);
+})());
+ok('and the figure it quotes is the one the score used', (function () {
+  // vimsopaka reads VARGA_VISWA[d.relation]; the sentence must read the same.
+  var astroSrc = fs.readFileSync(path.join(root, 'js/astro.js'), 'utf8');
+  return /var kept = VARGA_VISWA\[d\.relation\];/.test(astroSrc) &&
+    /Astro\.VARGA_VISWA\[d\.relation\]/.test(appSrc);
+})());
+/*
+ * Which is not a rare footnote. Over 480 charts across the sixteen divisions a
+ * label and its score disagree eight thousand times, and the worst of them is a
+ * cell reading Deb that scored 18 of 20.
+ */
+ok('only exaltation and debilitation ever fall outside the scale', (function () {
+  var seen = {};
+  for (var y = 1990; y < 2010; y++) {
+    var c = Astro.chart({ jdUT: Astro.julianDay(y, 6, 12, 9), latitude: 28.61,
+                          longitude: 77.21, tzOffsetMinutes: 330 });
+    var pos = {};
+    c.planets.forEach(function (p) { pos[p.name] = p; });
+    Astro.VARGA_SCHEMES.shodasavarga.divisions.forEach(function (d) {
+      c.planets.forEach(function (p) {
+        var dig = Astro.vargaDignity(p.name, p.longitude, d, pos);
+        if (dig && dig.relationLabel && dig.relationLabel !== dig.label) seen[dig.key] = true;
+      });
+    });
+  }
+  return Object.keys(seen).sort().join(',') === 'debilitated,exalted';
+})());
+ok('and every step of the scale has a phrase to be read as', (function () {
+  var at = appSrc.indexOf('var VISWA_PHRASE = {');
+  var block = appSrc.slice(at, appSrc.indexOf('};', at));
+  return Object.keys(Astro.VARGA_VISWA).every(function (k) {
+    return block.indexOf(k + ':') >= 0;
+  });
+})());
+
 ok('a cell title does not repeat the cell', (function () {
   var at = appSrc.indexOf('function vargasDetail');
   var block = appSrc.slice(at, appSrc.indexOf('function vimsopakaFigure', at));
