@@ -1517,10 +1517,19 @@ ok('ruling the first house alone is not enough', (function () {
 console.log('\nGraha order');
 (function () {
   var c = A.chart({ jdUT: A.julianDay(1985, 3, 22, 5.4166667), latitude: 23.5158, longitude: 87.308 });
-  var expected = ['Sun', 'Moon', 'Mars', 'Jupiter', 'Venus', 'Mercury', 'Saturn', 'Rahu', 'Ketu'];
+  /*
+   * The order of the weekday lords, which is the one the classical lists use.
+   * Everything downstream walks this array - the graha tables, Shadbala, the
+   * Vargas grid, the aspects - so the sequence is settled once here.
+   */
+  var expected = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
   var got = c.planets.map(function (p) { return p.name; });
   ok('grahas come back in the order a Vedic table reads them',
      got.join(',') === expected.join(','), got.join(', '));
+  ok('and the seven are in weekday order, Sunday through Saturday',
+     got.slice(0, 7).join(',') === 'Sun,Moon,Mars,Mercury,Jupiter,Venus,Saturn');
+  ok('with the nodes last, Ketu after the Rahu it is derived from',
+     got[7] === 'Rahu' && got[8] === 'Ketu');
   // The panchang and the dasha look grahas up by name, so reordering the table
   // must not quietly shift them onto the wrong one.
   ok('the panchang still follows the Sun and Moon', (function () {

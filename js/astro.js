@@ -1295,10 +1295,19 @@ var Astro = (function () {
     // Grahas arrive as mean tropical longitudes, so they take the plain ayanamsa;
     // the ascendant below is an apparent (true equinox) angle and takes ayanTrue.
     // Listed in the order a Vedic table reads them, with Ketu following Rahu.
+    /*
+     * The order everything downstream is listed in: the graha tables, Shadbala,
+     * the Vargas grid and the aspects all walk this array, so it is the one
+     * place the sequence is decided.
+     *
+     * Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, which is the order of
+     * the weekday lords and the one the classical lists use. Ketu follows Rahu
+     * because it is derived from it rather than sampled.
+     */
     var bodies = [
       { key: 'sun', name: 'Sun' }, { key: 'moon', name: 'Moon' },
-      { key: 'mars', name: 'Mars' }, { key: 'jupiter', name: 'Jupiter' },
-      { key: 'venus', name: 'Venus' }, { key: 'mercury', name: 'Mercury' },
+      { key: 'mars', name: 'Mars' }, { key: 'mercury', name: 'Mercury' },
+      { key: 'jupiter', name: 'Jupiter' }, { key: 'venus', name: 'Venus' },
       { key: 'saturn', name: 'Saturn' }, { key: 'rahu', name: 'Rahu' }
     ];
 
