@@ -1546,9 +1546,21 @@ ok('a cancelled debilitation is marked where it is scored',
    /if \(d\.key === 'debilitated' && cancelled\[planet\.name\]\)/.test(appSrc) &&
    /dignityLine\.appendChild\(el\('span', 'flag flag-n', ' \[N\]'\)\)/.test(appSrc) &&
    !/neecha-bhanga/.test(appSrc));
-ok('and the hover says the score is the floor for a graha that is not weak',
-   /is cancelled and the graha stands in an angle or a trine, which is neecha bhanga raja yoga, so the score below is the floor for a graha that is not weak/
-     .test(appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ')));
+/*
+ * And the letter is the whole of it. Every mark used to explain itself in the
+ * hover as well as wear its letter, so a cell carrying [X] [D] said the same
+ * thing twice - once in two letters, once in four sentences - and the chip that
+ * advertised the hover was on almost every cell in the grid. The key at the top
+ * of the tab is where a letter is looked up.
+ */
+ok('and no mark explains itself in a hover, the letter being the whole of it',
+   (function () {
+     var at = appSrc.indexOf('function renderVargas(state)');
+     var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
+     return !/says\.push\(/.test(block) && !/var says = \[\]/.test(block) &&
+       !/is cancelled and the graha stands in an angle or a trine/
+         .test(block.replace(/'\s*\+\s*'/g, ''));
+   })());
 /*
  * Every mark is per cell, a cell being one graha in one division, and every mark
  * is one of the four things vimsopaka cannot see. A marked cell is one the score
@@ -1570,7 +1582,8 @@ ok('the note separates the two channels without naming a mark', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
   return /A marked cell is one the score reads wrong and the mark says how, each being something it cannot see/
     .test(flat) &&
-    /A cell with a chip in its corner has something to say on hover/.test(flat);
+    /A chip in a corner means a hover with a yoga the cell has no mark for, the marked ones being read off the cell already/
+      .test(flat);
 })());
 ok('and names none of them, the key doing that', (function () {
   var at = appSrc.indexOf('function vargaNote');
@@ -2261,8 +2274,8 @@ ok('and the title breaks the score into its divisions',
 ok('the totals row says what it is, and what it is out of',
    /var head = el\('th', null, 'Vimsopaka'\);/.test(appSrc) &&
    /head\.appendChild\(el\('span', 'varga-weight', '20'\)\);/.test(appSrc));
-ok('and the note still says what the column totals, the heading no longer doing it',
-   /the last column scores those dignities out of twenty/
+ok('and the note still says what the totals row totals, the heading no longer doing it',
+   /the last row scores those dignities out of twenty/
      .test(appSrc.replace(/'\s*\+\s*'/g, '')));
 /*
  * Which verses a share-out comes from is a fact about the text, not about the
@@ -2497,25 +2510,10 @@ ok('a graha with no reading anywhere is dropped, not shown as a column of dashes
  * and an Exal 7. "On the seven-step varga scale that counts as friend" named a
  * scale the panel no longer explains and left the cost to be guessed.
  */
-ok('a cell whose label is not what it scored says what it scored', (function () {
-  var at = appSrc.indexOf('function vargasDetail');
-  var block = appSrc.slice(at, appSrc.indexOf('function vimsopakaFigure', at));
-  return /FALLS_OUTSIDE\[d\.key\] \+ ' has no rung in varga viswa, so this scores as '/
-    .test(block) &&
-    /VISWA_PHRASE\[d\.relation\] \+ ': ' \+ Astro\.VARGA_VISWA\[d\.relation\] \+ ' of 20\.'/
-      .test(block) &&
-    !/seven-step varga scale/.test(appSrc);
-})());
-ok('and the figure it quotes is the one the score used', (function () {
-  // vimsopaka reads VARGA_VISWA[d.relation]; the sentence must read the same.
-  var astroSrc = fs.readFileSync(path.join(root, 'js/astro.js'), 'utf8');
-  return /var kept = VARGA_VISWA\[d\.relation\];/.test(astroSrc) &&
-    /Astro\.VARGA_VISWA\[d\.relation\]/.test(appSrc);
-})());
 /*
- * Which is not a rare footnote. Over 480 charts across the sixteen divisions a
- * label and its score disagree eight thousand times, and the worst of them is a
- * cell reading Deb that scored 18 of 20.
+ * Which the grid no longer says anywhere, the hover being the yogas alone. The
+ * library carries it instead, under Vimsopaka Bala, and the test below still
+ * checks the engine keeps producing the disagreement so that passage stays true.
  */
 ok('only exaltation and debilitation ever fall outside the scale', (function () {
   var seen = {};
@@ -2533,19 +2531,11 @@ ok('only exaltation and debilitation ever fall outside the scale', (function () 
   }
   return Object.keys(seen).sort().join(',') === 'debilitated,exalted';
 })());
-ok('and every step of the scale has a phrase to be read as', (function () {
-  var at = appSrc.indexOf('var VISWA_PHRASE = {');
-  var block = appSrc.slice(at, appSrc.indexOf('};', at));
-  return Object.keys(Astro.VARGA_VISWA).every(function (k) {
-    return block.indexOf(k + ':') >= 0;
-  });
-})());
-
 ok('a cell title does not repeat the cell', (function () {
-  var at = appSrc.indexOf('function vargasDetail');
-  var block = appSrc.slice(at, appSrc.indexOf('function vimsopakaFigure', at));
+  var at = appSrc.indexOf('function renderVargas(state)');
+  var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
   return !/d\.label \+ ' - ' \+ Astro\.SIGNS\[d\.sign\]/.test(block) &&
-    !/', ruled by ' \+ d\.lord/.test(block);
+    !/', ruled by ' \+ d\.lord/.test(block) && !/vargasDetail/.test(appSrc);
 })());
 // The dignity short forms keep their words, in the note, once for the grid.
 
@@ -2556,9 +2546,9 @@ ok('a cell title does not repeat the cell', (function () {
  * reading always had something to say, so there was always a hover - just never
  * the one the mark had put there.
  */
-ok('the marks and the reading are collected, not assigned over each other',
-   /var says = \[\];/.test(appSrc) && /td\.title = says\.join\(' '\);/.test(appSrc) &&
-   (appSrc.match(/says\.push\(/g) || []).length === 8);
+ok('the marks write no hover at all, so none can be written over another',
+   !/var says = \[\];/.test(appSrc) && !/says\.push\(/.test(appSrc) &&
+   /td\.title = planet\.name \+ ' takes part in '/.test(appSrc));
 ok('and no mark assigns a title of its own any more', (function () {
   var at = appSrc.indexOf('function renderVargas(state)');
   var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
@@ -2679,7 +2669,7 @@ ok('and points at the hovers once, in general rather than kind by kind',
      var flat = note.replace(/\/\*[\s\S]*?\*\//g, '')
        .replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
      return (flat.match(/hover/gi) || []).length === 1 &&
-       /has something to say on hover/.test(flat) &&
+       /A chip in a corner means a hover with a yoga the cell has no mark for/.test(flat) &&
        !/a heading for what that division is worth/.test(flat);
    })());
 /*
@@ -2688,11 +2678,9 @@ ok('and points at the hovers once, in general rather than kind by kind',
  * different places.
  */
 ok('and everything it promises a hover on has one',
-   /td\.title = says\.join\(' '\);/.test(appSrc) &&
+   /td\.title = planet\.name \+ ' takes part in '/.test(appSrc) &&
    /th\.title = \(varga \? varga\.label/.test(appSrc) &&
    /td\.title = planet\.name \+ ' scores '/.test(appSrc));
-ok('and gives the seven-step reading when it differs from the label shown',
-   /d\.relationLabel !== d\.label/.test(appSrc));
 
 ok('every dignity tier has a colour, and no colour is orphaned', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
@@ -2761,8 +2749,15 @@ ok('and both exceptions lead with the fact, not the reason', (function () {
     flat.indexOf('In D30 the Sun is judged') < flat.indexOf('no luminary ruling');
 })());
 
-ok('the trimsamsa stand-in is explained where it fires',
-   /stands in as ' \+ d\.viaProxy/.test(appSrc));
+/*
+ * It used to be explained in the hover of whichever D30 cell it fired in. The
+ * hover is the yogas alone now, so the note says it once for the grid - which is
+ * where a reader looks on meeting a Sun judged as Mars, rather than having to
+ * hover the cell that surprised them.
+ */
+ok('the trimsamsa stand-in is explained in the note, once for the grid',
+   /In D30 the Sun is judged as Mars and the Moon as Venus, no luminary ruling a trimsamsa/
+     .test(appSrc.replace(/'\s*\+\s*'/g, '')) && !/d\.viaProxy/.test(appSrc));
 
 /*
  * Each graha spans two rows, its sign above its dignity. The sign was only in a
@@ -2780,10 +2775,12 @@ ok('a graha in a division is one cell of two lines',
    /td\.appendChild\(signLine\);\s*\n\s*td\.appendChild\(dignityLine\);/.test(appSrc));
 ok('the spanning name is a row-group header, not a plain cell',
    /th\.setAttribute\('scope', 'rowgroup'\)/.test(appSrc));
-ok('both lines read one and the same varga position',
-   /var d = Astro\.vargaDignity\(planet\.name, planet\.longitude, division, positionsD1\);/
-     .test(appSrc) &&
-   /var detail = vargasDetail\(d, division, planet\.name\);/.test(appSrc));
+ok('both lines read one and the same varga position', (function () {
+  var at = appSrc.indexOf('function renderVargas(state)');
+  var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
+  return /var d = Astro\.vargaDignity\(planet\.name, planet\.longitude, division, positionsD1\);/
+    .test(block) && (block.match(/Astro\.vargaDignity\(planet\.name/g) || []).length === 1;
+})());
 
 /*
  * Vargottama moved here from the graha flags. A flag on the graha had to stand
@@ -3066,8 +3063,10 @@ ok('the key explains the mark, and no note explains it again', (function () {
       .test(html.replace(/\s+/g, ' ')) &&
     !/A sign marked \[V\]/.test(flat);
 })());
-ok('and the D9 case is named as vargottama proper',
-   /division === 9 \? ' In D9 that is vargottama proper\.' : ''/.test(appSrc));
+ok('and the D9 case is named as vargottama proper in the key, not per cell',
+   /never on D1, where every graha would qualify\. In D9 it is vargottama proper/
+     .test(html.replace(/\s+/g, ' ')) &&
+   !/division === 9 \? ' In D9 that is vargottama proper\.' : ''/.test(appSrc));
 /*
  * The same question the grid asks, asked of whichever division is drawn. Never
  * of D1, where every graha repeats its own sign by definition.
@@ -3113,7 +3112,7 @@ ok('and the chart agrees with the Vargas grid, being the same comparison', (func
  * dignity.
  */
 ok('one hover covers the whole cell, both lines with it',
-   /td\.title = says\.join\(' '\);/.test(appSrc) &&
+   /td\.title = planet\.name \+ ' takes part in '/.test(appSrc) &&
    !/dignityTitle/.test(appSrc) && !/signTitle/.test(appSrc));
 /*
  * And the same highlight. A yoga belongs to the graha in that division, which is
@@ -3129,16 +3128,47 @@ ok('and one chip stands for the cell, which is now one cell',
    /td\.className \+= ' has-note';/.test(appSrc) &&
    (appSrc.match(/has-note/g) || []).length === 1);
 /*
- * Which means a dignity-only note - the star's, or a score its label does not
- * give - still raises the pair's chip, because the pair is what has something
- * to say.
+ * And it is the yoga list that raises it, nothing else. The cell's own marks are
+ * read off the cell, so a chip on a cell whose only news was a mark would be
+ * pointing at a hover that repeated the two letters beside it.
  */
-ok('and a note about either line still chips the cell', (function () {
-  var at = appSrc.indexOf('var says = [];');
-  var block = appSrc.slice(at, appSrc.indexOf('tr.appendChild(td);', at));
-  // [N] is about the dignity and [V] about the sign; both push to one list.
-  return /flag flag-n/.test(block) && /flag flag-v/.test(block) &&
-    /if \(says\.length\) \{/.test(block);
+ok('and the chip stands on the yogas, the marks being read off the cell',
+   (function () {
+     var at = appSrc.indexOf('function renderVargas(state)');
+     var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
+     return /if \(yogasIn\[planet\.name\]\) \{/.test(block) &&
+       /td\.className \+= ' has-note';/.test(block) &&
+       (block.match(/has-note/g) || []).length === 1;
+   })());
+/*
+ * The yogas that wear a letter are kept out of the list, which is what made the
+ * chip near-universal: an exchange is [X], a cancelled debilitation [N], and a
+ * kartari [S] or [P], all three already on the cell.
+ */
+ok('and a yoga the grid already letters is kept out of that list',
+   /var LETTERED = \['Parivartana', 'Neecha Bhanga', 'Kartari'\];/.test(appSrc) &&
+   /if \(LETTERED\.indexOf\(yoga\.yoga\) < 0\) \{/.test(appSrc));
+/*
+ * Which holds only while those three names are the yogas' own. They are read off
+ * the detectors rather than typed here, so a rename shows up as a failure rather
+ * than as a chip quietly returning to every cell.
+ */
+ok('and each of those three names is a yoga the module really emits', (function () {
+  var c = Astro.chart({ jdUT: Astro.julianDay(1946, 7, 6, 19), latitude: 40.71,
+                        longitude: -74.01, tzOffsetMinutes: -240 });
+  var seen = {};
+  for (var y = 1960; y < 2010; y++) {
+    var ch = Astro.chart({ jdUT: Astro.julianDay(y, 3, 3, 6), latitude: 28.61,
+                           longitude: 77.21, tzOffsetMinutes: 330 });
+    Astro.SHODASAVARGA.forEach(function (d) {
+      Yogas.detect(Astro.chartInDivision(ch, d), {}).forEach(function (yg) {
+        seen[yg.yoga] = true;
+      });
+    });
+  }
+  return c && ['Parivartana', 'Neecha Bhanga', 'Kartari'].every(function (name) {
+    return seen[name] === true;
+  });
 })());
 ok('and a graha with no reading still contributes no column at all',
    /var planets = state\.chart\.planets\.filter\(function \(p\) \{/.test(appSrc));
@@ -3153,9 +3183,18 @@ ok('the two lines sit inside one cell, with no rule between them', (function () 
     !/#vargas-table th\[rowspan\]/.test(css) &&
     /#vargas-table td\.varga-cell \{ vertical-align: top; \}/.test(css);
 })());
-ok('the note says the rows come in pairs, and what each of the two holds',
-   /The two rows under a graha give that sign and its dignity there/
-     .test(appSrc.replace(/'\s*\+\s*'/g, '')));
+/*
+ * A cell, not a pair of rows. The sentence still described the layout from
+ * before the grid turned - "the two rows under a graha", "the last column
+ * scores" - where a graha is now a column and the score a row along the bottom.
+ */
+ok('the note says what one cell holds, and where the score is',
+   (function () {
+     var flat = appSrc.replace(/'\s*\+\s*'/g, '');
+     return /A cell gives that sign and its dignity there/.test(flat) &&
+       /the last row scores those dignities out of twenty/.test(flat) &&
+       !/two rows under a graha/.test(flat) && !/the last column scores/.test(flat);
+   })());
 /*
  * One idea a sentence. The opening had been a fragment with no verb of its own -
  * "Where each graha stands in the 16 divisions of the Shodasavarga" - trailing a

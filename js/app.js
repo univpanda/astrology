@@ -1192,51 +1192,11 @@
    * Exaltation and debilitation are shown where they fall even though the
    * classical vimsopaka reckoning leaves exaltation out of its seven steps, since
    * reporting an exalted graha as a great friend's guest would hide the more
-   * useful fact. The relation underneath is kept in the cell's title.
+   * useful fact. What that costs - an exalted graha can score 7 of 20 and a
+   * debilitated one 18, the score being read off the seven-step relation and
+   * never off the label - used to be in the cell's title. The title now carries
+   * the yogas alone, so the panel's note is where that is said.
    */
-  /*
-   * The two labels that are not steps of the scale the score uses, as nouns: a
-   * sentence about what exaltation is worth cannot open "Exalted has no rung".
-   */
-  var FALLS_OUTSIDE = { exalted: 'Exaltation', debilitated: 'Debilitation' };
-
-  /** The seven steps as they read in "this scores as ...". */
-  var VISWA_PHRASE = {
-    moolatrikona: 'its moolatrikona sign', own: 'its own sign',
-    adhimitra: 'a great friend\u2019s sign', mitra: 'a friend\u2019s sign',
-    sama: 'a neutral\u2019s sign', shatru: 'an enemy\u2019s sign',
-    adhishatru: 'a great enemy\u2019s sign'
-  };
-
-  /** What one cell of the grid is saying, in full. */
-  function vargasDetail(d, division, graha) {
-    /*
-     * It used to open by repeating the cell: "D7: Neutral - Cancer, ruled by
-     * Moon." The division is the column heading, the dignity is the row beneath,
-     * and the sign is the cell itself, so three quarters of that sentence was
-     * the reader's own screen read back at them. What is left is what the cell
-     * does not already say.
-     */
-    var said = [];
-    if (d.viaProxy) {
-      said.push('Neither luminary rules a trimsamsa, so for this division ' + graha +
-        ' stands in as ' + d.viaProxy + ', which is what lets it hold one of its own.');
-    }
-    /*
-     * Only exaltation and debilitation ever reach this, and it is the one thing
-     * a cell can say that its own word contradicts: the score is always taken
-     * from the seven-step relation, never from the label, so a Deb can be worth
-     * 18 of 20 and an Exal 7. It used to be put as "on the seven-step varga
-     * scale that counts as friend", which names a scale the panel no longer
-     * explains and leaves the reader to guess what it costs.
-     */
-    if (d.relationLabel && d.relationLabel !== d.label) {
-      said.push(FALLS_OUTSIDE[d.key] + ' has no rung in varga viswa, so this scores as ' +
-        VISWA_PHRASE[d.relation] + ': ' + Astro.VARGA_VISWA[d.relation] + ' of 20.');
-    }
-    return said.join(' ');
-  }
-
   /** Halves read better as halves: 3.5 is 3\u00bd, 0.5 is \u00bd. */
   function vimsopakaFigure(weight) {
     var whole = Math.floor(weight);
@@ -1367,9 +1327,9 @@
      * "each one" meant the divisions three lines back.
      */
     return 'Each of the ' + scheme.count + ' divisions of the ' + scheme.label +
-      ' puts a graha in a sign. The two rows under a graha give that sign and its dignity ' +
-      'there, judged against the sign\u2019s lord, and the last column scores those ' +
-      'dignities out of twenty. ' +
+      ' puts a graha in a sign. A cell gives that sign and its dignity there, judged ' +
+      'against the sign\u2019s lord, and the last row scores those dignities out of ' +
+      'twenty. ' +
       /*
        * The short forms with their words, built from the engine's own two tables
        * rather than typed out here. Nine abbreviations and nine words written
@@ -1393,14 +1353,17 @@
        * which is what carried it back over two hundred words.
        *
        * The two channels are worth separating, though, because they make
-       * different claims: a mark is one thing the score is blind to and lands on
-       * about a third of the cells, a tint is any yoga at all and lands on most.
+       * different claims. A mark is one thing the score is blind to, and the
+       * letter is the whole of it. A chip is a yoga with no letter: it was every
+       * yoga, marked ones included, so a cell wearing [X] [D] said so twice,
+       * once in two letters and once in four sentences of the same. Restricting
+       * it to the unlettered takes the chip from nearly every cell to about half
+       * of them, and each one now carries something new.
        */
       'A marked cell is one the score reads wrong and the mark says how, each being ' +
-      'something it cannot see, set against the value in that cell it bears on. A cell ' +
-      'with a chip in its corner has something to say on hover: the yogas its graha takes ' +
-      'part in that division, or a score that its own word does not give. The Yogas tab ' +
-      'reads a division in full. ' +
+      'something it cannot see, set against the value in that cell it bears on. A chip in ' +
+      'a corner means a hover with a yoga the cell has no mark for, the marked ones being ' +
+      'read off the cell already. The Yogas tab reads a division in full. ' +
       /*
        * Both say what the grid does before why. A reader looking at seven rows
        * wants "they are left out" first and the reason after it, not a clause
@@ -1442,6 +1405,14 @@
     return document.getElementById('vargas-as-charts').getAttribute('aria-pressed') === 'true';
   }
 
+  /*
+   * The yogas this grid already writes as a letter, so the hover does not say
+   * them a second time: Parivartana is [X], Neecha Bhanga is [N] where it is the
+   * raja form, and Kartari is [S] or [P]. A cell's hover carries what the cell
+   * itself cannot show.
+   */
+  var LETTERED = ['Parivartana', 'Neecha Bhanga', 'Kartari'];
+
   function renderVargas(state) {
     var scheme = currentScheme();
     var keys = Astro.keyDivisions(scheme);
@@ -1474,8 +1445,10 @@
       var yogasIn = {}, exchanging = {}, cancelled = {};
       Yogas.detect(chart, strengths).forEach(function (yoga) {
         (yoga.grahas || []).forEach(function (name) {
-          var list = yogasIn[name] || (yogasIn[name] = []);
-          if (list.indexOf(yoga.title) < 0) list.push(yoga.title);
+          if (LETTERED.indexOf(yoga.yoga) < 0) {
+            var list = yogasIn[name] || (yogasIn[name] = []);
+            if (list.indexOf(yoga.title) < 0) list.push(yoga.title);
+          }
           if (yoga.yoga === 'Parivartana') exchanging[name] = yoga.title;
           if (yoga.yoga === 'Neecha Bhanga' && yoga.kind === 'raja') cancelled[name] = true;
         });
@@ -1490,7 +1463,6 @@
         var td = el('td', 'varga-cell');
         if (!d) { td.textContent = '\u2013'; tr.appendChild(td); return; }
 
-        var says = [];
         var signLine = el('span', 'varga-sign', Astro.SIGNS[d.sign]);
 
         /*
@@ -1502,34 +1474,19 @@
          */
         if (division !== 1 && d.sign === Astro.signOf(planet.longitude)) {
           signLine.appendChild(el('span', 'flag flag-v', ' [V]'));
-          says.push(planet.name + ' holds ' + Astro.SIGNS[d.sign] + ' in D' + division +
-            ' as well as in the rashi.' +
-            (division === 9 ? ' In D9 that is vargottama proper.' : ''));
         }
         if (exchanging[planet.name]) {
           signLine.appendChild(el('span', 'flag flag-x', ' [X]'));
-          says.push(planet.name + ' is in an exchange of signs in D' + division + ', which ' +
-            'is ' + exchanging[planet.name].toLowerCase() + '. The score judges it against ' +
-            'the lord of this sign and never asks what that lord is doing.');
         }
         if (Astro.hemmedByBenefics(planet.name, d.sign, chart, benefics)) {
           signLine.appendChild(el('span', 'flag flag-s', ' [S]'));
-          says.push(planet.name + ' has a benefic in the sign either side of it in D' +
-            division + ', which is shubha kartari around the graha. The score judges the ' +
-            'sign it stands in and never looks at the two beside it.');
         }
         if (Astro.hemmedByMalefics(planet.name, d.sign, chart, benefics)) {
           signLine.appendChild(el('span', 'flag flag-p', ' [P]'));
-          says.push(planet.name + ' has a malefic in the sign either side of it in D' +
-            division + ', which is papa kartari around the graha. The score judges the ' +
-            'sign it stands in and never looks at the two beside it.');
         }
         var house = ((d.sign - lagna) % 12 + 12) % 12 + 1;
         if (Astro.hasDigBala(planet.name, house)) {
           signLine.appendChild(el('span', 'flag flag-d', ' [D]'));
-          says.push(planet.name + ' stands in the ' + Yogas.ordinal(house) + ' of D' +
-            division + ', the house it is strongest in by direction. The score counts ' +
-            'dignity and never looks at houses.');
         }
 
         var dignityLine = el('span', 'varga-dignity dig dig-' + d.key, d.label);
@@ -1541,29 +1498,22 @@
          */
         if (d.key === 'debilitated' && cancelled[planet.name]) {
           dignityLine.appendChild(el('span', 'flag flag-n', ' [N]'));
-          says.push(planet.name + '\u2019s debilitation in D' + division + ' is cancelled ' +
-            'and the graha stands in an angle or a trine, which is neecha bhanga raja ' +
-            'yoga, so the score below is the floor for a graha that is not weak.');
-        }
-
-        var detail = vargasDetail(d, division, planet.name);
-        if (detail) says.push(detail);
-        if (yogasIn[planet.name]) {
-          says.push(planet.name + ' takes part in ' +
-            listOf(yogasIn[planet.name].map(function (t) { return t.toLowerCase(); })) +
-            ' in D' + division + '.');
         }
 
         td.appendChild(signLine);
         td.appendChild(dignityLine);
         /*
-         * One chip for the cell, which is now one cell rather than two rows to
-         * keep in step. It marks the presence of a hover rather than any one
-         * kind of thing in it: the marks advertise themselves in letters, and a
-         * yoga or a score its own word does not give has nothing visible at all.
+         * One chip for the cell, and only where the hover has something the cell
+         * has not already said. Each mark used to explain itself here as well as
+         * wear its letter, so a cell carrying [X] [D] was read twice: once in
+         * two letters, once in four sentences of the same. What is left is the
+         * yogas that have no letter, which is the only thing this panel holds
+         * and shows nowhere.
          */
-        if (says.length) {
-          td.title = says.join(' ');
+        if (yogasIn[planet.name]) {
+          td.title = planet.name + ' takes part in ' +
+            listOf(yogasIn[planet.name].map(function (t) { return t.toLowerCase(); })) +
+            ' in D' + division + '.';
           td.className += ' has-note';
         }
         tr.appendChild(td);
