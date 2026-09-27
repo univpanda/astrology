@@ -1462,6 +1462,44 @@ console.log('\nShadbala');
     return apart > 0 && apart / (same + apart) > 0.2;
   })());
 
+  /*
+   * Yuddha bala, chapter 27 verse 20. It is the last share the engine gained and
+   * the only one that can move a graha by more than its whole requirement, so
+   * the identity it must keep is checked rather than assumed: the six shares
+   * close first, the war is the difference between two of those, and what one
+   * graha takes the other gives.
+   */
+  ok('a chart with no war leaves every graha its six shares',
+     Shadbala.GRAHAS.every(function (g) {
+       var x = result.grahas[g];
+       return x.yuddha === 0 && x.war === null &&
+         Math.abs(x.sixShares - x.totalShashtiamsa) < 1e-9;
+     }) === (result.wars.length === 0));
+  /*
+   * And the consequence worth seeing: the difference added to the victor and
+   * deducted from the vanquished means that where the victor was the weaker of
+   * the two, the pair exchange totals exactly. That is what the verse says, and
+   * it is checked rather than left as a claim in a comment.
+   */
+  ok('and where the victor was the weaker, the two exchange totals', (function () {
+    var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+    var seen = false;
+    for (var y = 1900; y < 2000; y++) {
+      var c = Astro.chart({ jdUT: Astro.julianDay(y, 1 + y % 12, 15, 6.5),
+                            latitude: place.latitude, longitude: place.longitude,
+                            tzOffsetMinutes: place.tzOffsetMinutes });
+      var r = Shadbala.compute(c, place);
+      if (r.wars.length !== 1) continue;             // one war, so no crossing sums
+      var w = r.wars[0];
+      var won = r.grahas[w.won], lost = r.grahas[w.lost];
+      if (won.sixShares >= lost.sixShares) continue;
+      seen = true;
+      if (Math.abs(won.totalShashtiamsa - lost.sixShares) > 1e-9) return false;
+      if (Math.abs(lost.totalShashtiamsa - won.sixShares) > 1e-9) return false;
+    }
+    return seen;
+  })());
+
   // Ceilings, each from its own definition.
   ok('no component exceeds its maximum', Shadbala.GRAHAS.every(function (g) {
     var x = result.grahas[g];

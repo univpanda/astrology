@@ -1235,8 +1235,22 @@
       says: 'Natural strength, a constant per graha: the same figure in every ' +
         'chart, running from the Sun’s sixty down to Saturn’s 8.57.' },
     { key: 'drik', label: 'Drik bala', en: 'Aspectual', max: null,
-      says: 'Aspectual strength, the only share that can be negative: what the ' +
-        'benefics aspecting the graha are worth, less what the malefics are.' }
+      says: 'Aspectual strength: what the benefics aspecting the graha are ' +
+        'worth, less what the malefics are.' },
+    /*
+     * Shown only in the charts that have a war, which is about one in twelve.
+     * Everywhere else it is a row of seven zeroes, and a row that says nothing
+     * in eleven charts out of twelve is a row that teaches a reader to skip it.
+     */
+    { key: 'yuddha', label: 'Yuddha bala', en: 'Planetary war', max: null,
+      onlyWhenSet: true,
+      says: 'Two of the five starry grahas within a degree of each other are at ' +
+        'war. The difference between their six shares is added to the victor ' +
+        'and deducted from the vanquished, so where the victor was the weaker ' +
+        'of the two the pair simply exchange totals. It sits outside the six ' +
+        'rather than inside Kala bala, where Santhanam lists it, because it is ' +
+        'the difference between two totals and cannot be part of what it ' +
+        'measures.' }
   ];
 
   /** One graha's rashi position, or nothing where the chart has none. */
@@ -1288,10 +1302,15 @@
      * reached, so which bala they belong to is never in question.
      */
     BALA_ROWS.forEach(function (bala) {
+      if (bala.onlyWhenSet && grahas.every(function (graha) {
+        return !result.grahas[graha][bala.key];
+      })) return;
       row(bala.label, bala.en, bala.max, bala.says, grahas.map(function (graha) {
         var x = result.grahas[graha];
-        return el('td', 'numeric',
-          n(bala.parts ? x[bala.key].total : x[bala.key]));
+        var td = el('td', 'numeric', n(bala.parts ? x[bala.key].total : x[bala.key]));
+        // Who the war was with, which no figure in the row can say.
+        if (bala.key === 'yuddha' && x.war) td.title = yuddhaTitle(x);
+        return td;
       }), bala.parts ? 'bala-head' : null);
       (bala.parts || []).forEach(function (part) {
         row(part.label, part.en, part.max, part.says, grahas.map(function (graha) {
@@ -1311,7 +1330,8 @@
      * now, and colouring a column would paint every part of a strength that is
      * only weak in total.
      */
-    row('Total', null, null, 'The six shares added, in shashtiamsas.',
+    row('Total', null, null, 'The six shares added, in shashtiamsas, and the ' +
+      'war settled where there was one.',
       grahas.map(function (graha) {
         return el('td', 'numeric', result.grahas[graha].totalShashtiamsa.toFixed(0));
       }), 'bala-sum');
@@ -1338,8 +1358,10 @@
       'share that can go negative. A graha is strong when it meets the minimum ' +
       'Parashara sets for it, which differs by graha, so compare each total against its ' +
       'own requirement rather than against the others. Grahas are in the order of the ' +
-      'tables beside this one. Yuddha bala is not included, and Rahu and Ketu are ' +
-      'outside Shadbala. Saptavargaja uses the ladder in Santhanam’s chapter 27 ' +
+      'tables beside this one, and Rahu and Ketu are outside Shadbala. Yuddha bala ' +
+      'has a row only where two of the five starry grahas stand within a degree of ' +
+      'each other, which is about one chart in twelve. Saptavargaja uses the ladder ' +
+      'in Santhanam’s chapter 27 ' +
       '— 45, 30, 20, 15, 10, 4, 2 — rather than the halving series some ' +
       'calculators use, which is why totals here can differ from theirs by a few ' +
       'virupas.';
@@ -1397,6 +1419,15 @@
     }
     if (says) th.title = says;
     return th;
+  }
+
+  /** Who a graha fought, how close, and what the war cost or paid it. */
+  function yuddhaTitle(x) {
+    return x.war.map(function (war) {
+      return (war.won ? 'Beats ' : 'Loses to ') + war.against + ' by ' +
+        war.gap.toFixed(1) + ', the two being ' +
+        (war.separation * 60).toFixed(1) + '\u2032 apart';
+    }).join('. ') + '.';
   }
 
   /** One graha's seven divisions, the figure each was worth and why. */

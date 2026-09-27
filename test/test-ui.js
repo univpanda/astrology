@@ -1495,8 +1495,98 @@ ok('and a weak verdict is said once, in words, not in the colour of a name',
 ok('the shadbala note names the ladder it uses, since totals differ between readings',
    /45, 30, 20, 15, 10, 4, 2/.test(appSrc.replace(/'\s*\+\s*'/g, '')) &&
    /halving series some calculators use/.test(appSrc.replace(/'\s*\+\s*'/g, '')));
-ok('the note says what is left out rather than hiding it',
-   /Yuddha bala is not ' \+\s*\n?\s*'included/.test(appSrc) || /Yuddha bala is not/.test(appSrc));
+/*
+ * Nothing is left out any more. Yuddha bala was the one share Parashara names
+ * that this did not reckon, and the note said so; it is reckoned now, and the
+ * note says instead when its row appears - a row of seven zeroes in eleven
+ * charts out of twelve teaches a reader to skip it.
+ */
+ok('the note says when the war row appears rather than that there is none',
+   !/Yuddha bala is not/.test(appSrc) &&
+   /Yuddha bala has a row only where two of the five starry grahas stand within a degree of each other/
+     .test(appSrc.replace(/'\s*\+\s*'/g, '')));
+/*
+ * Chapter 27 verse 20: the difference between the two Shad-balas is added to
+ * the victor and deducted from the vanquished. Taken off the six shares rather
+ * than off the total, which would be the sum defining itself.
+ */
+ok('and a war is settled on the six shares, not on the total they make', (function () {
+  var shadSrc = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8');
+  return /var gap = Math\.abs\(results\[war\.won\]\.sixShares - results\[war\.lost\]\.sixShares\);/
+    .test(shadSrc) &&
+    /x\.totalShashtiamsa = x\.sixShares \+ x\.yuddha;/.test(shadSrc);
+})());
+/*
+ * Which makes it a transfer: what one graha gains the other loses, so the
+ * chart's totals are unchanged in sum however many wars it holds. A war that
+ * did not net to nothing would be strength appearing from nowhere.
+ */
+ok('and what the victor gains the vanquished loses, exactly', (function () {
+  var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+  var fought = 0;
+  for (var y = 1900; y < 1960; y++) {
+    var c = Astro.chart({ jdUT: Astro.julianDay(y, 1 + y % 12, 15, 6.5),
+                          latitude: place.latitude, longitude: place.longitude,
+                          tzOffsetMinutes: place.tzOffsetMinutes });
+    var r = Shadbala.compute(c, place);
+    if (r.wars.length) fought++;
+    var net = Shadbala.GRAHAS.reduce(function (a, g) { return a + r.grahas[g].yuddha; }, 0);
+    if (Math.abs(net) > 1e-9) return false;
+    var closes = Shadbala.GRAHAS.every(function (g) {
+      var x = r.grahas[g];
+      return Math.abs(x.sixShares + x.yuddha - x.totalShashtiamsa) < 1e-9;
+    });
+    if (!closes) return false;
+  }
+  return fought > 0;                    // and the rule really fired in the sample
+})());
+/*
+ * The five starry grahas only. Chapter 27 calls them "planets from Mars to
+ * Saturn" and chapter 79 verse 9 names the same five, so the luminaries never
+ * take a side however close they stand.
+ */
+ok('and the luminaries never go to war', (function () {
+  var shadSrc = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8');
+  var block = shadSrc.slice(shadSrc.indexOf('var WARRING = ['),
+                            shadSrc.indexOf('function planetaryWars'));
+  return !/'Sun'|'Moon'/.test(block) &&
+    ['Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'].every(function (g) {
+      return block.indexOf("'" + g + "'") >= 0;
+    });
+})());
+/*
+ * Venus conquers standing north or south, and among the other four the more
+ * northerly conquers - chapter 79 verse 9. Latitude is asked of the engine by
+ * Julian day, a chart from the stored ephemeris carrying longitudes only.
+ */
+ok('and Venus never loses a war, whoever it stands against', (function () {
+  var shadSrc = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8');
+  if (!/Astro\.eclipticLatitude\(WARRING\[i\]\[1\], T\)/.test(shadSrc)) return false;
+  var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+  var sawVenus = false;
+  for (var y = 1900; y < 2050; y++) {
+    for (var m = 1; m <= 12; m++) {
+      var c = Astro.chart({ jdUT: Astro.julianDay(y, m, 15, 6.5),
+                            latitude: place.latitude, longitude: place.longitude,
+                            tzOffsetMinutes: place.tzOffsetMinutes });
+      var r = Shadbala.compute(c, place);
+      for (var i = 0; i < r.wars.length; i++) {
+        if (r.wars[i].lost === 'Venus') return false;
+        if (r.wars[i].won === 'Venus') sawVenus = true;
+      }
+    }
+  }
+  return sawVenus;
+})());
+/*
+ * And the row is shown only where a war was fought, the hover naming who it was
+ * with - which no figure in the row can say.
+ */
+ok('and the war row appears only in a chart that has one',
+   /if \(bala\.onlyWhenSet && grahas\.every\(function \(graha\) \{/.test(appSrc) &&
+   /onlyWhenSet: true,/.test(appSrc) &&
+   /if \(bala\.key === 'yuddha' && x\.war\) td\.title = yuddhaTitle\(x\);/.test(appSrc) &&
+   /\(war\.won \? 'Beats ' : 'Loses to '\) \+ war\.against/.test(appSrc));
 
 // What each graha rules, with the yogakaraka named.
 ok('the one table carries a dispositor column',
