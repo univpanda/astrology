@@ -1241,7 +1241,7 @@ ok('and the part rule is the more specific of the two', (function () {
  * And the Sthana row is the five added rather than a figure of its own, so the
  * block cannot show parts that do not come to their total.
  */
-ok('and the total row is those five added, read off the engine', (function () {
+ok('and the total row is those six added, read off the engine', (function () {
   var c = Astro.chart({ jdUT: Astro.julianDay(1946, 7, 6, 19 + 20 / 60 + 4),
                         latitude: 40.7128, longitude: -74.0060, tzOffsetMinutes: -240 });
   var r = Shadbala.compute(c, { latitude: 40.7128, longitude: -74.0060,
@@ -1251,7 +1251,61 @@ ok('and the total row is those five added, read off the engine', (function () {
     var sum = st.uchcha + st.saptavargaja + st.ojhaRasi + st.ojhaNavamsa +
       st.kendradi + st.drekkana;
     return Math.abs(sum - st.total) < 1e-9;
-  }) && /bala\.key === 'sthana' \? x\.sthana\.total/.test(appSrc);
+  }) && /n\(bala\.parts \? x\[bala\.key\]\.total : x\[bala\.key\]\)/.test(appSrc);
+})());
+/*
+ * Kala bala is opened the same way, and for the same reason: eight parts in a
+ * hover is eight figures a reader can only see one graha at a time. Its total
+ * is the eight added, which the engine is checked on rather than the screen.
+ */
+ok('and Kala bala is the eight parts added', (function () {
+  var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+  var c = Astro.chart({ jdUT: Astro.julianDay(1990, 6, 15, 19 - 5.5),
+                        latitude: place.latitude, longitude: place.longitude,
+                        tzOffsetMinutes: place.tzOffsetMinutes });
+  var r = Shadbala.compute(c, place);
+  var parts = appSrc.slice(appSrc.indexOf('var KALA_PARTS = ['),
+                           appSrc.indexOf('var BALA_ROWS = ['));
+  var keys = (parts.match(/key: '([a-z]+)'/g) || []).map(function (m) {
+    return m.slice(6, -1);
+  });
+  if (keys.join(',') !== 'nathonnatha,paksha,tribhaga,abda,masa,vara,hora,ayana') {
+    return false;
+  }
+  return Object.keys(r.grahas).every(function (g) {
+    var k = r.grahas[g].kala;
+    var sum = keys.reduce(function (a, key) { return a + k[key]; }, 0);
+    return Math.abs(sum - k.total) < 1e-9;
+  });
+})());
+/*
+ * Nata is the birth time measured back to the nearer midnight, deducted from
+ * thirty ghatis and doubled - Santhanam's verses 8-9. Checked against that
+ * arithmetic directly rather than against a remembered figure, every quarter
+ * hour of a full day.
+ */
+ok('and nata-unnata follows the verse it comes from', (function () {
+  var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+  var byText = function (graha, h) {
+    if (graha === 'Mercury') return 60;
+    var nata = 2 * ((12 - Math.min(h, 24 - h)) * 2.5);   // 30 ghatis = 12 hours
+    return ['Sun', 'Jupiter', 'Venus'].indexOf(graha) >= 0 ? 60 - nata : nata;
+  };
+  for (var q = 0; q < 96; q++) {
+    var hour = q * 0.25;
+    var c = Astro.chart({ jdUT: Astro.julianDay(1990, 6, 15, hour - 5.5),
+                          latitude: place.latitude, longitude: place.longitude,
+                          tzOffsetMinutes: place.tzOffsetMinutes });
+    var r = Shadbala.compute(c, place);
+    for (var i = 0; i < Shadbala.GRAHAS.length; i++) {
+      var g = Shadbala.GRAHAS[i];
+      // A ten-millionth of a virupa: the chart's local hour comes back through
+      // a Julian day, so the two arithmetics agree to floating point and not
+      // to the bit.
+      if (Math.abs(r.grahas[g].kala.nathonnatha - byText(g, hour)) > 1e-6) return false;
+    }
+  }
+  return true;
 })());
 /*
  * A figure alone says nothing: 60.0 is everything Kendradi can give and a fifth
@@ -1267,8 +1321,21 @@ ok('and every measure with a ceiling carries it beside its name',
  * about "the figure beside a row name" that six of the fifteen rows do not have.
  */
 ok('and says which rows carry none, and why',
-   /Kala and Drik bala carry none, the first because its ceiling differs by graha and the second because it has no ceiling at all/
+   /Four rows carry none: paksha is doubled for the Moon and ayana for the Sun, so those two and the Kala bala they feed have no one ceiling, and Drik bala has none at all/
      .test(appSrc.replace(/'\s*\+\s*'/g, '')));
+/*
+ * Which is four and not three: the doubling really does carry those two rows
+ * past sixty, so a ceiling of sixty there would be a figure the table's own
+ * numbers contradict.
+ */
+ok('and the doubled rows really do pass sixty', (function () {
+  var place = { latitude: 40.7128, longitude: -74.0060, tzOffsetMinutes: -240 };
+  var c = Astro.chart({ jdUT: Astro.julianDay(1946, 7, 6, 19 + 20 / 60 + 4),
+                        latitude: place.latitude, longitude: place.longitude,
+                        tzOffsetMinutes: place.tzOffsetMinutes });
+  var r = Shadbala.compute(c, place);
+  return r.grahas.Sun.kala.ayana > 60 && r.grahas.Moon.kala.paksha > 60;
+})());
 /*
  * And it really is the most: a ceiling in the column is a claim about the
  * engine, so it is checked against the engine rather than believed. Kala bala
@@ -1280,10 +1347,11 @@ ok('and no measure ever exceeds the ceiling it claims', (function () {
   var declared = {};
   var parts = appSrc.slice(appSrc.indexOf('var STHANA_PARTS = ['),
                            appSrc.indexOf('function renderShadbala'));
-  var m, re = /key: '([A-Za-z]+)', label: '[^']*', en: '[^']*', (?:total: true, )?max: (\d+|null)/g;
+  var m, re = /key: '([A-Za-z]+)', label: '[^']*', en: '[^']*',(?:\s*parts: [A-Z_]+,)?\s*(?:total: true,)?\s*max: (\d+|null)/g;
   while ((m = re.exec(parts))) declared[m[1]] = m[2] === 'null' ? null : Number(m[2]);
   if (declared.sthana !== 60 + 315 + 15 + 15 + 60 + 15) return false;
   if (declared.kala !== null || declared.drik !== null) return false;
+  if (declared.paksha !== null || declared.ayana !== null) return false;
 
   var worst = {};
   for (var y = 1950; y < 2000; y++) {
@@ -1298,7 +1366,11 @@ ok('and no measure ever exceeds the ceiling it claims', (function () {
         ojhaRasi: x.sthana.ojhaRasi, ojhaNavamsa: x.sthana.ojhaNavamsa,
         kendradi: x.sthana.kendradi, drekkana: x.sthana.drekkana,
         sthana: x.sthana.total, dig: x.dig, cheshta: x.cheshta,
-        naisargika: x.naisargika };
+        naisargika: x.naisargika,
+        // Paksha and ayana claim none, being doubled for one graha each.
+        nathonnatha: x.kala.nathonnatha, tribhaga: x.kala.tribhaga,
+        abda: x.kala.abda, masa: x.kala.masa, vara: x.kala.vara,
+        hora: x.kala.hora };
       Object.keys(seen).forEach(function (k) {
         worst[k] = Math.max(worst[k] === undefined ? -Infinity : worst[k], seen[k]);
       });
@@ -1314,10 +1386,15 @@ ok('and no measure ever exceeds the ceiling it claims', (function () {
  * grid saying the same thing twice. Kala's eight are still only in a hover, and
  * Saptavargaja's seven divisions have never been anywhere else.
  */
+/*
+ * Both shares that have parts now show them as rows, so neither repeats them in
+ * a hover. What is left on hover is the one breakdown with no row anywhere: the
+ * seven divisions behind a saptavargaja figure.
+ */
 ok('the parts that have no row of their own are the ones on hover',
-   /td\.title = kalaTitle\(x\)/.test(appSrc) &&
    /td\.title = saptavargajaTitle\(x\)/.test(appSrc) &&
-   /Nathonnatha ' \+ n\(x\.kala\.nathonnatha\)/.test(appSrc) &&
+   !/kalaTitle/.test(appSrc) &&
+   !/Nathonnatha ' \+ n\(x\.kala\.nathonnatha\)/.test(appSrc) &&
    !/Uchcha ' \+ n\(x\.sthana\.uchcha\)/.test(appSrc));
 ok('and each measure says what it measures, once for the row',
    /if \(says\) th\.title = says;/.test(appSrc) &&

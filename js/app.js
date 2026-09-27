@@ -1163,13 +1163,55 @@
   ];
 
   /*
+   * The eight shares of Kala bala, in the order Santhanam gives them under
+   * verses 8-17. Two of them carry no ceiling in the column: paksha is doubled
+   * for the Moon and ayana for the Sun, so 60 would be right for six grahas in
+   * each row and wrong for the seventh.
+   */
+  var KALA_PARTS = [
+    { key: 'nathonnatha', label: 'Nata-Unnata', en: 'Day or night', max: 60,
+      says: 'Nata is the birth time measured back to the nearer midnight, ' +
+        'deducted from thirty ghatis and doubled. The Moon, Mars and Saturn ' +
+        'take that, strongest at midnight; the Sun, Jupiter and Venus take ' +
+        'sixty less it, strongest at noon; Mercury takes the full sixty at any ' +
+        'hour. Santhanam spells it Nathonnatha bala.' },
+    { key: 'paksha', label: 'Paksha', en: 'Lunar fortnight', max: null,
+      says: 'How far into the bright or dark fortnight the birth falls. A ' +
+        'benefic scores by the Moon’s brightness and a malefic by what is ' +
+        'left of sixty. Doubled for the Moon, which is why no ceiling is given: ' +
+        'sixty for six grahas and a hundred and twenty for the seventh.' },
+    { key: 'tribhaga', label: 'Tribhaga', en: 'Third of day or night', max: 60,
+      says: 'The day and the night are each cut in three. Mercury, the Sun and ' +
+        'Saturn take the three parts of the day in that order, the Moon, Venus ' +
+        'and Mars the three of the night; Jupiter takes sixty at any hour.' },
+    { key: 'abda', label: 'Abda', en: 'Solar year', max: 15,
+      says: 'Fifteen to the lord of the year, read as the weekday lord of the ' +
+        'day the solar year began. Santhanam gives it as Varsha bala.' },
+    { key: 'masa', label: 'Masa', en: 'Solar month', max: 30,
+      says: 'Thirty to the lord of the month, read as the weekday lord of the ' +
+        'day the solar month began.' },
+    { key: 'vara', label: 'Vara', en: 'Weekday', max: 45,
+      says: 'Forty-five to the lord of the weekday of the birth. Santhanam ' +
+        'gives it as Dina bala.' },
+    { key: 'hora', label: 'Hora', en: 'Planetary hour', max: 60,
+      says: 'Sixty to the lord of the planetary hour, the hours running from ' +
+        'sunrise in the Chaldean order from that day’s own lord.' },
+    { key: 'ayana', label: 'Ayana', en: 'Declination', max: null,
+      says: 'How far north or south of the equator the graha stands. The Sun, ' +
+        'Mars, Jupiter and Venus want north and Saturn and the Moon south; ' +
+        'Mercury takes either. Doubled for the Sun, which is why no ceiling is ' +
+        'given here.' }
+  ];
+
+  /*
    * The six shares of Shadbala. Sthana is the total of the five above it rather
    * than a figure of its own, so it closes that block instead of opening it -
    * the parts are read, then what they come to.
    */
   var BALA_ROWS = [
-    { key: 'sthana', label: 'Sthana bala', en: 'Positional', total: true, max: 480,
-      says: 'Positional strength: the five rows above it added.' },
+    { key: 'sthana', label: 'Sthana bala', en: 'Positional', parts: STHANA_PARTS,
+      total: true, max: 480,
+      says: 'Positional strength: the six rows above it added.' },
     { key: 'dig', label: 'Dig bala', en: 'Directional', max: 60,
       says: 'Directional strength. Each graha has one angle it is strongest on and ' +
         'is worth nothing opposite it: Jupiter and Mercury the 1st, the Sun and ' +
@@ -1180,8 +1222,9 @@
      * double, which lifts those two to 450 - so a single figure in the column
      * would be wrong for two of the seven grahas under it.
      */
-    { key: 'kala', label: 'Kala bala', en: 'Temporal', max: null,
-      says: 'Temporal strength, eight parts of it, on hover. They cap at 390 ' +
+    { key: 'kala', label: 'Kala bala', en: 'Temporal', parts: KALA_PARTS,
+      total: true, max: null,
+      says: 'Temporal strength: the eight rows above it added. They cap at 390 ' +
         'together, or 450 for the Moon and the Sun, whose paksha and ayana ' +
         'count double - which is why no one ceiling is given here.' },
     { key: 'cheshta', label: 'Cheshta bala', en: 'Motional', max: 60,
@@ -1231,28 +1274,26 @@
     };
 
     /*
-     * Sthana bala opened into its parts. It was one figure with the five in a
-     * hover, which put the only place they could be compared behind a mouse and
-     * one graha at a time: a reader wanting to know why Mercury is positionally
-     * weak had to hover seven cells and hold the answers.
+     * A share's parts, then the share. Sthana and Kala were each one figure with
+     * their parts in a hover, which put the only place those parts could be
+     * compared behind a mouse and one graha at a time: a reader wanting to know
+     * why Mercury is positionally weak had to hover seven cells and hold the
+     * answers. The other four shares have no parts and are one row each.
      */
-    STHANA_PARTS.forEach(function (part) {
-      row(part.label, part.en, part.max, part.says, grahas.map(function (graha) {
-        var x = result.grahas[graha];
-        var td = el('td', 'numeric', n(x.sthana[part.key]));
-        if (part.key === 'saptavargaja') td.title = saptavargajaTitle(x);
-        return td;
-      }), 'bala-part');
-    });
-
     BALA_ROWS.forEach(function (bala) {
+      (bala.parts || []).forEach(function (part) {
+        row(part.label, part.en, part.max, part.says, grahas.map(function (graha) {
+          var x = result.grahas[graha];
+          var td = el('td', 'numeric', n(x[bala.key][part.key]));
+          // The seven divisions behind the figure, which have no row of their own.
+          if (part.key === 'saptavargaja') td.title = saptavargajaTitle(x);
+          return td;
+        }), 'bala-part');
+      });
       row(bala.label, bala.en, bala.max, bala.says, grahas.map(function (graha) {
         var x = result.grahas[graha];
-        var value = bala.key === 'sthana' ? x.sthana.total
-          : bala.key === 'kala' ? x.kala.total : x[bala.key];
-        var td = el('td', 'numeric', n(value));
-        if (bala.key === 'kala') td.title = kalaTitle(x);
-        return td;
+        return el('td', 'numeric',
+          n(bala.parts ? x[bala.key].total : x[bala.key]));
       }), bala.total ? 'bala-total' : null);
     });
 
@@ -1284,9 +1325,10 @@
 
     document.getElementById('shadbala-note').textContent =
       'In shashtiamsas; sixty make one Rupa. Where a row name carries a second ' +
-      'figure, that is the most the row can be worth; Kala and Drik bala carry none, ' +
-      'the first because its ceiling differs by graha and the second because it has ' +
-      'no ceiling at all. A graha is strong when it meets the minimum ' +
+      'figure, that is the most the row can be worth. Four rows carry none: paksha ' +
+      'is doubled for the Moon and ayana for the Sun, so those two and the Kala bala ' +
+      'they feed have no one ceiling, and Drik bala has none at all, being the only ' +
+      'share that can go negative. A graha is strong when it meets the minimum ' +
       'Parashara sets for it, which differs by graha, so compare each total against its ' +
       'own requirement rather than against the others. Grahas are in the order of the ' +
       'tables beside this one. Yuddha bala is not included, and Rahu and Ketu are ' +
@@ -1349,15 +1391,6 @@
       return 'D' + part.division + ' ' + Astro.SIGN_ABBR[part.sign] + ' ' +
         Astro.titleCase(Astro.VARGA_DIGNITY_LABELS[part.relation] || part.relation);
     }).join(', ') + '.';
-  }
-
-  /** One graha's eight parts of Kala bala. */
-  function kalaTitle(x) {
-    var n = function (v) { return v.toFixed(1); };
-    return 'Nathonnatha ' + n(x.kala.nathonnatha) + ', paksha ' + n(x.kala.paksha) +
-      ', tribhaga ' + n(x.kala.tribhaga) + ', abda ' + n(x.kala.abda) +
-      ', masa ' + n(x.kala.masa) + ', vara ' + n(x.kala.vara) +
-      ', hora ' + n(x.kala.hora) + ', ayana ' + n(x.kala.ayana) + '.';
   }
 
   /* ----------------------------------------------------------- vargas */
