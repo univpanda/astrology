@@ -145,6 +145,12 @@
     });
 
     fillDivisionPickers();
+
+    ['table', 'charts'].forEach(function (which) {
+      document.getElementById('vargas-as-' + which).addEventListener('click', function () {
+        showVargaView(which === 'charts');
+      });
+    });
   }
 
   /*
@@ -1233,6 +1239,22 @@
     return Astro.VARGA_SCHEMES[chosen] || Astro.VARGA_SCHEMES.shodasavarga;
   }
 
+  /*
+   * Table or charts, one at a time. The table is not replaced by the charts: it
+   * is the readable form of the same numbers, and the charts are no use for
+   * looking up what Venus does in D24.
+   */
+  function showVargaView(asCharts) {
+    document.getElementById('vargas-charts').hidden = !asCharts;
+    document.getElementById('vargas-table-scroll').hidden = asCharts;
+    document.getElementById('vargas-as-charts').setAttribute('aria-pressed', String(asCharts));
+    document.getElementById('vargas-as-table').setAttribute('aria-pressed', String(!asCharts));
+  }
+
+  function vargaViewIsCharts() {
+    return document.getElementById('vargas-as-charts').getAttribute('aria-pressed') === 'true';
+  }
+
   function renderVargas(state) {
     var scheme = currentScheme();
     var brief = scheme.divisions.length > ABBREVIATE_ABOVE;
@@ -1341,6 +1363,166 @@
      * rather than welded into one sentence that leaves a name without a number.
      */
     document.getElementById('vargas-note').textContent = vargaNote(scheme, brief);
+    renderVargaCharts(state, scheme);
+  }
+
+  /* ------------------------------------------------- varga charts */
+
+  var GOOD_KEYS = ['exalted', 'moolatrikona', 'own', 'adhimitra', 'mitra'];
+
+  /**
+   * The three numbers each graha earns over a scheme.
+   *
+   * Vimsopaka is a score out of twenty. The other two are counts of divisions,
+   * so they share a unit and a denominator with each other and with nothing
+   * else, which is why they are plotted together and the score is plotted apart.
+   */
+  function vargaSummary(state, scheme) {
+    var positionsD1 = {};
+    state.chart.planets.forEach(function (p) { positionsD1[p.name] = p; });
+
+    return state.chart.planets.map(function (planet) {
+      var score = Astro.vimsopaka(planet.name, planet.longitude, scheme, positionsD1);
+      if (!score) return null;                     // the nodes keep no friendships
+      var rashi = Astro.signOf(planet.longitude);
+      var good = 0, repeats = 0;
+      scheme.divisions.forEach(function (division) {
+        var d = Astro.vargaDignity(planet.name, planet.longitude, division, positionsD1);
+        if (!d) return;
+        if (GOOD_KEYS.indexOf(d.key) >= 0) good++;
+        if (division !== 1 && d.sign === rashi) repeats++;
+      });
+      return { graha: planet.name, vimsopaka: score.total, band: score.band,
+               good: good, vargottama: repeats };
+    }).filter(Boolean);
+  }
+
+  function svgEl(tag, attrs, text) {
+    var node = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    Object.keys(attrs || {}).forEach(function (k) { node.setAttribute(k, String(attrs[k])); });
+    if (text != null) node.textContent = text;
+    return node;
+  }
+
+  /**
+   * One bar chart: a row of grahas, one or two bars each, drawn to its own scale.
+   *
+   * Two scales never share a plot here. Vimsopaka out of twenty and a count of
+   * divisions are different measures, and putting them on one axis would make a
+   * bar of the same height mean two different things.
+   *
+   * Marks follow the house rules: bars capped at 24px so the band keeps some
+   * air, a rounded data-end with a square foot at the baseline, a 2px gap in the
+   * surface colour between paired bars, and recessive gridlines.
+   */
+  function barChart(opts) {
+    var W = 760, H = 210, left = 30, right = 10, top = 18, bottom = 34;
+    var plotW = W - left - right, plotH = H - top - bottom;
+    var svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H, class: 'varga-chart',
+                             role: 'img', 'aria-label': opts.title });
+
+    var ticks = 4, step = opts.max / ticks;
+    for (var t = 0; t <= ticks; t++) {
+      var value = t * step;
+      var y = top + plotH - (value / opts.max) * plotH;
+      svg.appendChild(svgEl('line', { x1: left, y1: y, x2: W - right, y2: y,
+                                      class: t === 0 ? 'chart-base' : 'chart-grid' }));
+      svg.appendChild(svgEl('text', { x: left - 6, y: y + 3.5, class: 'chart-tick',
+                                      'text-anchor': 'end' }, String(Math.round(value))));
+    }
+
+    var band = plotW / opts.rows.length;
+    var series = opts.series;
+    var gap = 2;                                   // in the surface colour, not a stroke
+    var barW = Math.min(24, (band * 0.62 - gap * (series.length - 1)) / series.length);
+
+    opts.rows.forEach(function (row, i) {
+      var groupW = barW * series.length + gap * (series.length - 1);
+      var x0 = left + band * i + (band - groupW) / 2;
+
+      series.forEach(function (s, j) {
+        var value = s.value(row);
+        var h = Math.max(0, (value / opts.max) * plotH);
+        var x = x0 + j * (barW + gap);
+        var y = top + plotH - h;
+        /*
+         * A rounded data-end and a square foot: the rect is drawn with a radius
+         * and the bottom corners filled back in, rather than rounding all four
+         * and floating the bar off its baseline.
+         */
+        var g = svgEl('g', { class: 'chart-bar ' + s.cls });
+        if (h > 0) {
+          g.appendChild(svgEl('rect', { x: x, y: y, width: barW, height: h,
+                                        rx: Math.min(4, barW / 2) }));
+          if (h > 4) {
+            g.appendChild(svgEl('rect', { x: x, y: top + plotH - Math.min(4, h),
+                                          width: barW, height: Math.min(4, h) }));
+          }
+        }
+        g.appendChild(svgEl('title', {}, row.graha + ' — ' + s.label + ': ' +
+          s.readout(row) + (opts.outOf ? ' of ' + opts.outOf : '')));
+        svg.appendChild(g);
+
+        // Values wear text tokens, never the series colour; the bar carries identity.
+        svg.appendChild(svgEl('text', { x: x + barW / 2, y: y - 5, class: 'chart-value',
+                                        'text-anchor': 'middle' }, s.readout(row)));
+      });
+
+      svg.appendChild(svgEl('text', { x: left + band * i + band / 2, y: H - 12,
+                                      class: 'chart-name', 'text-anchor': 'middle' },
+                            Charts.ABBR[row.graha] || row.graha));
+    });
+
+    var figure = el('figure', 'varga-figure');
+    figure.appendChild(el('figcaption', 'chart-title', opts.title));
+    figure.appendChild(svg);
+    if (series.length > 1) {
+      var legend = el('div', 'chart-legend');
+      series.forEach(function (s) {
+        var item = el('span', 'legend-item');
+        item.appendChild(el('span', 'legend-swatch ' + s.cls));
+        item.appendChild(el('span', null, s.label));
+        legend.appendChild(item);
+      });
+      figure.appendChild(legend);
+    }
+    if (opts.note) figure.appendChild(el('p', 'chart-note', opts.note));
+    return figure;
+  }
+
+  function renderVargaCharts(state, scheme) {
+    var host = document.getElementById('vargas-charts');
+    host.innerHTML = '';
+    var rows = vargaSummary(state, scheme);
+    if (!rows.length) return;
+
+    // A score out of twenty. One series, so the title names it and no legend is drawn.
+    host.appendChild(barChart({
+      title: 'Vimsopaka bala over the ' + scheme.label.toLowerCase(),
+      rows: rows, max: 20, outOf: 20,
+      series: [{ label: 'Vimsopaka', cls: 'series-vimsopaka',
+                 value: function (r) { return r.vimsopaka; },
+                 readout: function (r) { return r.vimsopaka.toFixed(1); } }],
+      note: 'Out of twenty, and the floor is five rather than nothing: a graha in a great ' +
+        'enemy’s sign in every division still scores five. Strength, not benefit.'
+    }));
+
+    // Two counts of divisions. Same unit and same denominator, so they share an axis.
+    host.appendChild(barChart({
+      title: 'Placements across the ' + scheme.count + ' divisions',
+      rows: rows, max: scheme.count, outOf: scheme.count,
+      series: [
+        { label: 'Well placed', cls: 'series-good',
+          value: function (r) { return r.good; },
+          readout: function (r) { return String(r.good); } },
+        { label: 'Repeats the rashi sign', cls: 'series-vargottama',
+          value: function (r) { return r.vargottama; },
+          readout: function (r) { return String(r.vargottama); } }
+      ],
+      note: 'Well placed counts exaltation, moolatrikona, own sign and a friend’s or ' +
+        'great friend’s sign, and nothing below. The second counts the divisions that ' +
+        'land the graha back in its rashi sign, which D1 cannot do and so is left out of it.'
+    }));
   }
 
   /* --------------------------------------------------------------- yogas */

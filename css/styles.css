@@ -32,6 +32,12 @@
   --flag-vargottama: #6d4aa8;
   --flag-yogakaraka: #a8710c;
   --flag-combust: #7a8a99;
+  /* Chart series. Validated against the light surface for lightness, chroma,
+     CVD separation and contrast; the dark steps below are chosen for the dark
+     surface rather than lightened from these. */
+  --chart-vimsopaka: #2f8f5f;
+  --chart-good: #a8710c;
+  --chart-vargottama: #6d4aa8;
 
   --radius: 16px;
   --radius-sm: 10px;
@@ -908,6 +914,55 @@ td.varga-sign-number { font-family: var(--font-mono); font-variant-numeric: tabu
 }
 #vargas-table th.varga-d9 { color: var(--green-deep); }
 
+/* Table or charts. A view switch rather than a data control, so it reads as two
+   buttons rather than as another dropdown beside the scheme. */
+.view-switch { display: inline-flex; margin-left: auto; border-radius: 999px;
+  background: var(--paper-tint); padding: 0.15rem; }
+.view-option {
+  font: inherit;
+  font-size: 0.8rem;
+  border: none;
+  background: none;
+  color: var(--ink-soft);
+  padding: 0.3rem 0.85rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.view-option[aria-pressed="true"] {
+  background: var(--surface);
+  color: var(--green-deep);
+  font-weight: 600;
+  box-shadow: var(--shadow);
+}
+
+.varga-figure { margin: 0 0 1.6rem; }
+.chart-title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1rem;
+  color: var(--green-deep);
+  margin-bottom: 0.4rem;
+}
+.varga-chart { width: 100%; height: auto; display: block; }
+/* Recessive: the grid is scaffolding, not data. */
+.chart-grid { stroke: var(--line-soft); stroke-width: 1; }
+.chart-base { stroke: var(--line); stroke-width: 1; }
+.chart-tick, .chart-name, .chart-value { font-family: var(--font); fill: var(--ink-faint); }
+.chart-tick { font-size: 10px; }
+.chart-name { font-size: 12px; fill: var(--ink-soft); }
+/* Values wear text tokens; the bar beside them carries the identity. */
+.chart-value { font-size: 10px; font-variant-numeric: tabular-nums; }
+.series-vimsopaka rect { fill: var(--chart-vimsopaka); }
+.series-good rect { fill: var(--chart-good); }
+.series-vargottama rect { fill: var(--chart-vargottama); }
+.chart-legend { display: flex; gap: 1rem; margin-top: 0.4rem; font-size: 0.8rem;
+  color: var(--ink-soft); }
+.legend-item { display: inline-flex; align-items: center; gap: 0.35rem; }
+.legend-swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.legend-swatch.series-good { background: var(--chart-good); }
+.legend-swatch.series-vargottama { background: var(--chart-vargottama); }
+.chart-note { margin: 0.5rem 0 0; font-size: 0.82rem; color: var(--ink-soft); max-width: 68ch; }
+
 /* The total belongs to the graha, so it sits centred against both its rows, and
    reads as a figure rather than as another dignity. Banded by Parashara's own
    four readings rather than by a gradient nobody agreed on. */
@@ -994,6 +1049,9 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
     --flag-vargottama: #b69ae0;
     --flag-yogakaraka: #e0b563;
     --flag-combust: #8fa0ad;
+    --chart-vimsopaka: #3d9468;
+    --chart-good: #b8801f;
+    --chart-vargottama: #8b72c8;
 
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.32);
     --shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.35), 0 18px 40px rgba(0, 0, 0, 0.45);

@@ -1409,6 +1409,83 @@ ok('the mark is a tint rather than a colour, so it does not fight the dignities'
      return /background: var\(--green-soft\)/.test(block) && !/(^|[^-])color:/.test(block);
    })());
 
+console.log('\nVarga charts');
+/*
+ * Two plots, not three. Vimsopaka is a score out of twenty; the other two are
+ * counts of divisions. The counts share a unit and a denominator with each other
+ * and with nothing else, so they group on one axis and the score is plotted
+ * apart. Putting all three together would make a bar of the same height mean two
+ * different things, which is the dual-scale mistake in a single-axis disguise.
+ */
+ok('the score and the counts are on separate plots', (function () {
+  var at = appSrc.indexOf('function renderVargaCharts');
+  var block = appSrc.slice(at, at + 2200);
+  var calls = (block.match(/barChart\(\{/g) || []).length;
+  return calls === 2 && /max: 20, outOf: 20/.test(block) &&
+    /max: scheme\.count, outOf: scheme\.count/.test(block);
+})());
+ok('the two counts share the division count as their scale', (function () {
+  var at = appSrc.indexOf('function renderVargaCharts');
+  var block = appSrc.slice(at, at + 2200);
+  return /series-good/.test(block) && /series-vargottama/.test(block) &&
+    /Placements across the ' \+ scheme\.count/.test(block);
+})());
+
+ok('well placed counts the good rungs and nothing below',
+   /var GOOD_KEYS = \['exalted', 'moolatrikona', 'own', 'adhimitra', 'mitra'\];/.test(appSrc));
+ok('and the nodes are left out, keeping no friendships',
+   /if \(!score\) return null;/.test(appSrc));
+
+/*
+ * The colours were validated rather than chosen by eye: lightness band, chroma
+ * floor, CVD separation, normal-vision floor and contrast, in both modes. The
+ * dark steps are chosen against the dark surface rather than lightened from the
+ * light ones.
+ */
+ok('every series colour is defined in both palettes', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var at = css.indexOf('@media (prefers-color-scheme: dark)');
+  var light = css.slice(0, at), dark = css.slice(at);
+  return ['--chart-vimsopaka', '--chart-good', '--chart-vargottama'].every(function (name) {
+    return light.indexOf(name + ':') >= 0 && dark.indexOf(name + ':') >= 0;
+  });
+})());
+ok('the two series that share a plot are different hues', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var good = css.match(/--chart-good: (#[0-9a-f]{6})/)[1];
+  var varg = css.match(/--chart-vargottama: (#[0-9a-f]{6})/)[1];
+  return good !== varg;
+})());
+
+// Values wear text tokens; the bar beside them carries the identity.
+ok('values are drawn in ink, not in the series colour', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  return /\.chart-tick, \.chart-name, \.chart-value \{[^}]*fill: var\(--ink-faint\)/.test(css);
+})());
+ok('a legend is drawn for the two-series plot and not for the one-series plot',
+   /if \(series\.length > 1\) \{/.test(appSrc) && /chart-legend/.test(appSrc));
+ok('bars are capped rather than filling the band, and paired bars keep a gap',
+   /Math\.min\(24, \(band \* 0\.62 - gap \* \(series\.length - 1\)\) \/ series\.length\)/.test(appSrc) &&
+   /var gap = 2;/.test(appSrc));
+ok('every bar carries a hover readout',
+   /svgEl\('title', \{\}, row\.graha \+ ' \u2014 ' \+ s\.label/.test(appSrc));
+
+/*
+ * The charts do not replace the table. The table is the readable form of the
+ * same numbers and the only one any use for looking up what Venus does in D24,
+ * which is also what keeps a table view available for accessibility.
+ */
+ok('the table is still there, behind a view switch',
+   /id="vargas-table-scroll"/.test(html) && /id="vargas-charts"/.test(html) &&
+   /id="vargas-as-table"/.test(html) && /id="vargas-as-charts"/.test(html));
+ok('the switch shows one at a time and says which is showing',
+   /function showVargaView/.test(appSrc) &&
+   /document\.getElementById\('vargas-charts'\)\.hidden = !asCharts;/.test(appSrc) &&
+   /document\.getElementById\('vargas-table-scroll'\)\.hidden = asCharts;/.test(appSrc) &&
+   /setAttribute\('aria-pressed', String\(asCharts\)\)/.test(appSrc));
+ok('and the table is what a reader sees first',
+   /id="vargas-as-table"[\s\S]{0,80}aria-pressed="true"/.test(html));
+
 ok('the note explains the mark', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');
   return /A sign marked \[V\] is one the division has landed the graha back in/.test(flat) &&

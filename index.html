@@ -345,8 +345,15 @@
         <div class="varga-scheme-row">
           <label for="varga-scheme">Scheme</label>
           <select id="varga-scheme"></select>
+          <div class="view-switch" role="group" aria-label="How to show the vargas">
+            <button type="button" class="view-option" id="vargas-as-table"
+                    aria-pressed="true">Table</button>
+            <button type="button" class="view-option" id="vargas-as-charts"
+                    aria-pressed="false">Charts</button>
+          </div>
         </div>
-        <div class="table-scroll">
+        <div id="vargas-charts" hidden></div>
+        <div class="table-scroll" id="vargas-table-scroll">
           <table id="vargas-table">
             <thead><tr></tr></thead>
             <tbody></tbody>
