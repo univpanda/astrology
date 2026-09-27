@@ -1086,7 +1086,7 @@
            * printed rather than only in the grid that scores them.
            */
           if (cell.star) {
-            td.appendChild(el('sup', 'neecha-bhanga', '*'));
+            td.appendChild(el('span', 'flag flag-n', ' [N]'));
             td.title = r.name + '\u2019s debilitation is cancelled and the graha stands in ' +
               'an angle or a trine, which is neecha bhanga raja yoga.';
           }
@@ -1533,8 +1533,14 @@
         }
 
         var dignityLine = el('span', 'varga-dignity dig dig-' + d.key, d.label);
+        /*
+         * [N] rather than a star. It was a star while it was the only mark that
+         * sat on a dignity rather than on a sign, and a star is a footnote: it
+         * says look elsewhere, where every other mark here names its own
+         * condition. The letter says which condition without being looked up.
+         */
         if (d.key === 'debilitated' && cancelled[planet.name]) {
-          dignityLine.appendChild(el('sup', 'neecha-bhanga', '*'));
+          dignityLine.appendChild(el('span', 'flag flag-n', ' [N]'));
           says.push(planet.name + '\u2019s debilitation in D' + division + ' is cancelled ' +
             'and the graha stands in an angle or a trine, which is neecha bhanga raja ' +
             'yoga, so the score below is the floor for a graha that is not weak.');
@@ -1615,7 +1621,7 @@
       if (!score) return null;                     // the nodes keep no friendships
       var rashi = Astro.signOf(planet.longitude);
       var benefics = Astro.naturalBenefics(state.chart);
-      var good = 0, marks = { V: 0, X: 0, S: 0, P: 0, D: 0 };
+      var good = 0, marks = { V: 0, X: 0, S: 0, P: 0, D: 0, N: 0 };
       scheme.divisions.forEach(function (division) {
         var d = Astro.vargaDignity(planet.name, planet.longitude, division, positionsD1);
         if (!d) return;
@@ -1629,6 +1635,9 @@
         if (Astro.hemmedByBenefics(planet.name, d.sign, chart, benefics)) marks.S++;
         if (Astro.hemmedByMalefics(planet.name, d.sign, chart, benefics)) marks.P++;
         if (Astro.hasDigBala(planet.name, ((d.sign - lagna) % 12 + 12) % 12 + 1)) marks.D++;
+        if (d.key === 'debilitated' && Yogas.neechaBhanga(chart).some(function (yoga) {
+          return yoga.kind === 'raja' && (yoga.grahas || []).indexOf(planet.name) >= 0;
+        })) marks.N++;
       });
       return { graha: planet.name, vimsopaka: score.total, band: score.band,
                good: good, vargottama: marks.V, marks: marks };
@@ -1713,8 +1722,14 @@
                                           width: barW, height: Math.min(4, h) }));
           }
         }
-        g.appendChild(svgEl('title', {}, row.graha + ' — ' + s.label + ': ' +
-          s.readout(row) + (opts.outOf ? ' of ' + opts.outOf : '')));
+        /*
+         * A bar's hover names what it is. In the per-graha facets the bar is a
+         * mark, so row.name carries the word the bracketed letter stands for: a
+         * chart of [V] [X] [S] [P] [D] [N] wants that on hover rather than a
+         * legend repeating the flag key.
+         */
+        g.appendChild(svgEl('title', {}, (row.name || row.graha) + ' — ' + s.label +
+          ': ' + s.readout(row) + (opts.outOf ? ' of ' + opts.outOf : '')));
         svg.appendChild(g);
 
         // Values wear text tokens, never the series colour; the bar carries identity.
@@ -1790,12 +1805,26 @@
      * One scale across all five, taken from the largest count any of them
      * reaches, so the heights can be read against each other.
      */
+    /*
+     * One chart per graha, its marks along the bottom.
+     *
+     * It was one chart per mark with the grahas along the bottom, which answers
+     * "who has the most vargottama" - a question nobody arrives with. A reader
+     * comes to this panel about a graha: they have just read Saturn's column in
+     * the grid and want to know what Saturn has. Turned, each chart is that
+     * graha's profile and the whole set reads as seven of them side by side.
+     *
+     * One scale across all seven, taken from the largest count any graha reaches
+     * on any mark, so a tall bar is tall against the other grahas and not only
+     * against the rest of its own chart.
+     */
     var MARKS = [
-      { key: 'V', label: '[V] Vargottama' },
-      { key: 'X', label: '[X] Exchange of signs' },
-      { key: 'S', label: '[S] Shubha kartari' },
-      { key: 'P', label: '[P] Papa kartari' },
-      { key: 'D', label: '[D] Directional strength' }
+      { key: 'V', label: '[V]', name: 'Vargottama' },
+      { key: 'X', label: '[X]', name: 'Exchange of signs' },
+      { key: 'S', label: '[S]', name: 'Shubha kartari' },
+      { key: 'P', label: '[P]', name: 'Papa kartari' },
+      { key: 'D', label: '[D]', name: 'Directional strength' },
+      { key: 'N', label: '[N]', name: 'Neecha bhanga raja yoga' }
     ];
     var ceiling = 1;
     rows.forEach(function (r) {
@@ -1803,20 +1832,25 @@
     });
 
     var facets = el('div', 'varga-facets');
-    MARKS.forEach(function (m) {
+    rows.forEach(function (row) {
       facets.appendChild(barChart({
-        title: m.label,
-        rows: rows, max: ceiling, outOf: scheme.count, compact: true,
-        series: [{ label: m.label, cls: 'series-mark',
-                   value: function (r) { return r.marks[m.key]; },
-                   readout: function (r) { return String(r.marks[m.key]); } }]
+        title: row.graha,
+        // barChart labels a bar by row.graha, so here the mark plays that part.
+        rows: MARKS.map(function (m) {
+          return { graha: m.label, name: m.name, count: row.marks[m.key] };
+        }),
+        max: ceiling, outOf: scheme.count, compact: true,
+        series: [{ label: row.graha, cls: 'series-mark',
+                   value: function (r) { return r.count; },
+                   readout: function (r) { return String(r.count); } }]
       }));
     });
     host.appendChild(facets);
     host.appendChild(el('p', 'chart-note varga-facet-note',
-      'How many of the ' + scheme.count + ' divisions carry each mark. One scale across ' +
-      'the five, so a tall bar is tall against the others and not only against its own ' +
-      'chart. The grid above says which divisions they are.'));
+      'One chart a graha: how many of the ' + scheme.count + ' divisions carry each of its ' +
+      'marks. One scale across the seven, so a tall bar is tall against the other grahas ' +
+      'and not only against the rest of its own chart. The grid above says which divisions ' +
+      'they are.'));
   }
 
   /* --------------------------------------------------------------- yogas */

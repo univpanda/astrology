@@ -1401,7 +1401,7 @@ ok('and the page says which surface carries which marks', (function () {
   var flat = html.replace(/\s+/g, ' ');
   return /The kundli carries \[R\], \[V\], \[Y\] and \[C\]/.test(flat) &&
     /a corner triangle will not hold more/.test(flat) &&
-    /The Vimsopaka Bala grid carries \[R\] and \[C\] on the name and \[V\], \[X\], \[S\], \[P\], \[D\] and \* in the cells/
+    /The Vimsopaka Bala grid carries \[R\] and \[C\] on the name and \[V\], \[X\], \[S\], \[P\], \[D\] and \[N\] in the cells/
       .test(flat) &&
     /every one of them something that score cannot see/.test(flat);
 })());
@@ -1434,15 +1434,13 @@ ok('and both tables keep them on a th rather than in a cell', (function () {
     /th\.appendChild\(el\('span', 'flag flag-' \+ f\.toLowerCase\(\)/.test(head);
 })());
 
-ok('and the grid really carries those five and no others', (function () {
+ok('and the grid really carries those six and no others', (function () {
   var at = appSrc.indexOf('function renderVargas(state)');
   var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
-  var marks = (block.match(/'flag flag-[a-z]+'/g) || [])
-    .concat(block.match(/'neecha-bhanga'/g) || []);
-  return marks.length === 6 && block.indexOf("'flag flag-v'") >= 0 &&
-    block.indexOf("'flag flag-x'") >= 0 && block.indexOf("'flag flag-s'") >= 0 &&
-    block.indexOf("'flag flag-p'") >= 0 && block.indexOf("'flag flag-d'") >= 0 &&
-    block.indexOf("'neecha-bhanga'") >= 0;
+  var marks = (block.match(/'flag flag-[a-z]+'/g) || []);
+  return marks.length === 6 && ['v', 'x', 's', 'p', 'd', 'n'].every(function (k) {
+    return block.indexOf("'flag flag-" + k + "'") >= 0;
+  });
 })());
 /*
  * The two that turn on the division alone are read from that division's own
@@ -1463,9 +1461,9 @@ ok('hemming reads its neighbours from the division and its benefics from the ras
 ok('and directional strength from the house, which the row already computes',
    /Astro\.hasDigBala\(r\.name, house\)/.test(appSrc) &&
    /var house = \(\(v\.sign - firstSign\) % 12 \+ 12\) % 12 \+ 1;/.test(appSrc));
-ok('the star reaches the graha table\u2019s dignity, not the grid alone',
+ok('[N] reaches the graha table\u2019s dignity, not the grid alone',
    /star: !r\.isAscendant && cancelledHere\[r\.name\]/.test(appSrc) &&
-   /td\.appendChild\(el\('sup', 'neecha-bhanga', '\*'\)\)/.test(appSrc));
+   /td\.appendChild\(el\('span', 'flag flag-n', ' \[N\]'\)\)/.test(appSrc));
 ok('and the ascendant takes none of the four that are about a graha',
    (appSrc.match(/!r\.isAscendant && Astro\./g) || []).length >= 3);
 ok('each carries its flag in its own colour, and names it',
@@ -1538,9 +1536,15 @@ var seeds = ['strength', 'varga', 'dignity', 'yogas'].map(function (name) {
  * be. The star does not change the number; it says the number is not to be read
  * at face value in that cell.
  */
-ok('a cancelled debilitation is starred where it is scored',
+/*
+ * [N] rather than a star. It was a star while it was the only mark sitting on a
+ * dignity rather than a sign, and a star is a footnote: it says look elsewhere,
+ * where every other mark here names its own condition.
+ */
+ok('a cancelled debilitation is marked where it is scored',
    /if \(d\.key === 'debilitated' && cancelled\[planet\.name\]\)/.test(appSrc) &&
-   /dignityLine\.appendChild\(el\('sup', 'neecha-bhanga', '\*'\)\)/.test(appSrc));
+   /dignityLine\.appendChild\(el\('span', 'flag flag-n', ' \[N\]'\)\)/.test(appSrc) &&
+   !/neecha-bhanga/.test(appSrc));
 ok('and the hover says the score is the floor for a graha that is not weak',
    /is cancelled and the graha stands in an angle or a trine, which is neecha bhanga raja yoga, so the score below is the floor for a graha that is not weak/
      .test(appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ')));
@@ -1635,11 +1639,11 @@ ok('every one is computed per division, not once for the chart',
  * alone would put one on a third of the grid, and a mark that common says
  * nothing about the cell it is on.
  */
-ok('and no yoga becomes a sixth mark', (function () {
+ok('and no yoga becomes a seventh mark', (function () {
   var at = appSrc.indexOf('function renderVargas(state)');
   var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
   var marks = (block.match(/'flag flag-[a-z]+'/g) || []);
-  return marks.length === 5 && /has-note/.test(block) &&
+  return marks.length === 6 && /has-note/.test(block) &&
     !/function grahaFootnote/.test(appSrc);
 })());
 ok('which is measurably a third of the cells rather than three fifths', (function () {
@@ -1740,12 +1744,15 @@ ok('and it agrees with the detector, cell by cell, on a chart that has one',
  * qualifies a word rather than naming a condition. A bare plus was the odd one
  * out and is gone.
  */
-ok('no mark is a bare symbol except the star', (function () {
+/*
+ * Every mark is a bracketed letter now. The star was the last bare symbol, and
+ * it was the one that had to be looked up rather than read.
+ */
+ok('every mark is a bracketed letter', (function () {
   var flat = html.replace(/\s+/g, ' ');
   var dts = flat.match(/<dt>.*?<\/dt>/g) || [];
-  return dts.length === 9 && !/flag-dig/.test(flat) &&
-    dts.filter(function (d) { return /\[[RVYCXSPD]\]/.test(d); }).length === 8 &&
-    dts.filter(function (d) { return />\*</.test(d); }).length === 1;
+  return dts.length === 9 && !/flag-dig/.test(flat) && !/flag-star/.test(flat) &&
+    dts.filter(function (d) { return /\[[RVYCXSPDN]\]/.test(d); }).length === 9;
 })());
 /*
  * [H] and [D] share the green, the letters telling them apart. A sixth hue was
@@ -1755,16 +1762,16 @@ ok('no mark is a bare symbol except the star', (function () {
  */
 ok('and the palette stays at five hues, the letters doing the rest', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-  return /\.flag-s, \.flag-d \{ color: var\(--green-deep\); \}/.test(css) &&
+  // [S], [D] and [N] share the green: all three say the graha's circumstances
+  // are helping it, and the bracketed letter is what tells them apart.
+  return /\.flag-s, \.flag-d, \.flag-n \{ color: var\(--green-deep\); \}/.test(css) &&
     /\.flag-p \{ color: var\(--retro\); \}/.test(css) &&
     !/--flag-direction/.test(css);
 })());
 
-ok('the star is a mark on the word, not a tier beside it', (function () {
+ok('and the star leaves no rule behind it', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-  var block = css.slice(css.indexOf('sup.neecha-bhanga {'));
-  block = block.slice(0, block.indexOf('}'));
-  return /font-size/.test(block) && !/color/.test(block);
+  return !/neecha-bhanga/.test(css) && !/flag-star/.test(css);
 })());
 
 ok('every note is set smaller and softer than the body', (function () {
@@ -3026,8 +3033,8 @@ ok('a legend is drawn for the two-series plot and not for the one-series plot',
 ok('bars are capped rather than filling the band, and paired bars keep a gap',
    /Math\.min\(24, \(band \* 0\.62 - gap \* \(series\.length - 1\)\) \/ series\.length\)/.test(appSrc) &&
    /var gap = 2;/.test(appSrc));
-ok('every bar carries a hover readout',
-   /svgEl\('title', \{\}, row\.graha \+ ' \u2014 ' \+ s\.label/.test(appSrc));
+ok('every bar carries a hover readout, named by what the bar is',
+   /svgEl\('title', \{\}, \(row\.name \|\| row\.graha\) \+ ' \u2014 ' \+ s\.label/.test(appSrc));
 
 /*
  * The charts do not replace the table. The table is the readable form of the
@@ -3128,8 +3135,8 @@ ok('and one chip stands for the cell, which is now one cell',
 ok('and a note about either line still chips the cell', (function () {
   var at = appSrc.indexOf('var says = [];');
   var block = appSrc.slice(at, appSrc.indexOf('tr.appendChild(td);', at));
-  // The star is about the dignity and [V] about the sign; both push to one list.
-  return /neecha-bhanga/.test(block) && /flag flag-v/.test(block) &&
+  // [N] is about the dignity and [V] about the sign; both push to one list.
+  return /flag flag-n/.test(block) && /flag flag-v/.test(block) &&
     /if \(says\.length\) \{/.test(block);
 })());
 ok('and a graha with no reading still contributes no column at all',
@@ -3296,8 +3303,8 @@ ok('and the second by what it counts, out of how many', (function () {
  * key. The legend described the fact instead of naming it, so nothing connected
  * the purple bar to the purple flag.
  */
-ok('the vargottama facet is named, not described',
-   /\{ key: 'V', label: '\[V\] Vargottama' \}/.test(appSrc) &&
+ok('the vargottama mark is named, not described',
+   /\{ key: 'V', label: '\[V\]', name: 'Vargottama' \}/.test(appSrc) &&
    !/Repeats the rashi sign/.test(appSrc) &&
    />\s*<span class="flag flag-v">\[V\]<\/span> Vargottama<\/dt>/
      .test(html.replace(/\s+/g, ' ')));
@@ -3305,10 +3312,18 @@ ok('the vargottama facet is named, not described',
  * Each facet is titled with the mark it counts, so the chart and the grid above
  * it are read with one vocabulary rather than two.
  */
-ok('and every facet is titled by its mark',
-   ['\\[V\\] Vargottama', '\\[X\\] Exchange of signs', '\\[S\\] Shubha kartari',
-    '\\[P\\] Papa kartari', '\\[D\\] Directional strength'].every(function (t) {
-     return new RegExp("label: '" + t + "'").test(appSrc);
+/*
+ * One chart a graha, its marks along the bottom. It was one chart a mark with
+ * the grahas along the bottom, which answers "who has the most vargottama" - a
+ * question nobody arrives with. A reader comes to this panel about a graha.
+ */
+ok('and every facet is titled by its graha, the marks running along the bottom',
+   /title: row\.graha,/.test(appSrc) &&
+   /rows: MARKS\.map\(function \(m\) \{/.test(appSrc) &&
+   /return \{ graha: m\.label, name: m\.name, count: row\.marks\[m\.key\] \};/.test(appSrc));
+ok('and every mark has a letter for the axis and a word for the hover',
+   ['V', 'X', 'S', 'P', 'D', 'N'].every(function (k) {
+     return new RegExp("\\{ key: '" + k + "', label: '\\[" + k + "\\]', name: '").test(appSrc);
    }));
 /*
  * The chart note says what the series counts and stops. The strict reading - the
@@ -3321,9 +3336,9 @@ ok('and every facet is titled by its mark',
  * of "how many divisions carry this" is the same sentence five times.
  */
 ok('the facets share one note, and it says what they count',
-   /How many of the ' \+ scheme\.count \+ ' divisions carry each mark/
-     .test(appSrc.replace(/'\s*\+\s*'/g, '')) &&
-   /One scale across the five, so a tall bar is tall against the others/
+   /One chart a graha: how many of the ' \+ scheme\.count \+ ' divisions carry each of its marks/
+     .test(appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ')) &&
+   /One scale across the seven, so a tall bar is tall against the other grahas/
      .test(appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ')) &&
    !/strictly the word is the D9 case/.test(appSrc) &&
    /never on D1, where every graha would qualify\. In D9 it is vargottama proper/

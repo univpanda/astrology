@@ -889,9 +889,11 @@ td .retro-flag, td.retro-flag, th .retro-flag { color: var(--retro); }
    green to normal vision, and every magenta and purple that passes that test
    collapses against the blue under protanopia, 3.8 to 5.3. A colour that needs
    the letter to be legible is a colour doing no work. */
-.flag-s, .flag-d { color: var(--green-deep); }
+/* [N] joins them. All three say the graha's circumstances are helping it -
+   benefic company either side, the house it is strongest in, a fall that the
+   chart breaks - and the bracketed letter is what tells them apart. */
+.flag-s, .flag-d, .flag-n { color: var(--green-deep); }
 .flag-p { color: var(--retro); }
-.flag-star { color: var(--retro); font-weight: 600; }
 
 /* Dignity words are read by scanning, not line by line, so the tiers carry
    weight and colour. Kept to the page's two hues rather than a red-to-green
@@ -904,9 +906,6 @@ td .retro-flag, td.retro-flag, th .retro-flag { color: var(--retro); }
    every colour here stopped reaching it silently - the words rendered, in plain
    ink, and nothing failed. */
 .dig { white-space: nowrap; }
-/* A cancelled debilitation. Kept in the dignity's own red rather than given a
-   colour of its own: it is a mark on that word, not a fifth tier beside it. */
-sup.neecha-bhanga { font-size: 0.85em; line-height: 0; margin-left: 0.1em; }
 .dig-exalted, .dig-moolatrikona { color: var(--green-deep); font-weight: 600; }
 .dig-own { color: var(--green-deep); }
 .dig-adhimitra { color: var(--green); }
