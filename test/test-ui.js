@@ -305,8 +305,32 @@ ok('the icons are inline svg, not an external font or image',
    /<svg viewBox="0 0 24 24" aria-hidden="true"/.test(html) && !/<img/.test(html));
 
 ok('the lagna is the first row of the table, not a summary tile',
-   /name: 'Ascendant'/.test(appSrc) && /ascendant-row/.test(appSrc) &&
+   /name: 'Ascendant', longitude: c\.ascendant\.longitude, isAscendant: true/.test(appSrc) &&
    !/fact\(facts, 'Lagna/.test(appSrc));
+/*
+ * It used to be tinted as well as named. In a table whose hover is also a tint
+ * that left two greens to tell apart, and the name already does the telling.
+ */
+ok('and it is not tinted apart from the grahas', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  return !/ascendant-row/.test(css) && !/ascendant-row/.test(appSrc);
+})());
+/*
+ * The name cell spans its graha's rows, so a one-row hover must not paint it:
+ * from the first row it lit the whole block, from the second it lit nothing,
+ * and the same gesture drew two different shapes.
+ */
+ok('the hover band is one row wide, the spanning name staying out of it', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  return /\ntbody tr:hover th\[rowspan\] \{ background: var\(--surface\); \}/.test(css);
+})());
+// The Vargas grid spans a name over two rows too, so it had the same defect.
+ok('and the rule is not written for one table, both grids spanning a name',
+   (function () {
+     var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+     return !/#graha-table tbody tr:hover th\[rowspan\]/.test(css) &&
+       /th\[rowspan\]/.test(css);
+   })());
 /*
  * The table carries the same three flags the chart does, in the same order, so
  * the two say the same thing the same way. [R] keeps its red; [V] and [Y] stay

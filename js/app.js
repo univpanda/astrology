@@ -975,9 +975,14 @@
           if (anchor) firstSign = Astro.vargaPosition(anchor.longitude, view.division).sign;
         }
 
+        /*
+         * The lagna is not tinted apart from the grahas. It is the first entry
+         * and it is named, which is enough to tell it from them, and a standing
+         * tint on one row of a table whose hover is also a tint left the reader
+         * two greens to tell apart.
+         */
         var tr = document.createElement('tr');
-        if (r.isAscendant) tr.className = 'ascendant-row';
-        if (i === 0) tr.className += ' graha-first';
+        if (i === 0) tr.className = 'graha-first';
 
         if (i === 0) {
           var th = el('th', null, r.name);
