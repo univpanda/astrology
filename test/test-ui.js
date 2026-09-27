@@ -1280,7 +1280,7 @@ ok('and no measure ever exceeds the ceiling it claims', (function () {
   var declared = {};
   var parts = appSrc.slice(appSrc.indexOf('var STHANA_PARTS = ['),
                            appSrc.indexOf('function renderShadbala'));
-  var m, re = /key: '([A-Za-z]+)', label: '[^']*', (?:total: true, )?max: (\d+|null)/g;
+  var m, re = /key: '([A-Za-z]+)', label: '[^']*', en: '[^']*', (?:total: true, )?max: (\d+|null)/g;
   while ((m = re.exec(parts))) declared[m[1]] = m[2] === 'null' ? null : Number(m[2]);
   if (declared.sthana !== 60 + 315 + 15 + 15 + 60 + 15) return false;
   if (declared.kala !== null || declared.drik !== null) return false;
@@ -1321,7 +1321,49 @@ ok('the parts that have no row of their own are the ones on hover',
    !/Uchcha ' \+ n\(x\.sthana\.uchcha\)/.test(appSrc));
 ok('and each measure says what it measures, once for the row',
    /if \(says\) th\.title = says;/.test(appSrc) &&
-   /function measureHead\(label, max, says\)/.test(appSrc));
+   /function measureHead\(label, en, max, says\)/.test(appSrc));
+/*
+ * And every measure carries its English name on the row, not in the hover. Each
+ * of these is a word a reader either knows or does not, and "Drekkana" with
+ * nothing beside it is a row only someone who did not need the table can read.
+ * The glosses are the standard ones rather than paraphrases of our own, so the
+ * row names what the rest of the literature names.
+ */
+ok('and every measure carries its English name beside the Sanskrit', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var block = appSrc.slice(appSrc.indexOf('var STHANA_PARTS = ['),
+                           appSrc.indexOf('function renderShadbala'));
+  var want = {
+    uchcha: 'Exaltation', saptavargaja: 'Seven divisions',
+    ojhaRasi: 'Odd or even sign', ojhaNavamsa: 'Odd or even navamsa',
+    kendradi: 'Angular house', drekkana: 'Decanate',
+    sthana: 'Positional', dig: 'Directional', kala: 'Temporal',
+    cheshta: 'Motional', naisargika: 'Natural', drik: 'Aspectual'
+  };
+  return Object.keys(want).every(function (k) {
+    return new RegExp("key: '" + k + "', label: '[^']*', en: '" + want[k] + "'")
+      .test(block);
+  }) && /if \(en\) th\.appendChild\(el\('span', 'measure-en', en\)\);/.test(appSrc) &&
+    /#shadbala-table th \.measure-en \{/.test(css);
+})());
+/*
+ * Set as running text beside the Sanskrit, not as a second heading: caps and
+ * tracking on both halves would read as one long name rather than a name and
+ * its translation.
+ */
+ok('and it is set as a translation rather than a second name', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var block = css.match(/#shadbala-table th \.measure-en \{[^}]*\}/);
+  return block && /text-transform: none/.test(block[0]) &&
+    /letter-spacing: 0/.test(block[0]) && /font-weight: 400/.test(block[0]) &&
+    /color: var\(--ink-soft\)/.test(block[0]);
+})());
+/*
+ * The four closing rows get none. Total, Rupas, Needs and Verdict are already
+ * English, and glossing an English word with itself is noise.
+ */
+ok('and the rows that are already English carry no gloss',
+   (appSrc.match(/row\('(?:Total|Rupas|Needs|Verdict)', null, null,/g) || []).length === 4);
 ok('shadbala columns follow the graha order of the tables beside it',
    /var grahas = state\.chart\.planets\.map\(function \(p\) \{ return p\.name; \}\)/
      .test(appSrc) && !/result\.ranking\.forEach/.test(appSrc));

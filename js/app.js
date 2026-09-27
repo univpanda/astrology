@@ -1130,10 +1130,10 @@
    * same until it is.
    */
   var STHANA_PARTS = [
-    { key: 'uchcha', label: 'Uchcha', max: 60,
+    { key: 'uchcha', label: 'Uchcha', en: 'Exaltation', max: 60,
       says: 'How far the graha stands from its own debilitation point: nothing at ' +
         'that degree, sixty half a circle away from it.' },
-    { key: 'saptavargaja', label: 'Saptavargaja', max: 315,
+    { key: 'saptavargaja', label: 'Saptavargaja', en: 'Seven divisions', max: 315,
       says: 'The graha against the lord of the sign it takes in each of the seven ' +
         'divisions, 45 for moolatrikona down to 2 in a great enemy’s, added ' +
         'over all seven.' },
@@ -1144,19 +1144,19 @@
      * figure is a sum of two, and a row reading 15 does not say which of the two
      * it came from. Split, it does.
      */
-    { key: 'ojhaRasi', label: 'Oja-Yugma Rasi', max: 15,
+    { key: 'ojhaRasi', label: 'Oja-Yugma Rasi', en: 'Odd or even sign', max: 15,
       says: 'Fifteen for standing in the odd or even sign the graha wants. The ' +
         'Moon and Venus want even signs, being reckoned female; the other five ' +
         'want odd.' },
-    { key: 'ojhaNavamsa', label: 'Oja-Yugma Navamsa', max: 15,
+    { key: 'ojhaNavamsa', label: 'Oja-Yugma Navamsa', en: 'Odd or even navamsa', max: 15,
       says: 'The same test of the navamsa the graha falls in. Santhanam gives ' +
         'this and the row above as one bala, Ojhayugmarasiamsa, reached by ' +
         'adding the two; they are apart here so a figure of 15 says which half ' +
         'it came from.' },
-    { key: 'kendradi', label: 'Kendradi', max: 60,
+    { key: 'kendradi', label: 'Kendradi', en: 'Angular house', max: 60,
       says: 'Sixty in an angle, thirty in a succedent house, fifteen in a cadent ' +
         'one. The only share of Sthana bala that reads the houses.' },
-    { key: 'drekkana', label: 'Drekkana', max: 15,
+    { key: 'drekkana', label: 'Drekkana', en: 'Decanate', max: 15,
       says: 'Fifteen in the third of a sign that matches the graha’s sex: the ' +
         'first third for the Sun, Mars and Jupiter, the middle for Mercury and ' +
         'Saturn, the last for the Moon and Venus.' }
@@ -1168,9 +1168,9 @@
    * the parts are read, then what they come to.
    */
   var BALA_ROWS = [
-    { key: 'sthana', label: 'Sthana bala', total: true, max: 480,
+    { key: 'sthana', label: 'Sthana bala', en: 'Positional', total: true, max: 480,
       says: 'Positional strength: the five rows above it added.' },
-    { key: 'dig', label: 'Dig bala', max: 60,
+    { key: 'dig', label: 'Dig bala', en: 'Directional', max: 60,
       says: 'Directional strength. Each graha has one angle it is strongest on and ' +
         'is worth nothing opposite it: Jupiter and Mercury the 1st, the Sun and ' +
         'Mars the 10th, Saturn the 7th, the Moon and Venus the 4th.' },
@@ -1180,18 +1180,18 @@
      * double, which lifts those two to 450 - so a single figure in the column
      * would be wrong for two of the seven grahas under it.
      */
-    { key: 'kala', label: 'Kala bala', max: null,
+    { key: 'kala', label: 'Kala bala', en: 'Temporal', max: null,
       says: 'Temporal strength, eight parts of it, on hover. They cap at 390 ' +
         'together, or 450 for the Moon and the Sun, whose paksha and ayana ' +
         'count double - which is why no one ceiling is given here.' },
-    { key: 'cheshta', label: 'Cheshta bala', max: 60,
+    { key: 'cheshta', label: 'Cheshta bala', en: 'Motional', max: 60,
       says: 'Motional strength, read off how far the graha is from its mean motion ' +
         'and deepest retrograde. The Sun and Moon never retrograde, so theirs is ' +
         'taken from ayana and paksha bala instead.' },
-    { key: 'naisargika', label: 'Naisargika bala', max: 60,
+    { key: 'naisargika', label: 'Naisargika bala', en: 'Natural', max: 60,
       says: 'Natural strength, a constant per graha: the same figure in every ' +
         'chart, running from the Sun’s sixty down to Saturn’s 8.57.' },
-    { key: 'drik', label: 'Drik bala', max: null,
+    { key: 'drik', label: 'Drik bala', en: 'Aspectual', max: null,
       says: 'Aspectual strength, the only share that can be negative: what the ' +
         'benefics aspecting the graha are worth, less what the malefics are.' }
   ];
@@ -1214,10 +1214,10 @@
     renderShadbalaHead(table, grahas, result);
 
     var n = function (v) { return v.toFixed(1); };
-    var row = function (label, max, says, cells, cls) {
+    var row = function (label, en, max, says, cells, cls) {
       var tr = document.createElement('tr');
       if (cls) tr.className = cls;
-      tr.appendChild(measureHead(label, max, says));
+      tr.appendChild(measureHead(label, en, max, says));
       cells.forEach(function (cell) { tr.appendChild(cell); });
       tbody.appendChild(tr);
       return tr;
@@ -1230,7 +1230,7 @@
      * weak had to hover seven cells and hold the answers.
      */
     STHANA_PARTS.forEach(function (part) {
-      row(part.label, part.max, part.says, grahas.map(function (graha) {
+      row(part.label, part.en, part.max, part.says, grahas.map(function (graha) {
         var x = result.grahas[graha];
         var td = el('td', 'numeric', n(x.sthana[part.key]));
         if (part.key === 'saptavargaja') td.title = saptavargajaTitle(x);
@@ -1239,7 +1239,7 @@
     });
 
     BALA_ROWS.forEach(function (bala) {
-      row(bala.label, bala.max, bala.says, grahas.map(function (graha) {
+      row(bala.label, bala.en, bala.max, bala.says, grahas.map(function (graha) {
         var x = result.grahas[graha];
         var value = bala.key === 'sthana' ? x.sthana.total
           : bala.key === 'kala' ? x.kala.total : x[bala.key];
@@ -1256,19 +1256,19 @@
      * now, and colouring a column would paint every part of a strength that is
      * only weak in total.
      */
-    row('Total', null, 'The six shares added, in shashtiamsas.',
+    row('Total', null, null, 'The six shares added, in shashtiamsas.',
       grahas.map(function (graha) {
         return el('td', 'numeric', result.grahas[graha].totalShashtiamsa.toFixed(0));
       }), 'bala-sum');
-    row('Rupas', null, 'The total divided by sixty.', grahas.map(function (graha) {
+    row('Rupas', null, null, 'The total divided by sixty.', grahas.map(function (graha) {
       return el('td', 'numeric', result.grahas[graha].rupas.toFixed(2));
     }));
-    row('Needs', null, 'The minimum Parashara sets for this graha, which differs ' +
+    row('Needs', null, null, 'The minimum Parashara sets for this graha, which differs ' +
       'by graha: compare a total with the figure under it rather than with the ' +
       'other grahas.', grahas.map(function (graha) {
       return el('td', 'numeric', String(result.grahas[graha].required));
     }));
-    row('Verdict', null, 'Strong where the rupas meet what the graha needs.',
+    row('Verdict', null, null, 'Strong where the rupas meet what the graha needs.',
       grahas.map(function (graha) {
         var x = result.grahas[graha];
         return el('td', x.strong ? 'strong-flag' : 'weak-flag',
@@ -1309,10 +1309,21 @@
     });
   }
 
-  /** A measure's name, the most it can be worth, and what it measures. */
-  function measureHead(label, max, says) {
+  /*
+   * A measure's name in Sanskrit, the same name in English, and the most it can
+   * be worth.
+   *
+   * The English is on the row rather than in its hover. Every one of these is a
+   * word a reader either knows or does not, and "Drekkana" with nothing beside
+   * it is a row that can only be read by someone who did not need the table.
+   * They are the standard glosses - positional, directional, temporal, motional,
+   * natural, aspectual for the six - so the row names what the rest of the
+   * literature names, not a paraphrase of our own.
+   */
+  function measureHead(label, en, max, says) {
     var th = el('th', null, label);
     th.setAttribute('scope', 'row');
+    if (en) th.appendChild(el('span', 'measure-en', en));
     if (max !== null && max !== undefined) {
       th.appendChild(el('span', 'varga-weight', String(max)));
     }

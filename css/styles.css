@@ -1057,6 +1057,19 @@ td.vimsopaka-poor { color: var(--retro); }
    last syllable of it - SAPTAVARGAJA315. */
 #shadbala-table th .varga-weight { margin-left: 0.6rem; }
 
+/* The same measure's name in English, beside the Sanskrit rather than under it
+   or behind a hover. Set as running text - not caps, not tracked - so the two
+   do not read as one long name, and recessive so the row is still found by the
+   Sanskrit a reader is scanning for. */
+#shadbala-table th .measure-en {
+  font-weight: 400;
+  font-size: 0.78rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-soft);
+  margin-left: 0.55rem;
+}
+
 /* Table or charts. A view switch rather than a data control, so it reads as two
    buttons rather than as another dropdown beside the scheme. */
 .view-switch { display: inline-flex; margin-left: auto; border-radius: 999px;
