@@ -2119,8 +2119,9 @@
     celebrity: true,
     note: '10:54 am EDT at Jamaica Hospital, Queens, the time on the birth ' +
       'certificate he posted himself, which astrologers rate AA. Older references ' +
-      'print 9:51 am from Lois Rodden, and that one rises at 17 Leo rather than 29, ' +
-      'so the houses move even though the grahas barely do. Leo ascendant in Magha, ' +
+      'print 9:51 am from Lois Rodden, and sidereally that one rises at 24 Cancer ' +
+      'rather than 6 Leo, so every house moves and the grahas do not. Leo ' +
+      'ascendant in Magha, ' +
       'Moon debilitated in Scorpio with Ketu on a full moon, Sun with Rahu in Taurus, ' +
       'and Jupiter dasha from November 2016.'
   }, {
@@ -2139,7 +2140,7 @@
     note: '6:30 pm in Harlem, a time he gave himself rather than one read off a ' +
       'certificate, which astrologers rate A and not AA. New York did not start ' +
       'daylight saving in 1947 until 27 April, so this clock reads EST; taking it ' +
-      'as EDT puts the lagna at 21 Virgo instead of 2 Libra, a whole sign out. ' +
+      'as EDT puts the lagna at 20 Virgo instead of 2 Libra, a whole sign out. ' +
       'Libra ascendant in Chitra, Sun exalted in Aries in the 7th, Moon with Venus ' +
       'in Aquarius in the 5th, Mercury debilitated in Pisces with Mars, Jupiter ' +
       'retrograde with Ketu in Scorpio, Rahu exalted in Taurus. Shatabhisha birth ' +

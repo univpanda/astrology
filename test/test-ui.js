@@ -220,6 +220,150 @@ console.log('\nHistorical reference chart');
      'zone reading gives ' + byZone.ascendant.signName + ' at ' + Geo.formatOffset(zoneOffset));
 })();
 
+console.log('\nStudy charts that ship with the app');
+/*
+ * The seeded charts carry notes that state what the chart shows. A note is a
+ * claim about a calculation, so it is checked here rather than trusted: the
+ * place has to resolve to the coordinates written down, and the readings have
+ * to be the ones this engine produces from that moment.
+ */
+(function () {
+  var src = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
+  var literal = src.match(/var STUDY_CHARTS = (\[[\s\S]*?\n  \}\]);/);
+  ok('STUDY_CHARTS is still a literal this test can read', !!literal);
+  if (!literal) return;
+  var charts = new Function('return ' + literal[1])();
+  ok('two charts ship', charts.length === 2, charts.map(function (c) { return c.name; }).join(', '));
+
+  function cast(entry, offsetMinutes) {
+    var t = entry.time.split(':').map(Number);
+    var date = entry.date.split('-').map(Number);
+    var off = offsetMinutes == null
+      ? Geo.offsetMinutes(entry.zone, date[0], date[1], date[2], t[0], t[1])
+      : offsetMinutes;
+    return Astro.chart({
+      jdUT: Astro.julianDay(date[0], date[1], date[2], (t[0] * 60 + t[1] + (t[2] || 0) / 60 - off) / 60),
+      latitude: entry.latitude, longitude: entry.longitude,
+      tzOffsetMinutes: off, trueNode: entry.trueNode
+    });
+  }
+  function dashaStart(chart, lord) {
+    var period = chart.dashas.periods.filter(function (p) { return p.lord === lord; })[0];
+    return period ? Astro.calendarDate(period.startJd) : null;
+  }
+
+  charts.forEach(function (entry) {
+    var town = entry.placeLabel.split(',')[0];
+    var hit = Geo.search(town, 40).filter(function (c) {
+      return Geo.label(c) === entry.placeLabel;
+    })[0];
+    ok(entry.name + ': the place label is one the combobox offers', !!hit,
+       hit ? Geo.label(hit) : 'no such label for ' + town);
+    if (hit) {
+      ok(entry.name + ': coordinates and zone match that place',
+         Math.abs(hit.lat - entry.latitude) < 1e-4 &&
+         Math.abs(hit.lon - entry.longitude) < 1e-4 && hit.zone === entry.zone,
+         hit.lat + ', ' + hit.lon + ' / ' + hit.zone);
+    }
+    // Notes are prose the user reads; the house style keeps em-dashes out of it.
+    ok(entry.name + ': the note fits the column limit and avoids em-dashes',
+       entry.note.length <= 2000 && !/[\u2013\u2014]/.test(entry.note), entry.note.length + ' chars');
+  });
+
+  var trump = charts.filter(function (c) { return c.name === 'Donald Trump'; })[0];
+  var kareem = charts.filter(function (c) { return c.name === 'Kareem Abdul-Jabbar'; })[0];
+  ok('both notes belong to a chart that is still there', !!trump && !!kareem);
+  if (!trump || !kareem) return;
+
+  var tc = cast(trump);
+  ok('Trump: 6 Leo rises in Magha, as the note says',
+     tc.ascendant.signName === 'Leo' && Math.floor(tc.ascendant.longitude % 30) === 6 &&
+     tc.ascendant.nakshatra.name === 'Magha',
+     tc.ascendant.signName + ' ' + (tc.ascendant.longitude % 30).toFixed(2) +
+     ' ' + tc.ascendant.nakshatra.name);
+  /*
+   * The rival 9:51 am does move every house, and the note now says so in this
+   * app's own degrees rather than in the tropical ones western references print.
+   */
+  var tcOld = cast({
+    date: trump.date, time: '09:51:00', zone: trump.zone, trueNode: trump.trueNode,
+    latitude: trump.latitude, longitude: trump.longitude
+  });
+  ok('Trump: the older 9:51 am rises at 24 Cancer instead',
+     tcOld.ascendant.signName === 'Cancer' && Math.floor(tcOld.ascendant.longitude % 30) === 24,
+     tcOld.ascendant.signName + ' ' + (tcOld.ascendant.longitude % 30).toFixed(2));
+  ok('Trump: and the grahas do not move a sign between the two times',
+     tc.planets.every(function (p, i) { return p.signName === tcOld.planets[i].signName; }));
+  var tj = dashaStart(tc, 'Jupiter');
+  ok('Trump: Jupiter dasha starts in November 2016', tj && tj.y === 2016 && tj.m === 11,
+     tj ? tj.y + '-' + tj.m + '-' + tj.d : 'no Jupiter period');
+
+  var kc = cast(kareem);
+  ok('Abdul-Jabbar: 2 Libra rises in Chitra',
+     kc.ascendant.signName === 'Libra' && Math.floor(kc.ascendant.longitude % 30) === 2 &&
+     kc.ascendant.nakshatra.name === 'Chitra',
+     kc.ascendant.signName + ' ' + (kc.ascendant.longitude % 30).toFixed(2) +
+     ' ' + kc.ascendant.nakshatra.name);
+  /*
+   * The whole point of that chart as an example: 1947 daylight saving in New York
+   * began on 27 April, so 16 April is standard time. Reading the clock an hour
+   * the other way does not nudge the lagna, it moves it a sign.
+   */
+  ok('Abdul-Jabbar: the zone lookup gives standard time, not summer time',
+     Geo.offsetMinutes(kareem.zone, 1947, 4, 16, 18, 30) === -300,
+     Geo.formatOffset(Geo.offsetMinutes(kareem.zone, 1947, 4, 16, 18, 30)));
+  var asEdt = cast(kareem, -240);
+  ok('Abdul-Jabbar: read as EDT it would rise at 20 Virgo instead',
+     asEdt.ascendant.signName === 'Virgo' && Math.floor(asEdt.ascendant.longitude % 30) === 20,
+     asEdt.ascendant.signName + ' ' + (asEdt.ascendant.longitude % 30).toFixed(2));
+  var kp = {};
+  kc.planets.forEach(function (planet) { kp[planet.name] = planet; });
+  ok('Abdul-Jabbar: Sun exalted in Aries in the 7th',
+     kp.Sun.signName === 'Aries' && kp.Sun.dignity === 'Exalted' && kp.Sun.house === 7,
+     kp.Sun.signName + ' ' + kp.Sun.dignity + ' H' + kp.Sun.house);
+  ok('Abdul-Jabbar: Moon with Venus in Aquarius in the 5th',
+     kp.Moon.signName === 'Aquarius' && kp.Venus.signName === 'Aquarius' && kp.Moon.house === 5);
+  ok('Abdul-Jabbar: Mercury debilitated in Pisces with Mars',
+     kp.Mercury.signName === 'Pisces' && kp.Mercury.dignity === 'Debilitated' &&
+     kp.Mars.signName === 'Pisces');
+  ok('Abdul-Jabbar: Jupiter retrograde with Ketu in Scorpio',
+     kp.Jupiter.signName === 'Scorpio' && kp.Jupiter.retrograde === true &&
+     kp.Ketu.signName === 'Scorpio');
+  ok('Abdul-Jabbar: Rahu exalted in Taurus', kp.Rahu.signName === 'Taurus' &&
+     kp.Rahu.dignity === 'Exalted');
+  ok('Abdul-Jabbar: Shatabhisha birth nakshatra leaves 12 years of Rahu',
+     kc.dashas.birthNakshatra.name === 'Shatabhisha' &&
+     Math.floor(kc.dashas.balanceYears) === 12,
+     kc.dashas.birthNakshatra.name + ', ' + kc.dashas.balanceYears.toFixed(2) + ' years');
+  ok('Abdul-Jabbar: Saturn is the yogakaraka for this lagna and sits in the 10th',
+     Astro.isYogakaraka('Saturn', kc.ascendant.sign) && kp.Saturn.house === 10 &&
+     kp.Saturn.signName === 'Cancer');
+  var ks = dashaStart(kc, 'Saturn');
+  ok('Abdul-Jabbar: Saturn dasha starts in July 1975', ks && ks.y === 1975 && ks.m === 7,
+     ks ? ks.y + '-' + ks.m + '-' + ks.d : 'no Saturn period');
+  var kmer = dashaStart(kc, 'Mercury');
+  ok('Abdul-Jabbar: and runs to July 1994, when Mercury takes over',
+     kmer && kmer.y === 1994 && kmer.m === 7,
+     kmer ? kmer.y + '-' + kmer.m + '-' + kmer.d : 'no Mercury period');
+})();
+
+/*
+ * Seeding has to survive a chart being added to the list. The record is the
+ * names already offered, so a browser holding the older charts still receives a
+ * new one, and a deleted chart stays deleted.
+ */
+(function () {
+  var src = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
+  ok('the seed record is a list of names, not one flag',
+     /SEED_KEY = 'jyotisha\.seeded\.v2'/.test(src) &&
+     /JSON\.stringify\(STUDY_CHARTS\.map\(/.test(src));
+  ok('the v1 flag is still honoured, so deletions stick',
+     /SEED_KEY_V1 = 'jyotisha\.seeded\.v1'/.test(src) &&
+     /getItem\(SEED_KEY_V1\)/.test(src));
+  ok('a chart already in the list is not seeded again',
+     /!offered\[entry\.name\] && !known\[keyOf\(entry\)\]/.test(src));
+})();
+
 /* ------------------------------------------------ app.js <-> index.html */
 
 console.log('\nStylesheet traps');
@@ -1295,8 +1439,8 @@ ok('the library gives the two conditions the site applies', (function () {
   var wanted = ['the lord of the sign the debilitated graha stands in is in a kendra',
                 'the graha that would be exalted in that sign is in a kendra from either',
                 'in Virgo, Mercury rules the sign and is exalted in it'];
-  return /This site follows B. V. Raman, whose definition is two conditions and no more/
-    .test(seeds) && wanted.every(function (t) { return seeds.indexOf(t) >= 0; });
+  return /This site applies two conditions and no more/.test(seeds) &&
+    wanted.every(function (t) { return seeds.indexOf(t) >= 0; });
 })());
 ok('and the detector applies those two and nothing else', (function () {
   var src = fs.readFileSync(path.join(root, 'js/yogas.js'), 'utf8');
@@ -1312,6 +1456,35 @@ ok('and the detector applies those two and nothing else', (function () {
  * would cost. A reader who has met the looser list elsewhere needs to know it
  * was considered and declined, not that it was never heard of.
  */
+/*
+ * The attribution is hedged because the primary passage has not been read: both
+ * full-text scans of Three Hundred Important Combinations break off near the
+ * hundred and sixtieth combination. Saying "Raman's definition is two and no
+ * more" on secondary sources alone was a claim this site could not support.
+ */
+ok('the attribution to Raman says what was and was not verified',
+   /the attribution is worth taking with some care/.test(seeds) &&
+   /both break off around the hundred and sixtieth combination/.test(seeds));
+/*
+ * And the third condition some sources give him is named, with the reason it is
+ * a different rule rather than a restatement: the graha exalted in the sign of
+ * debilitation and the lord of the sign of exaltation are never the same graha.
+ */
+ok('the third condition some sources add is named and distinguished',
+   /the lord of the sign in which the debilitated graha would be exalted/.test(seeds) &&
+   /The two readings differ for all seven grahas/.test(seeds));
+ok('and they really do differ for all seven', (function () {
+  return Astro.GRAHA_ORDER.slice(0, 7).every(function (g) {
+    var d = Astro.DIGNITY[g];
+    var exaltedHere = null;
+    Object.keys(Astro.DIGNITY).forEach(function (o) {
+      if (Astro.NODES.indexOf(o) >= 0) return;
+      if (Astro.DIGNITY[o].exalt.sign === d.debil) exaltedHere = o;
+    });
+    return exaltedHere !== Astro.SIGN_LORDS[d.exalt.sign];
+  });
+})());
+
 ok('the six it declines are named, with what they would cost',
    /Six further cancellations circulate between those texts and are not applied here/
      .test(seeds) &&
