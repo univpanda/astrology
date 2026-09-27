@@ -1395,6 +1395,31 @@ ok('the note explains the totalling and the four readings', (function () {
     /below 5 as incapable of auspicious results, 5 to 10 as some good, up to 15 as mediocre and above 15 as wholly favourable/.test(flat);
 })());
 
+/*
+ * The select already reads "Shodasavarga \u00b7 16 divisions", so a visible
+ * "Scheme" beside it was the label repeated. Hidden rather than deleted: the
+ * select still needs an accessible name, and the option text is its value, not
+ * its name.
+ */
+ok('the scheme picker carries no visible label, but is still named', (function () {
+  var flat = html.replace(/\s+/g, ' ');
+  return /<label class="visually-hidden" for="varga-scheme">Scheme<\/label>/.test(flat) &&
+    !/<label for="varga-scheme">/.test(flat);
+})());
+/*
+ * These are Sanskrit compounds and modern usage writes each as one word.
+ * Santhanam sets them spaced - "Shad-Varga, Sapta Varga, Dasha Varga and
+ * Shodasha Varga" in one breath at ch.6 - but he is not consistent with himself,
+ * writing Saptavarga joined six times elsewhere, so the spacing is his
+ * typesetting rather than the reading.
+ */
+ok('each scheme is named as one word, as the compounds are',
+   Astro.VARGA_SCHEME_ORDER.every(function (k) {
+     return !/[\s-]/.test(Astro.VARGA_SCHEMES[k].label);
+   }),
+   Astro.VARGA_SCHEME_ORDER.map(function (k) {
+     return Astro.VARGA_SCHEMES[k].label; }).join(' '));
+
 ok('the picker offers all four, widest last and chosen', (function () {
   return /Astro\.VARGA_SCHEME_ORDER\.forEach\(function \(key\) \{/.test(appSrc) &&
     /if \(key === 'shodasavarga'\) opt\.selected = true;/.test(appSrc) &&

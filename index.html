@@ -339,7 +339,9 @@
 
       <div id="panel-vargas" role="tabpanel" aria-labelledby="tab-vargas" hidden>
         <div class="varga-scheme-row">
-          <label for="varga-scheme">Scheme</label>
+          <!-- The select reads "Shodasavarga · 16 divisions", which is the label a
+               visible one would have been. Kept for the select's accessible name. -->
+          <label class="visually-hidden" for="varga-scheme">Scheme</label>
           <select id="varga-scheme"></select>
           <div class="view-switch" role="group" aria-label="How to show the vargas">
             <button type="button" class="view-option" id="vargas-as-table"
