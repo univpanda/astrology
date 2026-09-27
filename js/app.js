@@ -2083,7 +2083,8 @@
    */
   var STORAGE_KEY = 'jyotisha.saved.v1';
   var TOKEN_KEY = 'jyotisha.owner.v1';
-  var SEED_KEY = 'jyotisha.seeded.v1';
+  var SEED_KEY = 'jyotisha.seeded.v2';
+  var SEED_KEY_V1 = 'jyotisha.seeded.v1';
   var KUNDALI_API = 'https://deiefjnwbfcywsaaqqbs.supabase.co/functions/v1/kundalis';
   var savedList = document.getElementById('saved-list');
   var savedEmpty = document.getElementById('saved-empty');
@@ -2093,11 +2094,15 @@
   var editButton = document.getElementById('edit-button');
 
   /*
-   * One chart ships with the app, so the saved list is not empty before anyone
-   * has typed a birth time in. Donald Trump's is the useful example to start
-   * from: the time is on a public birth certificate, which makes the chart
-   * checkable against any other ephemeris, and its Jupiter mahadasha begins in
-   * November 2016, on a date every reader already knows.
+   * Two charts ship with the app, so the saved list is not empty before anyone
+   * has typed a birth time in. Both are picked for being checkable rather than
+   * for being famous. Donald Trump's time is on a public birth certificate, so
+   * the chart can be reproduced in any other ephemeris, and its Jupiter
+   * mahadasha begins in November 2016, on a date every reader already knows.
+   * Kareem Abdul-Jabbar's is the other kind of example: a time given from
+   * memory rather than from a record, on a date that falls in the gap before
+   * daylight saving began that year, which is where the reading of a clock time
+   * decides the ascendant.
    */
   var STUDY_CHARTS = [{
     name: 'Donald Trump',
@@ -2118,28 +2123,73 @@
       'so the houses move even though the grahas barely do. Leo ascendant in Magha, ' +
       'Moon debilitated in Scorpio with Ketu on a full moon, Sun with Rahu in Taurus, ' +
       'and Jupiter dasha from November 2016.'
+  }, {
+    name: 'Kareem Abdul-Jabbar',
+    placeLabel: 'Harlem, New York, United States',
+    latitude: 40.8079,
+    longitude: -73.9454,
+    zone: 'America/New_York',
+    date: '1947-04-16',
+    time: '18:30:00',
+    standard: 'zone',
+    ayanamsa: 'lahiri',
+    trueNode: false,
+    gender: 'male',
+    celebrity: true,
+    note: '6:30 pm in Harlem, a time he gave himself rather than one read off a ' +
+      'certificate, which astrologers rate A and not AA. New York did not start ' +
+      'daylight saving in 1947 until 27 April, so this clock reads EST; taking it ' +
+      'as EDT puts the lagna at 21 Virgo instead of 2 Libra, a whole sign out. ' +
+      'Libra ascendant in Chitra, Sun exalted in Aries in the 7th, Moon with Venus ' +
+      'in Aquarius in the 5th, Mercury debilitated in Pisces with Mars, Jupiter ' +
+      'retrograde with Ketu in Scorpio, Rahu exalted in Taurus. Shatabhisha birth ' +
+      'nakshatra leaves 12 years of Rahu dasha to run. Saturn, the yogakaraka for ' +
+      'this lagna, sits in the 10th in Cancer and takes its mahadasha from July ' +
+      '1975 to July 1994: the Lakers trade was that June, and the five ' +
+      'championships and the scoring record all fall inside it.'
   }];
 
   /*
-   * Seeding is recorded under its own key rather than inferred from the list
-   * being empty. Deleting the chart has to stick, and having it reappear on the
-   * next visit would read as a bug rather than as a starting point.
+   * Which study charts have already been offered, or null when the question
+   * cannot be answered. Recording the names rather than a single flag is what
+   * lets a chart be added to the list later: deleting one still has to stick,
+   * so nothing is ever offered twice, but a browser that already holds the
+   * earlier charts is not therefore finished with seeding. The v1 key was that
+   * single flag, written when Donald Trump's was the only study chart, so it
+   * counts as that one having been offered and no more.
    */
-  function seedStudyCharts() {
+  function offeredStudyCharts() {
+    var offered = {};
     try {
-      if (window.localStorage.getItem(SEED_KEY)) return;
+      if (window.localStorage.getItem(SEED_KEY_V1)) offered['Donald Trump'] = true;
+      var raw = window.localStorage.getItem(SEED_KEY);
+      var names = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(names)) names.forEach(function (name) { offered[name] = true; });
     } catch (e) {
-      return; // no storage: nothing to seed into, and no way to remember doing it
+      // No storage, or a value that is not ours: with no way to tell what has
+      // been offered, declining to seed is what keeps a deletion deleted.
+      return null;
     }
+    return offered;
+  }
+
+  function seedStudyCharts() {
+    var offered = offeredStudyCharts();
+    if (!offered) return;
     var list = readSaved();
     var known = {};
     list.forEach(function (entry) { known[keyOf(entry)] = true; });
-    STUDY_CHARTS.forEach(function (entry) {
-      // Appended, not prepended: a saved chart of one's own outranks the example.
-      if (!known[keyOf(entry)]) list.push(entry);
+    var fresh = STUDY_CHARTS.filter(function (entry) {
+      return !offered[entry.name] && !known[keyOf(entry)];
     });
-    if (writeSaved(list)) {
-      try { window.localStorage.setItem(SEED_KEY, '1'); } catch (e) {}
+    // Appended, not prepended: a saved chart of one's own outranks the example.
+    fresh.forEach(function (entry) { list.push(entry); });
+    if (!fresh.length || writeSaved(list)) {
+      try {
+        window.localStorage.setItem(SEED_KEY, JSON.stringify(STUDY_CHARTS.map(function (entry) {
+          return entry.name;
+        })));
+      } catch (e) {}
     }
   }
 

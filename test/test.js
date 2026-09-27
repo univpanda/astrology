@@ -1462,26 +1462,34 @@ ok('the Moon debilitated outside a kendra cancels on nothing self-referential', 
  * separately. They are still two conditions, so they are said as two in one clause.
  */
 /*
- * A role is worth stating the first time a graha appears and not after. Repeating
- * it reads as a stammer - "Mars, the lord of this sign, is in a kendra; and Mars,
- * the lord of this sign, aspects Moon" - and dropping it entirely would leave the
- * reader working out who Mars is to the Moon.
+ * Raman's definition is two conditions, and no graha can satisfy both of them
+ * separately: the lord of the sign and the graha exalted in it are either
+ * different grahas, one clause each, or the same graha, reported in one clause.
+ * So a name never appears twice, and the stammer the old wording guarded against
+ * cannot arise.
  */
-ok('a graha\'s role is stated once, however many clauses it appears in', (function () {
-  var lagna = 1;                                   // Taurus, so Scorpio is the 7th
-  var house = function (sign) { return ((sign - lagna) % 12 + 12) % 12 + 1; };
-  var body = function (name, sign, deg) {
-    return { name: name, sign: sign, longitude: sign * 30 + deg, house: house(sign) };
-  };
-  var chart = { ascendant: { longitude: lagna * 30 + 10 }, planets: [
-    body('Moon', 7, 12),                           // debilitated in Scorpio, the 7th
-    body('Mars', 4, 10)] };                        // Leo, a kendra, and aspecting Scorpio
-  var f = Yogas.neechaBhanga(chart)[0];
-  if (!f || f.reasons.length < 2) return false;
-  var withRole = f.reasons.filter(function (r) { return /the lord of this sign/.test(r); });
-  var aboutMars = f.reasons.filter(function (r) { return /^Mars/.test(r); });
-  return aboutMars.length >= 2 && withRole.length === 1 &&
-    /^Mars, the lord of this sign,/.test(aboutMars[0]) && /^Mars aspects Moon$/.test(aboutMars[1]);
+ok('no graha is named in two clauses of the same cancellation', (function () {
+  var seen = 0;
+  for (var y = 1960; y < 2000; y++) {
+    var c = A.chart({ jdUT: A.julianDay(y, (y % 12) + 1, 12, 9), latitude: 23.5158,
+                      longitude: 87.308, tzOffsetMinutes: 330 });
+    var bad = Yogas.neechaBhanga(c).some(function (f) {
+      if (f.reasons.length < 2) return false;
+      seen++;
+      var subjects = f.reasons.map(function (r) { return r.split(',')[0].split(' ')[0]; });
+      return new Set(subjects).size !== subjects.length;
+    });
+    if (bad) return false;
+  }
+  return true;
+})());
+ok('and at most two clauses, there being two conditions', (function () {
+  for (var y = 1960; y < 2000; y++) {
+    var c = A.chart({ jdUT: A.julianDay(y, (y % 12) + 1, 12, 9), latitude: 23.5158,
+                      longitude: 87.308, tzOffsetMinutes: 330 });
+    if (Yogas.neechaBhanga(c).some(function (f) { return f.reasons.length > 2; })) return false;
+  }
+  return true;
 })());
 
 ok('where one graha both rules the sign and is exalted in it, it is said once', (function () {
@@ -1530,12 +1538,18 @@ ok('where one graha both rules the sign and is exalted in it, it is said once', 
   ok('both forms occur, and each sits where its name says',
      rajaSeen && plainSeen, 'raja ' + rajaSeen + ', plain ' + plainSeen);
 
-  // The reference chart has one of each, which is the distinction in miniature.
-  var durgapur = A.chart({ jdUT: 2446146.7256944445, latitude: 23.5158, longitude: 87.308 });
-  var both = Yogas.neechaBhanga(durgapur);
-  ok('the reference chart shows both forms', both.length === 2 &&
-     both.some(function (f) { return f.grahas[0] === 'Mercury' && f.kind === 'raja'; }) &&
-     both.some(function (f) { return f.grahas[0] === 'Jupiter' && f.kind === 'plain'; }),
+  /*
+   * One chart with one of each, which is the distinction in miniature. The
+   * reference chart used to serve: under Raman's two conditions it keeps its
+   * raja form and loses the plain one, Jupiter's cancellation having rested on
+   * clauses he does not accept.
+   */
+  var pair = A.chart({ jdUT: A.julianDay(1980, 11, 12, 6 - 5.5), latitude: 23.5158,
+                       longitude: 87.308, tzOffsetMinutes: 330 });
+  var both = Yogas.neechaBhanga(pair);
+  ok('one chart shows both forms', both.length === 2 &&
+     both.some(function (f) { return f.grahas[0] === 'Sun' && f.kind === 'raja'; }) &&
+     both.some(function (f) { return f.grahas[0] === 'Venus' && f.kind === 'plain'; }),
      both.map(function (f) { return f.grahas[0] + ':' + f.kind; }).join(', '));
 })();
 

@@ -1291,82 +1291,79 @@ ok('so no table sorts for itself',
  * them. Checked against the detector rather than trusted: a list in the library
  * that the code does not implement is worse than no list.
  */
-ok('the library enumerates the cancellations, all nine of them', (function () {
-  var wanted = ['the lord of the sign the graha stands in is in a kendra',
-                'the graha that would be exalted in that sign is in a kendra',
-                'one graha is both of those',
-                'conjunct its dispositor',
-                'its dispositor aspects it',
-                'the graha exalted in that sign aspects it',
-                'exchange signs',
-                'exalted in navamsa',
-                'the debilitated graha itself stands in a kendra'];
-  return wanted.every(function (t) { return seeds.indexOf(t) >= 0; });
+ok('the library gives the two conditions the site applies', (function () {
+  var wanted = ['the lord of the sign the debilitated graha stands in is in a kendra',
+                'the graha that would be exalted in that sign is in a kendra from either',
+                'in Virgo, Mercury rules the sign and is exalted in it'];
+  return /This site follows B. V. Raman, whose definition is two conditions and no more/
+    .test(seeds) && wanted.every(function (t) { return seeds.indexOf(t) >= 0; });
 })());
-ok('and the detector really checks each of them', (function () {
+ok('and the detector applies those two and nothing else', (function () {
   var src = fs.readFileSync(path.join(root, 'js/yogas.js'), 'utf8');
   var block = src.slice(src.indexOf('function neechaBhanga'));
   block = block.slice(0, block.indexOf('function ordinal'));
-  return (block.match(/reasons\.push\(/g) || []).length === 8 &&
-    /both rules this sign and is exalted in it/.test(block);
+  return (block.match(/reasons\.push\(/g) || []).length === 2 &&
+    /both rules this sign and is exalted in it/.test(block) &&
+    !/exchanges signs with/.test(block) && !/is exalted in navamsa/.test(block) &&
+    !/is conjunct/.test(block) && !/aspects ' \+ graha/.test(block);
 })());
 /*
- * Eight of the nine are clauses of a verse with no names of their own. The
- * exception is the exchange, which is parivartana yoga, and the Yogas tab
- * reports it under that name on the same pair - so a cancellation resting on it
- * appears twice, once under each name, and the clause says so.
+ * The six the site does not apply are named anyway, with what accepting them
+ * would cost. A reader who has met the looser list elsewhere needs to know it
+ * was considered and declined, not that it was never heard of.
  */
-ok('the one condition with a name of its own is named where it fires', (function () {
+ok('the six it declines are named, with what they would cost',
+   /Six further cancellations circulate between those texts and are not applied here/
+     .test(seeds) &&
+   /turns 72 per cent of rashi debilitations into cancellations into 92/.test(seeds));
+/*
+ * The exchange is the one of the six that is a named yoga, and dropping it costs
+ * nothing: parivartana reports it in its own right on the same pair.
+ */
+ok('the exchange is left to the detector that names it', (function () {
   var src = fs.readFileSync(path.join(root, 'js/yogas.js'), 'utf8');
-  return /exchanges signs with ' \+ dispositor \+\s*\n?\s*', which is parivartana yoga'/
-    .test(src) && typeof Yogas.parivartana === 'function';
+  var block = src.slice(src.indexOf('function neechaBhanga'));
+  block = block.slice(0, block.indexOf('function ordinal'));
+  return !/exchanges signs/.test(block) && typeof Yogas.parivartana === 'function' &&
+    /is parivartana yoga, which is reported in its own right/.test(seeds);
 })());
-ok('and every such cancellation really is reported as one', (function () {
-  for (var y = 1900; y < 1980; y++) {
+ok('the library says the conditions carry no names of their own',
+   /The conditions carry no names of their own/.test(seeds) &&
+   /nicha, the fall, and bhanga, its breaking/.test(seeds));
+/*
+ * Narrow does not mean rare. Both conditions are kendra placements, and a kendra
+ * from either the lagna or the Moon reaches eight signs of twelve, so 72 per
+ * cent of debilitations still cancel.
+ */
+ok('and says why the narrow reading is still a generous test',
+   /a kendra from either the lagna or the Moon reaches eight signs out of twelve/
+     .test(seeds));
+ok('which the detector agrees with, measured', (function () {
+  var deb = 0, cancelled = 0;
+  for (var y = 1900; y < 2020; y++) {
     var c = Astro.chart({ jdUT: Astro.julianDay(y, (y % 12) + 1, (y % 27) + 1, 9),
                           latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 });
-    var byExchange = Yogas.neechaBhanga(c).filter(function (x) {
-      return x.reasons.some(function (r) { return /parivartana/.test(r); });
+    var pos = {};
+    c.planets.forEach(function (p) { pos[p.name] = p; });
+    var hit = {};
+    Yogas.neechaBhanga(c).forEach(function (x) { hit[x.grahas[0]] = true; });
+    c.planets.forEach(function (p) {
+      var d = Astro.vargaDignity(p.name, p.longitude, 1, pos);
+      if (!d || d.key !== 'debilitated') return;
+      deb++;
+      if (hit[p.name]) cancelled++;
     });
-    if (!byExchange.length) continue;
-    var pv = Yogas.parivartana(c);
-    var missing = byExchange.filter(function (x) {
-      return !pv.some(function (p) { return (p.grahas || []).indexOf(x.grahas[0]) >= 0; });
-    });
-    if (missing.length) return false;
   }
-  return true;
+  var rate = cancelled / deb;
+  return deb > 50 && rate > 0.6 && rate < 0.85;
 })());
-/*
- * Raman's definition is two of the nine and no more, and a fifth of what this
- * site reports as a cancellation rests on conditions he does not accept. Worth
- * recording, because the app's list is the union of several authorities and is
- * the loosest reading any of them gives.
- */
-ok('the library gives Raman\u2019s narrower definition, and what it costs',
-   /His definition is two conditions and no more/.test(seeds) &&
-   /Raman's two conditions cancel 72 per cent of rashi debilitations against 92 per cent for all nine/
-     .test(seeds));
-ok('and the two it names are the two the detector checks first',
-   (function () {
-     var src = fs.readFileSync(path.join(root, 'js/yogas.js'), 'utf8');
-     var block = src.slice(src.indexOf('var reasons = [];'));
-     block = block.slice(0, block.indexOf('if (!reasons.length)'));
-     var first = block.indexOf('is in a kendra from');
-     var rest = block.indexOf('is conjunct');
-     return first >= 0 && rest > first;
-   })());
-
-ok('the library says the other eight have no names',
-   /Eight of the nine have no names of their own/.test(seeds) &&
-   /nicha, the fall, and bhanga, its breaking/.test(seeds));
 
 ok('the library says whose enumeration it is, Parashara not having one',
    /Phaladeepika chapter 7 from verse 26/.test(seeds) &&
    /it nowhere lists the conditions/.test(seeds));
-ok('and says any one of them cancels, which is what makes it common',
-   /Any one of them cancels, here as in most modern practice/.test(seeds) &&
-   /92 per cent of debilitations in the rashi met at least one of the nine/.test(seeds));
+ok('and that the site declines the looser reading rather than never meeting it',
+   /Few authorities give all of them, and they do not agree on how many must hold/
+     .test(seeds));
 
 console.log('\nVargas panel');
 /*

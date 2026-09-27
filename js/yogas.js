@@ -157,23 +157,12 @@ var Yogas = (function () {
       var from;
 
       /*
-       * A graha's role is worth stating the first time it appears and not after.
-       * Repeating it reads as a stammer - "Mars, the lord of this sign, is in a
-       * kendra; and Mars, the lord of this sign, aspects Moon" - while dropping
-       * it entirely would leave the reader working out who Mars is to the Moon.
-       * Subject and object forms differ only in the closing comma.
+       * Each clause names the graha's role, there being at most two clauses and
+       * never the same graha in both: where the lord of the sign and the graha
+       * exalted in it are one, the two are reported together.
        */
-      var namedRuler = false, namedExalted = false;
-      var ruler = function (subject) {
-        if (namedRuler) return dispositor;
-        namedRuler = true;
-        return dispositor + ', the lord of this sign' + (subject ? ',' : '');
-      };
-      var exalted = function (subject) {
-        if (namedExalted) return exaltedHere;
-        namedExalted = true;
-        return exaltedHere + ', exalted in this sign' + (subject ? ',' : '');
-      };
+      var ruler = function () { return dispositor + ', the lord of this sign,'; };
+      var exalted = function () { return exaltedHere + ', exalted in this sign,'; };
 
       /*
        * In Virgo the lord and the graha exalted there are both Mercury, so the two
@@ -184,51 +173,27 @@ var Yogas = (function () {
       var bothRoles = exaltedHere === dispositor;
       if ((from = inKendraFromEither(
             positions[dispositor] ? positions[dispositor].sign : -1, dispositor))) {
-        if (bothRoles) { namedRuler = true; namedExalted = true; }
         reasons.push(bothRoles
           ? dispositor + ', which both rules this sign and is exalted in it, is in a kendra ' +
             'from ' + from
-          : ruler(true) + ' is in a kendra from ' + from);
+          : ruler() + ' is in a kendra from ' + from);
       }
       if (!bothRoles && exaltedHere && positions[exaltedHere] &&
           (from = inKendraFromEither(positions[exaltedHere].sign, exaltedHere))) {
-        reasons.push(exalted(true) + ' is in a kendra from ' + from);
-      }
-      if (positions[dispositor] && positions[dispositor].sign === p.sign) {
-        reasons.push(graha + ' is conjunct ' + ruler(false));
-      }
-      if (positions[dispositor] &&
-          aspects(dispositor, positions[dispositor].sign, p.sign)) {
-        reasons.push(ruler(true) + ' aspects ' + graha);
-      }
-      if (exaltedHere && positions[exaltedHere] &&
-          aspects(exaltedHere, positions[exaltedHere].sign, p.sign)) {
-        reasons.push(exalted(true) + ' aspects ' + graha);
-      }
-      if (positions[dispositor] &&
-          Astro.SIGN_LORDS[positions[dispositor].sign] === graha) {
-        /*
-         * The one cancellation that is a named yoga in its own right. The other
-         * eight are clauses of a verse and have no names; this one is
-         * parivartana, and the Yogas tab reports it separately on the same pair,
-         * so naming it here is what connects the two entries.
-         */
-        reasons.push(graha + ' exchanges signs with ' + dispositor +
-          ', which is parivartana yoga');
+        reasons.push(exalted() + ' is in a kendra from ' + from);
       }
       /*
-       * Only in the rashi chart. Inside a division this longitude is already a
-       * stretched varga longitude, so taking its navamsha would be the navamsha
-       * of a tenth of a sign, which answers no question anyone asks. The clause
-       * is dropped there rather than computed into nonsense.
+       * And that is the whole of it. Six further cancellations circulate - the
+       * graha conjunct or aspected by its dispositor, aspected by the graha
+       * exalted in that sign, exchanging signs with its dispositor, exalted in
+       * navamsa, or itself standing in a kendra - and they are in Phaladeepika,
+       * Jataka Parijata and Uttara Kalamrita between them. They are not applied
+       * here. Raman's definition is the two above and no more, and accepting the
+       * rest turned 72 per cent of debilitations into cancellations into 92.
+       *
+       * Nothing is lost by dropping the exchange: it is parivartana yoga, which
+       * the Yogas tab reports in its own right on the same pair of grahas.
        */
-      if (!chart.division && Astro.vargaPosition(p.longitude, 9).sign === dignity.exalt.sign) {
-        reasons.push(graha + ' is exalted in navamsa');
-      }
-      if ((from = inKendraFromEither(p.sign, graha))) {
-        reasons.push(graha + ' itself stands in a kendra from ' + from);
-      }
-
       if (!reasons.length) return;
 
       var house = houseFrom(p.sign, lagna);
