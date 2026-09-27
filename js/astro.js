@@ -1189,9 +1189,13 @@ var Astro = (function () {
   }
 
   /*
-   * Degrees of combustion, chapter 4. The retrograde column is separate because
-   * three grahas lose their rays closer in when retrograde, Mars most of all:
-   * 17 degrees direct against 8 retrograde.
+   * Degrees of combustion. The retrograde column is separate because three
+   * grahas lose their rays closer in when retrograde, Mars most of all: 17
+   * degrees direct against 8 retrograde.
+   *
+   * Six of the seven figures are the same in Santhanam's chapter 4 table and in
+   * Raman's Hindu Predictive Astrology section 54, retrograde values included.
+   * They differ on Saturn alone, 16 against 15, and Raman's is used.
    *
    * "Rahu and Ketu should not be treated as combust although they may be
    * longitudinally close to the Sun. For they are only mathematical points."
@@ -1202,7 +1206,7 @@ var Astro = (function () {
     Mercury: { direct: 14, retrograde: 12 },
     Jupiter: { direct: 11, retrograde: 11 },
     Venus: { direct: 10, retrograde: 8 },
-    Saturn: { direct: 16, retrograde: 16 }
+    Saturn: { direct: 15, retrograde: 15 }
   };
 
   /** Is this graha within its orb of the Sun, and so burnt? */

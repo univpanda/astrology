@@ -1059,10 +1059,14 @@ ok('a chart with no yoga makes no request for one', (function () {
  */
 ok('the page says which yogas it looks for, and the list is current', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');
+  // One name per detector, in the order the note gives them. The Moon's four
+  // come from one detector, so its entry is the phrase that introduces them.
   var named = ['Raja yoga', 'parivartana', 'neecha bhanga', 'vipareeta raja', 'Lakshmi',
-               'Gaja Kesari', 'kartari', 'Mahapurusha'];
+               'Gaja Kesari', 'kartari', 'Mahapurusha', 'Sunapha', 'Chandra Mangala',
+               'Adhi', 'Sakata', 'Amala', 'Budha-Aditya'];
   return named.every(function (n) { return flat.indexOf(n) >= 0; }) &&
-    /Raja yoga, parivartana, neecha bhanga, vipareeta raja, Lakshmi, Gaja Kesari, kartari and the five Mahapurusha yogas are checked/.test(flat) &&
+    /Raja yoga, parivartana, neecha bhanga, vipareeta raja, Lakshmi, Gaja Kesari, kartari, the five Mahapurusha yogas, the Moon’s own four - Sunapha, Anapha, Durudhura and Kemadruma - Chandra Mangala, Adhi, Sakata, Amala and Budha-Aditya are checked/
+      .test(flat) &&
     named.length === Yogas.DETECTOR_COUNT;
 })(), Yogas.DETECTOR_COUNT + ' detectors');
 ok('and the yoga check is handed the strengths it needs',

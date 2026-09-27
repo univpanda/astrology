@@ -1744,6 +1744,189 @@ ok('the nodes are never involved, ruling no sign', (function () {
   }));
 })();
 
+console.log('\nThe Moon’s company, and five more from Raman');
+/*
+ * Raman's combinations 2 to 5 are one question with four answers, so they are
+ * one detector and a chart must give exactly one of them. Planets in the 2nd
+ * from the Moon is Sunapha, in the 12th is Anapha, both is Durudhura, neither
+ * is Kemadruma.
+ */
+(function () {
+  var at = function (moonSign, others) {
+    return { ascendant: { longitude: 0 },
+             planets: [{ name: 'Sun', sign: 0, longitude: 5 },
+                       { name: 'Moon', sign: moonSign, longitude: moonSign * 30 + 5 }]
+                        .concat(others) };
+  };
+  var g = function (name, sign) {
+    return { name: name, sign: sign, longitude: sign * 30 + 5 };
+  };
+  var title = function (chart) {
+    var f = Yogas.moonCompany(chart);
+    return f.length === 1 ? f[0].title : '(' + f.length + ')';
+  };
+  ok('a graha in the 2nd from the Moon is Sunapha',
+     title(at(3, [g('Venus', 4)])) === 'Sunapha yoga');
+  ok('and in the 12th is Anapha',
+     title(at(3, [g('Venus', 2)])) === 'Anapha yoga');
+  ok('and on both sides is Durudhura',
+     title(at(3, [g('Venus', 2), g('Mars', 4)])) === 'Durudhura yoga');
+  ok('and on neither is Kemadruma',
+     title(at(3, [g('Venus', 7)])) === 'Kemadruma yoga');
+  /*
+   * "Planets (excepting the Sun)" is Raman's own wording, and the nodes go with
+   * the Sun: they are shadows rather than bodies, and the yoga is about the
+   * Moon having company.
+   */
+  ok('the Sun beside the Moon is not company',
+     title({ ascendant: { longitude: 0 },
+             planets: [{ name: 'Sun', sign: 4, longitude: 125 },
+                       { name: 'Moon', sign: 3, longitude: 95 }] }) === 'Kemadruma yoga');
+  ok('and neither is a node',
+     title(at(3, [g('Rahu', 4), g('Ketu', 2)])) === 'Kemadruma yoga');
+  /*
+   * The four are exhaustive and exclusive, so every chart gives exactly one and
+   * the four counts must come to the whole sample.
+   */
+  ok('every chart gives exactly one of the four', (function () {
+    var seen = {}, charts = 0;
+    for (var y = 1950; y < 2000; y++) {
+      for (var m = 1; m <= 12; m++) {
+        var c = A.chart({ jdUT: A.julianDay(y, m, 15, 6.5), latitude: 28.61,
+                          longitude: 77.21, tzOffsetMinutes: 330 });
+        var found = Yogas.moonCompany(c);
+        if (found.length !== 1) return false;
+        seen[found[0].kind] = (seen[found[0].kind] || 0) + 1;
+        charts++;
+      }
+    }
+    var total = Object.keys(seen).reduce(function (n, k) { return n + seen[k]; }, 0);
+    return total === charts && Object.keys(seen).length === 4;
+  })());
+  /*
+   * Raman gives the cancellations of Kemadruma and declines them: "these
+   * observations are not generally acceptable". So the yoga stands and the
+   * cancellation is reported, which is how this site handles a contested rule.
+   */
+  ok('a cancelled Kemadruma is still reported, with the cancellation named',
+     (function () {
+       // Jupiter in the 4th from the lagna, so a kendra, but nowhere near the Moon.
+       var c = at(6, [g('Jupiter', 3)]);
+       var f = Yogas.moonCompany(c);
+       return f[0].kind === 'kemadruma' &&
+         f[0].reasons.some(function (r) { return /not generally acceptable/.test(r); });
+     })());
+
+  // Combination 6: "If Mars conjoins the Moon this yoga is formed."
+  ok('Mars with the Moon is Chandra Mangala', (function () {
+    var c = at(3, [g('Mars', 3)]);
+    return Yogas.chandraMangala(c).length === 1 &&
+      Yogas.chandraMangala(at(3, [g('Mars', 4)])).length === 0;
+  })());
+
+  /*
+   * Combination 7: benefics in the 6th, 7th AND 8th from the Moon. All three
+   * houses, and all three tenanted by benefics - a malefic in any of them
+   * leaves the yoga unformed.
+   */
+  ok('Adhi yoga wants all three houses from the Moon, and benefics in each',
+     (function () {
+       // A full Moon, so benefic, with Jupiter Venus Mercury in the 6th 7th 8th.
+       var full = { name: 'Moon', sign: 0, longitude: 5 };
+       var sun = { name: 'Sun', sign: 6, longitude: 185 };   // 180 degrees off
+       var base = { ascendant: { longitude: 0 },
+                    planets: [sun, full, g('Jupiter', 5), g('Venus', 6),
+                              g('Mercury', 7)] };
+       var short = { ascendant: { longitude: 0 },
+                     planets: [sun, full, g('Jupiter', 5), g('Venus', 6)] };
+       var spoiled = { ascendant: { longitude: 0 },
+                       planets: [sun, full, g('Jupiter', 5), g('Venus', 6),
+                                 g('Saturn', 7)] };
+       return Yogas.adhiYoga(base).length === 1 &&
+         Yogas.adhiYoga(short).length === 0 &&
+         Yogas.adhiYoga(spoiled).length === 0;
+     })());
+
+  /*
+   * Combination 12: "The Moon in the 12th, 6th or 8th from Jupiter". The
+   * counting runs from Jupiter to the Moon and not the other way, which is the
+   * easy thing to get backwards.
+   */
+  ok('Sakata counts from Jupiter to the Moon', (function () {
+    var from = function (moonSign) {
+      return Yogas.sakata({ ascendant: { longitude: 0 },
+        planets: [{ name: 'Sun', sign: 0, longitude: 5 },
+                  { name: 'Moon', sign: moonSign, longitude: moonSign * 30 + 5 },
+                  g('Jupiter', 0)] });
+    };
+    // Jupiter in Aries: the Moon in Virgo is the 6th from it, and Aries is the
+    // 6th from Virgo - only one of the two is the yoga.
+    return from(5).length === 1 && from(7).length === 1 && from(11).length === 1 &&
+      from(4).length === 0 && from(0).length === 0;
+  })());
+
+  // Combination 13: "The 10th from the Moon or Lagna should be occupied by a benefic."
+  ok('Amala takes the 10th from either the lagna or the Moon', (function () {
+    var full = { name: 'Moon', sign: 0, longitude: 5 };
+    var sun = { name: 'Sun', sign: 6, longitude: 185 };
+    var make = function (planets) {
+      return { ascendant: { longitude: 0 }, planets: [sun, full].concat(planets) };
+    };
+    return Yogas.amala(make([g('Jupiter', 9)])).length === 1 &&   // 10th from both
+      Yogas.amala(make([g('Saturn', 9)])).length === 0 &&          // a malefic there
+      Yogas.amala(make([g('Venus', 4)])).length === 0;
+  })());
+
+  /*
+   * Combination 24, with the qualifier most treatments drop. Raman: "It should
+   * not be taken for granted that irrespective of the distance between the Sun
+   * and Mercury, Budha-Aditya Yoga would be present. On the contrary, Mercury
+   * should not be within 10 degrees of the Sun."
+   */
+  ok('Budha-Aditya wants Mercury with the Sun but not burnt by it', (function () {
+    var pair = function (gap) {
+      return { ascendant: { longitude: 0 }, planets: [
+        { name: 'Sun', sign: 0, longitude: 5 },
+        { name: 'Moon', sign: 6, longitude: 185 },
+        { name: 'Mercury', sign: 0, longitude: 5 + gap }] };
+    };
+    return Yogas.budhaAditya(pair(15)).length === 1 &&
+      Yogas.budhaAditya(pair(9)).length === 0 &&
+      Yogas.budhaAditya(pair(0)).length === 0 &&
+      Yogas.BUDHA_ADITYA_FLOOR === 10;
+  })());
+  /*
+   * And the ten degrees are measured on the rashi longitudes. A division's
+   * longitude is a position within that division stretched back across thirty
+   * degrees, so a gap taken from two of them is not a gap in the sky, and
+   * combustion is a fact about the sky. chartInDivision keeps rashiLongitude
+   * for exactly this.
+   */
+  ok('and the ten degrees are measured in the sky, not inside a division',
+     (function () {
+       var c = A.chart({ jdUT: A.julianDay(1946, 7, 6, 19), latitude: 40.71,
+                         longitude: -74.01, tzOffsetMinutes: -240 });
+       var apart = function (chart) {
+         var by = {};
+         chart.planets.forEach(function (p) { by[p.name] = p; });
+         if (by.Sun.sign !== by.Mercury.sign) return null;
+         var sun = by.Sun.rashiLongitude !== undefined ? by.Sun.rashiLongitude
+           : by.Sun.longitude;
+         var mer = by.Mercury.rashiLongitude !== undefined ? by.Mercury.rashiLongitude
+           : by.Mercury.longitude;
+         var d = Math.abs(A.norm360(mer - sun));
+         return d > 180 ? 360 - d : d;
+       };
+       // Every division that puts the two together must read the same gap as
+       // the rashi does, because it is reading the rashi's own longitudes.
+       var rashi = apart(c);
+       return A.SHODASAVARGA.every(function (d) {
+         var seen = apart(A.chartInDivision(c, d));
+         return seen === null || rashi === null || Math.abs(seen - rashi) < 1e-9;
+       });
+     })());
+})();
+
 ok('ordinals read correctly', Yogas.ordinal(1) === '1st' && Yogas.ordinal(2) === '2nd' &&
    Yogas.ordinal(3) === '3rd' && Yogas.ordinal(4) === '4th' && Yogas.ordinal(11) === '11th' &&
    Yogas.ordinal(12) === '12th');
@@ -1754,7 +1937,9 @@ ok('ordinals read correctly', Yogas.ordinal(1) === '1st' && Yogas.ordinal(2) ===
   // quietly incomplete check.
   var detectors = [Yogas.kartari,
                    Yogas.parivartana, Yogas.neechaBhanga, Yogas.vipareeta, Yogas.lakshmi,
-                   Yogas.mahapurusha, Yogas.rajaYoga, Yogas.gajaKesari];
+                   Yogas.mahapurusha, Yogas.rajaYoga, Yogas.gajaKesari,
+                   Yogas.moonCompany, Yogas.chandraMangala, Yogas.adhiYoga,
+                   Yogas.sakata, Yogas.amala, Yogas.budhaAditya];
   ok('every detector is covered by this test', detectors.length === Yogas.DETECTOR_COUNT,
      detectors.length + ' named, ' + Yogas.DETECTOR_COUNT + ' in the module');
 
@@ -2958,14 +3143,19 @@ console.log('\nGaja Kesari, and the Kesari it is confused with');
 
 console.log('\nCombustion');
 /*
- * Chapter 4's table, with the retrograde column: three grahas lose their rays
- * closer in when retrograde, Mars most of all.
+ * With the retrograde column: three grahas lose their rays closer in when
+ * retrograde, Mars most of all.
+ *
+ * Santhanam's chapter 4 table and Raman's Hindu Predictive Astrology section 54
+ * agree on six of the seven and on every retrograde figure. They differ on
+ * Saturn, 16 against 15, and Raman's is used.
  */
-ok('the orbs are Parashara\'s', A.COMBUSTION.Moon.direct === 12 &&
+ok('the orbs are Raman\'s', A.COMBUSTION.Moon.direct === 12 &&
    A.COMBUSTION.Mars.direct === 17 && A.COMBUSTION.Mars.retrograde === 8 &&
    A.COMBUSTION.Mercury.direct === 14 && A.COMBUSTION.Mercury.retrograde === 12 &&
    A.COMBUSTION.Jupiter.direct === 11 && A.COMBUSTION.Venus.direct === 10 &&
-   A.COMBUSTION.Venus.retrograde === 8 && A.COMBUSTION.Saturn.direct === 16);
+   A.COMBUSTION.Venus.retrograde === 8 && A.COMBUSTION.Saturn.direct === 15 &&
+   A.COMBUSTION.Saturn.retrograde === 15);
 ok('a graha just inside its orb is combust and just outside is not',
    A.isCombust('Jupiter', 10, 0, false) && !A.isCombust('Jupiter', 12, 0, false));
 ok('the orb is measured the short way round the circle',

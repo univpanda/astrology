@@ -858,7 +858,302 @@ var Yogas = (function () {
     return names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1];
   }
 
+  /* ------------------------------------------------- the Moon's company */
+
+  /*
+   * The four yogas of the Moon's neighbours, Raman's combinations 2 to 5. They
+   * are one detector because they are one question with four answers and a
+   * chart can only give one of them: planets in the 2nd from the Moon is
+   * Sunapha, in the 12th is Anapha, both is Durudhura, neither is Kemadruma.
+   *
+   * "Planets" here is the five tara grahas. Raman excludes the Sun outright in
+   * his definition of Sunapha, and the nodes are left out with it: they are
+   * shadows rather than bodies and the yoga is about the Moon having company.
+   *
+   * Raman gives the cancellations of Kemadruma and declines them - "some
+   * authors say that if planets are in a kendra from birth or from the Moon or
+   * if the Moon is in conjunction with a planet there is no Kemadruma ... these
+   * observations are not generally acceptable". They are reported rather than
+   * applied, so a reader who holds to them can see that the case arose.
+   */
+  var MOON_COMPANY = ['Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+
+  function moonCompany(chart) {
+    var positions = {};
+    chart.planets.forEach(function (p) { positions[p.name] = p; });
+    var moon = positions.Moon;
+    if (!moon) return [];
+
+    var inSign = function (sign) {
+      return MOON_COMPANY.filter(function (g) {
+        return positions[g] && positions[g].sign === sign;
+      });
+    };
+    var second = inSign((moon.sign + 1) % 12);
+    var twelfth = inSign((moon.sign + 11) % 12);
+
+    var name, kind, why;
+    if (second.length && twelfth.length) {
+      name = 'Durudhura yoga'; kind = 'durudhura';
+      why = listOf(twelfth) + ' in the sign before the Moon and ' + listOf(second) +
+        ' in the sign after it, so the Moon is attended on both sides';
+    } else if (second.length) {
+      name = 'Sunapha yoga'; kind = 'sunapha';
+      why = listOf(second) + ' in the 2nd from the Moon';
+    } else if (twelfth.length) {
+      name = 'Anapha yoga'; kind = 'anapha';
+      why = listOf(twelfth) + ' in the 12th from the Moon';
+    } else {
+      name = 'Kemadruma yoga'; kind = 'kemadruma';
+      why = 'neither the sign before the Moon nor the sign after it holds a graha';
+    }
+
+    var reasons = [why];
+    if (kind === 'kemadruma') {
+      var lagna = Astro.signOf(chart.ascendant.longitude);
+      var withMoon = MOON_COMPANY.filter(function (g) {
+        return positions[g] && positions[g].sign === moon.sign;
+      });
+      var inKendra = MOON_COMPANY.filter(function (g) {
+        if (!positions[g]) return false;
+        var fromLagna = ((positions[g].sign - lagna) % 12 + 12) % 12 + 1;
+        var fromMoon = ((positions[g].sign - moon.sign) % 12 + 12) % 12 + 1;
+        return KENDRAS.indexOf(fromLagna) >= 0 || KENDRAS.indexOf(fromMoon) >= 0;
+      });
+      var escapes = [];
+      if (withMoon.length) escapes.push(listOf(withMoon) + ' sits with the Moon');
+      if (inKendra.length) escapes.push(listOf(inKendra) +
+        ' stands in an angle from the lagna or the Moon');
+      if (escapes.length) {
+        reasons.push('some authors cancel the yoga where ' + listOf(escapes) +
+          ', which is the case here; Raman gives those cancellations and calls ' +
+          'them not generally acceptable, so the yoga is reported');
+      }
+      reasons.push('the Sun and the nodes are not counted as company, so the ' +
+        'Moon can be flanked by them and still be alone by this rule');
+    } else {
+      reasons.push('the Sun is not counted, which is Raman’s own exclusion, ' +
+        'and the nodes are left out with it as shadows rather than bodies');
+    }
+
+    return [{
+      yoga: name.replace(' yoga', ''),
+      kind: kind,
+      subject: name.replace(' yoga', '') + ' Yoga',
+      condition: 'general',
+      title: name,
+      family: 'The Moon’s company',
+      grahas: ['Moon'].concat(second, twelfth),
+      houses: [],
+      reasons: reasons,
+      summary: why.charAt(0).toUpperCase() + why.slice(1) + ', which is ' + name + '.'
+    }];
+  }
+
+  /*
+   * Combination 6. "If Mars conjoins the Moon this yoga is formed." Raman notes
+   * that the older writers read it darkly and that he reads it as a yoga of
+   * earning: "Chandra Mangala Yoga acts as a powerful factor in stabilising
+   * one's financial worth".
+   */
+  function chandraMangala(chart) {
+    var positions = {};
+    chart.planets.forEach(function (p) { positions[p.name] = p; });
+    var moon = positions.Moon, mars = positions.Mars;
+    if (!moon || !mars || moon.sign !== mars.sign) return [];
+    return [{
+      yoga: 'Chandra Mangala Yoga',
+      kind: 'general',
+      subject: 'Chandra Mangala Yoga',
+      condition: 'general',
+      title: 'Chandra Mangala yoga',
+      family: null,
+      grahas: ['Moon', 'Mars'],
+      houses: [],
+      reasons: [
+        'Mars stands with the Moon in ' + Astro.SIGNS[moon.sign],
+        'the older writers read this darkly; Raman reads it as a yoga of ' +
+          'earning, powerful in stabilising what a person is worth'
+      ],
+      summary: 'Mars conjoins the Moon in ' + Astro.SIGNS[moon.sign] +
+        ', which is Chandra Mangala yoga.'
+    }];
+  }
+
+  /*
+   * Combination 7. "If benefics are situated in the 6th, 7th and 8th from the
+   * Moon, the combination goes under the name of Adhi Yoga." All three houses
+   * must be tenanted, and by benefics.
+   */
+  function adhiYoga(chart) {
+    var positions = {};
+    chart.planets.forEach(function (p) { positions[p.name] = p; });
+    var moon = positions.Moon;
+    if (!moon) return [];
+    var benefics = Astro.naturalBenefics(chart);
+
+    var found = {}, all = [];
+    var ok = [6, 7, 8].every(function (house) {
+      var sign = (moon.sign + house - 1) % 12;
+      var here = GRAHAS.filter(function (g) {
+        return g !== 'Moon' && positions[g] && positions[g].sign === sign &&
+          benefics[g] === true;
+      });
+      if (!here.length) return false;
+      found[house] = here;
+      here.forEach(function (g) { if (all.indexOf(g) < 0) all.push(g); });
+      return true;
+    });
+    if (!ok) return [];
+
+    return [{
+      yoga: 'Adhi Yoga',
+      kind: 'general',
+      subject: 'Adhi Yoga',
+      condition: 'general',
+      title: 'Adhi yoga',
+      family: null,
+      grahas: ['Moon'].concat(all),
+      houses: [6, 7, 8],
+      reasons: [
+        [6, 7, 8].map(function (h) {
+          return listOf(found[h]) + ' in the ' + ordinal(h);
+        }).join(', ') + ', all three counted from the Moon',
+        'every one of the three is benefic, which is what the rule asks; a ' +
+          'malefic in any of them would leave the yoga unformed'
+      ],
+      summary: 'Benefics fill the 6th, 7th and 8th from the Moon, which is Adhi yoga.'
+    }];
+  }
+
+  /*
+   * Combination 12. "The Moon in the 12th, 6th or 8th from Jupiter gives rise to
+   * Sakata Yoga." The one affliction among these, and the counting runs from
+   * Jupiter to the Moon rather than the other way.
+   */
+  function sakata(chart) {
+    var positions = {};
+    chart.planets.forEach(function (p) { positions[p.name] = p; });
+    var moon = positions.Moon, jupiter = positions.Jupiter;
+    if (!moon || !jupiter) return [];
+    var house = ((moon.sign - jupiter.sign) % 12 + 12) % 12 + 1;
+    if ([6, 8, 12].indexOf(house) < 0) return [];
+    return [{
+      yoga: 'Sakata Yoga',
+      kind: 'general',
+      subject: 'Sakata Yoga',
+      condition: 'general',
+      title: 'Sakata yoga',
+      family: null,
+      grahas: ['Moon', 'Jupiter'],
+      houses: [house],
+      reasons: [
+        'the Moon stands in the ' + ordinal(house) + ' from Jupiter, in ' +
+          Astro.SIGNS[moon.sign],
+        'read as fortune that comes and goes rather than fortune withheld: ' +
+          'Raman has it that the native loses fortune and may regain it'
+      ],
+      summary: 'The Moon is in the ' + ordinal(house) +
+        ' from Jupiter, which is Sakata yoga.'
+    }];
+  }
+
+  /*
+   * Combination 13. "The 10th from the Moon or Lagna should be occupied by a
+   * benefic planet."
+   */
+  function amala(chart) {
+    var positions = {};
+    chart.planets.forEach(function (p) { positions[p.name] = p; });
+    var moon = positions.Moon;
+    if (!moon) return [];
+    var lagna = Astro.signOf(chart.ascendant.longitude);
+    var benefics = Astro.naturalBenefics(chart);
+
+    var seats = [];
+    [['the lagna', (lagna + 9) % 12], ['the Moon', (moon.sign + 9) % 12]]
+      .forEach(function (from) {
+        var here = GRAHAS.filter(function (g) {
+          return positions[g] && positions[g].sign === from[1] && benefics[g] === true;
+        });
+        if (here.length) seats.push({ from: from[0], sign: from[1], grahas: here });
+      });
+    if (!seats.length) return [];
+
+    var all = [];
+    seats.forEach(function (seat) {
+      seat.grahas.forEach(function (g) { if (all.indexOf(g) < 0) all.push(g); });
+    });
+    return [{
+      yoga: 'Amala Yoga',
+      kind: 'general',
+      subject: 'Amala Yoga',
+      condition: 'general',
+      title: 'Amala yoga',
+      family: null,
+      grahas: all,
+      houses: [10],
+      reasons: [
+        seats.map(function (seat) {
+          return listOf(seat.grahas) + ' in ' + Astro.SIGNS[seat.sign] +
+            ', the 10th from ' + seat.from;
+        }).join(', and '),
+        'the rule takes the 10th from either, so one of the two is enough'
+      ],
+      summary: 'A benefic holds the 10th from ' +
+        listOf(seats.map(function (seat) { return seat.from; })) +
+        ', which is Amala yoga.'
+    }];
+  }
+
+  /*
+   * Combination 24. "If Mercury combines with the Sun, the combination goes
+   * under the name of Budha-Aditya Yoga."
+   *
+   * With Raman's qualifier, which most treatments leave out: "It should not be
+   * taken for granted that irrespective of the distance between the Sun and
+   * Mercury, Budha-Aditya Yoga would be present. On the contrary, Mercury
+   * should not be within 10 degrees of the Sun." Inside that, Mercury is simply
+   * burnt, and a burnt graha is in no condition to give a yoga.
+   */
+  var BUDHA_ADITYA_FLOOR = 10;
+
+  function budhaAditya(chart) {
+    var positions = {};
+    chart.planets.forEach(function (p) { positions[p.name] = p; });
+    var sun = positions.Sun, mercury = positions.Mercury;
+    if (!sun || !mercury || sun.sign !== mercury.sign) return [];
+
+    // Measured on the rashi longitudes, combustion being a fact about the sky.
+    var sunLon = sun.rashiLongitude !== undefined ? sun.rashiLongitude : sun.longitude;
+    var merLon = mercury.rashiLongitude !== undefined
+      ? mercury.rashiLongitude : mercury.longitude;
+    var apart = Math.abs(Astro.norm360(merLon - sunLon));
+    if (apart > 180) apart = 360 - apart;
+    if (apart < BUDHA_ADITYA_FLOOR) return [];
+
+    return [{
+      yoga: 'Budha Aditya Yoga',
+      kind: 'general',
+      subject: 'Budha Aditya Yoga',
+      condition: 'general',
+      title: 'Budha-Aditya yoga',
+      family: null,
+      grahas: ['Sun', 'Mercury'],
+      houses: [],
+      reasons: [
+        'Mercury stands with the Sun in ' + Astro.SIGNS[sun.sign] + ', ' +
+          apart.toFixed(1) + '° away',
+        'and outside the ten degrees Raman sets as the floor: nearer than that ' +
+          'Mercury is simply burnt, and a burnt graha gives no yoga'
+      ],
+      summary: 'Mercury is with the Sun in ' + Astro.SIGNS[sun.sign] + ' and ' +
+        apart.toFixed(1) + '° off it, which is Budha-Aditya yoga.'
+    }];
+  }
+
   var DETECTORS = [parivartana, neechaBhanga, vipareeta, lakshmi, mahapurusha, rajaYoga,
+    moonCompany, chandraMangala, adhiYoga, sakata, amala, budhaAditya,
                    gajaKesari, kartari];
 
   /**
@@ -878,6 +1173,9 @@ var Yogas = (function () {
 
   return { detect: detect, parivartana: parivartana, neechaBhanga: neechaBhanga,
     kartari: kartari,
+    moonCompany: moonCompany, chandraMangala: chandraMangala, adhiYoga: adhiYoga,
+    sakata: sakata, amala: amala, budhaAditya: budhaAditya,
+    BUDHA_ADITYA_FLOOR: BUDHA_ADITYA_FLOOR, MOON_COMPANY: MOON_COMPANY,
     vipareeta: vipareeta, lakshmi: lakshmi, mahapurusha: mahapurusha,
     rajaYoga: rajaYoga, gajaKesari: gajaKesari,
     VISHNU_HOUSES: VISHNU_HOUSES, LAKSHMI_HOUSES: LAKSHMI_HOUSES,

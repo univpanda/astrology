@@ -333,12 +333,84 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'It is a yoga of the first house and not of a graha. The same hemming can be read around any graha, and this site marks that separately as [H] in the Vimsopaka Bala grid, but the yoga the texts name is the one around the lagna.',
    'De Fouw and Svoboda add a qualifier at page 297 of Light on Life: the benefics unafflicted by malefics, the malefics unaspected by benefics. This site reports that rather than enforcing it, because their own worked example fails it - Indira Gandhi''s Cancer lagna is hemmed by Mars and Ketu, and Venus in Sagittarius aspects the Gemini that holds Ketu, and they read the chart as papa kartari regardless.',
    'The nodes count as malefics for this. They keep no friendships and take no part in the benefic reckoning used elsewhere here, but Ketu is half of that example.',
-   'Who counts as a benefic is Parashara''s reckoning and not a brightness test. Jupiter and Venus always; Mars, Saturn and the nodes never; the Sun never, though de Fouw and Svoboda class it apart as cruel rather than malefic. The Moon is benefic while waxing, and a waning Moon turns benefic anyway if a benefic is conjunct it or aspects it, or if Mercury is with it, in which case both are benefic. Mercury is benefic unless it sits with a malefic.',
-   'There is no neutral among them, so a flanking pair is benefic, malefic, or mixed, and mixed is no kartari at all. The shading the texts do give is in those conditions rather than in a third category: a waning Moon rescued by Jupiter is a benefic blade, and the same Moon alone is a malefic one.',
+   'Who counts as a benefic is Parashara''s reckoning. Jupiter and Venus always; Mars, Saturn and the nodes never; the Sun never, though de Fouw and Svoboda class it apart as cruel rather than malefic. The Moon is benefic while full, which Raman fixes as the eighth day of the bright half to the eighth of the dark half. Mercury is benefic unless it sits with a malefic, which is the one clause the verse itself gives.',
+   'There is no neutral among them, so a flanking pair is benefic, malefic, or mixed, and mixed is no kartari at all. A thin Moon is a malefic blade and a full one a benefic blade, with nothing in between.',
    'One of each kind flanking is not a kartari of either sort. A benefic on one side and a malefic on the other is not a pair of scissors, and no authority reads it as one.',
    'Papa kartari is the commoner of the two, and not by a little. Five grahas are malefic before the nodes are counted and only four can be benefic, two of those conditionally: on a run of 480 charts papa came out at 10 per cent and shubha at 2.'
  ],
  'Marked [H] on a graha rather than the lagna in the Vimsopaka Bala grid.', 962)
+
+on conflict (topic, subject, condition) do update set
+  heading = excluded.heading,
+  points = excluded.points,
+  note = excluded.note,
+  sort_order = excluded.sort_order,
+  updated_at = now();
+
+-- Nine more from Raman's Three Hundred Important Combinations. The Moon's own
+-- four are one question with four answers, so they share a passage.
+
+insert into astro_readings (topic, subject, condition, heading, points, note, sort_order) values
+('yoga', 'Sunapha Yoga', 'general',
+ 'The Moon''s company, and the four answers to it',
+ array[
+   'Raman''s combinations 2 to 5 ask one question - what stands on either side of the Moon - and a chart can only give one of the four answers. Grahas in the sign after the Moon is Sunapha, in the sign before it is Anapha, both is Durudhura, neither is Kemadruma.',
+   'Sunapha is read for self-earned wealth and standing, Anapha for health, reputation and a comfortable ease, Durudhura for both at once: the Moon attended on both sides is the most fortunate of the four.',
+   'Kemadruma is the one that is not fortunate. The Moon with nothing beside it is read as a person unsupported, and the older texts are severe about it.',
+   'The Sun is not counted as company. That is Raman''s own exclusion in his definition of Sunapha, and the nodes are left out with it, being shadows rather than bodies. So a Moon flanked by the Sun and Rahu is still alone by this rule.',
+   'That exclusion is why Kemadruma is common - it falls in something like two charts in five - and why the cancellations exist. Some authors hold there is no Kemadruma if a graha stands with the Moon, or in an angle from the lagna or the Moon. Raman gives those and declines them: "these observations are not generally acceptable". This site reports the cancellation where it applies and leaves the yoga standing.'
+ ],
+ 'One of the four is present in every chart, so its presence says less than which one it is.', 963),
+
+('yoga', 'Chandra Mangala Yoga', 'general',
+ 'Mars with the Moon',
+ array[
+   'Combination 6, and the whole of the definition: "If Mars conjoins the Moon this yoga is formed."',
+   'The older writers read it darkly - earnings through unscrupulous means, harshness to the mother. Raman sets that aside with unusual directness: "With due respect to the ancient masters in the science I have to observe that Chandra Mangala Yoga acts as a powerful factor in stabilising one''s financial worth."',
+   'So it is read here as a yoga of earning rather than of vice, which is Raman''s reading and not the older one. The two are not reconcilable and the choice is worth knowing.',
+   'Mars and the Moon move quickly, so this is among the commoner yogas: roughly one chart in twelve.'
+ ],
+ null, 964),
+
+('yoga', 'Adhi Yoga', 'general',
+ 'Benefics in the sixth, seventh and eighth from the Moon',
+ array[
+   'Combination 7. Benefics must stand in the 6th, the 7th and the 8th from the Moon - all three houses, and a benefic in each.',
+   'It is the rarest yoga this site detects, present in about four charts in a thousand. Three consecutive houses tenanted at all is uncommon; three tenanted only by benefics is much more so.',
+   'The houses are the reason it is read well. The 6th, 7th and 8th from the Moon are the houses of enemies, of partnership and of longevity, and benefics filling all three is read as opposition that cannot reach the native.',
+   'A malefic in any of the three leaves the yoga unformed. There is no partial Adhi yoga here: the rule asks for benefics and a chart either has them or does not.'
+ ],
+ null, 965),
+
+('yoga', 'Sakata Yoga', 'general',
+ 'The Moon in the sixth, eighth or twelfth from Jupiter',
+ array[
+   'Combination 12, and the one affliction among these. The counting runs from Jupiter to the Moon and not the other way, which is the easy thing to get backwards: Jupiter in Aries with the Moon in Virgo is the yoga, and the Moon in Aries with Jupiter in Virgo is not.',
+   'Raman reads it as fortune that comes and goes rather than fortune withheld - "the native loses fortune and may regain it" - which is a different thing from poverty and worth keeping distinct.',
+   'Three houses of twelve, so it falls in about a quarter of all charts. That frequency is the argument for reading it as a rhythm rather than a verdict.'
+ ],
+ null, 966),
+
+('yoga', 'Amala Yoga', 'general',
+ 'A benefic in the tenth',
+ array[
+   'Combination 13: "The 10th from the Moon or Lagna should be occupied by a benefic planet." Either reference point will do, so a chart has two chances at it.',
+   'Amala means spotless, and the reading is of reputation rather than wealth: lasting fame, and a character that does not attract reproach.',
+   'The 10th is the house of action and of how a person is seen acting. A benefic holding it from either the lagna or the Moon is read as the visible part of a life being clean.',
+   'Two reference points and three possible benefics make this common, close to half of all charts, so it is read as a favourable condition rather than a distinction.'
+ ],
+ null, 967),
+
+('yoga', 'Budha Aditya Yoga', 'general',
+ 'Mercury with the Sun, but not too close',
+ array[
+   'Combination 24: "If Mercury combines with the Sun, the combination goes under the name of Budha-Aditya Yoga." It is read for intelligence, skill and good standing.',
+   'Raman adds a qualifier that most treatments leave out, and it matters: "It should not be taken for granted that irrespective of the distance between the Sun and Mercury, Budha-Aditya Yoga would be present. On the contrary, Mercury should not be within 10 degrees of the Sun to give rise to Budha-Aditya Yoga."',
+   'The reason is combustion. Any graha close to the Sun is burnt and loses its power to do good, and a burnt graha is in no condition to give a yoga. Mercury is never far from the Sun to begin with, so without the floor the yoga would be claimed every time the two share a sign.',
+   'This site applies the ten degrees. Mercury in the Sun''s sign but inside that distance gives no yoga and is simply reported as combust, which is what it is.',
+   'Mercury''s full orb of combustion is 14 degrees direct and 12 retrograde, wider than Raman''s floor of 10. So there is a band where Mercury is combust by the general rule and still gives the yoga by his, and this site follows his figure for the yoga and the general orb for the mark.'
+ ],
+ 'Combustion is measured on the rashi longitudes even when a division is read.', 968)
 
 on conflict (topic, subject, condition) do update set
   heading = excluded.heading,
