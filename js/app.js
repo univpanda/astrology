@@ -1175,11 +1175,11 @@
         'take that, strongest at midnight; the Sun, Jupiter and Venus take ' +
         'sixty less it, strongest at noon; Mercury takes the full sixty at any ' +
         'hour. Santhanam spells it Nathonnatha bala.' },
-    { key: 'paksha', label: 'Paksha', en: 'Lunar fortnight', max: null,
+    { key: 'paksha', label: 'Paksha', en: 'Lunar fortnight', max: 120, shows: '60/120',
       says: 'How far into the bright or dark fortnight the birth falls. A ' +
         'benefic scores by the Moon’s brightness and a malefic by what is ' +
-        'left of sixty. Doubled for the Moon, which is why no ceiling is given: ' +
-        'sixty for six grahas and a hundred and twenty for the seventh.' },
+        'left of sixty. Sixty is the ceiling for six grahas; the Moon’s counts ' +
+        'double, so the row can reach a hundred and twenty.' },
     { key: 'tribhaga', label: 'Tribhaga', en: 'Third of day or night', max: 60,
       says: 'The day and the night are each cut in three. Mercury, the Sun and ' +
         'Saturn take the three parts of the day in that order, the Moon, Venus ' +
@@ -1196,11 +1196,11 @@
     { key: 'hora', label: 'Hora', en: 'Planetary hour', max: 60,
       says: 'Sixty to the lord of the planetary hour, the hours running from ' +
         'sunrise in the Chaldean order from that day’s own lord.' },
-    { key: 'ayana', label: 'Ayana', en: 'Declination', max: null,
+    { key: 'ayana', label: 'Ayana', en: 'Declination', max: 120, shows: '60/120',
       says: 'How far north or south of the equator the graha stands. The Sun, ' +
         'Mars, Jupiter and Venus want north and Saturn and the Moon south; ' +
-        'Mercury takes either. Doubled for the Sun, which is why no ceiling is ' +
-        'given here.' }
+        'Mercury takes either. Sixty is the ceiling for six grahas; the Sun’s ' +
+        'counts double, so the row can reach a hundred and twenty.' }
   ];
 
   /*
@@ -1223,10 +1223,10 @@
      * would be wrong for two of the seven grahas under it.
      */
     { key: 'kala', label: 'Kala bala', en: 'Temporal', parts: KALA_PARTS,
-      total: true, max: null,
+      total: true, max: 450, shows: '390/450',
       says: 'Temporal strength: the eight rows under it added. They cap at 390 ' +
-        'together, or 450 for the Moon and the Sun, whose paksha and ayana ' +
-        'count double - which is why no one ceiling is given here.' },
+        'together for five grahas, and at 450 for the Moon and the Sun, whose ' +
+        'paksha and ayana count double.' },
     { key: 'cheshta', label: 'Cheshta bala', en: 'Motional', max: 60,
       says: 'Motional strength, read off how far the graha is from its mean motion ' +
         'and deepest retrograde. The Sun and Moon never retrograde, so theirs is ' +
@@ -1234,9 +1234,17 @@
     { key: 'naisargika', label: 'Naisargika bala', en: 'Natural', max: 60,
       says: 'Natural strength, a constant per graha: the same figure in every ' +
         'chart, running from the Sun’s sixty down to Saturn’s 8.57.' },
+    /*
+     * The one share with no ceiling to give. It is a sum of whatever aspects
+     * happen to fall on the graha less whatever malefic ones do, so it is
+     * bounded only by how many grahas can reach it at once, and the text sets no
+     * figure. Over 1800 sample births it runs from -56 to +53.
+     */
     { key: 'drik', label: 'Drik bala', en: 'Aspectual', max: null,
-      says: 'Aspectual strength: what the benefics aspecting the graha are ' +
-        'worth, less what the malefics are.' },
+      says: 'What the benefics aspecting the graha are worth, less what the ' +
+        'malefics are. The one share with no ceiling, and the only one that can ' +
+        'go negative: it is bounded by how many grahas reach the sign at once ' +
+        'rather than by a figure the text gives.' },
     /*
      * Shown only in the charts that have a war, which is about one in twelve.
      * Everywhere else it is a row of seven zeroes, and a row that says nothing
@@ -1278,10 +1286,10 @@
     renderShadbalaHead(table, planets, positionOf(state, 'Sun'));
 
     var n = function (v) { return v.toFixed(1); };
-    var row = function (label, en, max, says, cells, cls) {
+    var row = function (label, en, max, says, cells, cls, shows) {
       var tr = document.createElement('tr');
       if (cls) tr.className = cls;
-      tr.appendChild(measureHead(label, en, max, says));
+      tr.appendChild(measureHead(label, en, max, says, shows));
       cells.forEach(function (cell) { tr.appendChild(cell); });
       tbody.appendChild(tr);
       return tr;
@@ -1311,7 +1319,7 @@
         // Who the war was with, which no figure in the row can say.
         if (bala.key === 'yuddha' && x.war) td.title = yuddhaTitle(x);
         return td;
-      }), bala.parts ? 'bala-head' : null);
+      }), bala.parts ? 'bala-head' : null, bala.shows);
       (bala.parts || []).forEach(function (part) {
         row(part.label, part.en, part.max, part.says, grahas.map(function (graha) {
           var x = result.grahas[graha];
@@ -1319,7 +1327,7 @@
           // The seven divisions behind the figure, which have no row of their own.
           if (part.key === 'saptavargaja') td.title = saptavargajaTitle(x);
           return td;
-        }), 'bala-part');
+        }), 'bala-part', part.shows);
       });
     });
 
@@ -1352,10 +1360,11 @@
 
     document.getElementById('shadbala-note').textContent =
       'In shashtiamsas; sixty make one Rupa. Where a row name carries a second ' +
-      'figure, that is the most the row can be worth. Four rows carry none: paksha ' +
-      'is doubled for the Moon and ayana for the Sun, so those two and the Kala bala ' +
-      'they feed have no one ceiling, and Drik bala has none at all, being the only ' +
-      'share that can go negative. A graha is strong when it meets the minimum ' +
+      'figure, that is the most the row can be worth, and a pair of figures means ' +
+      'the ceiling differs by graha: paksha is doubled for the Moon and ayana for ' +
+      'the Sun, which lifts those two rows and the Kala bala they feed. Only Drik ' +
+      'bala has none, being a sum of whatever aspects reach the graha. A graha is ' +
+      'strong when it meets the minimum ' +
       'Parashara sets for it, which differs by graha, so compare each total against its ' +
       'own requirement rather than against the others. Grahas are in the order of the ' +
       'tables beside this one, and Rahu and Ketu are outside Shadbala. Yuddha bala ' +
@@ -1403,7 +1412,7 @@
    * natural, aspectual for the six - so the row names what the rest of the
    * literature names, not a paraphrase of our own.
    */
-  function measureHead(label, en, max, says) {
+  function measureHead(label, en, max, says, shows) {
     var th = el('th', null, label);
     th.setAttribute('scope', 'row');
     /*
@@ -1414,8 +1423,15 @@
      * everything that reads the text rather than the layout.
      */
     if (en) th.appendChild(el('span', 'measure-en', ' ' + en));
+    /*
+     * A row whose ceiling is not one figure prints both rather than neither.
+     * Paksha and ayana are doubled for one graha each and Kala bala inherits
+     * that, so a bare 60 would be contradicted by the Moon's own cell and a
+     * blank said nothing at all. `max` stays the row's true ceiling, which is
+     * what the figures are checked against; `shows` is what a reader sees.
+     */
     if (max !== null && max !== undefined) {
-      th.appendChild(el('span', 'varga-weight', ' ' + String(max)));
+      th.appendChild(el('span', 'varga-weight', ' ' + (shows || String(max))));
     }
     if (says) th.title = says;
     return th;

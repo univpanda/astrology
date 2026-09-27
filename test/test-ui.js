@@ -1328,15 +1328,54 @@ ok('and nata-unnata follows the verse it comes from', (function () {
  * beside the name. The same span the Vimsopaka grid uses for a division's share.
  */
 ok('and every measure with a ceiling carries it beside its name',
-   /th\.appendChild\(el\('span', 'varga-weight', ' ' \+ String\(max\)\)\)/.test(appSrc) &&
+   /th\.appendChild\(el\('span', 'varga-weight', ' ' \+ \(shows \|\| String\(max\)\)\)\)/
+     .test(appSrc) &&
    /Where a row name carries a second figure, that is the most the row can be worth/
      .test(appSrc.replace(/'\s*\+\s*'/g, '')));
+/*
+ * And a ceiling that is not one figure prints both rather than neither. Paksha
+ * and ayana are doubled for one graha each and Kala bala inherits it, so those
+ * three showed a blank where a reader looked for scale - a bare 60 would have
+ * been contradicted by the Moon's own cell, but a blank said nothing at all.
+ * The pair is display only; `max` stays the row's true ceiling and is what the
+ * figures below are checked against.
+ */
+ok('and a ceiling that differs by graha prints both figures', (function () {
+  var block = appSrc.slice(appSrc.indexOf('var STHANA_PARTS = ['),
+                           appSrc.indexOf('function renderShadbala'));
+  return /key: 'paksha'[^}]*max: 120, shows: '60\/120'/.test(block) &&
+    /key: 'ayana'[^}]*max: 120, shows: '60\/120'/.test(block) &&
+    /key: 'kala'[\s\S]{0,140}max: 450, shows: '390\/450'/.test(block) &&
+    // Drik alone keeps a blank, the text setting no figure for it at all.
+    /key: 'drik'[^}]*max: null/.test(block);
+})());
+/*
+ * And the upper figure of each pair is reached, so it is the row's ceiling and
+ * not a number chosen to look tidy.
+ */
+ok('and the doubled ceiling is one the engine actually reaches', (function () {
+  var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+  var paksha = 0, ayana = 0;
+  for (var y = 1900; y < 1930; y++) {
+    for (var m = 1; m <= 12; m++) {
+      var c = Astro.chart({ jdUT: Astro.julianDay(y, m, 15, 6.5),
+                            latitude: place.latitude, longitude: place.longitude,
+                            tzOffsetMinutes: place.tzOffsetMinutes });
+      var r = Shadbala.compute(c, place);
+      paksha = Math.max(paksha, r.grahas.Moon.kala.paksha);
+      ayana = Math.max(ayana, r.grahas.Sun.kala.ayana);
+    }
+  }
+  return paksha > 110 && paksha <= 120.0001 && ayana > 110 && ayana <= 120.0001;
+})());
 /*
  * And the note says which rows have none and why, rather than making a claim
  * about "the figure beside a row name" that six of the fifteen rows do not have.
  */
-ok('and says which rows carry none, and why',
-   /Four rows carry none: paksha is doubled for the Moon and ayana for the Sun, so those two and the Kala bala they feed have no one ceiling, and Drik bala has none at all/
+ok('and says what a pair of figures means, and which row has none',
+   /a pair of figures means the ceiling differs by graha: paksha is doubled for the Moon and ayana for the Sun/
+     .test(appSrc.replace(/'\s*\+\s*'/g, '')) &&
+   /Only Drik bala has none, being a sum of whatever aspects reach the graha/
      .test(appSrc.replace(/'\s*\+\s*'/g, '')));
 /*
  * Which is four and not three: the doubling really does carry those two rows
@@ -1365,8 +1404,11 @@ ok('and no measure ever exceeds the ceiling it claims', (function () {
   var m, re = /key: '([A-Za-z]+)', label: '[^']*', en: '[^']*',(?:\s*parts: [A-Z_]+,)?\s*(?:total: true,)?\s*max: (\d+|null)/g;
   while ((m = re.exec(parts))) declared[m[1]] = m[2] === 'null' ? null : Number(m[2]);
   if (declared.sthana !== 60 + 315 + 15 + 15 + 60 + 15) return false;
-  if (declared.kala !== null || declared.drik !== null) return false;
-  if (declared.paksha !== null || declared.ayana !== null) return false;
+  // Drik alone claims none; the three that differ by graha claim their upper figure.
+  if (declared.drik !== null) return false;
+  if (declared.kala !== 450 || declared.paksha !== 120 || declared.ayana !== 120) {
+    return false;
+  }
 
   var worst = {};
   for (var y = 1950; y < 2000; y++) {
@@ -1382,10 +1424,10 @@ ok('and no measure ever exceeds the ceiling it claims', (function () {
         kendradi: x.sthana.kendradi, drekkana: x.sthana.drekkana,
         sthana: x.sthana.total, dig: x.dig, cheshta: x.cheshta,
         naisargika: x.naisargika,
-        // Paksha and ayana claim none, being doubled for one graha each.
         nathonnatha: x.kala.nathonnatha, tribhaga: x.kala.tribhaga,
         abda: x.kala.abda, masa: x.kala.masa, vara: x.kala.vara,
-        hora: x.kala.hora };
+        hora: x.kala.hora, paksha: x.kala.paksha, ayana: x.kala.ayana,
+        kala: x.kala.total };
       Object.keys(seen).forEach(function (k) {
         worst[k] = Math.max(worst[k] === undefined ? -Infinity : worst[k], seen[k]);
       });
@@ -1413,7 +1455,7 @@ ok('the parts that have no row of their own are the ones on hover',
    !/Uchcha ' \+ n\(x\.sthana\.uchcha\)/.test(appSrc));
 ok('and each measure says what it measures, once for the row',
    /if \(says\) th\.title = says;/.test(appSrc) &&
-   /function measureHead\(label, en, max, says\)/.test(appSrc));
+   /function measureHead\(label, en, max, says, shows\)/.test(appSrc));
 /*
  * And every measure carries its English name on the row, not in the hover. Each
  * of these is a word a reader either knows or does not, and "Drekkana" with
