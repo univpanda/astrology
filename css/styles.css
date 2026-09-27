@@ -498,11 +498,6 @@ input::placeholder { color: #a9bdb2; }
   font-weight: 600;
 }
 .options summary:hover, .technical summary:hover { color: var(--green); }
-/* The grid's own note stays short; what it takes to score the thing folds away
-   under it. Open it and the paragraphs read at the note's size, not the page's. */
-.varga-more { margin-top: 0.6rem; }
-.varga-more p { margin: 0.7rem 0 0; }
-.varga-more p:first-child { margin-top: 0.9rem; }
 .options-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));

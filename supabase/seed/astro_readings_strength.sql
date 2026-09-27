@@ -65,7 +65,18 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'None of these is an oversight to be patched into the total. They are separate measures, and the classical practice is to read them beside it rather than fold them in.',
    'On this page: vargottama is marked [V] beside the graha in the chart; an exchange and a cancelled debilitation are both reported among the yogas; and dig bala is a column of its own in Shadbala, which is the broader instrument and carries it as one of its six.'
  ],
- null, 704)
+ null, 704),
+
+('strength', 'Vimsopaka Bala', 'exclusions',
+ 'Who the count leaves out, and who stands in',
+ array[
+   'Rahu and Ketu are not scored. The whole measure is a relation to the lord of the sign a division gives - own sign, friend, enemy - and the nodes own no sign and keep no friendships, so there is no relation to take. A row for them would be blank in every column and totalled in none.',
+   'That is not the same as saying they have no dignity. Raman gives them exaltation signs, which this site follows, and those are read where exaltation is read. It is friendship they lack, and friendship is what vimsopaka counts.',
+   'The trimsamsa is the one division where a graha can be asked about a lordship that does not exist. Parashara gives its five lords as Mars, Saturn, Jupiter, Mercury and Venus in an odd sign and the reverse in an even one, ch.6 verses 27-28. Neither luminary appears: the Sun and the Moon rule no trimsamsa at all.',
+   'So in D30 the Sun is judged as Mars would be and the Moon as Venus would be, which is what lets a luminary hold a trimsamsa of its own rather than being a guest in every one of them.',
+   'The substitution is for ownership only. Everything else about the two - their exaltation, their debilitation, their friendships with the other grahas - is read as the Sun and the Moon, not as their stand-ins.'
+ ],
+ 'The nodes'' exaltation signs are set out under Dignity.', 705)
 
 on conflict (topic, subject, condition) do update set
   heading = excluded.heading,

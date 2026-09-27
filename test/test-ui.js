@@ -1161,6 +1161,17 @@ ok('and it is laid across the width rather than down a column', (function () {
     !/\.flag-key \{[^}]*text-align: center/.test(css);
 })());
 
+/*
+ * The lesson library, as the repo holds it. The doctrine about vimsopaka used to
+ * sit in the note under the grid and is now here alone, so these are the tests
+ * that keep it from being lost in the move: the note explains the table, the
+ * library explains the measure, and each is checked where it lives.
+ */
+var seeds = ['strength', 'varga', 'dignity'].map(function (name) {
+  return fs.readFileSync(path.join(root, 'supabase/seed/astro_readings_' + name + '.sql'),
+                         'utf8');
+}).join('\n').replace(/''/g, "'");
+
 console.log('\nVargas panel');
 /*
  * Named for the measure, as Shadbala beside it is, rather than for the columns.
@@ -1317,7 +1328,8 @@ ok('but it still has a name, so the scores under it are not orphaned',
    /el\('span', 'visually-hidden', 'Vimsopaka bala, out of twenty'\)/.test(appSrc) &&
    /\.visually-hidden \{/.test(fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8')));
 ok('and the note still says what the column totals, the heading no longer doing it',
-   /The last column totals them, verses 26-27/.test(appSrc.replace(/'\s*\+\s*'/g, '')));
+   /the last column scores those dignities out of twenty, from ' \+ scheme\.source/
+     .test(appSrc.replace(/'\s*\+\s*'/g, '')));
 /*
  * A number in a column invites being read as a verdict. Shadbala and vimsopaka
  * both answer "how fully can this graha act" and neither answers "is that a good
@@ -1325,10 +1337,10 @@ ok('and the note still says what the column totals, the heading no longer doing 
  * more surely for being strong. Parashara's own band label says "wholly
  * favourable", which is exactly why the caveat has to sit next to it.
  */
-ok('the note says the total is strength and not benefit', (function () {
-  var flat = appSrc.replace(/'\s*\+\s*'/g, '');
-  return /Read those as strength and not as benefit/.test(flat) &&
-    /a strong malefic aspecting a house it does not rule afflicts it the more surely for being strong/.test(flat);
+ok('the library says the total is strength and not benefit', (function () {
+  return /Strength is how fully a graha can act\. Influence is what kind of effect it has/
+    .test(seeds) &&
+    /being strong makes the affliction more certain rather than less/.test(seeds);
 })());
 ok('and the column\'s own hover says it too, where the number is read',
    /That is strength, not benefit: it says how fully ' \+ planet\.name/.test(appSrc));
@@ -1343,12 +1355,13 @@ ok('and the column\'s own hover says it too, where the number is read',
  * exchange and dig bala all fall outside it - each of which this page does carry,
  * elsewhere.
  */
-ok('the note says what the total cannot see, and where those live instead', (function () {
-  var flat = appSrc.replace(/'\s*\+\s*'/g, '');
-  return /it cannot see vargottama, an exchange of signs, a cancelled debilitation or directional strength/.test(flat) &&
-    /the chart, the Yogas tab and Shadbala carry instead/.test(flat) &&
-    /the total sitting near its floor exactly where the cancellation says it should not/.test(flat);
-})());
+ok('the library says what the total cannot see, and where those live instead',
+   /What vimsopaka bala cannot see/.test(seeds) &&
+   /Vargottama\. The score reads each division on its own/.test(seeds) &&
+   /Parivartana\. The score judges a graha against the lord/.test(seeds) &&
+   /Directional strength\. Dig bala turns on which house/.test(seeds) &&
+   /Neecha bhanga\. A debilitated graha scores near the floor/.test(seeds) &&
+   /dig bala is a column of its own in Shadbala/.test(seeds));
 ok('and each of those four really is computed somewhere', (function () {
   var shadbalaSrc = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8');
   var yogaSrc = fs.readFileSync(path.join(root, 'js/yogas.js'), 'utf8');
@@ -1383,17 +1396,15 @@ ok('a cancelled debilitation still scores near the floor, which is the point', (
   return false;
 })());
 
-ok('and that it measures magnitude rather than direction', (function () {
-  var flat = appSrc.replace(/'\s*\+\s*'/g, '');
-  return /Measuring magnitude rather than direction/.test(flat) &&
-    /the yoga saying what is promised and this how much of it the graha can carry/.test(flat);
-})());
+ok('and that it measures magnitude rather than direction',
+   /better read as magnitude than as direction/.test(seeds) &&
+   /The yoga says what is promised and vimsopaka bala says how much of it the graha can actually carry/
+     .test(seeds));
 
-ok('the note explains the totalling and the four readings', (function () {
-  var flat = appSrc.replace(/'\s*\+\s*'/g, '');
-  return /The last column totals them, verses 26-27/.test(flat) &&
-    /below 5 as incapable of auspicious results, 5 to 10 as some good, up to 15 as mediocre and above 15 as wholly favourable/.test(flat);
-})());
+ok('the library explains the totalling and the four readings',
+   /chapter 7, verses 26-27/.test(seeds) &&
+   /below 5 the graha is "not capable of giving auspicious results"/.test(seeds) &&
+   /above 15 it "will yield wholly favourable effects"/.test(seeds));
 
 /*
  * The select already reads "Shodasavarga \u00b7 16 divisions", so a visible
@@ -1465,42 +1476,34 @@ ok('the heading says its figure here and in every other scheme that carries it',
  * the note says where to look instead.
  */
 /*
- * The note had grown to four hundred and eighty words in one paragraph, which is
- * not a note under a table. It is two now: how to read the grid, visible, and
- * how the scoring works, folded under it. What a reader needs to use the table -
- * the two rows, the short forms, [V] - had been in the middle of the essay.
+ * The note had grown to four hundred and eighty words in one paragraph, most of
+ * it doctrine about vimsopaka that the Lesson tab already carried at greater
+ * length. Two copies of a doctrine drift, and the copy nobody maintains is the
+ * one the reader is looking at. The note keeps what the grid raises and hands
+ * the rest to the library.
  */
-ok('the visible note is short enough to be read', (function () {
-  var scheme = Astro.VARGA_SCHEMES.shodasavarga;
-  var src = appSrc.slice(appSrc.indexOf('function vargaNote'),
-                         appSrc.indexOf('function vargaDetail'));
-  var words = src.replace(/'\s*\+\s*'/g, '').match(/'[^']*'/g).join(' ')
-    .split(/\s+/).length;
-  return words < 160 && scheme.count === 16;
+ok('the note explains the table and does not teach the measure', (function () {
+  var at = appSrc.indexOf('function vargaNote');
+  var src = appSrc.slice(at, appSrc.indexOf('ABBREVIATE_ABOVE', at));
+  var flat = src.replace(/'\s*\+\s*'/g, '');
+  var words = flat.match(/'[^']*'/g).join(' ').split(/\s+/).length;
+  return words < 200 &&
+    !/varga viswa/.test(flat) && !/wholly favourable/.test(flat) &&
+    !/strength and not as benefit/.test(flat) && !/cannot see vargottama/.test(flat);
 })());
-ok('and the scoring is kept, not cut, behind a disclosure', (function () {
-  var flat = html.replace(/\s+/g, ' ');
-  return /<details class="technical varga-more"> <summary>How vimsopaka is scored<\/summary>/
-    .test(flat) && /id="vargas-detail"/.test(flat) &&
-    /function vargaDetail\(scheme\)/.test(appSrc);
-})());
-ok('as paragraphs, each answering one question', (function () {
-  var block = appSrc.slice(appSrc.indexOf('function vargaDetail'));
-  block = block.slice(0, block.indexOf('\n  }'));
-  return (block.match(/\n\n      '/g) || []).length === 4 &&
-    /detail\.appendChild\(el\('p', 'varga-note', para\)\)/.test(appSrc);
-})());
-ok('and the detail is rebuilt with the table, so the scheme it names is current',
-   /detail\.innerHTML = '';/.test(appSrc) &&
-   /vargaDetail\(scheme\)\.forEach/.test(appSrc));
-ok('the other schemes are listed as a list, not trailed off',
-   /names\.slice\(0, -1\)\.join\(', '\) \+ ' and ' \+ names\[names\.length - 1\]/.test(appSrc));
-ok('the note points at the shares rather than reciting them',
-   /share of the twenty in this scheme/.test(appSrc.replace(/'\s*\+\s*'/g, '')) &&
+ok('and there is no second copy of the scoring left in the panel',
+   !/function vargaDetail/.test(appSrc) && !/vargas-detail/.test(html) &&
+   !/How vimsopaka is scored/.test(html));
+ok('the note sends the reader to the library for the rest',
+   /The Lesson tab carries the scoring itself, under Vimsopaka Bala/
+     .test(appSrc.replace(/'\s*\+\s*'/g, '')) &&
+   /'strength', 'Vimsopaka Bala'/.test(seeds));
+ok('the shares are pointed at rather than recited, each heading printing its own',
    !/var shares = scheme\.divisions\.map/.test(appSrc) &&
-   /vimsopakaFigure\(weight\)/.test(appSrc));
-ok('and names the other schemes rather than one fixed pair',
-   /Astro\.VARGA_SCHEME_ORDER\.filter\(function \(k\) \{ return k !== scheme\.key; \}\)/.test(appSrc));
+   /vimsopakaFigure\(weight\)/.test(appSrc) &&
+   /out of twenty, from ' \+ scheme\.source/.test(appSrc.replace(/'\s*\+\s*'/g, '')));
+ok('and the library is the one naming all four schemes together',
+   /Shadvarga, Saptavarga, Dasavarga and Shodasavarga/.test(seeds));
 
 ok('it renders whenever a chart does',
    /renderShadbala\(state\);\s*\n\s*renderVargas\(state\);/.test(appSrc));
@@ -1573,7 +1576,7 @@ ok('the note explains the abbreviations where it uses them, and not otherwise', 
  */
 ok('and points at the hovers once, not once per kind of hover', (function () {
   var note = appSrc.slice(appSrc.indexOf('function vargaNote'));
-  note = note.slice(0, note.indexOf('function vargaDetail'));
+  note = note.slice(0, note.indexOf('ABBREVIATE_ABOVE'));
   return (note.match(/hover/gi) || []).length === 1 &&
     /Hover any cell for the reading behind it, a heading for what that division is/
       .test(note.replace(/'\s*\+\s*'/g, ''));
@@ -1590,33 +1593,37 @@ ok('every dignity tier has a colour, and no colour is orphaned', (function () {
     styled.every(function (k) { return keys.indexOf(k) >= 0; });
 })());
 
-ok('the note says exaltation is outside the classical steps', (function () {
-  var flat = appSrc.replace(/'\s*\+\s*'/g, '');
-  return /exaltation falls outside the six entirely/.test(flat) && /uchcha bala/.test(flat);
-})());
+ok('the library says exaltation is outside the classical steps',
+   /Exaltation has no rung either, so an exalted graha scores by its relation to the lord/
+     .test(seeds));
 /*
  * The figures are varga viswa, from verses 21-25, and there are six of them, not
  * seven: the top category is an own sign and moolatrikona is not ranked apart.
  * The note used to list seven dignities against six numbers, leaving one name
  * without a figure and no hint which.
  */
-ok('and carries Parashara\'s own varga viswa figures, all six of them', (function () {
-  var flat = appSrc.replace(/'\s*\+\s*'/g, '');
-  var pairs = ['own sign 20', 'great friend 18', 'friend 15', 'neutral 10',
-               'enemy 7', 'great enemy 5'];
-  return /varga viswa, out of twenty/.test(flat) &&
-    pairs.every(function (t) { return flat.indexOf(t) >= 0; });
-})());
-ok('and says outright that moolatrikona is not one of the six', (function () {
-  var flat = appSrc.replace(/'\s*\+\s*'/g, '');
-  return /Moolatrikona he does not rank apart from an own sign/.test(flat);
-})());
-ok('and says why the trimsamsa needs a stand-in',
-   /No luminary rules a trimsamsa/.test(appSrc.replace(/'\s*\+\s*'/g, '')) &&
-   /stands in as Mars and the Moon as Venus/.test(appSrc.replace(/'\s*\+\s*'/g, '')));
-ok('and that the nodes are left out',
-   /Rahu \n?\s*'?and Ketu own no sign and keep no friendships/.test(appSrc) ||
-   /Rahu and Ketu own no sign and keep no friendships/.test(appSrc.replace(/'\s*\+\s*'/g, '')));
+ok('and carries Parashara\'s own varga viswa figures, all six of them',
+   ['the whole of it in its own sign', '18/20 in a great friend\'s',
+    '15/20 a friend\'s', '10/20 a neutral\'s', '7/20 an enemy\'s',
+    '5/20 a great enemy\'s'].every(function (t) { return seeds.indexOf(t) >= 0; }));
+ok('and says outright that moolatrikona is not one of the six',
+   /Moolatrikona is not given a rung of its own and keeps the same twenty as an own sign/
+     .test(seeds));
+/*
+ * These two stay in the note. They are not doctrine about vimsopaka, they are
+ * facts about what is on the screen: why the grid has seven rows and not nine,
+ * and why the Sun is judged as Mars in one column of it. The library carries the
+ * longer account of both, but a reader should not have to leave the table to
+ * find out why two grahas are missing from it.
+ */
+ok('the note still says why the trimsamsa needs a stand-in',
+   /No luminary rules a trimsamsa, so in D30 the Sun is judged as Mars and the Moon as Venus/
+     .test(appSrc.replace(/'\s*\+\s*'/g, '')) &&
+   /the Sun and the Moon rule no trimsamsa at all/.test(seeds));
+ok('and that the nodes are left out, in the note and at length in the library',
+   /Rahu and Ketu own no sign and keep no friendships, so there is no relation to score/
+     .test(appSrc.replace(/'\s*\+\s*'/g, '')) &&
+   /A row for them would be blank in every column and totalled in none/.test(seeds));
 
 ok('the trimsamsa stand-in is explained where it fires',
    /stands in as ' \+ d\.viaProxy/.test(appSrc));
@@ -1848,10 +1855,18 @@ ok('the switch shows one at a time and says which is showing',
 ok('and the table is what a reader sees first',
    /id="vargas-as-table"[\s\S]{0,80}aria-pressed="true"/.test(html));
 
-ok('the note explains the mark', (function () {
+/*
+ * The flag key at the top of the tab defines all four flags, [V] among them, so
+ * the note under the grid defining it again was the same duplication in
+ * miniature that moved the scoring out to the library.
+ */
+ok('the key explains the mark, and the note does not explain it again', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');
-  return /\[V\] marks a sign the graha also holds in the rashi/.test(flat) &&
-    /D1 goes unmarked because every cell would qualify/.test(flat);
+  return /The division has landed the graha back in the sign it holds in the rashi/
+    .test(html.replace(/\s+/g, ' ')) &&
+    /never on D1, where every graha would qualify\. In D9 it is vargottama proper/
+      .test(html.replace(/\s+/g, ' ')) &&
+    !/A sign marked \[V\]/.test(flat);
 })());
 ok('and the D9 case is named as vargottama proper',
    /division === 9 \? ' In D9 that is vargottama proper\.' : ''/.test(appSrc));

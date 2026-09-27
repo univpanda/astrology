@@ -1242,72 +1242,40 @@
    * for the other three the moment the select moved.
    */
   /*
-   * Two notes, not one. The visible one is how to read the grid and nothing
-   * else, four or five sentences; everything it takes to score the thing folds
-   * away under it. The single paragraph had run to four hundred and eighty
-   * words, which is not a note under a table, it is an essay the table is
-   * attached to, and the part a reader actually needs - what the two rows are,
-   * what the short forms say, what [V] means - was buried in the middle of it.
+   * What the grid is and how to read it, and nothing else.
+   *
+   * The scoring used to sit under it, first as one four-hundred-word paragraph
+   * and then folded into a disclosure, and both were the wrong place for it.
+   * The varga viswa rungs, the four bands, strength against benefit, what the
+   * count cannot see: every one of those is doctrine about vimsopaka rather
+   * than instructions for this table, and every one was already written out at
+   * length in the Lesson tab under Vimsopaka Bala and Strength and influence.
+   * Two copies of a doctrine drift, and the copy nobody is maintaining is the
+   * one a reader happens to be looking at.
+   *
+   * What stays is what the grid raises and nothing else answers: why seven rows
+   * and not nine, and why the Sun is judged as Mars in one column. Both are
+   * visible facts about what is on screen.
+   *
+   * [V] is not among them. The flag key at the top of the tab defines all four
+   * flags, this one included, and a second definition a few inches below it is
+   * the same drift in miniature.
    */
   function vargaNote(scheme, brief) {
     return 'Where each graha stands in the ' + scheme.count + ' divisions of the ' +
       scheme.label + ', judged against the lord of the sign each one gives. Every graha ' +
       'takes two rows, the sign above its dignity there, and the last column scores those ' +
-      'dignities out of twenty. ' +
+      'dignities out of twenty, from ' + scheme.source + '. ' +
       (brief
         ? 'Sixteen columns leave no room for words, so signs go as Ari, Tau, Can and ' +
           'dignities as Exal, Mool, Own, Gt Fr, Fr, Neut, Enm, Gt Enm and Deb. '
         : '') +
       'Hover any cell for the reading behind it, a heading for what that division is ' +
-      'worth, a total for how it was reached. [V] marks a sign the graha also holds in the ' +
-      'rashi; in D9 that is vargottama proper, and D1 goes unmarked because every cell ' +
-      'would qualify.';
-  }
-
-  /*
-   * The scoring, behind a disclosure. Paragraphs rather than one block, each
-   * answering one question: what dignity is worth, where the shares come from,
-   * what the total means, what it does not mean, what it cannot see, and who is
-   * left out.
-   *
-   * The sixteen shares are no longer listed. Every one of them is printed under
-   * its own heading two inches above, so the list was the header row read aloud.
-   */
-  function vargaDetail(scheme) {
-    var names = Astro.VARGA_SCHEME_ORDER.filter(function (k) { return k !== scheme.key; })
-      .map(function (k) { return Astro.VARGA_SCHEMES[k].label; });
-    // "A, B and C" rather than "A, B, C", which read as a list cut short.
-    var others = names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1];
-
-    return [
-      'Parashara prices dignity as varga viswa, out of twenty: own sign 20, great friend ' +
-        '18, friend 15, neutral 10, enemy 7, great enemy 5. Moolatrikona he does not rank ' +
-        'apart from an own sign, and exaltation falls outside the six entirely, uchcha bala ' +
-        'measuring that; both appear here regardless, as does debilitation.',
-
-      'The figure under each heading is that division\u2019s share of the twenty in this ' +
-        'scheme, from ' + scheme.source + '. The ' + others + ' share them out ' +
-        'differently, which is the usual reason a vimsopaka total will not reconcile. The ' +
-        'last column totals them, verses 26-27: each share scaled by what the graha keeps ' +
-        'of it, own sign counting the full twenty and a great enemy five. Parashara reads ' +
-        'below 5 as incapable of auspicious results, 5 to 10 as some good, up to 15 as ' +
-        'mediocre and above 15 as wholly favourable.',
-
-      'Read those as strength and not as benefit. The total says how fully a graha acts in ' +
-        'its own nature, not whether that is wanted: a strong malefic aspecting a house it ' +
-        'does not rule afflicts it the more surely for being strong. Measuring magnitude ' +
-        'rather than direction is what makes it worth computing for a yoga already present, ' +
-        'the yoga saying what is promised and this how much of it the graha can carry.',
-
-      'It is not the whole of strength either. Counting dignity division by division, it ' +
-        'cannot see vargottama, an exchange of signs, a cancelled debilitation or ' +
-        'directional strength, which the chart, the Yogas tab and Shadbala carry instead. A ' +
-        'cancelled debilitation is the worst of those, the total sitting near its floor ' +
-        'exactly where the cancellation says it should not.',
-
-      'No luminary rules a trimsamsa, so in D30 the Sun stands in as Mars and the Moon as ' +
-        'Venus. Rahu and Ketu own no sign and keep no friendships, so they are left out.'
-    ];
+      'worth, a total for how it was reached. ' +
+      'Rahu and Ketu own no sign and keep no friendships, so there is no relation to score ' +
+      'and they are left out. No luminary rules a trimsamsa, so in D30 the Sun is judged as ' +
+      'Mars and the Moon as Venus. ' +
+      'The Lesson tab carries the scoring itself, under Vimsopaka Bala.';
   }
 
   /*
@@ -1451,11 +1419,6 @@
      * rather than welded into one sentence that leaves a name without a number.
      */
     document.getElementById('vargas-note').textContent = vargaNote(scheme, brief);
-    var detail = document.getElementById('vargas-detail');
-    detail.innerHTML = '';
-    vargaDetail(scheme).forEach(function (para) {
-      detail.appendChild(el('p', 'varga-note', para));
-    });
     renderVargaCharts(state, scheme);
   }
 
