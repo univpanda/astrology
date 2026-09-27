@@ -971,6 +971,13 @@
     return views;
   }
 
+  /** "first", "second" ... for a karaka's place in the order of eight. */
+  function karakaRank(name) {
+    var at = Astro.CHARA_KARAKAS.indexOf(name);
+    return ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh',
+      'eighth'][at] || 'one';
+  }
+
   /** Which chart's table is on screen. Kept across renders where it still exists. */
   var grahaChart = 1;
 
@@ -1087,7 +1094,17 @@
     { label: 'Seconds', part: true, says: 'Seconds of arc, a sixtieth of a minute each.' },
     { label: 'Nakshatra', says: 'Which of the 27 nakshatras the graha falls in.' },
     { label: 'Pada', says: 'Which quarter of that nakshatra, of four. Read with the row above it: a bare 3 means nothing on its own.' },
-    { label: 'Lord / sub lord', says: 'The nakshatra’s Vimshottari lord, over its KP sub lord.' }
+    { label: 'Nakshatra lord', says: 'The graha that rules that nakshatra, which is what runs the Vimshottari dasha.' },
+    { label: 'Sub lord', says: 'The KP sub lord: the nakshatra divided again in the Vimshottari proportions, and whichever graha owns the part the position falls in.' },
+    /*
+     * Two facts about the graha rather than about the chart it is read in, so
+     * they repeat across the tabs as [R] and [C] do. Both are taken from the
+     * rashi: a karaka is assigned by degrees into the sign and a varga longitude
+     * is a position stretched back across thirty, so neither means anything
+     * measured inside a division.
+     */
+    { label: 'Karaka', says: 'The Jaimini chara karaka, assigned by how far into its sign the graha has travelled - furthest is Atmakaraka. Read in the rashi, and so the same in every chart here.' },
+    { label: 'Avastha', says: 'Baladi avastha, the graha’s age in its sign, six degrees to a stage and reversed in an even sign. Read in the rashi, and so the same in every chart here.' }
   ];
 
   /**
@@ -1126,6 +1143,14 @@
       })[0];
       if (anchor) firstSign = Astro.vargaPosition(anchor.longitude, view.division).sign;
     }
+
+    /*
+     * Karaka and avastha are read in the rashi whichever chart the table shows,
+     * so they take the graha's own longitude rather than the division's.
+     */
+    var karakas = Astro.charaKarakas(c);
+    var rashiSign = function (r) { return Astro.signOf(r.longitude); };
+    var rashiDegree = function (r) { return Astro.norm360(r.longitude) % 30; };
 
     var entities = [{ name: 'Ascendant', longitude: c.ascendant.longitude, isAscendant: true }]
       .concat(c.planets.map(function (p) {
@@ -1212,14 +1237,33 @@
           { text: String(nak.pada), cls: 'numeric',
             title: 'Pada ' + nak.pada + ' of four, in ' + nak.name + '.' },
           /*
-           * Two grahas in one cell, so both go in abbreviated and the words go
-           * in the hover: this pair is read as a pair, Vimshottari's lord over
-           * its KP sub lord.
+           * A row each and the names in full. They shared a cell reading
+           * "Ma / Sa" while they shared a column, which is what forced both to
+           * be abbreviated; a row costs no width.
            */
-          { text: Astro.grahaAbbr(nak.lord) + ' / ' + Astro.grahaAbbr(nak.subLord),
-            cls: 'nak-lords',
-            title: nak.name + ' is ruled by ' + nak.lord + ', and its sub lord is ' +
-              nak.subLord + '.' }
+          { text: nak.lord,
+            title: nak.name + ' is ruled by ' + nak.lord + '.' },
+          { text: nak.subLord,
+            title: 'The sub lord of this point in ' + nak.name + ' is ' +
+              nak.subLord + '.' },
+          { text: r.isAscendant ? '–' : (karakas[r.name] || '–'), stack: true,
+            title: r.isAscendant
+              ? 'The lagna is a point rather than a graha, so it takes no karaka.'
+              : karakas[r.name]
+                ? karakas[r.name] + ': ' + karakaRank(karakas[r.name]) +
+                  ' of the eight by degrees into the sign.'
+                : 'Ketu takes no chara karaka. The eight are the seven from the ' +
+                  'Sun to Saturn with Rahu, whose degrees are counted back from ' +
+                  'the end of its sign.' },
+          { text: r.isAscendant ? '–'
+              : Astro.baladiAvastha(rashiSign(r), rashiDegree(r)),
+            title: r.isAscendant
+              ? 'The lagna is a point rather than a graha, so it takes no avastha.'
+              : Astro.SIGNS[rashiSign(r)] + ' is an ' +
+                (rashiSign(r) % 2 === 0 ? 'odd' : 'even') + ' sign, and the graha ' +
+                'stands ' + rashiDegree(r).toFixed(1) + '° into it, so it gives ' +
+                Astro.BALADI_WORTH[Astro.baladiAvastha(rashiSign(r), rashiDegree(r))] +
+                '.' }
         ]
       };
     });

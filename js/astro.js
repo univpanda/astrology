@@ -546,6 +546,73 @@ var Astro = (function () {
     return { lon: norm360(ofDate.lon + nut.dpsi), lat: ofDate.lat, distance: rho2 };
   }
 
+  /* ------------------------------------------------- karakas and avasthas */
+
+  /*
+   * The chara karakas, chapter 32 verses 1-17. Jaimini's variable significators:
+   * they are assigned by how far a graha has travelled into its sign, so they
+   * move from chart to chart where the naisargika karakas never do.
+   *
+   * "Among the planets from the Sun etc. whichever has traversed maximum number
+   * of degrees in a particular sign is called Atmakaraka. If the degrees are
+   * identical, then the one with more minutes of arc and if the minutes are also
+   * identical then the one with higher seconds of arc will have to be
+   * considered. In the case of Rahu, deduct his longitude in that particular
+   * sign from 30."
+   *
+   * Eight, with Rahu. The chapter opens with the seven from the Sun to Saturn
+   * and reports the eight-karaka school in the same breath, and its own worked
+   * example takes eight - Rahu comes out Matrukaraka there. Ketu is not among
+   * them in either scheme.
+   *
+   * The seven-karaka variant treats Matru and Putra as one and is not what this
+   * follows.
+   */
+  var CHARA_KARAKAS = ['Atmakaraka', 'Amatyakaraka', 'Bhratrukaraka',
+    'Matrukaraka', 'Pitrukaraka', 'Putrakaraka', 'Gnatikaraka', 'Darakaraka'];
+  var KARAKA_GRAHAS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus',
+    'Saturn', 'Rahu'];
+
+  /** Which karaka each graha carries, keyed by name. */
+  function charaKarakas(chart) {
+    var ranked = [];
+    chart.planets.forEach(function (p) {
+      if (KARAKA_GRAHAS.indexOf(p.name) < 0) return;
+      var into = norm360(p.longitude) % 30;
+      // Rahu travels backwards, so its share of the sign is what is left of it.
+      ranked.push({ name: p.name, degrees: p.name === 'Rahu' ? 30 - into : into });
+    });
+    ranked.sort(function (a, b) { return b.degrees - a.degrees; });
+    var out = {};
+    ranked.forEach(function (p, i) {
+      if (i < CHARA_KARAKAS.length) out[p.name] = CHARA_KARAKAS[i];
+    });
+    return out;
+  }
+
+  /*
+   * Baladi avastha, chapter 45 verses 3-4. "Infant, youthful, adolescent, old
+   * and dead are the states of planets placed in the ascendant order at the rate
+   * of six degrees in odd signs. This arrangement is reverse in the case of even
+   * signs."
+   *
+   * Verse 4 grades what each is worth: "One fourth, half, full, negligible and
+   * nil are the grades of results due to a planet in infant, youthful,
+   * adolescent, old and dead states." So the middle of a sign is where a graha
+   * gives most, and both ends are where it gives least - which is the opposite
+   * of what a reader expects from a scale that runs infant to dead.
+   */
+  var BALADI = ['Bala', 'Kumara', 'Yuva', 'Vriddha', 'Mrita'];
+  var BALADI_WORTH = { Bala: 'a quarter of its results', Kumara: 'half',
+    Yuva: 'its results in full', Vriddha: 'next to nothing', Mrita: 'nothing' };
+
+  function baladiAvastha(sign, degreeInSign) {
+    var step = Math.min(4, Math.floor(degreeInSign / 6));
+    // Sign 0 is Aries, the 1st sign and so an odd one; the order reverses in
+    // the even signs.
+    return sign % 2 === 0 ? BALADI[step] : BALADI[4 - step];
+  }
+
   /* --------------------------------------------------- zodiac vocabulary */
 
   var SIGNS = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
@@ -1660,6 +1727,9 @@ var Astro = (function () {
     apparentSiderealTime: apparentSiderealTime,
     moonLongitude: moonLongitude,
     moonLatitude: moonLatitude,
+    charaKarakas: charaKarakas, CHARA_KARAKAS: CHARA_KARAKAS,
+    KARAKA_GRAHAS: KARAKA_GRAHAS,
+    baladiAvastha: baladiAvastha, BALADI: BALADI, BALADI_WORTH: BALADI_WORTH,
     declination: declination,
     sunriseSunset: sunriseSunset,
     lunarNode: lunarNode,

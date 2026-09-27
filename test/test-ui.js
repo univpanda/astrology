@@ -1795,7 +1795,10 @@ ok('and a two-word label stacks, as the nakshatra does', (function () {
   var block = appSrc.slice(appSrc.indexOf('cells: ['),
                            appSrc.indexOf('var table = el('));
   var stacked = (block.match(/stack: true/g) || []).length;
-  return stacked === 3 &&
+  // Dignity, Relationship, Nakshatra and Karaka: Amatyakaraka is one word but
+  // the row holds two-word company, and stacking costs nothing where there is
+  // only one word to put on a line.
+  return stacked === 4 &&
     /Astro\.dignityOf\(r\.name, v\.sign, v\.degreeInSign\)\) \|\| '–',\s*\n\s*stack: true,/
       .test(block) &&
     /cls: 'dispositor', stack: true,/.test(block);
@@ -1815,11 +1818,20 @@ ok('the cell capitalises them rather than a second table holding them capitalise
 ok('and the prose still reads as prose, the article taking the lower-case form',
    /withArticle\(Astro\.RELATION_LABELS\[out\]\)/.test(appSrc) &&
    Astro.titleCase(Astro.RELATION_LABELS.adhimitra) === 'Great Friend');
-ok('the nakshatra lord and sub lord are abbreviated too, with the names on hover',
-   /Astro\.grahaAbbr\(nak\.lord\) \+ ' \/ ' \+ Astro\.grahaAbbr\(nak\.subLord\)/.test(appSrc) &&
-   /is ruled by ' \+ nak\.lord \+ ', and its sub lord is ' \+\s*\n?\s*nak\.subLord/.test(appSrc));
-ok('no cell in the table prints a graha name in full where it names one',
-   !/nak\.lord \+ ' \/ ' \+ nak\.subLord/.test(appSrc));
+/*
+ * A row each, and the names in full. They shared a cell reading "Ma / Sa" while
+ * they shared a column, and sharing is what forced both to be abbreviated; a
+ * row costs no width, so neither has to be.
+ */
+ok('the nakshatra lord and sub lord have a row each, named in full', (function () {
+  var at = appSrc.indexOf('var GRAHA_ROWS = [');
+  var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
+  var rows = (block.match(/label: '[^']+'/g) || [])
+    .map(function (t) { return t.slice(8, -1); });
+  return rows.indexOf('Sub lord') === rows.indexOf('Nakshatra lord') + 1 &&
+    /\{ text: nak\.lord,/.test(appSrc) && /\{ text: nak\.subLord,/.test(appSrc) &&
+    !/Astro\.grahaAbbr\(nak\.lord\)/.test(appSrc);
+})());
 /*
   * No note says so. Two letters beside a relation in words is not a puzzle, the
   * kundli above the table already labels its cells the same way, and every one
@@ -4171,11 +4183,11 @@ ok('and the box is drawn to that half width, not the old full one',
    !/var W = 760/.test(appSrc));
 
 /*
- * Thirteen rows now rather than nine columns, the table having been turned to
+ * Sixteen rows now rather than nine columns, the table having been turned to
  * match the two grids beside it. The Graha heading went with the turn: the
  * grahas are the columns, so the corner above their names is blank.
  */
-ok('the table carries thirteen rows, one of them a heading', (function () {
+ok('the table carries sixteen rows, one of them a heading', (function () {
   var at = appSrc.indexOf('var GRAHA_ROWS = [');
   if (at < 0) return false;
   var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
@@ -4183,7 +4195,7 @@ ok('the table carries thirteen rows, one of them a heading', (function () {
     .map(function (t) { return t.slice(8, -1); });
   return found.join('|') === ['Rashi', 'Dignity', 'House', 'Lordship', 'Dispositor',
     'Relationship', 'Longitude', 'Degrees', 'Minutes', 'Seconds', 'Nakshatra',
-    'Pada', 'Lord / sub lord'].join('|') &&
+    'Pada', 'Nakshatra lord', 'Sub lord', 'Karaka', 'Avastha'].join('|') &&
     !/<th scope="col">Chart<\/th>/.test(html);
 })());
 /*

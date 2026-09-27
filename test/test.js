@@ -3141,6 +3141,112 @@ console.log('\nGaja Kesari, and the Kesari it is confused with');
   })());
 })();
 
+console.log('\nChara karakas and avasthas');
+/*
+ * Chapter 32 verses 1-17. Jaimini's variable significators, assigned by how far
+ * a graha has travelled into its sign: "whichever has traversed maximum number
+ * of degrees in a particular sign is called Atmakaraka", and the rest follow in
+ * order of longitude.
+ */
+(function () {
+  var at = function (degrees) {
+    return { planets: Object.keys(degrees).map(function (name) {
+      return { name: name, longitude: degrees[name] };
+    }) };
+  };
+  /*
+   * Parashara's own worked example, chapter 32: the Moon at 27°35'46" is
+   * Atmakaraka, Venus at 27°17'50" Amatyakaraka, Jupiter at 26°7'13"
+   * Bhratrukaraka, and Rahu at 22°22'54" - counted back from the end of its
+   * sign - Matrukaraka, with Mercury, the Sun and Mars following.
+   */
+  var worked = at({
+    Moon: 27 + 35 / 60 + 46 / 3600,
+    Venus: 27 + 17 / 60 + 50 / 3600,
+    Jupiter: 26 + 7 / 60 + 13 / 3600,
+    Rahu: 30 - (22 + 22 / 60 + 54 / 3600),     // stored forwards, read backwards
+    Mercury: 14 + 54 / 60 + 13 / 3600,
+    Sun: 7 + 12 / 60 + 18 / 3600,
+    Mars: 6 + 18 / 60 + 46 / 3600,
+    Saturn: 1
+  });
+  var k = A.charaKarakas(worked);
+  ok('the karakas fall as Parashara\'s worked example has them',
+     k.Moon === 'Atmakaraka' && k.Venus === 'Amatyakaraka' &&
+     k.Jupiter === 'Bhratrukaraka' && k.Rahu === 'Matrukaraka' &&
+     k.Mercury === 'Pitrukaraka' && k.Sun === 'Putrakaraka' &&
+     k.Mars === 'Gnatikaraka' && k.Saturn === 'Darakaraka');
+  /*
+   * "In the case of Rahu, deduct his longitude in that particular sign from 30."
+   * It travels backwards, so its share of the sign is what is left of it.
+   */
+  ok('and Rahu is counted back from the end of its sign', (function () {
+    // Rahu one degree in: read as 29, so it outranks a graha at 28.
+    var c = at({ Rahu: 1, Sun: 28, Moon: 2, Mars: 3, Mercury: 4, Jupiter: 5,
+                 Venus: 6, Saturn: 7 });
+    return A.charaKarakas(c).Rahu === 'Atmakaraka' &&
+      A.charaKarakas(c).Sun === 'Amatyakaraka';
+  })());
+  /*
+   * Eight, with Rahu, which is the scheme the chapter's own example takes.
+   * Ketu is in neither the seven nor the eight.
+   */
+  ok('and Ketu takes none, being in neither scheme', (function () {
+    var c = at({ Ketu: 29, Sun: 1, Moon: 2, Mars: 3, Mercury: 4, Jupiter: 5,
+                 Venus: 6, Saturn: 7, Rahu: 8 });
+    return A.charaKarakas(c).Ketu === undefined &&
+      A.KARAKA_GRAHAS.indexOf('Ketu') < 0 && A.KARAKA_GRAHAS.length === 8 &&
+      A.CHARA_KARAKAS.length === 8;
+  })());
+  ok('and the eight are named in the order the chapter gives them',
+     A.CHARA_KARAKAS.join(' ') === 'Atmakaraka Amatyakaraka Bhratrukaraka ' +
+       'Matrukaraka Pitrukaraka Putrakaraka Gnatikaraka Darakaraka');
+  /*
+   * Every chart hands out all eight, there being eight grahas eligible, so one
+   * missing would mean a graha was skipped.
+   */
+  ok('and a real chart hands out all eight', (function () {
+    for (var y = 1950; y < 1990; y++) {
+      var c = A.chart({ jdUT: A.julianDay(y, 1 + y % 12, 15, 6.5), latitude: 28.61,
+                        longitude: 77.21, tzOffsetMinutes: 330 });
+      var given = A.charaKarakas(c);
+      var names = Object.keys(given).map(function (n) { return given[n]; }).sort();
+      if (names.join(' ') !== A.CHARA_KARAKAS.slice().sort().join(' ')) return false;
+    }
+    return true;
+  })());
+
+  /*
+   * Baladi avastha, chapter 45 verses 3-4: "Infant, youthful, adolescent, old
+   * and dead are the states of planets placed in the ascendant order at the rate
+   * of six degrees in odd signs. This arrangement is reverse in the case of even
+   * signs."
+   */
+  ok('the five ages run six degrees each up an odd sign',
+     A.baladiAvastha(0, 3) === 'Bala' && A.baladiAvastha(0, 9) === 'Kumara' &&
+     A.baladiAvastha(0, 15) === 'Yuva' && A.baladiAvastha(0, 21) === 'Vriddha' &&
+     A.baladiAvastha(0, 27) === 'Mrita');
+  ok('and down an even one',
+     A.baladiAvastha(1, 3) === 'Mrita' && A.baladiAvastha(1, 9) === 'Vriddha' &&
+     A.baladiAvastha(1, 15) === 'Yuva' && A.baladiAvastha(1, 21) === 'Kumara' &&
+     A.baladiAvastha(1, 27) === 'Bala');
+  // 30 degrees exactly would index past the end; a graha at 29.999 is still in.
+  ok('and the last degree of a sign stays inside the last stage',
+     A.baladiAvastha(0, 29.9999) === 'Mrita' && A.baladiAvastha(0, 30) === 'Mrita');
+  /*
+   * Verse 4 grades them: "One fourth, half, full, negligible and nil are the
+   * grades of results due to a planet in infant, youthful, adolescent, old and
+   * dead states." Yuva is the peak, so a graha gives most in the middle of its
+   * sign and least at either end - which is not what a scale running infant to
+   * dead suggests, and is why the grades are carried rather than inferred.
+   */
+  ok('and what each age is worth is carried, the peak being in the middle',
+     A.BALADI.join(' ') === 'Bala Kumara Yuva Vriddha Mrita' &&
+     A.BALADI_WORTH.Yuva === 'its results in full' &&
+     A.BALADI_WORTH.Mrita === 'nothing' &&
+     A.BALADI_WORTH.Bala === 'a quarter of its results');
+})();
+
 console.log('\nCombustion');
 /*
  * With the retrograde column: three grahas lose their rays closer in when
