@@ -361,10 +361,21 @@ ok('graha-level flags ride on the name, chart-level flags on the row', (function
  */
 ok('each flag gets a class of its own',
    /el\('span', 'flag flag-' \+ f\.toLowerCase\(\)/.test(appSrc));
+/*
+ * The colours had been scoped to a th, which was true while every flag rode on
+ * the graha's name. The merged table moved [V] and [Y] into the Chart column, a
+ * td, and they lost their colour there without anything failing. The rules are
+ * unscoped now, so a flag looks the same wherever it is put.
+ */
+ok('and the colour is not scoped to the cell the flag happened to start in',
+   (function () {
+     var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+     return !/th \.flag/.test(css) && /\n\.flag \{ font-weight: 600;/.test(css);
+   })());
 ok('and each class a colour of its own, all four distinct', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
   var colourOf = function (cls) {
-    var m = css.match(new RegExp('th \\.' + cls + ' \\{ color: ([^;]+);'));
+    var m = css.match(new RegExp('\\n\\.' + cls + ' \\{ color: ([^;]+);'));
     return m && m[1].trim();
   };
   var seen = ['flag-r', 'flag-v', 'flag-y', 'flag-c'].map(colourOf);
@@ -1074,33 +1085,65 @@ ok('the nodes are never flagged, being points', (function () {
 ok('and neither is the lagna, nor the Sun itself',
    !Astro.isCombust('Sun', 0, 0, false) && Astro.COMBUSTION.Sun === undefined &&
    /yogakaraka: false, combust: false/.test(fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8')));
-ok('the key says which flags belong to the graha and which to the chart', (function () {
+/*
+ * The key is looked up one flag at a time, so it is four entries rather than a
+ * paragraph: a term carrying the flag in its own colour, and beneath it what the
+ * flag means and which of the two things it is true of. Run together as prose it
+ * made the reader find where each sentence started.
+ */
+ok('the key is four entries, one per flag', (function () {
   var flat = html.replace(/\s+/g, ' ');
-  return /In the table \[R\] and \[C\] sit on the graha, being true of it whichever chart is read/
-    .test(flat) && /while \[V\] and \[Y\] sit on each chart row, being true of that division alone/
-    .test(flat);
+  var dl = flat.match(/<dl class="flag-key">.*?<\/dl>/);
+  if (!dl) return false;
+  return (dl[0].match(/<dt>/g) || []).length === 4 &&
+    (dl[0].match(/<dd>/g) || []).length === 4;
+})());
+ok('each carries its flag in its own colour, and names it',
+   ['r Retrograde', 'v Vargottama', 'y Yogakaraka', 'c Combust'].every(function (pair) {
+     var parts = pair.split(' ');
+     var flat = html.replace(/\s+/g, ' ');
+     return new RegExp('<span class="flag flag-' + parts[0] + '">\\[' +
+       parts[0].toUpperCase() + '\\]</span> ' + parts[1] + '</dt>').test(flat);
+   }));
+ok('and each says which of the two it is true of', (function () {
+  var flat = html.replace(/\s+/g, ' ');
+  return /True of the graha whichever chart is read, so in the table it sits on the name/
+    .test(flat) &&
+    /True of that division alone, so it sits on the chart row/.test(flat) &&
+    /so it sits on the chart row and follows the chart when it is rotated onto another graha/
+      .test(flat) &&
+    /A real distance, so like \[R\] it sits on the name/.test(flat);
 })());
 ok('the key explains [C] too', (function () {
   var flat = html.replace(/\s+/g, ' ');
-  return /\[C\] is combust, burnt by being too near the Sun/.test(flat);
+  return /Burnt by being too near the Sun, within the orb Parashara gives for that graha/
+    .test(flat);
 })());
 
 ok('the key explains [Y], and says it moves with the rotation', (function () {
   var flat = html.replace(/\s+/g, ' ');
-  return /\[Y\] is yogakaraka, a graha owning both an angle and a trine counted from house 1/.test(flat) &&
+  return /A graha owning both an angle and a trine counted from house 1/.test(flat) &&
     /follows the chart when it is rotated onto another graha/.test(flat);
 })());
 ok('retrograde alone stays bare [R]', /Sa \[R\]<|Sa \[R\]\s/.test(renderIn(1)));
 ok('a graha with neither carries no brackets', /Ju<\/text>|>Ju</.test(renderIn(1)));
 
 ok('the key covers all four flags', (function () {
-  // Collapsed, so re-wrapping the paragraph cannot fail this on whitespace alone.
+  // Collapsed, so re-wrapping an entry cannot fail this on whitespace alone.
   var flat = html.replace(/\s+/g, ' ');
-  return /\[R\] is retrograde/.test(flat) && /\[Y\] is yogakaraka/.test(flat) &&
-    /\[C\] is combust/.test(flat) &&
-    /\[V\] marks a division that has landed the graha back in the sign it holds in the rashi/
-      .test(flat) &&
-    /never appears on D1; in D9 it is vargottama proper/.test(flat);
+  return /Moving backwards against the signs/.test(flat) &&
+    /A graha owning both an angle and a trine/.test(flat) &&
+    /Burnt by being too near the Sun/.test(flat) &&
+    /The division has landed the graha back in the sign it holds in the rashi/.test(flat) &&
+    /never on D1, where every graha would qualify\. In D9 it is vargottama proper/.test(flat);
+})());
+// A key with nothing to lay out across is a key in one column, which is the
+// narrow paragraph again.
+ok('and it is laid across the width rather than down a column', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  return /\.flag-key \{[^}]*display: grid/.test(css) &&
+    /\.flag-key \{[^}]*repeat\(auto-fit, minmax\(/.test(css) &&
+    !/\.flag-key \{[^}]*text-align: center/.test(css);
 })());
 
 console.log('\nVargas panel');

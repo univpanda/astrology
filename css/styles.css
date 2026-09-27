@@ -866,14 +866,14 @@ td .retro-flag, td.retro-flag, th .retro-flag { color: var(--retro); }
    three different facts rather than as one label. Retrograde keeps the red it
    has everywhere else; the other two take hues the page does not otherwise use,
    so neither can be mistaken for chrome. */
-th .flag { font-weight: 600; font-size: 0.9em; }
-th .flag-r { color: var(--retro); }
-th .flag-v { color: var(--flag-vargottama); }
-th .flag-y { color: var(--flag-yogakaraka); }
+.flag { font-weight: 600; font-size: 0.9em; }
+.flag-r { color: var(--retro); }
+.flag-v { color: var(--flag-vargottama); }
+.flag-y { color: var(--flag-yogakaraka); }
 /* Combustion is the odd one out: the other three mark something a graha has,
    this marks something done to it. So it is dimmed rather than given a fourth
    accent, which is also what a burnt graha is. */
-th .flag-c { color: var(--flag-combust); }
+.flag-c { color: var(--flag-combust); }
 
 /* Ten columns of dignity words are read by scanning, not line by line, so the
    tiers carry weight and colour. Kept to the page's two hues rather than a
@@ -999,7 +999,23 @@ td.vimsopaka-poor { color: var(--retro); }
   color: var(--ink-faint);
   font-variant-numeric: tabular-nums;
 }
-.flag-key { max-width: 60ch; margin: 0 auto 1rem; text-align: center; }
+/* Four flags, four entries, laid across the width rather than run together
+   down a 60ch column. A key is looked up one flag at a time, not read through,
+   and centred prose makes the reader find where each sentence starts. */
+.flag-key {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 0.7rem 1.8rem;
+  margin: 0 0 1rem;
+  padding: 0;
+}
+.flag-key dt { color: var(--ink); font-weight: 600; margin-bottom: 0.1rem; }
+.flag-key dd {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
 /* A yogakaraka is worth spotting at a glance; the bare house numbers beside it
    are not, so only the named case is picked out. */
 td.rulership, td.dispositor { color: var(--ink-soft); }
