@@ -566,9 +566,11 @@ ok('the heading corner sits above the column it heads', (function () {
  */
 ok('and every scrolling table really does head its rows with a th', (function () {
   // Two grids head their rows with what they measure - a division, a share of
-  // Shadbala - and the rest with a graha. Nothing spans a group any more.
+  // Shadbala - and the rest with a graha. The one rowgroup left is Longitude,
+  // naming the three rows of units beneath it, and every one of those three
+  // still carries a row header of its own.
   return (appSrc.match(/setAttribute\('scope', 'row'\)/g) || []).length === 6 &&
-    !/'rowgroup'/.test(appSrc) &&
+    (appSrc.match(/setAttribute\('scope', 'rowgroup'\)/g) || []).length === 1 &&
     (appSrc.match(/el\(i === 0 \? 'th' : 'td'/g) || []).length === 1;
 })());
 ok('the frozen cell joins the hover band, except where it spans a group',
@@ -3938,10 +3940,43 @@ ok('a chart on D1 lends its own rotation to that row, rather than a second row a
  * name used to span a row per division, which put two or three charts' worth of
  * rows under every graha whether a reader wanted them or not.
  */
-ok('a graha is one row, the tables being one chart each',
-   !/rowspan/.test(appSrc) && !/'rowgroup'/.test(appSrc) &&
-   /views\.forEach\(function \(view\) \{/.test(appSrc) &&
-   /scroll\.appendChild\(grahaTableFor\(state, view\)\);/.test(appSrc));
+ok('a graha is one column, the tables being one chart each', (function () {
+  var at = appSrc.indexOf('function grahaTableFor');
+  var block = appSrc.slice(at, appSrc.indexOf('function renderShadbala', at));
+  // The one span left is down the label column, grouping the three units of a
+  // longitude; nothing spans a graha.
+  return (block.match(/rowspan/g) || []).length === 1 &&
+    /groupTh\.setAttribute\('rowspan', String\(span\)\);/.test(block) &&
+    /views\.forEach\(function \(view\) \{/.test(appSrc) &&
+    /scroll\.appendChild\(grahaTableFor\(state, view\)\);/.test(appSrc);
+})());
+/*
+ * Three bare unit names beside a table of numbers do not say which measurement
+ * they are units of, so the measurement is named once beside them and spans
+ * them. Every other label spans both columns, there being no group above it.
+ */
+ok('and the three units are named as one measurement', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var at = appSrc.indexOf('var GRAHA_ROWS = [');
+  var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
+  var grouped = (block.match(/group: 'Longitude'/g) || []).length;
+  return grouped === 3 &&
+    /var groupTh = el\('th', 'row-group', row\.group\);/.test(appSrc) &&
+    /if \(!row\.group\) th\.setAttribute\('colspan', '2'\);/.test(appSrc) &&
+    /corner\.setAttribute\('colspan', '2'\);/.test(appSrc) &&
+    /table\.graha-table th\.row-part \{ color: var\(--ink-soft\); padding-left: 0\.9rem; \}/
+      .test(css);
+})());
+/*
+ * The span is counted from the rows rather than written as a 3, so adding a
+ * fourth unit or dropping one cannot leave it spanning the wrong number.
+ */
+ok('and the span is counted, not typed', (function () {
+  var at = appSrc.indexOf('var startsGroup =');
+  var block = appSrc.slice(at, appSrc.indexOf('tr.className = ', at));
+  return /for \(var k = i; k < GRAHA_ROWS\.length && GRAHA_ROWS\[k\]\.group === row\.group; k\+\+\)/
+    .test(block) && !/rowspan', '3'/.test(appSrc);
+})());
 /*
  * And the strip disappears where it would have one tab. Both charts on D1 gives
  * one view, and a control with nothing to choose between is furniture.

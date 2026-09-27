@@ -1072,9 +1072,9 @@
      * column that held eleven characters for this now holds two, which is what
      * the Moon's, Jupiter's and Saturn's columns were sized by.
      */
-    { label: 'Degrees', says: 'Whole degrees into the sign, from 0 to 29.' },
-    { label: 'Minutes', says: 'Minutes of arc, a sixtieth of a degree each.' },
-    { label: 'Seconds', says: 'Seconds of arc, a sixtieth of a minute each.' },
+    { label: 'Degrees', group: 'Longitude', says: 'Whole degrees into the sign, from 0 to 29.' },
+    { label: 'Minutes', group: 'Longitude', says: 'Minutes of arc, a sixtieth of a degree each.' },
+    { label: 'Seconds', group: 'Longitude', says: 'Seconds of arc, a sixtieth of a minute each.' },
     { label: 'Nakshatra', says: 'Which of the 27 nakshatras the graha falls in.' },
     { label: 'Pada', says: 'Which quarter of that nakshatra, of four. Read with the row above it: a bare 3 means nothing on its own.' },
     { label: 'Lord / sub lord', says: 'The nakshatra’s Vimshottari lord, over its KP sub lord.' }
@@ -1213,9 +1213,11 @@
 
     var thead = el('thead');
     var headRow = el('tr');
-    // Blank, the row headings under it naming themselves.
+    // Blank, the row headings under it naming themselves. Two columns wide,
+    // the labels below splitting into a group and its parts.
     var corner = el('th');
     corner.setAttribute('scope', 'col');
+    corner.setAttribute('colspan', '2');
     headRow.appendChild(corner);
     columns.forEach(function (col) {
       if (col.entity.isAscendant) {
@@ -1232,10 +1234,30 @@
     table.appendChild(thead);
 
     var tbody = el('tbody');
+    /*
+     * A row belonging to a group gets the group's name once, spanning its rows
+     * in a column of its own: Degrees, Minutes and Seconds are three rows of
+     * one thing, and three bare unit names beside a table of numbers do not say
+     * which measurement they are units of. Every other row's label spans both
+     * columns, there being no group above it.
+     */
     GRAHA_ROWS.forEach(function (row, i) {
       var tr = document.createElement('tr');
-      var th = el('th', null, row.label);
+      var startsGroup = row.group && (i === 0 || GRAHA_ROWS[i - 1].group !== row.group);
+      if (startsGroup) {
+        var span = 0;
+        for (var k = i; k < GRAHA_ROWS.length && GRAHA_ROWS[k].group === row.group; k++) {
+          span++;
+        }
+        var groupTh = el('th', 'row-group', row.group);
+        groupTh.setAttribute('scope', 'rowgroup');
+        groupTh.setAttribute('rowspan', String(span));
+        tr.appendChild(groupTh);
+        tr.className = 'group-first';
+      }
+      var th = el('th', row.group ? 'row-part' : null, row.label);
       th.setAttribute('scope', 'row');
+      if (!row.group) th.setAttribute('colspan', '2');
       th.title = row.says;
       tr.appendChild(th);
       columns.forEach(function (col) {
