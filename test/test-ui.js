@@ -2183,8 +2183,33 @@ ok('the graha names stay whole at every width',
 ok('and the grid takes a smaller type size instead', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
   return /table\.className = brief \? 'brief' : '';/.test(appSrc) &&
-    /#vargas-table\.brief th\[scope="rowgroup"\] \{ font-size: 0\.84rem; \}/.test(css) &&
-    /#vargas-table\.brief td\.varga-sign \{ font-size: 0\.78rem; \}/.test(css);
+    /#vargas-table \{ font-size: 0\.93rem; \}/.test(css) &&
+    /#vargas-table\.brief \{ font-size: 0\.84rem; \}/.test(css);
+})());
+/*
+ * One knob. Every size inside the grid is relative to the grid, so the wide case
+ * changes the base and each part keeps its proportion to every other. Per-part
+ * rem sizes had inverted them - a name ran at 0.80 of a cell in the narrow
+ * schemes and 1.08 at sixteen - which is what made D16 read as a different table
+ * rather than the same one drawn smaller.
+ */
+ok('and every part of the grid is sized relative to the grid', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var block = css.slice(css.indexOf('#vargas-table { font-size:'),
+                        css.indexOf('/* Table or charts'));
+  var sizes = block.match(/font-size: [0-9.]+(rem|em)/g) || [];
+  var rems = sizes.filter(function (t) { return /rem$/.test(t); });
+  return sizes.length >= 5 && rems.length === 2 &&
+    rems[0] === 'font-size: 0.93rem' && rems[1] === 'font-size: 0.84rem';
+})());
+ok('so the name keeps the same proportion to a cell at either width', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var pick = function (sel) {
+    var at = css.indexOf(sel);
+    return parseFloat(css.slice(at).match(/font-size: ([0-9.]+)em/)[1]);
+  };
+  // Both are ems on the same base, so the ratio cannot differ between schemes.
+  return Math.abs(pick('#vargas-table th {') / pick('#vargas-table td.dig') - 0.785) < 0.02;
 })());
 ok('the note explains the abbreviations where it uses them, and not otherwise', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');

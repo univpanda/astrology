@@ -915,7 +915,7 @@ td.dig-debilitated { color: var(--retro); font-weight: 600; }
 /* Sign numbers rather than names: sixteen columns of "Sagittarius" do not fit,
    and the chart above already labels its boxes this way. Tabular figures so the
    columns line up whatever the digits. */
-td.varga-sign { color: var(--ink-soft); font-size: 0.85rem; }
+td.varga-sign { color: var(--ink-soft); }
 /* Only the numbered form wants tabular figures; sign names want the body face. */
 td.varga-sign-abbr { font-family: var(--font-mono); letter-spacing: 0.01em; }
 /* Sixteen columns is a lot of table; let it breathe less than the others. */
@@ -930,14 +930,16 @@ td.varga-sign-abbr { font-family: var(--font-mono); letter-spacing: 0.01em; }
    row above, and the cell sitting first there is a division. */
 #vargas-table th, #vargas-table td { text-align: center; }
 #vargas-table thead th:first-child, #vargas-table tbody th { text-align: left; }
-#vargas-table td.dig { font-size: 0.86rem; }
-/* Sixteen columns give up type size rather than words. A graha's name is the one
-   thing in the row that is scanned rather than decoded, so it keeps its letters
-   and the whole grid drops about a tenth instead. */
-#vargas-table.brief th[scope="rowgroup"] { font-size: 0.84rem; }
-#vargas-table.brief td.varga-sign { font-size: 0.78rem; }
-#vargas-table.brief td.dig { font-size: 0.78rem; }
-#vargas-table.brief th { font-size: 0.72rem; }
+/* Sizes inside the grid are relative to the grid, so sixteen columns change one
+   number and every part keeps its proportion to every other. Setting each part
+   its own rem size for the wide case had inverted them: a graha's name ran at
+   0.80 of a cell in the narrow schemes and 1.08 at sixteen, which is why D16
+   read as a different table rather than the same one drawn smaller. */
+#vargas-table { font-size: 0.93rem; }
+#vargas-table th { font-size: 0.73em; }
+#vargas-table td.varga-sign { font-size: 0.92em; }
+#vargas-table td.dig { font-size: 0.93em; }
+#vargas-table.brief { font-size: 0.84rem; }
 /* The three divisions the chosen scheme leans on hardest, picked out of the row.
    A tint and two rules rather than a colour, so a column separates without
    competing with the dignity colours inside it. Where two of the three are
