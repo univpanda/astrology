@@ -4439,5 +4439,81 @@ ok('the nodes are never combust, being points',
    !A.isCombust('Rahu', 1, 0, false) && !A.isCombust('Ketu', 1, 0, false) &&
    A.COMBUSTION.Rahu === undefined);
 
+
+console.log('\nBudha-Aditya and combustion, which overlap');
+/*
+ * Raman gives two numbers in two books and never reconciles them: Mercury's
+ * orb of combustion is 14 degrees direct and 12 retrograde in Hindu Predictive
+ * Astrology 54, while Three Hundred Important Combinations 24 puts the floor
+ * for Budha-Aditya at 10. Between them Mercury is burnt and gives the yoga at
+ * once, which reads as a bug unless the finding says otherwise. So it does,
+ * and that sentence is what these tests hold in place.
+ */
+(function () {
+  var delhi = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+  var read = function (y, m) {
+    var c = Astro.chart({ jdUT: Astro.julianDay(y, m, 15, 1), latitude: 28.61,
+      longitude: 77.21, tzOffsetMinutes: 330 });
+    var at = {};
+    c.planets.forEach(function (p) { at[p.name] = p; });
+    var apart = Math.abs(Astro.norm360(at.Mercury.longitude - at.Sun.longitude));
+    if (apart > 180) apart = 360 - apart;
+    return {
+      apart: apart, retrograde: at.Mercury.retrograde,
+      combust: Astro.isCombust('Mercury', at.Mercury.longitude, at.Sun.longitude,
+        at.Mercury.retrograde),
+      found: Yogas.detect(c, Shadbala.compute(c, delhi)).filter(function (f) {
+        return f.subject === 'Budha Aditya Yoga';
+      })[0]
+    };
+  };
+  var says = function (f, what) {
+    return !!f && f.reasons.join(' ').indexOf(what) > -1;
+  };
+
+  // 11.97 degrees, direct: inside the 14-degree orb, outside the 10-degree floor
+  var band = read(1972, 6);
+  ok('inside the band Mercury is combust and still gives the yoga',
+    band.combust && !!band.found,
+    band.apart.toFixed(2) + ' combust=' + band.combust + ' yoga=' + !!band.found);
+  ok('and the finding says so itself rather than leaving it to look like a bug',
+    says(band.found, 'combust all the same') &&
+    says(band.found, 'two') && says(band.found, 'books'),
+    band.found ? band.found.reasons[2] : 'no finding');
+
+  // 14.33 degrees, direct: clear of both
+  var clear = read(1978, 3);
+  ok('clear of the orb the yoga stands on its own two reasons',
+    !clear.combust && !!clear.found && clear.found.reasons.length === 2,
+    clear.apart.toFixed(2) + ' reasons=' +
+      (clear.found ? clear.found.reasons.length : 0));
+
+  /*
+   * 12.41 degrees retrograde. Direct, that would be combust and the card would
+   * carry the extra line; retrograde the orb is 12, so it is not. The narrower
+   * retrograde orb has to reach this far or the overlap would be reported on a
+   * chart that does not have it.
+   */
+  var retro = read(1989, 5);
+  ok('the narrower retrograde orb is the one that decides it',
+    retro.retrograde && !retro.combust && !!retro.found &&
+      retro.found.reasons.length === 2 && retro.apart > 12 && retro.apart < 14,
+    retro.apart.toFixed(2) + ' R=' + retro.retrograde + ' combust=' + retro.combust);
+
+  /*
+   * Below the floor there is no yoga to qualify. Swept rather than sampled,
+   * because this is the half of the rule most treatments drop.
+   */
+  var wrong = 0, inside = 0;
+  for (var y = 1950; y < 2020; y++) {
+    for (var m = 1; m <= 12; m++) {
+      var r = read(y, m);
+      if (r.apart < 10) { inside++; if (r.found) wrong++; }
+    }
+  }
+  ok('below the floor there is never a yoga, over a seventy-year sweep',
+    inside > 100 && wrong === 0, wrong + ' of ' + inside + ' wrongly claimed');
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

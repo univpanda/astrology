@@ -1113,8 +1113,16 @@ var Yogas = (function () {
    * With Raman's qualifier, which most treatments leave out: "It should not be
    * taken for granted that irrespective of the distance between the Sun and
    * Mercury, Budha-Aditya Yoga would be present. On the contrary, Mercury
-   * should not be within 10 degrees of the Sun." Inside that, Mercury is simply
-   * burnt, and a burnt graha is in no condition to give a yoga.
+   * should not be within 10 degrees of the Sun."
+   *
+   * He gives the floor and no reason for it. The obvious reason - that Mercury
+   * is burnt nearer in - is not one his own books support, because Hindu
+   * Predictive Astrology section 54 puts Mercury's orb of combustion at 14
+   * degrees direct and 12 retrograde. Two figures, two books, never reconciled.
+   * So between 10 and 14 degrees Mercury is combust and gives the yoga at the
+   * same time, in about one chart in sixteen. That looks like a contradiction
+   * on the card, which is why the finding says so out loud when it happens
+   * rather than leaving a reader to assume one of the two marks is a bug.
    */
   var BUDHA_ADITYA_FLOOR = 10;
 
@@ -1132,6 +1140,18 @@ var Yogas = (function () {
     if (apart > 180) apart = 360 - apart;
     if (apart < BUDHA_ADITYA_FLOOR) return [];
 
+    var reasons = [
+      'Mercury stands with the Sun in ' + Astro.SIGNS[sun.sign] + ', ' +
+        apart.toFixed(1) + '\u00b0 away',
+      'and outside the ten degrees Raman sets as the floor for this yoga'
+    ];
+    if (Astro.isCombust('Mercury', merLon, sunLon, mercury.retrograde)) {
+      reasons.push('Mercury is combust all the same, which is not a ' +
+        'contradiction: Raman puts the floor for the yoga at 10\u00b0 and the ' +
+        'orb of combustion at 14\u00b0 direct, 12\u00b0 retrograde, in two ' +
+        'different books. Between those figures both readings hold at once');
+    }
+
     return [{
       yoga: 'Budha Aditya Yoga',
       kind: 'general',
@@ -1141,12 +1161,7 @@ var Yogas = (function () {
       family: null,
       grahas: ['Sun', 'Mercury'],
       houses: [],
-      reasons: [
-        'Mercury stands with the Sun in ' + Astro.SIGNS[sun.sign] + ', ' +
-          apart.toFixed(1) + '° away',
-        'and outside the ten degrees Raman sets as the floor: nearer than that ' +
-          'Mercury is simply burnt, and a burnt graha gives no yoga'
-      ],
+      reasons: reasons,
       summary: 'Mercury is with the Sun in ' + Astro.SIGNS[sun.sign] + ' and ' +
         apart.toFixed(1) + '° off it, which is Budha-Aditya yoga.'
     }];

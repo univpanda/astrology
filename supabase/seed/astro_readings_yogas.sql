@@ -406,9 +406,9 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
  array[
    'Combination 24: "If Mercury combines with the Sun, the combination goes under the name of Budha-Aditya Yoga." It is read for intelligence, skill and good standing.',
    'Raman adds a qualifier that most treatments leave out, and it matters: "It should not be taken for granted that irrespective of the distance between the Sun and Mercury, Budha-Aditya Yoga would be present. On the contrary, Mercury should not be within 10 degrees of the Sun to give rise to Budha-Aditya Yoga."',
-   'The reason is combustion. Any graha close to the Sun is burnt and loses its power to do good, and a burnt graha is in no condition to give a yoga. Mercury is never far from the Sun to begin with, so without the floor the yoga would be claimed every time the two share a sign.',
-   'This site applies the ten degrees. Mercury in the Sun''s sign but inside that distance gives no yoga and is simply reported as combust, which is what it is.',
-   'Mercury''s full orb of combustion is 14 degrees direct and 12 retrograde, wider than Raman''s floor of 10. So there is a band where Mercury is combust by the general rule and still gives the yoga by his, and this site follows his figure for the yoga and the general orb for the mark.'
+   'He gives the floor and no reason for it. The obvious reason is combustion, since Mercury is never far from the Sun and without some floor the yoga would be claimed every time the two share a sign. But that reason does not survive checking: Raman''s own Hindu Predictive Astrology, section 54, puts Mercury''s orb of combustion at 14 degrees direct and 12 retrograde. The floor for the yoga is 10. Two figures, two books, never reconciled.',
+   'So there is a band, 10 to 14 degrees, where Mercury is combust by his general rule and gives the yoga by his particular one. Both at once. Measured over 9,600 charts it happens in 6.3 per cent of them, against 41 per cent combust and 28 per cent with the yoga.',
+   'This site reports both and says why, rather than suppressing one to make the chart look tidy. Picking a single number would mean overruling one of Raman''s statements with the other, and nothing in either text says which should give way. Where two readings from the same authority disagree, the honest thing is to show the disagreement.'
  ],
  'Combustion is measured on the rashi longitudes even when a division is read.', 968)
 
