@@ -4832,5 +4832,63 @@ console.log('\nTwelve more from Raman, and one correction to what was here');
     vas ? vas.reasons[2] : 'none found');
 })();
 
+
+console.log('\nThe strengths a detector is handed');
+/*
+ * Only Lakshmi reads the strength reading, so only Lakshmi noticed that callers
+ * were handing detect() two different shapes: the whole Shadbala.compute result
+ * at two of three sites in the page and in the frequency sweep, the grahas map
+ * at the third. It asks for strengths[lagnaLord], got undefined from the
+ * wrapper, and returned nothing - so the yoga appeared on the Yogas tab, never
+ * on the graha card, and was absent from the measured frequencies entirely.
+ *
+ * Both shapes must now work, because both are in use and the next detector to
+ * read strengths should not have to rediscover this.
+ */
+(function () {
+  var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+  var found = null, whole = null, inner = null;
+  for (var y = 1950; y < 2030 && !found; y++) {
+    for (var m = 1; m <= 12 && !found; m++) {
+      var c = A.chart({ jdUT: A.julianDay(y, m, 15, 1), latitude: 28.61,
+        longitude: 77.21, tzOffsetMinutes: 330 });
+      var reading = Shadbala.compute(c, place);
+      whole = Yogas.detect(c, reading).filter(function (f) {
+        return f.subject === 'Lakshmi Yoga';
+      });
+      inner = Yogas.detect(c, reading.grahas).filter(function (f) {
+        return f.subject === 'Lakshmi Yoga';
+      });
+      if (whole.length || inner.length) found = c;
+    }
+  }
+  ok('a chart with Lakshmi yoga turns up at all', !!found);
+  ok('and detect finds it whether handed the whole reading or the grahas map',
+    whole.length === 1 && inner.length === 1,
+    whole.length + ' from the wrapper, ' + inner.length + ' from the map');
+
+  /*
+   * The condition is the key the lesson library is keyed by. This said
+   * 'lakshmi', which matched no passage, so the card would have had nothing to
+   * say even once the yoga reached it.
+   */
+  ok('and the finding is keyed the way the library holds it',
+    whole[0].condition === 'general', whole[0].condition);
+
+  /*
+   * The general point rather than the one instance: every detector must cope
+   * with either shape, since nothing stops a caller passing the wrapper.
+   */
+  var mixed = 0;
+  for (var k = 0; k < 24; k++) {
+    var c2 = A.chart({ jdUT: A.julianDay(1970 + k * 2, 3, 3, 3), latitude: 28.61,
+      longitude: 77.21, tzOffsetMinutes: 330 });
+    var r2 = Shadbala.compute(c2, place);
+    if (Yogas.detect(c2, r2).length !== Yogas.detect(c2, r2.grahas).length) mixed++;
+  }
+  ok('no detector reports differently for the two shapes', mixed === 0,
+    mixed + ' charts disagreed');
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

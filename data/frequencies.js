@@ -24,6 +24,7 @@ var FREQUENCIES = {
     "Kartari Yoga|papa": 6.9,
     "Kartari Yoga|shubha": 1.2,
     "Kemadruma Yoga|general": 45,
+    "Lakshmi Yoga|general": 11.7,
     "Mahabhagya Yoga|general": 6,
     "Malika Yoga|general": 0.2,
     "Neecha Bhanga Raja Yoga|general": 19.9,

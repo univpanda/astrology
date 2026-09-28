@@ -456,7 +456,15 @@ var Yogas = (function () {
       yoga: 'Lakshmi Yoga',
       kind: inKendra ? 'angle' : 'trine',
       subject: 'Lakshmi Yoga',
-      condition: 'lakshmi',
+      /*
+       * 'general' is the key the library holds the definition under, as it is
+       * for every other yoga. This said 'lakshmi', which matched no passage, so
+       * the card had nothing to say about it - hidden until now behind a second
+       * fault that stopped the yoga reaching the card at all. The other two
+       * Lakshmi passages, 'angle' and 'strength', are the contested points and
+       * belong to the Lesson tab rather than to a finding.
+       */
+      condition: 'general',
       title: 'Lakshmi yoga',
       family: 'Lakshmi yoga',
       grahas: [ninthLord, lagnaLord],
@@ -1748,10 +1756,24 @@ var Yogas = (function () {
    * it, and it is passed to every detector rather than special-cased so the next
    * one that needs strength does not have to change this signature again.
    */
+  /*
+   * `strengths` is the Shadbala reading keyed by graha. Callers had been
+   * handing this two different things - the whole compute() result at two of
+   * three sites in the page and in the frequency sweep, the grahas map at the
+   * third - and only Lakshmi yoga reads it, so only Lakshmi noticed. It asks
+   * for strengths[lagnaLord], got undefined from the wrapper object, and
+   * returned nothing: the yoga showed on the Yogas tab, never on the graha
+   * card, and was missing from the measured frequencies altogether.
+   *
+   * Normalised here rather than at each call site, so that a caller cannot get
+   * it wrong again and a detector that starts reading strengths tomorrow does
+   * not rediscover this.
+   */
   function detect(chart, strengths) {
+    var byGraha = strengths && strengths.grahas ? strengths.grahas : strengths;
     var all = [];
     DETECTORS.forEach(function (detector) {
-      detector(chart, strengths).forEach(function (finding) { all.push(finding); });
+      detector(chart, byGraha).forEach(function (finding) { all.push(finding); });
     });
     return all;
   }
