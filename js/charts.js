@@ -92,7 +92,7 @@ var Charts = (function () {
         var offset = perRow === 1 ? 0 : (c === 0 ? -maxWidth / 4 : maxWidth / 4);
         var t = el('text', {
           x: (cx + offset).toFixed(1), y: y.toFixed(1),
-          class: 'planet graha-' + (SLUG[p.name] || 'other') + (p.retrograde ? ' retro' : ''),
+          class: 'planet graha-' + (SLUG[p.name] || 'other'),
           'text-anchor': 'middle'
         }, planetText(p));
         group.appendChild(t);

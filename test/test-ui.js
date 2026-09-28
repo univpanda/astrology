@@ -148,7 +148,16 @@ var chart = Astro.chart({ jdUT: jdUT, latitude: delhi.lat, longitude: delhi.lon,
          return new RegExp('>' + a + '(R|\\s|<)').test(svg);
        }));
     ok(tag + ': lagna highlighted once', (svg.match(/first-house/g) || []).length === 1);
-    ok(tag + ': retrograde styled', /class="planet graha-[a-z]+ retro"/.test(svg));
+    /*
+     * A retrograde graha keeps its own colour. Repainting the label put two
+     * facts on one channel and let the second erase the first: four retrograde
+     * grahas came out the same red with their own colours gone, while a direct
+     * Mars wore a near-identical red meaning something else. The nodes, always
+     * retrograde, never showed their colours at all. [R] carries it now, as
+     * [V], [Y] and [C] carry theirs - asserted on the line below.
+     */
+    ok(tag + ': a retrograde graha keeps its own colour',
+       !/ retro"/.test(svg) && /class="planet graha-[a-z]+"/.test(svg));
     // Charts carry the graha and nothing else: degrees live in the table, where
     // there is room to show them to the arcsecond.
     ok(tag + ': no degrees anywhere in the chart', !/>[A-Z][a-z] ?\d/.test(svg));
@@ -3963,6 +3972,33 @@ ok('and the choice reaches the engine', (function () {
   return /moonPaksha: document\.getElementById\('moon-paksha'\)\.value,\s*\n\s*natClock: document\.getElementById\('nat-clock'\)\.value/
     .test(appSrc);
 })());
+
+console.log('\nThe tab strip opens where it starts');
+/*
+ * "Add a kundali" was the tab selected on load but sat second in the strip,
+ * so the page opened on a tab that was not the first one. Saved kundalis is
+ * also an empty list until something is saved, which is a poor first thing to
+ * land on.
+ */
+(function () {
+  var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  var strip = html.slice(html.indexOf('<div class="tabs" role="tablist"'),
+    html.indexOf('</div>', html.indexOf('<div class="tabs" role="tablist"')));
+  var ids = (strip.match(/id="tab-([a-z]+)"/g) || []).map(function (m) {
+    return m.slice(8, -1);
+  });
+  ok('add comes first and saved second',
+    ids[0] === 'add' && ids[1] === 'saved', ids.join(' > '));
+  ok('and the first tab is the one selected on load',
+    /id="tab-add"[^>]*aria-selected="true"/.test(strip) &&
+    !/id="tab-saved"[^>]*aria-selected="true"/.test(strip));
+  /*
+   * The keyboard order has to follow the strip, or arrow keys walk the tabs in
+   * a different order than the eye does.
+   */
+  ok('and the arrow-key order matches the strip',
+    /setupTabs\(\['add', 'saved', 'chart', 'lesson', 'settings'\]/.test(appSrc));
+})();
 
 console.log('\nThe sign number keeps clear of the grahas');
 /*

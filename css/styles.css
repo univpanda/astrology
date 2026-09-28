@@ -744,22 +744,44 @@ svg.kundli .sign-num {
 }
 svg.kundli .planet { font-size: 15.5px; font-weight: 500; }
 
-/* One colour per graha, as a hand-drawn kundli distinguishes them. Muted
-   enough to sit inside the page's palette rather than fight it. */
+/*
+ * One colour per graha, following Parashara's complexions (ch.1 vv.16-17)
+ * wherever they can be text on a page: the Sun and Mars "blood-red", Mercury
+ * "akin to green grass", Saturn "dark", Ketu smoky brown. Three cannot be
+ * followed. "Tawny" is given for both the Moon and Jupiter, which would make
+ * them each other's colour and near the Sun's, and Venus is "variegated",
+ * which is not a colour at all; those three are chosen to stay apart instead.
+ *
+ * Rahu was grey, on the same reading as Saturn's "dark" - and two greys can
+ * never separate: the pair sat at delta-E 8 on the normal-vision scale, which
+ * is below the 15 at which full colour vision can tell two marks apart. It is
+ * plum now, which ch.1 v.638 licenses by giving Rahu multi-coloured cloth, and
+ * the worst pair is 19.6.
+ *
+ * Saturn stays dark and low-chroma, which fails the palette validator's
+ * lightness band and chroma floor on purpose: lifting it moves it into Venus's
+ * teal and puts the normal-vision floor back under 15. Dark is also the word
+ * the text uses. The colourblind separation sits at 6.7, inside the band the
+ * guidance allows only with secondary encoding - and every mark here carries
+ * its own two-letter name, which is the strongest form of that.
+ */
 svg.kundli .graha-sun { fill: #c2410c; }
-svg.kundli .graha-moon { fill: #4a6fa5; }
+svg.kundli .graha-moon { fill: #2f6fbf; }
 svg.kundli .graha-mars { fill: #b8483a; }
 svg.kundli .graha-mercury { fill: #1f7a52; }
-svg.kundli .graha-jupiter { fill: #7c5295; }
-svg.kundli .graha-venus { fill: #0e7490; }
-svg.kundli .graha-saturn { fill: #475569; }
-svg.kundli .graha-rahu { fill: #3f3f46; }
-svg.kundli .graha-ketu { fill: #92400e; }
+svg.kundli .graha-jupiter { fill: #7340a8; }
+svg.kundli .graha-venus { fill: #0e8fa3; }
+svg.kundli .graha-saturn { fill: #3f4e60; }
+svg.kundli .graha-rahu { fill: #b35291; }
+svg.kundli .graha-ketu { fill: #7c3f10; }
 svg.kundli .graha-lagna { fill: var(--green-deep); font-weight: 700; }
 
-/* Retrograde overrides the graha colour: it has to read as a different kind of
-   fact, not a shade of the same one. */
-svg.kundli .planet.retro { fill: var(--retro); }
+/* Retrograde once repainted the whole label, which put two different facts on
+   one channel and let the second erase the first. Four retrograde grahas came
+   out the same red, their own colours gone, while a direct Mars wore a red of
+   its own meaning something else entirely - and the nodes, always retrograde,
+   never showed their colours at all. Colour is identity here; [R] carries
+   retrogression, as [V], [Y] and [C] carry theirs. */
 
 /* ---------------------------------------------------- yogas and lessons */
 
@@ -1456,14 +1478,17 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
   .chart-card { background: linear-gradient(180deg, var(--surface) 0%, #1b241f 100%); }
   svg.kundli .frame, svg.kundli .cell { stroke: #3b5a49; }
   svg.kundli .first-house .cell { fill: rgba(88, 192, 138, 0.12); }
+  /* The same nine, re-stepped for a dark surface. Rahu was grey here too and
+     sat at delta-E 4.4 from Saturn, the worst pair on either theme; freed to
+     plum the worst is 15.4. */
   svg.kundli .graha-sun { fill: #f0925c; }
-  svg.kundli .graha-moon { fill: #8fb3e0; }
+  svg.kundli .graha-moon { fill: #7aa9ee; }
   svg.kundli .graha-mars { fill: #e8867a; }
   svg.kundli .graha-mercury { fill: #63c795; }
-  svg.kundli .graha-jupiter { fill: #c4a0d8; }
-  svg.kundli .graha-venus { fill: #5bb8cd; }
-  svg.kundli .graha-saturn { fill: #a3b1c2; }
-  svg.kundli .graha-rahu { fill: #b9bcc4; }
+  svg.kundli .graha-jupiter { fill: #b98ae0; }
+  svg.kundli .graha-venus { fill: #4fc3dc; }
+  svg.kundli .graha-saturn { fill: #7c8ba3; }
+  svg.kundli .graha-rahu { fill: #e07ab8; }
   svg.kundli .graha-ketu { fill: #d9a066; }
   .saved-item:hover { background: #21362b; }
   .add-kundali { background: #21362b; color: var(--green-deep); }
@@ -1498,7 +1523,6 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
   svg.kundli text { fill: #111; }
   svg.kundli .frame, svg.kundli .cell { stroke: #9bbcab; }
   svg.kundli .frame-outer { stroke: #1f6b47; }
-  svg.kundli .planet.retro { fill: #96382c; }
   svg.kundli .planet.lagna { fill: #145336; }
   tbody tr:hover { background: none; }
   th, td { border-bottom: 1px solid #ddd; }

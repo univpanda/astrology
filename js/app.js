@@ -3410,7 +3410,7 @@
   var emptyChart = document.getElementById('empty-chart');
   var savedCount = document.getElementById('saved-count');
 
-  var sections = setupTabs(['saved', 'add', 'chart', 'lesson', 'settings'],
+  var sections = setupTabs(['add', 'saved', 'chart', 'lesson', 'settings'],
     document.querySelector('.tabs:not(.subtabs)'), { scrollToTop: true, onChange: function (name) {
       if (name === 'lesson') loadLessons();
     } });
