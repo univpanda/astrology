@@ -4922,8 +4922,34 @@ console.log('\nEverything Raman numbers up to 50');
   ok('only one ascendant lets the 7th lord be exalted in the 10th',
     possible.length === 1 && possible[0].lagna === 8,
     possible.map(function (p) { return A.SIGNS[p.lagna]; }).join(', ') || 'none');
-  ok('and there the 7th and 10th are ruled by the same graha, so Sreenatha cannot form',
+  ok('and there the 7th and 10th are ruled by the same graha',
     possible[0].seventh === possible[0].tenth, possible[0].seventh);
+  /*
+   * Which makes the Three Hundred Important Combinations wording - "the lord of
+   * the 10th is in the 9th" - unsatisfiable, since that graha would hold two
+   * houses. Raman's Hindu Predictive Astrology says "combines with the lord of
+   * the 9th" instead, and on that ascendant the 9th lord is the Sun, whom
+   * Mercury is never far from. That reading is the one implemented.
+   */
+  var sag = function (mercuryDegree, sunSign) {
+    var P = function (n, sg, d) {
+      return { name: n, sign: sg, longitude: sg * 30 + d,
+               house: ((sg - 8) % 12 + 12) % 12 + 1 };
+    };
+    return { ascendant: { longitude: 8 * 30 + 10 }, planets: [
+      P('Mercury', 5, mercuryDegree), P('Sun', sunSign, 20), P('Moon', 0, 5),
+      P('Mars', 1, 5), P('Jupiter', 2, 5), P('Venus', 6, 5), P('Saturn', 3, 5),
+      P('Rahu', 9, 5), P('Ketu', 3, 5)] };
+  };
+  ok('the workable reading is satisfiable, and only at that one ascendant',
+    Yogas.sreenatha(sag(8, 5)).length === 1);
+  ok('and the finding says which of the two wordings produced it',
+    Yogas.sreenatha(sag(8, 5))[0].reasons.join(' ')
+      .indexOf('Hindu Predictive Astrology') > -1);
+  ok('a Mercury past his exaltation arc in the same seat does not do it',
+    Yogas.sreenatha(sag(25, 5)).length === 0);
+  ok('nor does the Sun standing anywhere but with him',
+    Yogas.sreenatha(sag(8, 6)).length === 0);
 
   /*
    * Matsya is not impossible, only very constrained, and the constraint is

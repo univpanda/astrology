@@ -52,6 +52,7 @@ var FREQUENCIES = {
     "Sakata Yoga|general": 16.8,
     "Sama Yoga|general": 33.6,
     "Sankha Yoga|general": 26.1,
+    "Sreenatha Yoga|general": 0.2,
     "Sunapha Yoga|general": 22.2,
     "Ubhayachari Yoga|general": 34.4,
     "Vanchanachorabheethi Yoga|general": 22.7,

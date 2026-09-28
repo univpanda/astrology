@@ -2059,33 +2059,59 @@ var Yogas = (function () {
    * Yogas inasmuch as a point of contact is established between the 7th, the
    * 9th and the 10th."
    *
-   * It cannot happen. The first clause asks the 7th lord to be exalted while
-   * standing in the 10th, so the 10th sign has to be that lord's exaltation
-   * sign, and across all twelve ascendants that is true of exactly one -
-   * Sagittarius, whose 7th is Gemini and whose 10th is Virgo, both ruled by
-   * Mercury. The second clause then asks the lord of the 10th to be in the 9th,
-   * and that is the same graha, which cannot hold two houses at once.
+   * As stated there it cannot happen. The first clause asks the 7th lord to be
+   * exalted while standing in the 10th, so the 10th sign has to be that lord's
+   * exaltation sign, and across twelve ascendants that is true of exactly one -
+   * Sagittarius, whose 7th is Gemini and whose 10th is Virgo, both Mercury's.
+   * The second clause then asks the lord of the 10th to be in the 9th, and that
+   * is the same graha, which cannot hold two houses at once.
    *
-   * The detector is kept rather than deleted. It is a correct reading of the
-   * rule, and the rule is what the site claims to implement; what makes it
-   * unsatisfiable is the exaltation table, not the code. A test holds the
-   * arithmetic so that if that table is ever parameterised this stops being
-   * silently dead.
+   * Raman gives a workable version in his other book. Hindu Predictive
+   * Astrology: "When the exalted lord of the 7th occupies the 10th and the lord
+   * of the 10th COMBINES WITH the lord of the 9th." Not in the 9th - with its
+   * lord. On the one ascendant that reaches the first clause, the 9th is Leo
+   * and its lord the Sun, so the rule asks Mercury exalted in Virgo with the
+   * Sun beside him, and Mercury is never far from the Sun. It is satisfiable.
+   *
+   * That reading is the one implemented, because a rule that can be met is a
+   * better reading of an author than one that cannot, and both are his.
+   *
+   * Phaladeepika has a Srinatha too and it is a different combination
+   * altogether - ch.6 sloka 28, "If Venus, the lord of the 9th and Mercury be
+   * similarly placed", meaning each in a kendra or trikona and each in
+   * exaltation, own or friendly sign. But its results are Raman's almost word
+   * for word, down to the marks of Vishnu on the body, which suggests the
+   * definition in Three Hundred Important Combinations drifted from a source
+   * whose results it kept. Not implemented here; it belongs with Srikantha and
+   * Virinchi, the two combinations that share its verse.
    */
   function sreenatha(chart) {
     var c = lordship(chart);
     var seventh = c.lordOf(7), tenth = c.lordOf(10);
-    if (seventh === tenth) return [];
+    /*
+     * One graha ruling both the 7th and the 10th is not a disqualification
+     * here - it is the only case that can reach the first clause at all, since
+     * Sagittarius is the one ascendant whose 7th lord exalts in its 10th and
+     * there Mercury rules both. Guarding against it, as the earlier reading
+     * had to, made this unsatisfiable twice over.
+     */
     if (c.houseOf(seventh) !== 10 || !c.exalted(seventh)) return [];
-    if (c.houseOf(tenth) !== 9) return [];
+    var ninth = c.lordOf(9);
+    if (tenth === ninth || !c.together(tenth, ninth)) return [];
 
     return finding('Sreenatha Yoga', 'Sreenatha yoga', [
       seventh + ', lord of the 7th, stands exalted in the 10th',
-      tenth + ', lord of the 10th, stands in the 9th',
+      tenth + ', lord of the 10th, stands with ' + ninth + ', lord of the 9th, ' +
+        'in ' + Astro.SIGNS[c.at[tenth].sign],
       'Raman counts it among the important raja yogas, "inasmuch as a point ' +
-        'of contact is established between the 7th, the 9th and the 10th"'
-    ], 'The exalted 7th lord holds the 10th while the 10th lord holds the 9th, ' +
-       'which is Sreenatha yoga.', [seventh, tenth], [7, 9, 10]);
+        'of contact is established between the 7th, the 9th and the 10th"',
+      'read on his Hindu Predictive Astrology wording - the 10th lord joined ' +
+        'to the 9th lord. Three Hundred Important Combinations asks instead ' +
+        'for the 10th lord to be in the 9th, which no chart can satisfy: the ' +
+        'only ascendant whose 7th lord can exalt in the 10th is Sagittarius, ' +
+        'and there one graha rules both houses'
+    ], 'The exalted 7th lord holds the 10th and the 10th lord stands with the ' +
+       '9th lord, which is Sreenatha yoga.', [seventh, tenth, ninth], [7, 9, 10]);
   }
 
   /*
