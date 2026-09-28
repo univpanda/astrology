@@ -1506,24 +1506,62 @@ ok('and no short form has a key the full list does not',
      })());
 
   /*
-   * Verse 16: no luminary rules a trimsamsa, so without a stand-in neither could
-   * ever hold one of its own. Cancer and Leo never appear in D30 at all.
+   * Verse 16: no luminary rules a trimsamsa. This engine once let them own one
+   * anyway, the Sun standing in for Mars and the Moon for Venus, so that a
+   * graha ruling none would not be a guest in every one of them.
+   *
+   * Raman's Example 9 rules it out. His Sun sits in the first trimsamsa of
+   * Libra, which is Mars's, and he scores it 22.5 - adhimitra, the Sun's
+   * relation to Mars - where owning it would have given 30. Being a guest is
+   * the answer: a graha with no lordship still has a relation, and a relation
+   * is what a varga is scored on.
    */
-  ok('the luminaries can own a trimsamsa only through the stand-in', (function () {
-    if (A.TRIMSAMSA_PROXY.Sun !== 'Mars' || A.TRIMSAMSA_PROXY.Moon !== 'Venus') return false;
-    var ownsOne = function (graha, wantLord) {
-      for (var lon = 0; lon < 360; lon += 0.05) {
-        var p30 = A.vargaPosition(lon, 30);
-        if (A.SIGN_LORDS[p30.sign] !== wantLord) continue;
-        var vd = A.vargaDignity(graha, lon, 30, pos);
-        if (vd && (vd.key === 'own' || vd.key === 'moolatrikona') && vd.viaProxy === wantLord) return true;
-      }
-      return false;
-    };
+  ok('a luminary is a guest in every trimsamsa, never an owner', (function () {
+    var owned = 0, labelled = 0;
+    for (var lon = 0; lon < 360; lon += 0.05) {
+      ['Sun', 'Moon'].forEach(function (g) {
+        var vd = A.vargaDignity(g, lon, 30, pos);
+        if (!vd) return;
+        if (vd.relation === 'own' || vd.relation === 'moolatrikona') owned++;
+        if (vd.viaProxy) labelled++;
+      });
+    }
     // Cancer and Leo, the signs they really own, never turn up in a trimsamsa.
     var seen = {};
     for (var d = 0; d < 360; d += 0.05) seen[A.vargaPosition(d, 30).sign] = true;
-    return !seen[3] && !seen[4] && ownsOne('Sun', 'Mars') && ownsOne('Moon', 'Venus');
+    // The stand-in survives as a label for the grid, so it must still be set
+    // somewhere, but it must never reach the dignity the bala is scored on.
+    return !seen[3] && !seen[4] && owned === 0 && labelled > 0;
+  })());
+
+  /*
+   * And the whole of Example 9, which is what settled it: his seven totals for
+   * the Standard Horoscope, from his printed longitudes. Forty-nine cells.
+   */
+  ok('saptavargaja reproduces Raman Example 9 for all seven', (function () {
+    var dms = function (d, m, sec) { return d + m / 60 + sec / 3600; };
+    var at = { Sun: dms(180, 53, 55), Moon: dms(311, 17, 19), Mars: dms(229, 30, 34),
+      Mercury: dms(181, 31, 34), Jupiter: dms(84, 0, 49), Venus: dms(171, 9, 56),
+      Saturn: dms(124, 22, 41) };
+    var his = { Sun: 90, Moon: 48.75, Mars: 90, Mercury: 135, Jupiter: 71.25,
+      Venus: 116.25, Saturn: 97.5 };
+    var value = { moolatrikona: 45, own: 30, adhimitra: 22.5, mitra: 15,
+      sama: 7.5, shatru: 3.75, adhishatru: 1.875 };
+    var p = {};
+    Object.keys(at).forEach(function (g) {
+      p[g] = { sign: Math.floor(at[g] / 30), longitude: at[g] };
+    });
+    return Object.keys(his).every(function (g) {
+      var sum = 0;
+      [1, 2, 3, 7, 9, 12, 30].forEach(function (d) {
+        var vd = A.vargaDignity(g, at[g], d, p);
+        var rel = vd && vd.relation;
+        // moolatrikona counts in the rashi only, Raman section 30
+        if (rel === 'moolatrikona' && d !== 1) rel = 'own';
+        sum += rel ? value[rel] : 0;
+      });
+      return Math.abs(sum - his[g]) < 0.01;
+    });
   })());
 
   ok('the nodes own nothing and befriend nobody, so they get no reading',

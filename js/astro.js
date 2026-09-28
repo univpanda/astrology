@@ -1272,8 +1272,22 @@ var Astro = (function () {
     var lord = SIGN_LORDS[position.sign];
 
     var own = dignityOf(graha, position.sign, position.degreeInSign);
-    var ownsIt = lord === graha ||
-      (division === 30 && TRIMSAMSA_PROXY[graha] === lord);
+    /*
+     * A luminary never owns a trimsamsa, not even by proxy.
+     *
+     * This once let the Sun count Mars's trimsamsas as his own and the Moon
+     * Venus's, on the reasoning that a graha ruling none would otherwise be a
+     * guest in every one of them. Raman's Example 9 settles it against that:
+     * his Sun sits in the first trimsamsa of Libra, which is Mars's, and he
+     * scores it 22.5 - adhimitra, the Sun's relation to Mars - where the proxy
+     * would have given 30. Being a guest is the answer; the relation is what
+     * the varga is scored on, and a graha with no lordship still has one of
+     * those.
+     *
+     * TRIMSAMSA_PROXY survives for the grid, which says whose trimsamsa a
+     * luminary is sitting in. That is a label, not a dignity.
+     */
+    var ownsIt = lord === graha;
 
     var relation = null;
     if (ownsIt) {
@@ -1297,7 +1311,8 @@ var Astro = (function () {
       lord: lord,
       relation: relation,
       relationLabel: relation ? VARGA_DIGNITY_LABELS[relation] : null,
-      viaProxy: ownsIt && lord !== graha ? TRIMSAMSA_PROXY[graha] : null
+      viaProxy: division === 30 && TRIMSAMSA_PROXY[graha] === lord
+        ? TRIMSAMSA_PROXY[graha] : null
     };
   }
 
