@@ -5115,5 +5115,104 @@ console.log('\nKartari asks only that the two houses be occupied');
     disagreed + ' disagreements over ' + sampled + ' charts');
 })();
 
+
+console.log('\nEach yoga counted from what its text counts from');
+/*
+ * Kartari was reported on the ascendant and withheld from it in the same table,
+ * so every other detector was checked for the same class of error: a rule read
+ * from the wrong point. The texts settle each one.
+ *
+ *   from the Moon only      Adhi, "benefics situated 6th, 7th and 8th from the
+ *                           Moon" (Raman 7); Sunapha and its three companions
+ *   from the Sun only       Vesi, Vasi, Ubhayachari (Raman 16-18); Adhama,
+ *                           Sama, Varishtha (Phaladeepika 6.14)
+ *   graha to graha          Sakata, "the Moon in the 12th, 6th or 8th from
+ *                           Jupiter"; Chandra Mangala; Budha-Aditya
+ *   from either             Amala, "the 10th from the Moon or Lagna"
+ *                           (Raman 13); Vasumathi, "from the ascendant or from
+ *                           the Moon" (Raman 9); Gaja Kesari, "an angle from
+ *                           the ascendant or from the Moon" (BPHS 3-4)
+ *   from the lagna          the rest, including Pancha Mahapurusha - Charak is
+ *                           explicit, "located in a kendra from the lagna",
+ *                           where Phaladeepika and Raman say only "a Kendra"
+ *
+ * The invariant tested is the sharp one: for a rule that counts from a graha,
+ * turning the ascendant through all twelve signs must not change the answer.
+ * A lagna leaking into such a rule shows up immediately.
+ */
+(function () {
+  var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+  var GRAHA_ONLY = ['Sunapha Yoga', 'Anapha Yoga', 'Durudhura Yoga',
+    'Kemadruma Yoga', 'Vesi Yoga', 'Vasi Yoga', 'Ubhayachari Yoga',
+    'Adhama Yoga', 'Sama Yoga', 'Varishtha Yoga', 'Adhi Yoga',
+    'Chandra Mangala Yoga', 'Budha Aditya Yoga'];
+
+  var drifted = {}, checked = 0;
+  for (var y = 1960; y < 2000; y += 2) {
+    var base = A.chart({ jdUT: A.julianDay(y, 6, 15, 6), latitude: 28.61,
+      longitude: 77.21, tzOffsetMinutes: 330 });
+    var strengths = Shadbala.compute(base, place);
+    var want = null;
+    for (var turn = 0; turn < 12; turn++) {
+      /* Same sky, different rising sign. Only the ascendant moves. */
+      var spun = { ascendant: { longitude: (base.ascendant.longitude + turn * 30) % 360 },
+                   planets: base.planets };
+      var got = Yogas.detect(spun, strengths)
+        .filter(function (f) { return GRAHA_ONLY.indexOf(f.subject) >= 0; })
+        .map(function (f) { return f.subject; }).sort().join(',');
+      if (want === null) want = got;
+      else if (got !== want) {
+        GRAHA_ONLY.forEach(function (s) {
+          if ((got.indexOf(s) >= 0) !== (want.indexOf(s) >= 0)) drifted[s] = true;
+        });
+      }
+      checked++;
+    }
+  }
+  ok('a rule counted from a graha does not move when the ascendant does',
+    Object.keys(drifted).length === 0 && checked > 200,
+    Object.keys(drifted).join(', ') || checked + ' turns checked');
+
+  /*
+   * And the converse for the two that the texts count from either point: they
+   * must actually use both, not quietly settle on one. Amala from the Moon
+   * alone, with the 10th from the lagna held empty, has to still be Amala.
+   */
+  var P = function (n, sg, lagnaSign) {
+    return { name: n, sign: sg, longitude: sg * 30 + 5,
+             house: ((sg - (lagnaSign || 0)) % 12 + 12) % 12 + 1 };
+  };
+  // Aries lagna: the 10th from it is Capricorn (9). Moon in Cancer (3) puts her
+  // own 10th at Aries (0). Jupiter there, and nothing in Capricorn.
+  var moonOnly = { ascendant: { longitude: 5 }, planets: [
+    P('Moon', 3), P('Jupiter', 0), P('Sun', 4), P('Mars', 6), P('Saturn', 7),
+    P('Mercury', 4), P('Venus', 5)] };
+  ok('Amala forms from the Moon when the lagna cannot give it',
+    Yogas.amala(moonOnly).length === 1);
+  // And from the lagna when the Moon cannot: benefic in Capricorn, Moon's 10th empty.
+  var lagnaOnly = { ascendant: { longitude: 5 }, planets: [
+    P('Moon', 3), P('Jupiter', 9), P('Sun', 4), P('Mars', 6), P('Saturn', 7),
+    P('Mercury', 8), P('Venus', 11)] };
+  ok('and from the lagna when the Moon cannot', Yogas.amala(lagnaOnly).length === 1);
+
+  /*
+   * Pancha Mahapurusha is the one where the texts could have said "or from the
+   * Moon" and do not. Charak: "located in a kendra from the lagna". So it must
+   * be silent for a graha angular from the Moon but not from the lagna.
+   */
+  // Aries lagna. Saturn in Aquarius (10) is his own sign but the 11th from the
+  // lagna; the Moon in Taurus (1) makes it the 10th from her, a kendra.
+  var moonKendra = { ascendant: { longitude: 5 }, planets: [
+    P('Saturn', 10), P('Moon', 1), P('Sun', 4), P('Mars', 6), P('Mercury', 4),
+    P('Jupiter', 8), P('Venus', 5)] };
+  ok('Mahapurusha does not form from an angle counted from the Moon',
+    Yogas.mahapurusha(moonKendra).length === 0,
+    Yogas.mahapurusha(moonKendra).map(function (f) { return f.title; }).join(','));
+  // Move the lagna so Aquarius becomes a kendra from it, and it must form.
+  moonKendra.ascendant = { longitude: 7 * 30 + 5 };   // Scorpio; Aquarius is the 4th
+  ok('and does form from the same placement once the lagna makes it an angle',
+    Yogas.mahapurusha(moonKendra).length === 1);
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

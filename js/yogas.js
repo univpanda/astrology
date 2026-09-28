@@ -510,13 +510,22 @@ var Yogas = (function () {
    * kendra from the Moon; that is not what is written here, so it is not counted.
    */
   function mahapurusha(chart) {
+    /*
+     * The house is derived from the ascendant here rather than read off the
+     * planet, which is what every other detector in this file does. It came to
+     * the same answer for charts built by astro.js, which fills in `house` from
+     * the ascendant - but it also meant this one rule trusted a field the
+     * others compute, and the lagna it worked out was never used. One of the
+     * two had to go, and deriving it is the one that cannot drift.
+     */
     var lagna = Astro.signOf(chart.ascendant.longitude);
     var found = [];
 
     chart.planets.forEach(function (p) {
       var name = MAHAPURUSHA[p.name];
       if (!name) return;
-      if (KENDRAS.indexOf(p.house) < 0) return;
+      var house = ((p.sign - lagna) % 12 + 12) % 12 + 1;
+      if (KENDRAS.indexOf(house) < 0) return;
       var dignity = Astro.dignityOf(p.name, p.sign, p.longitude % 30);
       if (DIGNIFIED.indexOf(dignity) < 0) return;
 
@@ -532,14 +541,14 @@ var Yogas = (function () {
         title: name + ' yoga',
         family: 'Pancha Mahapurusha yoga',
         grahas: [p.name],
-        houses: [p.house],
+        houses: [house],
         reasons: [
           p.name + ' stands in ' + Astro.SIGNS[p.sign] + ', ' + seat + ', and in the ' +
-            ordinal(p.house) + ' - a kendra from the lagna, which is what the rule asks',
+            ordinal(house) + ' - a kendra from the lagna, which is what the rule asks',
           'the yoga takes its name from the graha: ' + p.name + ' gives ' + name +
             ', ' + MAHAPURUSHA_ABOUT[name]
         ],
-        summary: p.name + ' is in ' + seat + ' in the ' + ordinal(p.house) +
+        summary: p.name + ' is in ' + seat + ' in the ' + ordinal(house) +
           ', a kendra, which is ' + name + ' yoga.'
       });
     });
