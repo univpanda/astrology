@@ -3426,9 +3426,20 @@
     try {
       var existing = window.localStorage.getItem(TOKEN_KEY);
       if (existing) return existing;
-      var minted = (window.crypto && window.crypto.randomUUID)
-        ? window.crypto.randomUUID()
-        : 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 14);
+      var minted = null;
+      if (window.crypto && window.crypto.randomUUID) {
+        minted = window.crypto.randomUUID();
+      } else if (window.crypto && window.crypto.getRandomValues) {
+        var bytes = new Uint8Array(24);
+        window.crypto.getRandomValues(bytes);
+        minted = Array.prototype.map.call(bytes, function (byte) {
+          return byte.toString(16).padStart(2, '0');
+        }).join('');
+      }
+      // A capability token is the key to every saved chart. If this browser
+      // cannot mint one securely, keep saves local instead of inventing a key
+      // from the clock and Math.random().
+      if (!minted) return null;
       window.localStorage.setItem(TOKEN_KEY, minted);
       return minted;
     } catch (e) {
@@ -4123,16 +4134,26 @@
     var local = readSaved();
     var orphans = local.filter(function (entry) { return !entry.id; });
     var remaining = orphans.length;
+    var failed = [];
 
     var listThenRender = function () {
       callKundaliApi({ action: 'list' }, function (entries) {
-        if (entries) { writeSaved(entries.map(fromRow)); renderSaved(); }
+        if (!entries) return;
+        var merged = entries.map(fromRow);
+        var known = {};
+        merged.forEach(function (entry) { known[keyOf(entry)] = true; });
+        failed.forEach(function (entry) {
+          if (!known[keyOf(entry)]) merged.push(entry);
+        });
+        writeSaved(merged);
+        renderSaved();
       });
     };
 
     if (!remaining) return listThenRender();
     orphans.forEach(function (entry) {
-      callKundaliApi({ action: 'save', entry: entry }, function () {
+      callKundaliApi({ action: 'save', entry: entry }, function (entries) {
+        if (!entries) failed.push(entry);
         if (--remaining === 0) listThenRender();
       });
     });

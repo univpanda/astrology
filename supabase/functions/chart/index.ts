@@ -53,14 +53,24 @@ Deno.serve(async (req) => {
     if (!date || !time) return bad('date (YYYY-MM-DD) and time (HH:MM[:SS]) are required');
     if (latitude === undefined || longitude === undefined) return bad('latitude and longitude are required');
 
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date)) ||
+        !/^\d{1,2}:\d{2}(?::\d{2})?$/.test(String(time))) {
+      return bad('date and time must be YYYY-MM-DD and H:MM[:SS]');
+    }
     const [y, mo, d] = String(date).split('-').map(Number);
-    const [h, mi, sec] = String(time).split(':').map(Number);
-    if (!y || !mo || !d || Number.isNaN(h)) return bad('could not parse date or time');
+    const [h, mi, sec = 0] = String(time).split(':').map(Number);
     if (y < 1800 || y > 2100) return bad('the stored ephemeris covers 1800 to 2100');
+    const civil = new Date(Date.UTC(y, mo - 1, d));
+    if (civil.getUTCFullYear() !== y || civil.getUTCMonth() !== mo - 1 ||
+        civil.getUTCDate() !== d || h > 23 || mi > 59 || sec > 59) {
+      return bad('date or time is outside its valid range');
+    }
 
     const offset = Number(input.tzOffsetMinutes ?? 0);
     const lat = Number(latitude), lon = Number(longitude);
+    if (![lat, lon, offset].every(Number.isFinite)) return bad('coordinates and timezone offset must be numbers');
     if (Math.abs(lat) > 90 || Math.abs(lon) > 180) return bad('latitude or longitude out of range');
+    if (Math.abs(offset) > 14 * 60) return bad('timezone offset out of range');
 
     const jdUT = Astro.julianDay(y, mo, d, (h * 3600 + (mi || 0) * 60 + (sec || 0)) / 3600 - offset / 60);
     const trueNode = input.trueNode === true || input.trueNode === 'true';

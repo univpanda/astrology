@@ -270,7 +270,7 @@ js/app.js               form handling, the combobox, rendering
 data/cities.js          69,752 places from GeoNames, loaded on first keystroke
 data/perturbations.js   residual corrections for Earth, Venus, Mars, Jupiter, Saturn
 scripts/                regenerate the data files, refit the ayanamsa, deploy
-supabase/               ephemeris migrations and the chart edge function
+supabase/               migrations plus chart, readings and kundalis edge functions
 test/                   the three suites above
 ```
 

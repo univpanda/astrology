@@ -102,15 +102,21 @@ Deno.serve(async (req) => {
       }
 
       // Otherwise merge on the four keys. The unique index is over lower(name)
-      // and lower(place_label), which on_conflict cannot name directly, so look
-      // first, then patch or insert.
+      // and lower(place_label), which on_conflict cannot name directly. Fetch
+      // the rows sharing the two exact date/time keys and compare the text here.
+      // `ilike` is deliberately not used: %, _ and PostgREST's * are patterns,
+      // so a perfectly valid name containing one could select the wrong row.
       const found = await fetch(
         `${TABLE}?owner_token=eq.${encodeURIComponent(token)}` +
-        `&name=ilike.${encodeURIComponent(row.name)}` +
-        `&place_label=ilike.${encodeURIComponent(row.place_label)}` +
-        `&birth_date=eq.${row.birth_date}&birth_time=eq.${row.birth_time}&select=id`,
+        `&birth_date=eq.${row.birth_date}&birth_time=eq.${row.birth_time}` +
+        '&select=id,name,place_label',
         { headers: headers() });
-      const existing = found.ok ? await found.json() : [];
+      if (!found.ok) return json({ error: await found.text() }, 502);
+      const candidates = await found.json();
+      const lower = (value: unknown) => String(value).toLowerCase();
+      const existing = candidates.filter((candidate: Record<string, unknown>) =>
+        lower(candidate.name) === lower(row.name) &&
+        lower(candidate.place_label) === lower(row.place_label));
 
       const res = existing.length
         ? await fetch(`${TABLE}?id=eq.${existing[0].id}`, {

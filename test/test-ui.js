@@ -7,7 +7,14 @@
  */
 var fs = require('fs');
 var path = require('path');
+var os = require('os');
+var childProcess = require('child_process');
 var root = path.join(__dirname, '..');
+
+// This suite is documented as directly runnable. Generate the ignored Deno
+// wrapper here as well as in `npm test`, so a clean checkout honours that.
+childProcess.execFileSync(process.execPath,
+  [path.join(root, 'scripts/build-edge-module.mjs')], { cwd: root });
 
 var pass = 0, fail = 0;
 function ok(name, cond, detail) {
@@ -992,6 +999,12 @@ ok('saved charts sync to the database as well as this browser',
    /action: 'list'/.test(appSrc) && /action: 'delete'/.test(appSrc));
 ok('ownership is a minted token, not an account',
    /randomUUID/.test(appSrc) && /ownerToken/.test(appSrc));
+ok('the ownership capability never falls back to predictable randomness',
+   /getRandomValues/.test(appSrc) &&
+   !/Date\.now\(\)\.toString\(36\) \+ Math\.random/.test(appSrc));
+ok('an orphan that fails to sync stays in the browser',
+   /var failed = \[\]/.test(appSrc) && /if \(!entries\) failed\.push\(entry\)/.test(appSrc) &&
+   /failed\.forEach/.test(appSrc));
 ok('entries are keyed on name, place, date and time',
    /entry\.name, entry\.placeLabel, entry\.date, entry\.time/.test(appSrc));
 ok('a local copy is written first so the panel works offline',
@@ -3950,6 +3963,45 @@ ok('and carries the ahargana the year and month lords need', (function () {
   var copy = fs.readFileSync(
     path.join(root, 'supabase/functions/chart/_astro.mjs'), 'utf8');
   return /ahargana: ahargana,/.test(copy) && /AHARGANA_EPOCH/.test(copy);
+})());
+
+ok('the ignored edge wrapper is generated before the suite reads it', (function () {
+  var pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+  return /build-edge-module\.mjs/.test(pkg.scripts.test) &&
+    fs.existsSync(path.join(root, 'scripts/build-edge-module.mjs'));
+})());
+ok('the API deploy command ships every function the page calls', (function () {
+  var tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'astrology-deploy-test-'));
+  var calls = path.join(tmp, 'calls');
+  var stub = path.join(tmp, 'supabase');
+  fs.writeFileSync(stub, '#!/bin/sh\nprintf \'%s\\n\' "$*" >> "$DEPLOY_CALLS"\n');
+  fs.chmodSync(stub, 0o755);
+  try {
+    childProcess.execFileSync('bash', [path.join(root, 'scripts/deploy-edge.sh')], {
+      cwd: os.tmpdir(),
+      env: Object.assign({}, process.env, { PATH: tmp + path.delimiter + process.env.PATH,
+        DEPLOY_CALLS: calls, SUPABASE_PROJECT_REF: 'test-project' })
+    });
+    var invoked = fs.readFileSync(calls, 'utf8').trim().split('\n');
+    return ['chart', 'readings', 'kundalis'].every(function (name) {
+      return invoked.some(function (line) {
+        return line.indexOf('functions deploy ' + name + ' ') === 0 &&
+          /--project-ref test-project --no-verify-jwt$/.test(line);
+      });
+    });
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+})());
+ok('the chart API rejects malformed moments and non-finite coordinates', (function () {
+  var edge = fs.readFileSync(path.join(root, 'supabase/functions/chart/index.ts'), 'utf8');
+  return /Date\.UTC/.test(edge) && /h > 23/.test(edge) && /mi > 59/.test(edge) &&
+    /every\(Number\.isFinite\)/.test(edge) && /14 \* 60/.test(edge);
+})());
+ok('saved-chart identity matching treats names as text, not patterns', (function () {
+  var edge = fs.readFileSync(path.join(root, 'supabase/functions/kundalis/index.ts'), 'utf8');
+  return !/name=ilike|place_label=ilike/.test(edge) &&
+    /lower\(candidate\.name\) === lower\(row\.name\)/.test(edge);
 })());
 
 console.log('\nThe doubled rows can be shown halved');
