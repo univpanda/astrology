@@ -5800,11 +5800,23 @@ console.log('\nThe card prints the figure beside the finding');
   var body = src.match(/var rarity = function \(head, kind, key\) \{[\s\S]*?\n    \};/)[0];
   var said = [];
   var fake = { appendChild: function (n) { said.push(n); } };
-  new Function('el', 'FREQUENCIES', 'head', body + '\n rarity(head, "state", "Rahu/R");' +
+  // The formatter consults the Budha-Aditya setting, so it needs a page to ask.
+  var pageWith = function (floor) {
+    return { getElementById: function (id) {
+      return id === 'budha-floor' ? { value: floor } : null;
+    } };
+  };
+  var run = function (floor, calls) {
+    said = [];
+    new Function('el', 'FREQUENCIES', 'document', 'head', body + '\n' + calls)(
+      function (tag, cls, text) { return text; }, global.FREQUENCIES,
+      pageWith(floor), fake);
+    return said;
+  };
+  run('raman', ' rarity(head, "state", "Rahu/R");' +
     ' rarity(head, "yoga", "Adhi Yoga|general");' +
     ' rarity(head, "yoga", "Budha Aditya Yoga|general");' +
-    ' rarity(head, "yoga", "no such yoga");')(
-      function (tag, cls, text) { return text; }, global.FREQUENCIES, fake);
+    ' rarity(head, "yoga", "no such yoga");');
 
   ok('a mark true of every chart says so in words rather than as 100%',
     said[0] === 'every chart', said[0]);
@@ -5815,8 +5827,61 @@ console.log('\nThe card prints the figure beside the finding');
       '% of charts', said[2]);
   ok('an unmeasured key prints no line at all rather than a wrong one',
     said.length === 3, said.join(' | '));
+
+  /*
+   * And the figure moves with the setting that changes what forms. Under
+   * Raman's floor Budha-Aditya is a quarter of charts; with the floor dropped
+   * the same finding is half of them, and printing the first while the second
+   * is in force would argue for the wrong reading.
+   */
+  var strict = run('raman', ' rarity(head, "yoga", "Budha Aditya Yoga|general");')[0];
+  var open = run('none', ' rarity(head, "yoga", "Budha Aditya Yoga|general");')[0];
+  ok('the figure follows the reading the chart is actually being read under',
+    strict === '28% of charts' && open === '52% of charts',
+    strict + ' vs ' + open);
+  var unmoved = run('none', ' rarity(head, "yoga", "Adhi Yoga|general");')[0];
+  ok('while a yoga the setting does not touch keeps its own figure',
+    unmoved === global.FREQUENCIES.yoga['Adhi Yoga|general'] + '% of charts',
+    unmoved);
 })();
 
+
+
+console.log('\nThe Budha-Aditya floor is a setting, defaulting to Raman');
+(function () {
+  var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  var src = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
+
+  ok('the page offers both readings and preselects the sourced one',
+    /<select id="budha-floor">/.test(page) &&
+    /<option value="raman" selected>/.test(page) &&
+    /<option value="none">/.test(page));
+  ok('and says who reads it each way',
+    /Raman/.test(page) && /K\. N\. Rao/.test(page) &&
+    /Advance Techniques of Astrology/.test(page));
+  ok('the reason to choose one over the other folds away like the others',
+    /<label for="budha-floor">[\s\S]{0,400}?<details class="field-why">/.test(page));
+
+  /*
+   * Stamped on the chart rather than passed to one caller. The yogas are
+   * detected in three places and a floor honoured by one of them would have the
+   * Yogas tab and the graha card disagreeing about the same chart.
+   */
+  ok('the setting is stamped on the chart, where every detector call sees it',
+    /c\.budhaAdityaFloor = document\.getElementById\('budha-floor'\)\.value/.test(src));
+  ok('changing it redraws rather than waiting for the next chart',
+    /getElementById\('budha-floor'\)\.addEventListener\('change'/.test(src));
+
+  /*
+   * The figure beside the yoga has to follow the setting. Measured under
+   * Raman's floor it says one in four; with the floor dropped the same finding
+   * is one in two, and printing the first under the second argues for the
+   * wrong reading.
+   */
+  ok('and the frequency beside the finding follows the setting too',
+    /FREQUENCIES\.yogaNoFloor\[key\]/.test(src) &&
+    /floor\.value === 'none'/.test(src));
+})();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

@@ -29,7 +29,7 @@ const PLACES = [
 ];
 
 let charts = 0;
-const yoga = {}, state = {};
+const yoga = {}, state = {}, yogaNoFloor = {};
 
 for (let y = 1930; y < 2030; y++) {
   for (let m = 1; m <= 12; m++) {
@@ -62,19 +62,35 @@ for (let y = 1930; y < 2030; y++) {
 
       // Once per chart, not once per graha: the question is how often a chart
       // holds the yoga at all.
-      const seen = {};
       const strengths = Shadbala.compute(chart, {
         latitude: place[0], longitude: place[1], tzOffsetMinutes: place[2]
       });
-      Yogas.detect(chart, strengths).forEach(function (f) {
-        const k = (f.subject || '?') + '|' + (f.condition || '?');
-        if (!seen[k]) { seen[k] = 1; yoga[k] = (yoga[k] || 0) + 1; }
-      });
+      const sweep = function (into) {
+        const seen = {};
+        Yogas.detect(chart, strengths).forEach(function (f) {
+          const k = (f.subject || '?') + '|' + (f.condition || '?');
+          if (!seen[k]) { seen[k] = 1; into[k] = (into[k] || 0) + 1; }
+        });
+      };
+      sweep(yoga);
+      /*
+       * Again with Raman's floor dropped, because a setting that changes what
+       * forms changes how often it forms, and the card would otherwise print a
+       * figure measured under a rule the reader has turned off. Only the pairs
+       * that actually move are kept.
+       */
+      chart.budhaAdityaFloor = Yogas.BUDHA_FLOOR.NONE;
+      sweep(yogaNoFloor);
+      chart.budhaAdityaFloor = undefined;
     }
   }
 }
 
 const pct = function (n) { return Math.round((1000 * n) / charts) / 10; };
+const moved = {};
+Object.keys(yogaNoFloor).forEach(function (k) {
+  if (yogaNoFloor[k] !== yoga[k]) moved[k] = yogaNoFloor[k];
+});
 const dump = function (o) {
   return Object.keys(o).sort().map(function (k) {
     return '    ' + JSON.stringify(k) + ': ' + pct(o[k]);
@@ -98,6 +114,13 @@ ${dump(yoga)}
   },
   state: {
 ${dump(state)}
+  },
+  /*
+   * Overrides for the Budha-Aditya setting when Raman's floor is dropped for
+   * Rao's reading. Only the pairs the setting actually moves appear here.
+   */
+  yogaNoFloor: {
+${dump(moved)}
   }
 };
 

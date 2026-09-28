@@ -4515,5 +4515,84 @@ console.log('\nBudha-Aditya and combustion, which overlap');
     inside > 100 && wrong === 0, wrong + ' of ' + inside + ' wrongly claimed');
 })();
 
+
+console.log('\nRaman sets a floor for Budha-Aditya, Rao does not');
+/*
+ * Settled against K. N. Rao's own book rather than against anyone's summary of
+ * it. Advance Techniques of Astrology Prediction, illustration one of the
+ * education chapter, reads "Mercury in fifth with the Sun forming Budhaditya
+ * yoga and in exaltation aspected by Jupiter" for a chart whose printed
+ * longitudes put the two six degrees apart - inside Raman's floor, and combust.
+ * The chart is the anchor for the whole disagreement, so the test recomputes it
+ * and checks the figures against what he printed before drawing anything from
+ * it. If the engine ever stops reproducing them, this is no longer his chart
+ * and the finding below is no longer evidence of anything.
+ */
+(function () {
+  var delhi = { latitude: 28.6139, longitude: 77.209, tzOffsetMinutes: 330 };
+  var jd = Astro.julianDay(1964, 10, 7, 21.5 - 5.5);   // 21:30 IST
+  var chart = Astro.chart({ jdUT: jd, latitude: delhi.latitude,
+    longitude: delhi.longitude, tzOffsetMinutes: delhi.tzOffsetMinutes });
+  var at = {};
+  chart.planets.forEach(function (p) { at[p.name] = p; });
+  var mins = function (lon) { return (lon % 30) * 60; };   // arcminutes into the sign
+  var near = function (lon, deg, min) {
+    return Math.abs(mins(lon) - (deg * 60 + min)) <= 1.5;
+  };
+
+  ok('Rao\u2019s printed longitudes come back out of this engine',
+    near(at.Sun.longitude, 21, 3) && near(at.Mercury.longitude, 14, 57) &&
+    near(at.Moon.longitude, 14, 33) && near(at.Jupiter.longitude, 1, 54) &&
+    near(chart.ascendant.longitude, 24, 33) && at.Jupiter.retrograde,
+    'Sun ' + mins(at.Sun.longitude).toFixed(0) + "' Mercury " +
+      mins(at.Mercury.longitude).toFixed(0) + "' asc " +
+      mins(chart.ascendant.longitude).toFixed(0) + "'");
+  ok('and they are the placements he describes - fifth house, Mercury exalted',
+    at.Sun.house === 5 && at.Mercury.house === 5 &&
+    Astro.dignityOf('Mercury', at.Mercury.sign, at.Mercury.longitude % 30) === 'Exalted',
+    'Sun h' + at.Sun.house + ' Mercury h' + at.Mercury.house);
+
+  var apart = Math.abs(Astro.norm360(at.Mercury.longitude - at.Sun.longitude));
+  if (apart > 180) apart = 360 - apart;
+  ok('the two are six degrees apart, and combust by every orb in play',
+    apart > 6 && apart < 6.2 && [17, 14, 12, 8].every(function (orb) {
+      return apart < orb;
+    }), apart.toFixed(2));
+
+  var find = function (floor) {
+    chart.budhaAdityaFloor = floor;
+    var f = Yogas.detect(chart, Shadbala.compute(chart, delhi)).filter(function (x) {
+      return x.subject === 'Budha Aditya Yoga';
+    })[0];
+    chart.budhaAdityaFloor = undefined;
+    return f;
+  };
+  ok('on Raman\u2019s floor the chart Rao calls Budha-Aditya gives no yoga',
+    !find(Yogas.BUDHA_FLOOR.RAMAN));
+  var rao = find(Yogas.BUDHA_FLOOR.NONE);
+  ok('with the floor dropped it does, which is Rao\u2019s reading', !!rao);
+  ok('and the finding names whose reading produced it',
+    !!rao && rao.reasons.join(' ').indexOf('Rao') > -1,
+    rao ? rao.reasons[1] : 'no finding');
+  ok('a chart with no setting stamped on it still uses Raman\u2019s floor',
+    !find(undefined), 'the default must not be the permissive one');
+
+  /*
+   * The arithmetic that decides the default. Mercury is never far from the Sun,
+   * so with no floor the yoga is exactly "the two share a sign" - which the
+   * measured figures should agree with to the tenth.
+   */
+  var F = require(require('path').join(__dirname, '../data/frequencies.js'));
+  ok('dropping the floor is the only thing the setting moves',
+    Object.keys(F.yogaNoFloor).length === 1 &&
+    F.yogaNoFloor['Budha Aditya Yoga|general'] !== undefined,
+    Object.keys(F.yogaNoFloor).join(', '));
+  ok('and it roughly doubles how often the yoga is claimed',
+    F.yogaNoFloor['Budha Aditya Yoga|general'] > 50 &&
+    F.yoga['Budha Aditya Yoga|general'] < 30,
+    F.yoga['Budha Aditya Yoga|general'] + '% -> ' +
+      F.yogaNoFloor['Budha Aditya Yoga|general'] + '%');
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

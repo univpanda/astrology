@@ -1123,8 +1123,24 @@ var Yogas = (function () {
    * same time, in about one chart in sixteen. That looks like a contradiction
    * on the card, which is why the finding says so out loud when it happens
    * rather than leaving a reader to assume one of the two marks is a bug.
+   *
+   * K. N. Rao does not apply the floor at all. Advance Techniques of Astrology
+   * Prediction, illustration one of the education chapter - October 7 1964,
+   * 21:30 IST, Delhi - reads "Mercury in fifth with the Sun forming Budhaditya
+   * yoga and in exaltation aspected by Jupiter" and counts it toward the
+   * promise. His own printed longitudes are Sun 21 03 and Mercury 14 57, six
+   * degrees apart, which is combust under every orb any of these authors give.
+   * He knows the difference: the same book calls combust planets adverse by
+   * Sarvarth Chintamani's Gocharastha rule. For Rao combustion is a question of
+   * strength, not of whether the yoga formed.
+   *
+   * So the floor is a setting. Raman's ten degrees is the default because he
+   * states it as a rule where Rao only declines to use one, and because without
+   * a floor the yoga is claimed for every chart with Mercury in the Sun's sign,
+   * which is 52 per cent of them against 28.
    */
   var BUDHA_ADITYA_FLOOR = 10;
+  var BUDHA_FLOOR = { RAMAN: 'raman', NONE: 'none' };
 
   function budhaAditya(chart) {
     var positions = {};
@@ -1138,18 +1154,33 @@ var Yogas = (function () {
       ? mercury.rashiLongitude : mercury.longitude;
     var apart = Math.abs(Astro.norm360(merLon - sunLon));
     if (apart > 180) apart = 360 - apart;
-    if (apart < BUDHA_ADITYA_FLOOR) return [];
+    var floored = chart.budhaAdityaFloor !== BUDHA_FLOOR.NONE;
+    if (floored && apart < BUDHA_ADITYA_FLOOR) return [];
 
+    var combust = Astro.isCombust('Mercury', merLon, sunLon, mercury.retrograde);
     var reasons = [
       'Mercury stands with the Sun in ' + Astro.SIGNS[sun.sign] + ', ' +
-        apart.toFixed(1) + '\u00b0 away',
-      'and outside the ten degrees Raman sets as the floor for this yoga'
+        apart.toFixed(1) + '\u00b0 away'
     ];
-    if (Astro.isCombust('Mercury', merLon, sunLon, mercury.retrograde)) {
-      reasons.push('Mercury is combust all the same, which is not a ' +
-        'contradiction: Raman puts the floor for the yoga at 10\u00b0 and the ' +
-        'orb of combustion at 14\u00b0 direct, 12\u00b0 retrograde, in two ' +
-        'different books. Between those figures both readings hold at once');
+    if (floored) {
+      reasons.push('and outside the ten degrees Raman sets as the floor for ' +
+        'this yoga');
+      if (combust) {
+        reasons.push('Mercury is combust all the same, which is not a ' +
+          'contradiction: Raman puts the floor for the yoga at 10\u00b0 and the ' +
+          'orb of combustion at 14\u00b0 direct, 12\u00b0 retrograde, in two ' +
+          'different books. Between those figures both readings hold at once');
+      }
+    } else {
+      reasons.push('which is the whole of the rule on this setting: K. N. Rao ' +
+        'applies no floor, and names the yoga in a chart of his own with the ' +
+        'two six degrees apart');
+      if (combust) {
+        reasons.push('Mercury is combust, and on Raman\u2019s reading that ' +
+          'would be near enough to cancel the yoga. Rao treats combustion as a ' +
+          'question of how much the graha can deliver rather than of whether ' +
+          'the yoga formed');
+      }
     }
 
     return [{
@@ -1190,7 +1221,8 @@ var Yogas = (function () {
     kartari: kartari,
     moonCompany: moonCompany, chandraMangala: chandraMangala, adhiYoga: adhiYoga,
     sakata: sakata, amala: amala, budhaAditya: budhaAditya,
-    BUDHA_ADITYA_FLOOR: BUDHA_ADITYA_FLOOR, MOON_COMPANY: MOON_COMPANY,
+    BUDHA_ADITYA_FLOOR: BUDHA_ADITYA_FLOOR, BUDHA_FLOOR: BUDHA_FLOOR,
+    MOON_COMPANY: MOON_COMPANY,
     vipareeta: vipareeta, lakshmi: lakshmi, mahapurusha: mahapurusha,
     rajaYoga: rajaYoga, gajaKesari: gajaKesari,
     VISHNU_HOUSES: VISHNU_HOUSES, LAKSHMI_HOUSES: LAKSHMI_HOUSES,

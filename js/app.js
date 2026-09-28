@@ -746,6 +746,12 @@
      * of them would have the same chart answering differently tab by tab.
      */
     if (c) c.mercuryNature = document.getElementById('mercury-nature').value;
+    /*
+     * Same reason, same place: the yogas are detected in three separate spots -
+     * the Yogas tab, the graha card and the divisional read - and a floor
+     * honoured by one of them would have the chart disagreeing with itself.
+     */
+    if (c) c.budhaAdityaFloor = document.getElementById('budha-floor').value;
 
     // Just the name. The page is a chart; saying so in the heading of one adds
     // nothing, and a long name plus a possessive wraps on a phone.
@@ -958,6 +964,18 @@
     var rarity = function (head, kind, key) {
       var table = typeof FREQUENCIES === 'undefined' ? null : FREQUENCIES[kind];
       var pct = table ? table[key] : undefined;
+      /*
+       * A setting that changes what forms changes how often it forms. Dropping
+       * Raman's floor turns Budha-Aditya from a one-in-four finding into a
+       * one-in-two one, and the figure has to move with it or it argues for
+       * the wrong reading.
+       */
+      var floor = document.getElementById('budha-floor');
+      if (kind === 'yoga' && floor && floor.value === 'none' &&
+          typeof FREQUENCIES !== 'undefined' && FREQUENCIES.yogaNoFloor &&
+          typeof FREQUENCIES.yogaNoFloor[key] === 'number') {
+        pct = FREQUENCIES.yogaNoFloor[key];
+      }
       if (typeof pct !== 'number') return;
       /* Whole numbers once they are big enough to survive rounding, a decimal
          below that, where the difference between 0.3 and 1.2 is the point. */
@@ -3663,6 +3681,19 @@
     status.textContent = motion
       ? 'Cheshta bala now reads the eight motions. Four of their boundaries are this site\u2019s, not a text\u2019s.'
       : 'Cheshta bala now reads the chesta kendra, which is the verse that states a computation.';
+  });
+
+  document.getElementById('budha-floor').addEventListener('change', function () {
+    var status = document.getElementById('settings-status');
+    var open = this.value === 'none';
+    if (!lastChart) {
+      status.textContent = 'Saved. The next chart will use it.';
+      return;
+    }
+    render(lastChart);
+    status.textContent = open
+      ? 'Budha-Aditya now forms on any conjunction in one sign, as K. N. Rao reads it \u2014 about 52 per cent of charts.'
+      : 'Budha-Aditya now needs Mercury more than 10\u00b0 from the Sun, as Raman states it \u2014 about 28 per cent of charts.';
   });
 
   document.getElementById('mercury-nature').addEventListener('change', function () {

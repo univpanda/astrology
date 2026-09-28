@@ -66,6 +66,13 @@ var FREQUENCIES = {
     "Venus/R": 7.2,
     "Venus/V": 11.5,
     "Venus/Y": 14.5
+  },
+  /*
+   * Overrides for the Budha-Aditya setting when Raman's floor is dropped for
+   * Rao's reading. Only the pairs the setting actually moves appear here.
+   */
+  yogaNoFloor: {
+    "Budha Aditya Yoga|general": 51.7
   }
 };
 
