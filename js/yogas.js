@@ -645,7 +645,14 @@ var Yogas = (function () {
             : relation.indexOf('conjunct') >= 0 ? 'conjunction' : 'aspect',
           subject: 'Raja Yoga',
           condition: dharmaKarma ? 'dharma-karmadhipati' : 'angle-trine',
-          title: dharmaKarma ? 'Dharma Karmadhipati yoga' : 'Raja yoga',
+          /*
+           * Named for the rule that produced it rather than for the family.
+           * Bare "Raja yoga" reads as a verdict on the chart, and at 69 per
+           * cent of charts it is nothing of the kind - it is the commonest
+           * finding there is. Saying angle-trine puts the reader in front of
+           * the actual claim: one angle lord, one trine lord, related.
+           */
+          title: dharmaKarma ? 'Dharma Karmadhipati yoga' : 'Angle-trine raja yoga',
           /*
            * No family label. A family groups variants under a shared name, as the
            * three vipareeta yogas are grouped; this yoga has one name, so a label
@@ -1170,16 +1177,21 @@ var Yogas = (function () {
           'contradiction: Raman puts the floor for the yoga at 10\u00b0 and the ' +
           'orb of combustion at 14\u00b0 direct, 12\u00b0 retrograde, in two ' +
           'different books. Between those figures both readings hold at once');
+        reasons.push('So read the yoga as formed and discounted. That is K. N. ' +
+          'Rao\u2019s division of the question - combustion bears on how much ' +
+          'Mercury can deliver, not on whether the yoga is there - and it is ' +
+          'the only reading that makes sense of a graha being burnt and ' +
+          'outside the floor at once');
       }
     } else {
       reasons.push('which is the whole of the rule on this setting: K. N. Rao ' +
         'applies no floor, and names the yoga in a chart of his own with the ' +
         'two six degrees apart');
       if (combust) {
-        reasons.push('Mercury is combust, and on Raman\u2019s reading that ' +
-          'would be near enough to cancel the yoga. Rao treats combustion as a ' +
-          'question of how much the graha can deliver rather than of whether ' +
-          'the yoga formed');
+        reasons.push('Mercury is combust, so the yoga is formed and ' +
+          'discounted. Rao separates the two questions: combustion bears on ' +
+          'how much Mercury can deliver, not on whether the yoga is there. ' +
+          'Raman would have this distance cancel it outright');
       }
     }
 

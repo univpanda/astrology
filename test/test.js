@@ -4085,15 +4085,36 @@ console.log('\nRaja yoga, angle and trine');
       // the pronoun guard applies here too, this clause being new
       f[0].reasons.every(function (r) { return !/(^|\s)its?(\s|$)/.test(r); });
   })());
-  ok('and every other pairing is left as a plain raja yoga', (function () {
+  /*
+   * Named for the rule, not for the family. "Raja yoga" on its own reads as a
+   * verdict on the life, and this one is present in 69 per cent of charts - so
+   * the title says which rule produced it and leaves the verdict to the reader.
+   * The condition is untouched: it keys the lesson library, and renaming it
+   * would silently cost the card its passage.
+   */
+  ok('and every other pairing is named for the rule that produced it', (function () {
     var asc = 0;                                   // Mars rules the 1st, Sun the 5th
     var h = function (sign) { return ((sign - asc) % 12 + 12) % 12 + 1; };
     var c = { ascendant: { longitude: 10 }, planets: [
       { name: 'Mars', sign: 2, longitude: 2 * 30 + 10, house: h(2) },
       { name: 'Sun', sign: 2, longitude: 2 * 30 + 12, house: h(2) }] };
     var f = Yogas.rajaYoga(c);
-    return f.length === 1 && f[0].title === 'Raja yoga' && f[0].condition === 'angle-trine';
+    return f.length === 1 && f[0].title === 'Angle-trine raja yoga' &&
+      f[0].condition === 'angle-trine' && f[0].subject === 'Raja Yoga';
   })());
+  ok('and the bare name is gone from every title the detectors produce',
+    (function () {
+      var bad = [];
+      for (var y = 1950; y < 2020; y += 3) {
+        var c = Astro.chart({ jdUT: Astro.julianDay(y, 6, 15, 6.5), latitude: 28.61,
+          longitude: 77.21, tzOffsetMinutes: 330 });
+        Yogas.detect(c, Shadbala.compute(c, { latitude: 28.61, longitude: 77.21,
+          tzOffsetMinutes: 330 })).forEach(function (t) {
+            if (t.title === 'Raja yoga') bad.push(y);
+          });
+      }
+      return bad.length === 0;
+    })());
   ok('a single graha owning both the 9th and the 10th is not a pairing at all', (function () {
     // Taurus: Saturn owns the 9th and the 10th, so there is no second lord.
     return A.SIGN_LORDS[(1 + 8) % 12] === 'Saturn' && A.SIGN_LORDS[(1 + 9) % 12] === 'Saturn' &&
@@ -4480,6 +4501,15 @@ console.log('\nBudha-Aditya and combustion, which overlap');
     says(band.found, 'combust all the same') &&
     says(band.found, 'two') && says(band.found, 'books'),
     band.found ? band.found.reasons[2] : 'no finding');
+  /*
+   * Rao's division of the question is what makes the band readable at all: the
+   * yoga is there and the burning costs it something. That reading holds on
+   * either setting, because it is a claim about what combustion does and not
+   * about where the boundary sits, so both branches have to carry it.
+   */
+  ok('and resolves it Rao\u2019s way - formed, and discounted',
+    says(band.found, 'discounted') && says(band.found, 'Rao'),
+    band.found ? band.found.reasons[3] : 'no finding');
 
   // 14.33 degrees, direct: clear of both
   var clear = read(1978, 3);
@@ -4574,6 +4604,9 @@ console.log('\nRaman sets a floor for Budha-Aditya, Rao does not');
   ok('and the finding names whose reading produced it',
     !!rao && rao.reasons.join(' ').indexOf('Rao') > -1,
     rao ? rao.reasons[1] : 'no finding');
+  ok('and still discounts the yoga for the combustion rather than ignoring it',
+    !!rao && rao.reasons.join(' ').indexOf('discounted') > -1,
+    rao ? rao.reasons[rao.reasons.length - 1] : 'no finding');
   ok('a chart with no setting stamped on it still uses Raman\u2019s floor',
     !find(undefined), 'the default must not be the permissive one');
 
