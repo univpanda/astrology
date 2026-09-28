@@ -504,6 +504,30 @@ input::placeholder { color: #a9bdb2; }
 .options summary:hover, .technical summary:hover,
 .flag-legend summary:hover { color: var(--green); }
 
+/*
+ * Chart settings carries nine choices, and each one needs a paragraph or two to
+ * say why anybody would pick differently. Printed out they buried the controls:
+ * the panel read as an essay with selects in it rather than a set of options.
+ *
+ * So the reasoning folds. The label and the select stay visible - that is what
+ * the panel is for - and "why one over the other" opens the argument for anyone
+ * deciding rather than merely reading.
+ */
+.field-why { margin-top: 0.45rem; }
+.field-why summary {
+  cursor: pointer;
+  color: var(--ink-faint);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+.field-why summary:hover { color: var(--green); }
+.field-why[open] summary { margin-bottom: 0.35rem; }
+.field-why .field-note { margin-top: 0; }
+
+/* Settings sit closer together now that each one is a label, a control and a
+   line, rather than a control and an essay. */
+#panel-settings .field + .field { margin-top: 1.4rem; }
+
 /* The mark legend. Nine entries of prose under every chart is a lot of page to
    scroll past once you know them, and they are the kind of thing read twice and
    then never again - so it is closed until asked for. */

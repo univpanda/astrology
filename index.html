@@ -458,7 +458,9 @@
       <div class="field">
         <label for="ayanamsa">Ayanamsa</label>
         <select id="ayanamsa"></select>
-        <p class="field-note">Where the sidereal zodiac begins, and so where every
+        <details class="field-why">
+          <summary>Why one over the other</summary>
+          <p class="field-note">Where the sidereal zodiac begins, and so where every
           longitude on the page is measured from. There is no computing the right
           answer: the schools differ by more than a degree and a half, which moves a
           graha into another sign in about one reading in eleven and into another
@@ -473,6 +475,7 @@
           shashtiamsas on average, by as much as three rupas, and 7% of
           strong-or-weak verdicts turn over. Choose his ayanamsa here before
           concluding our figures disagree with his book.</p>
+        </details>
       </div>
       <div class="field">
         <label for="node-type">Rahu and Ketu</label>
@@ -480,7 +483,9 @@
           <option value="mean">Mean node (panchang standard)</option>
           <option value="true" selected>True node</option>
         </select>
-        <p class="field-note">The nodes are where the Moon&rsquo;s orbit crosses the
+        <details class="field-why">
+          <summary>Why one over the other</summary>
+          <p class="field-note">The nodes are where the Moon&rsquo;s orbit crosses the
           ecliptic, and there is no single answer to where that is. The mean node
           regresses smoothly, a little over three arcminutes a day, every day. The true
           node is where the orbit actually crosses at that instant: it oscillates around
@@ -489,6 +494,7 @@
           degree, which moves Rahu into a different sign in about one chart in thirty-six
           and reassigns a chara karaka in one in five. Shadbala is reckoned for the seven
           grahas only and does not change at all.</p>
+        </details>
       </div>
       <div class="field">
         <label for="moon-paksha">The Moon&rsquo;s paksha bala</label>
@@ -496,7 +502,9 @@
           <option value="group">By her fortnight group (Parashara, Raman)</option>
           <option value="benefic" selected>Always as a benefic (Phaladeepika, Charak)</option>
         </select>
-        <p class="field-note">Paksha bala gives one figure to the benefics and
+        <details class="field-why">
+          <summary>Why one over the other</summary>
+          <p class="field-note">Paksha bala gives one figure to the benefics and
           sixty less it to the malefics. Whether the Moon takes her turn in those
           groups is genuinely disputed. Santhanam&rsquo;s notes to chapter 27 have
           &ldquo;The Moon in dark half is a malefic&rdquo;, and then that her
@@ -514,6 +522,7 @@
           benefic standing for drik bala and the yogas is read the ordinary way
           whichever is chosen here. The doubling is not in dispute &mdash; all
           three authorities apply it.</p>
+        </details>
       </div>
       <div class="field">
         <label for="doubled-rows">Ayana and paksha rows</label>
@@ -521,7 +530,9 @@
           <option value="undoubled" selected>Show the Sun&rsquo;s ayana and the Moon&rsquo;s paksha halved</option>
           <option value="doubled">Show them doubled, as the texts compute them</option>
         </select>
-        <p class="field-note">Two figures in the table are doubled before they
+        <details class="field-why">
+          <summary>Why one over the other</summary>
+          <p class="field-note">Two figures in the table are doubled before they
           are counted. Parashara: &ldquo;The Sun&rsquo;s Ayana Bala is again
           multiplied by 2 whereas for others the product arrived in Virupas are
           considered as it is.&rdquo; Raman says the same at section 75, and
@@ -534,6 +545,7 @@
           setting changes only what is shown. Kala bala and every total still
           count the doubled value, so a halved cell will not appear to add up:
           hover it and it names the figure the total is using.</p>
+        </details>
       </div>
       <div class="field">
         <label for="nat-clock">Nata-unnata clock</label>
@@ -542,7 +554,9 @@
           <option value="mean">Local mean time, longitude only</option>
           <option value="zone">Zone time, the clock on the wall</option>
         </select>
-        <p class="field-note">Nata-unnata measures how far the birth fell from
+        <details class="field-why">
+          <summary>Why one over the other</summary>
+          <p class="field-note">Nata-unnata measures how far the birth fell from
           midnight, and the question is whose midnight. Raman asks for the
           sundial by name at section 48: &ldquo;Midday of any place is the local
           noon when the Sun passes over its meridian. The Hindus consider the
@@ -561,6 +575,7 @@
           No authority asks for zone time. It is offered because widely used
           software computes it that way, and a row differing for that reason is
           easy to mistake for a difference of method.</p>
+        </details>
       </div>
       <div class="field">
         <label for="hora-length">Hora length</label>
@@ -568,7 +583,9 @@
           <option value="equal" selected>Twenty-four equal horas (Parashara, Raman, Charak)</option>
           <option value="seasonal">Twelve by day and twelve by night</option>
         </select>
-        <p class="field-note">Hora bala gives sixty virupas to the lord of the
+        <details class="field-why">
+          <summary>Why one over the other</summary>
+          <p class="field-note">Hora bala gives sixty virupas to the lord of the
           planetary hour of birth, and how long that hour is turns out not to be
           disputed. Raman, section 69: &ldquo;A hora is equal to 1/24th part of a
           day.&rdquo; Santhanam, on chapter 27: &ldquo;Each day from sunrise to
@@ -583,6 +600,7 @@
           can hand the sixty to different grahas &mdash; on one chart checked
           they gave Mars and Jupiter &mdash; and that is worth being able to
           recognise rather than puzzle over.</p>
+        </details>
       </div>
       <div class="field">
         <label for="kranti">Kranti for ayana bala</label>
@@ -590,7 +608,9 @@
           <option value="longitude" selected>From the sayana longitude (Raman)</option>
           <option value="true">True declination, latitude and all (Parashara&rsquo;s note)</option>
         </select>
-        <p class="field-note">Ayana bala scales a graha&rsquo;s declination, and
+        <details class="field-why">
+          <summary>Why one over the other</summary>
+          <p class="field-note">Ayana bala scales a graha&rsquo;s declination, and
           there are two complete methods rather than one. Raman derives the
           kranti at section 73 from the bhuja of the sayana longitude, through a
           table of six fifteen-degree steps, and a longitude carries no
@@ -607,6 +627,7 @@
           Worth up to 2.5 virupas on a planet and 6.6 on the Moon, who swings
           furthest from the ecliptic. Drik Panchang computes the true
           declination and reproduces exactly on the second setting.</p>
+        </details>
       </div>
       <div class="field">
         <label for="mercury-nature">Mercury&rsquo;s nature</label>
@@ -614,7 +635,9 @@
           <option value="qualified" selected>Malefic in bad company (Raman, Charak, Rao)</option>
           <option value="benefic">Always a benefic</option>
         </select>
-        <p class="field-note">Parashara gives Mercury one qualifier &mdash;
+        <details class="field-why">
+          <summary>Why one over the other</summary>
+          <p class="field-note">Parashara gives Mercury one qualifier &mdash;
           &ldquo;Mercury, however, is a malefic if he joins a malefic&rdquo;
           &mdash; and the authorities keep it. Raman, footnoting his drik bala
           table: &ldquo;Mercury is a malefic as he is very closely associated
@@ -634,6 +657,7 @@
           Mercury benefic on a chart where he sits ten degrees from the Sun in
           the same sign. It reaches paksha bala, drik bala, the kartari marks and
           every yoga that asks whether a graha is benefic.</p>
+        </details>
       </div>
       <div class="field">
         <label for="cheshta-method">Cheshta bala</label>
@@ -641,7 +665,9 @@
           <option value="kendra" selected>From the chesta kendra (Parashara 27.24-25, Raman)</option>
           <option value="motion">From the eight motions (Parashara 27.21-23, Charak)</option>
         </select>
-        <p class="field-note">Parashara gives both, in consecutive verses. At
+        <details class="field-why">
+          <summary>Why one over the other</summary>
+          <p class="field-note">Parashara gives both, in consecutive verses. At
           21-23 he names eight motions and allots them 60, 30, 15, 30, 15, 7.5,
           45 and 30; at 24-25 he gives the arithmetic &mdash; &ldquo;Add together
           the mean and true longitudes ... Reduce this sum from the Seeghrocha
@@ -662,6 +688,7 @@
           quantity rather than a rounding of the other. Checked against two
           outside calculators on three charts, the eight-motion table is further
           from both than the kendra is.</p>
+        </details>
       </div>
       <p class="field-note" id="settings-status"></p>
     </div>

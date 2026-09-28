@@ -3964,6 +3964,47 @@ ok('and the choice reaches the engine', (function () {
     .test(appSrc);
 })());
 
+console.log('\nSettings show the choice and fold the argument');
+/*
+ * Nine choices, each needing a paragraph or two to say why anybody would pick
+ * differently. Printed out they buried the controls: the panel read as an
+ * essay with selects in it. So the label and the select stay visible and the
+ * reasoning folds behind a summary, for whoever is deciding rather than
+ * reading.
+ */
+(function () {
+  var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  var at = html.indexOf('id="panel-settings"');
+  var panel = html.slice(at, html.indexOf('</section>', at));
+  var fields = (panel.match(/<div class="field">/g) || []).length;
+  var whys = (panel.match(/<details class="field-why">/g) || []).length;
+  ok('every setting carries its own folded explanation',
+    fields === whys && fields >= 9, fields + ' fields, ' + whys + ' folds');
+  /*
+   * Each fold must sit AFTER its control, or the argument still comes first.
+   */
+  ok('and the control comes before the fold', (function () {
+    var blocks = panel.split('<div class="field">').slice(1);
+    return blocks.every(function (b) {
+      var sel = b.indexOf('</select>'), why = b.indexOf('<details class="field-why">');
+      return sel >= 0 && why > sel;
+    });
+  })());
+  /*
+   * The status line is a field-note too and must not have been swept into a
+   * fold, or the page would stop reporting what it just did.
+   */
+  ok('the status line stays in the open',
+    /<p class="field-note" id="settings-status"><\/p>/.test(panel) &&
+    panel.indexOf('settings-status') > panel.lastIndexOf('</details>'));
+  /*
+   * And the reasoning is still there to be opened - the ayanamsa note names the
+   * figure a reader would check Raman against.
+   */
+  ok('and the arguments survived the wrapping',
+    /21&deg;11&prime;29&Prime;/.test(panel) && /Krishnamurti Paddhati|Kesava|Aryabhata|Charak/.test(panel));
+})();
+
 console.log('\nThe mark legend folds away');
 /*
  * Nine entries of prose sit under every chart, and they are the kind of thing
