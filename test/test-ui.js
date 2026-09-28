@@ -1402,20 +1402,62 @@ ok('and nata-unnata follows the verse it comes from', (function () {
     return ['Sun', 'Jupiter', 'Venus'].indexOf(graha) >= 0 ? 60 - nata : nata;
   };
   for (var q = 0; q < 96; q++) {
-    var hour = q * 0.25;
-    var c = Astro.chart({ jdUT: Astro.julianDay(1990, 6, 15, hour - 5.5),
-                          latitude: place.latitude, longitude: place.longitude,
+    var jd = Astro.julianDay(1990, 6, 15, q * 0.25 - 5.5);
+    var c = Astro.chart({ jdUT: jd, latitude: place.latitude,
+                          longitude: place.longitude,
                           tzOffsetMinutes: place.tzOffsetMinutes });
     var r = Shadbala.compute(c, place);
+    // Against the sundial at that longitude, which is the clock the rule means.
+    var hour = Astro.localApparentTime(jd, place.longitude);
     for (var i = 0; i < Shadbala.GRAHAS.length; i++) {
       var g = Shadbala.GRAHAS[i];
-      // A ten-millionth of a virupa: the chart's local hour comes back through
-      // a Julian day, so the two arithmetics agree to floating point and not
-      // to the bit.
       if (Math.abs(r.grahas[g].kala.nathonnatha - byText(g, hour)) > 1e-6) return false;
     }
   }
   return true;
+})());
+/*
+ * And the clock is the sundial at the birthplace, not the timezone. Raman
+ * section 48 asks for both corrections by name: "Midday of any place is the
+ * local noon when the Sun passes over its meridian. The Hindus consider the
+ * apparent noon ... if birth time is marked in local mean time, it must be
+ * converted into the apparent time by applying equation of time."
+ *
+ * A timezone is the wrong clock twice over - an administrative band, and mean
+ * time rather than apparent. It was worth up to 14 virupas at the western edge
+ * of a wide zone.
+ */
+ok('and it is measured by the sundial, not the timezone', (function () {
+  var shadSrc = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8');
+  if (!/var localHours = Astro\.localApparentTime\(jd, place\.longitude\);/.test(shadSrc)) {
+    return false;
+  }
+  if (/tzOffsetMinutes \|\| 0\) \/ 1440/.test(shadSrc)) return false;
+  // Two places on one timezone, far apart in longitude, must disagree.
+  var jd = Astro.julianDay(2000, 6, 15, 6);
+  var at = function (lon) {
+    var p = { latitude: 20, longitude: lon, tzOffsetMinutes: 330 };
+    var c = Astro.chart({ jdUT: jd, latitude: p.latitude, longitude: p.longitude,
+                          tzOffsetMinutes: p.tzOffsetMinutes });
+    return Shadbala.compute(c, p).grahas.Moon.kala.nathonnatha;
+  };
+  return Math.abs(at(72.88) - at(88.36)) > 2;
+})());
+/*
+ * And apparent noon really is where the Sun crosses the meridian: on the
+ * Greenwich meridian the apparent clock differs from the UT clock by the
+ * equation of time alone, which reaches a quarter of an hour either way.
+ */
+ok('and apparent noon is the Sun\'s own noon', (function () {
+  var worst = 0, zero = 0;
+  for (var d = 0; d < 365; d += 3) {
+    var jd = Astro.julianDay(2000, 1, 1, 12) + d;
+    var eot = Astro.localApparentTime(jd, 0) - 12;
+    worst = Math.max(worst, Math.abs(eot));
+    zero = Math.max(zero, eot > 0 ? 1 : 0);
+  }
+  // The equation of time runs to about 16 minutes and changes sign in the year.
+  return worst * 60 > 13 && worst * 60 < 18 && zero === 1;
 })());
 /*
  * A figure alone says nothing: 60.0 is everything Kendradi can give and a fifth

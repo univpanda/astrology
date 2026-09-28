@@ -181,6 +181,10 @@ var Shadbala = (function () {
 
   /* --------------------------------------------------------- kala bala */
 
+  /**
+   * @param {number} hoursFromMidnight  local apparent time, 0 at the Sun's
+   *   lower meridian and 12 at its upper one - sundial time at the birthplace.
+   */
   function nathonnathaBala(graha, hoursFromMidnight) {
     if (graha === 'Mercury') return 60;          // strong by day and by night
     var fromMidnight = Math.abs(hoursFromMidnight - 12) / 12;   // 1 at midnight, 0 at noon
@@ -460,7 +464,14 @@ var Shadbala = (function () {
     // with the yoga detectors rather than computed twice and left to drift.
     var benefics = Astro.naturalBenefics(chart);
 
-    var localHours = ((jd + (place.tzOffsetMinutes || 0) / 1440) + 0.5) % 1 * 24;
+    /*
+     * Sundial time at the birthplace, not clock time. Raman section 48 asks for
+     * the local apparent noon by name, and a timezone is the wrong clock twice
+     * over: it is an administrative band, and it gives mean time rather than
+     * apparent. Honolulu is half an hour of time west of its own zone meridian,
+     * which is three virupas of nata bala.
+     */
+    var localHours = Astro.localApparentTime(jd, place.longitude);
 
     var results = {};
     GRAHAS.forEach(function (graha) {

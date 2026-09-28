@@ -633,6 +633,33 @@ var Astro = (function () {
     return sign % 2 === 0 ? BALADI[step] : BALADI[4 - step];
   }
 
+  /**
+   * Local apparent solar time, hours, 0 at apparent midnight and 12 at apparent
+   * noon: the hour angle of the true Sun at that longitude.
+   *
+   * Sundial time, not clock time. Raman section 48 asks for both corrections by
+   * name: "Midday of any place is the local noon when the Sun passes over its
+   * meridian. The Hindus consider the apparent noon ... if birth time is marked
+   * in local mean time, it must be converted into the apparent time by applying
+   * equation of time."
+   *
+   * So a timezone is the wrong clock twice over. It is an administrative band
+   * up to half an hour wide at its edges - Honolulu sits 7.9 degrees west of
+   * its own zone meridian, half an hour of time - and even the right meridian
+   * gives mean time, which the equation of time parts from the Sun by up to
+   * sixteen minutes.
+   */
+  function localApparentTime(jdUT, longitude) {
+    var T = (jdUT + deltaT(jdUT) / 86400 - 2451545.0) / 36525;
+    var nut = nutation(T);
+    var eps = meanObliquity(T) + nut.deps;
+    var sun = apparentLongitude('sun', T, nut);
+    var ra = atan2d(sin(sun.lon) * cos(eps) - tan(sun.lat) * sin(eps), cos(sun.lon));
+    var hourAngle = norm360(apparentSiderealTime(jdUT, T, nut, eps) + longitude - ra);
+    // The hour angle is nothing at noon, so half a turn puts midnight at zero.
+    return norm360(hourAngle + 180) / 15;
+  }
+
   /* --------------------------------------------------- zodiac vocabulary */
 
   var SIGNS = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
@@ -1769,6 +1796,7 @@ var Astro = (function () {
     apparentSiderealTime: apparentSiderealTime,
     moonLongitude: moonLongitude,
     moonLatitude: moonLatitude,
+    localApparentTime: localApparentTime,
     meanLongitude: meanLongitude, sunMeanLongitude: sunMeanLongitude,
     charaKarakas: charaKarakas, CHARA_KARAKAS: CHARA_KARAKAS,
     KARAKA_GRAHAS: KARAKA_GRAHAS,

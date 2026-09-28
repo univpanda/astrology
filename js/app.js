@@ -1436,7 +1436,8 @@
         'deducted from thirty ghatis and doubled. The Moon, Mars and Saturn ' +
         'take that, strongest at midnight; the Sun, Jupiter and Venus take ' +
         'sixty less it, strongest at noon; Mercury takes the full sixty at any ' +
-        'hour. Santhanam spells it Nathonnatha bala.' },
+        'hour. Midnight here is the Sun’s own, at the birthplace and by the ' +
+        'sundial, not the timezone’s. Santhanam spells it Nathonnatha bala.' },
     { key: 'paksha', label: 'Paksha', en: 'Lunar fortnight', max: 120, shows: '60/120',
       says: 'How far into the bright or dark fortnight the birth falls. A ' +
         'benefic scores by the Moon’s brightness and a malefic by what is ' +
