@@ -5032,5 +5032,88 @@ console.log('\nEverything Raman numbers up to 50');
     detectors + ' detectors');
 })();
 
+
+console.log('\nKartari asks only that the two houses be occupied');
+/*
+ * This required that nothing else share the flanking signs, so a Jupiter beside
+ * Saturn in the 2nd cancelled papa kartari outright. No text asks for that, and
+ * two of them show it is not meant:
+ *
+ *   Charak defines Parvata four lines below kartari as houses "occupied only by
+ *   benefics" - he writes "only" when he means only, and does not write it for
+ *   kartari.
+ *
+ *   Mantreswara defines Susubha in the very sloka that defines kartari, as
+ *   benefics "unaspected by malefics" in the 2nd - he knows the qualifier and
+ *   does not attach it either.
+ *
+ * Dropping the requirement took shubha from 1.2 per cent of charts to 3.6 and
+ * papa from 6.9 to 13. The marks beside a graha had always read it the plain
+ * way, so the chart could show a graha hemmed while the ascendant beside it was
+ * not, on identical geometry.
+ */
+(function () {
+  var P = function (n, sg, d) {
+    return { name: n, sign: sg, longitude: sg * 30 + (d || 5), house: 1 };
+  };
+  // Aries lagna: the 2nd is Taurus (sign 1), the 12th Pisces (sign 11).
+  var build = function (second, twelfth) {
+    var rest = [P('Sun', 4), P('Moon', 6, 100)];
+    return { ascendant: { longitude: 5 },
+             planets: second.map(function (n) { return P(n, 1); })
+               .concat(twelfth.map(function (n) { return P(n, 11); }))
+               .concat(rest.filter(function (p) {
+                 return second.indexOf(p.name) < 0 && twelfth.indexOf(p.name) < 0;
+               })) };
+  };
+  var kinds = function (c) {
+    return Yogas.kartari(c).map(function (f) { return f.condition; }).sort().join('+');
+  };
+
+  ok('malefics on both sides is papa kartari',
+    kinds(build(['Mars'], ['Saturn'])) === 'papa');
+  ok('benefics on both sides is shubha kartari',
+    kinds(build(['Jupiter'], ['Venus'])) === 'shubha');
+  ok('a benefic sharing one side no longer cancels the malefic hemming',
+    kinds(build(['Mars', 'Jupiter'], ['Saturn'])) === 'papa',
+    kinds(build(['Mars', 'Jupiter'], ['Saturn'])) || 'nothing');
+  ok('and the finding says why the company does not undo it',
+    Yogas.kartari(build(['Mars', 'Jupiter'], ['Saturn']))[0].reasons.join(' ')
+      .indexOf('occupied only by benefics') > -1);
+
+  /*
+   * The case the old rule could not express at all: one of each kind on both
+   * sides is both yogas, not neither.
+   */
+  ok('one of each kind on both sides carries both yogas',
+    kinds(build(['Mars', 'Jupiter'], ['Saturn', 'Venus'])) === 'papa+shubha',
+    kinds(build(['Mars', 'Jupiter'], ['Saturn', 'Venus'])) || 'nothing');
+  ok('while one side empty is neither',
+    kinds(build(['Mars', 'Jupiter'], [])) === '');
+
+  /*
+   * And the yoga and the marks must now agree about the ascendant, since they
+   * are the same rule read at two places. They did not before.
+   */
+  var disagreed = 0, sampled = 0;
+  for (var y = 1950; y < 2020; y++) {
+    for (var m = 1; m <= 12; m += 3) {
+      var c = A.chart({ jdUT: A.julianDay(y, m, 15, 1), latitude: 28.61,
+        longitude: 77.21, tzOffsetMinutes: 330 });
+      sampled++;
+      var ben = A.naturalBenefics(c);
+      var lag = A.signOf(c.ascendant.longitude);
+      var found = Yogas.kartari(c);
+      var yogaP = found.some(function (f) { return f.condition === 'papa'; });
+      var yogaS = found.some(function (f) { return f.condition === 'shubha'; });
+      if (A.hemmedByMalefics('__none__', lag, c, ben) !== yogaP) disagreed++;
+      else if (A.hemmedByBenefics('__none__', lag, c, ben) !== yogaS) disagreed++;
+    }
+  }
+  ok('the yoga and the graha marks read the ascendant the same way',
+    disagreed === 0 && sampled > 200,
+    disagreed + ' disagreements over ' + sampled + ' charts');
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

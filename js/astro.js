@@ -1616,6 +1616,25 @@ var Astro = (function () {
     return hemmedBy(name, sign, chart, benefics, false);
   }
 
+  /*
+   * Hemmed on both sides, and the texts ask for nothing more than that.
+   *
+   * Phaladeepika ch.6 sloka 8: "When the 12th and the 2nd Bhavas from the Lagna
+   * are occupied by benefics, the Yoga is Subhakartari. It is called
+   * Papakartari, when the above two houses are occupied by malefics." Charak
+   * the same, "when natural malefics occupy houses 2 and 12 from the lagna".
+   *
+   * Two things in those texts say the plain reading is the intended one. Charak
+   * writes "occupied only by benefics" four lines later, defining Parvata - he
+   * says "only" when he means only, and does not here. And Mantreswara, in the
+   * very same sloka, defines Susubha as benefics "unaspected by malefics" in
+   * the 2nd - he knows how to add that qualifier and does not add it to
+   * kartari. So neither purity of occupation nor freedom from aspect is part
+   * of the rule, however much later writers attach them.
+   *
+   * A consequence worth stating: both forms can hold at once, where each
+   * flanking sign holds one of each kind. Nothing in the texts forbids it.
+   */
   function hemmedBy(name, sign, chart, benefics, wantBenefic) {
     benefics = benefics || naturalBenefics(chart);
     var before = false, after = false;

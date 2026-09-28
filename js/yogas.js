@@ -817,11 +817,13 @@ var Yogas = (function () {
     var lagna = Astro.signOf(chart.ascendant.longitude);
     var benefics = Astro.naturalBenefics(chart);
     var second = (lagna + 1) % 12, twelfth = (lagna + 11) % 12;
-    var inSign = function (sign) {
-      return chart.planets.filter(function (p) { return p.sign === sign; });
-    };
     var isBenefic = function (p) {
       return Astro.NODES.indexOf(p.name) < 0 && benefics[p.name] === true;
+    };
+    var inSign = function (sign, wanted) {
+      return chart.planets.filter(function (p) {
+        return p.sign === sign && isBenefic(p) === wanted;
+      });
     };
     var reaching = function (sign, wanted) {
       return chart.planets.filter(function (p) {
@@ -830,41 +832,71 @@ var Yogas = (function () {
       }).map(function (p) { return p.name; });
     };
 
-    var here = inSign(second), there = inSign(twelfth);
-    if (!here.length || !there.length) return [];
-    var all = here.concat(there);
-    var shubha = all.every(isBenefic);
-    var papa = all.every(function (p) { return !isBenefic(p); });
-    if (!shubha && !papa) return [];        // one of each is no scissors at all
+    /*
+     * Each kind is asked separately, and both can answer.
+     *
+     * This used to require that everything in the two flanking signs be of one
+     * kind, so a Jupiter sitting beside Saturn in the 2nd cancelled the yoga
+     * outright. No text asks for that, and two of them show it is not meant.
+     * Charak defines Parvata four lines below kartari as houses "occupied only
+     * by benefics" - he writes "only" when he means only, and does not write it
+     * here. Mantreswara defines Susubha in the very sloka that defines kartari
+     * as benefics "unaspected by malefics" - he knows the qualifier and does
+     * not attach it either. Phaladeepika ch.6 sloka 8 and Charak both say
+     * simply that the 2nd and 12th are occupied by the one kind.
+     *
+     * So a chart whose flanking signs hold both kinds carries both yogas, and
+     * is reported with both. That is not a contradiction: the first house is
+     * flanked by protection and by harm at once, which is a thing charts do.
+     */
+    var found = [];
+    [true, false].forEach(function (wanted) {
+      var here = inSign(second, wanted), there = inSign(twelfth, wanted);
+      if (!here.length || !there.length) return;
 
-    var against = reaching(second, !shubha).concat(reaching(twelfth, !shubha));
-    var reasons = [(shubha ? 'benefics' : 'malefics') + ' stand in both the 12th and the ' +
-      '2nd, so the lagna is flanked on both sides at once'];
-    if (against.length) {
-      reasons.push(listOf(against) + ' ' + (against.length > 1 ? 'aspect' : 'aspects') +
-        ' one of the two signs, which the classical wording counts against the yoga - ' +
-        'de Fouw and Svoboda ask for benefics unafflicted and malefics unaspected, and ' +
-        'read the yoga in a chart of their own where that does not hold');
-    } else {
-      reasons.push('nothing of the opposite kind reaches either sign, which is the ' +
-        'unqualified form');
-    }
+      var all = here.concat(there);
+      var mixed = chart.planets.filter(function (p) {
+        return (p.sign === second || p.sign === twelfth) && isBenefic(p) !== wanted;
+      }).map(function (p) { return p.name; });
+      var against = reaching(second, !wanted).concat(reaching(twelfth, !wanted));
 
-    return [{
-      yoga: 'Kartari',
-      kind: shubha ? 'shubha' : 'papa',
-      subject: 'Kartari Yoga',
-      condition: shubha ? 'shubha' : 'papa',
-      title: (shubha ? 'Shubha' : 'Papa') + ' kartari yoga',
-      family: 'Kartari yoga',
-      grahas: all.map(function (p) { return p.name; }),
-      houses: [12, 2],
-      reasons: reasons,
-      summary: listOf(here.map(function (p) { return p.name; })) + ' in the 2nd and ' +
-        listOf(there.map(function (p) { return p.name; })) + ' in the 12th ' +
-        (shubha ? 'flank the lagna, which is shubha kartari yoga.'
-                : 'close the lagna in, which is papa kartari yoga.')
-    }];
+      var reasons = [(wanted ? 'benefics' : 'malefics') + ' stand in both the ' +
+        '12th and the 2nd, so the lagna is flanked on both sides at once'];
+      if (mixed.length) {
+        reasons.push(listOf(mixed) + ' ' + (mixed.length > 1 ? 'share' : 'shares') +
+          ' one of the two signs, which does not undo the yoga: Phaladeepika ' +
+          'and Charak both ask only that the two houses be occupied by the ' +
+          'one kind, and Charak writes "occupied only by benefics" elsewhere ' +
+          'when he means to exclude company');
+      }
+      if (against.length) {
+        reasons.push(listOf(against) + ' ' + (against.length > 1 ? 'aspect' : 'aspects') +
+          ' one of the two signs. De Fouw and Svoboda ask for benefics ' +
+          'unafflicted and malefics unaspected; Mantreswara asks that only of ' +
+          'Susubha, in the same sloka that defines this one, so it is reported ' +
+          'rather than applied');
+      } else {
+        reasons.push('nothing of the opposite kind reaches either sign, which ' +
+          'is the unqualified form');
+      }
+
+      found.push({
+        yoga: 'Kartari',
+        kind: wanted ? 'shubha' : 'papa',
+        subject: 'Kartari Yoga',
+        condition: wanted ? 'shubha' : 'papa',
+        title: (wanted ? 'Shubha' : 'Papa') + ' kartari yoga',
+        family: 'Kartari yoga',
+        grahas: all.map(function (p) { return p.name; }),
+        houses: [12, 2],
+        reasons: reasons,
+        summary: listOf(here.map(function (p) { return p.name; })) + ' in the 2nd and ' +
+          listOf(there.map(function (p) { return p.name; })) + ' in the 12th ' +
+          (wanted ? 'flank the lagna, which is shubha kartari yoga.'
+                  : 'close the lagna in, which is papa kartari yoga.')
+      });
+    });
+    return found;
   }
 
   /** "Mars", "Mars and Ketu", "Mars, Saturn and Ketu". */

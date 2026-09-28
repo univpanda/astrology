@@ -479,17 +479,20 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
 ('yoga', 'Kartari Yoga', 'shubha',
  'Shubha kartari - benefics for blades',
  array[
-   'Benefics in both the 2nd and the 12th from the lagna, so the first house is held between two of them. The scissors close on something they mean well by.',
+   'Benefics in both the 2nd and the 12th from the lagna, so the first house is held between two of them. The scissors close on something they mean well by. Phaladeepika ch.6 sloka 8: "When the 12th and the 2nd Bhavas from the Lagna are occupied by benefics, the Yoga is Subhakartari."',
    'It is read as shelter: what the first house stands for - the body, the life, the person - is hemmed by grahas that protect it, and is harder to reach than it would otherwise be.',
-   'It is the rarer of the two, there being fewer benefics to go round than malefics.'
+   'This site used to ask that nothing else share those two signs, so a Saturn beside Jupiter in the 2nd cancelled the yoga outright. That was wrong, and two texts show it. Charak defines Parvata four lines after kartari as houses "occupied only by benefics" - he writes "only" when he means only, and does not write it here. Mantreswara defines Susubha in the very sloka that defines kartari as benefics "unaspected by malefics" - he knows the qualifier and does not attach it either. Correcting this took the yoga from 1.2 per cent of charts to 3.6.',
+   'It remains the rarer of the two, there being fewer benefics to go round than malefics.'
  ],
  'The [S] mark beside a graha reports the same shape around that graha rather than around the lagna.', 974),
 
 ('yoga', 'Kartari Yoga', 'papa',
  'Papa kartari - malefics for blades',
  array[
-   'Malefics in both the 2nd and the 12th from the lagna, the nodes counted among them. The first house is caught between two grahas that do not mean it well.',
+   'Malefics in both the 2nd and the 12th from the lagna, the nodes counted among them. The first house is caught between two grahas that do not mean it well. Phaladeepika, in the same sloka: "It is called Papakartari, when the above two houses are occupied by malefics."',
    'It is read as constraint: the affairs of the first house are pressed from both sides, and what the chart otherwise promises there is harder to come by.',
+   'Nothing in the texts asks the flanking signs to hold malefics and nothing else. This site asked for that and reported no yoga wherever a benefic shared one of the two signs, which lost nearly half of all cases: the figure went from 6.9 per cent of charts to 13 once the requirement was dropped. Charak''s "occupied only by benefics" for Parvata, and Mantreswara''s "unaspected by malefics" for Susubha, are both the qualifier being used elsewhere and withheld here.',
+   'A consequence worth stating: both kartaris can hold at once, where each flanking sign carries one graha of each kind. That happens in about one chart in a hundred and fifty, and both are reported. The first house is flanked by protection and by harm together, which is a thing charts do.',
    'Commoner than the benefic form, there being more malefics to go round - a thin Moon and a badly kept Mercury each count as one, and the nodes always do.'
  ],
  'The [P] mark beside a graha reports the same shape around that graha rather than around the lagna.', 975)
