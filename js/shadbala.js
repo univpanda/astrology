@@ -571,6 +571,8 @@ var Shadbala = (function () {
   function compute(chart, place, options) {
     var moonPaksha = (options && options.moonPaksha) === MOON_PAKSHA.BENEFIC
       ? MOON_PAKSHA.BENEFIC : MOON_PAKSHA.GROUP;
+    var horaLength = (options && options.horaLength) === HORA_LENGTH.SEASONAL
+      ? HORA_LENGTH.SEASONAL : HORA_LENGTH.EQUAL;
     var wanted = options && options.natClock;
     var natClock = wanted === NAT_CLOCK.ZONE || wanted === NAT_CLOCK.MEAN
       ? wanted : NAT_CLOCK.APPARENT;
@@ -601,6 +603,16 @@ var Shadbala = (function () {
      * which is three virupas of nata bala.
      */
     var localHours = natHours(natClock, jd, place);
+    /*
+     * The sunrise that opened the Hindu day, with the sunset and sunrise that
+     * bracket it. For a birth before dawn that is yesterday's sunrise, and the
+     * night it falls in began at yesterday's sunset.
+     */
+    var horaSpan = sunrise !== null && sunrise > jd
+      ? { sunrise: Astro.sunriseSunset(jd - 1, place.latitude, place.longitude, false),
+          sunset: Astro.sunriseSunset(jd - 1, place.latitude, place.longitude, true),
+          nextSunrise: sunrise }
+      : { sunrise: sunrise, sunset: sunset, nextSunrise: nextSunrise };
 
     var results = {};
     GRAHAS.forEach(function (graha) {
@@ -664,7 +676,8 @@ var Shadbala = (function () {
         abda: abdaLord(chart.panchang.ahargana) === graha ? 15 : 0,
         masa: masaLord(chart.panchang.ahargana) === graha ? 30 : 0,
         vara: chart.panchang.varaLord === graha ? 45 : 0,
-        hora: horaLord(jd, sunrise, chart.panchang.varaLord) === graha ? 60 : 0,
+        hora: horaLord(jd, horaSpan, chart.panchang.varaLord, horaLength) === graha
+          ? 60 : 0,
         ayana: graha === 'Sun' ? ayana * 2 : ayana        // doubled for the Sun
       };
       /*
@@ -765,16 +778,50 @@ var Shadbala = (function () {
     return lordFromRemainder((Math.floor(ahargana / 30) * 2 + 1) % 7);
   }
 
-  /** Which graha rules the hour; hours run from sunrise in the weekday order. */
-  function horaLord(jd, sunrise, varaLord) {
-    if (!sunrise) return null;
-    var elapsed = (jd - sunrise) * 24;
-    if (elapsed < 0) elapsed += 24;
+  /*
+   * How long a hora is. The authorities are unanimous and say the same thing
+   * three different ways.
+   *
+   *   Raman section 69: "A hora is equal to 1/24th part of a day."
+   *   Santhanam, note to ch.27 v.13: "Each day from sunrise to sunrise is
+   *     divided into 24 equal parts of one hour or 2.5 Ghatika."
+   *   Charak, citing Aryabhata: "There are 24 Horas in a day, each Hora being
+   *     (approximately!) equivalent to an hour."
+   *
+   * So 'equal' is the only reading with a text behind it, and it is the
+   * default. 'seasonal' divides the daylight into twelve and the night into
+   * twelve, which is the older planetary-hour scheme and is what some software
+   * does; no source consulted here asks for it in this bala. It is offered so
+   * that a hora lord differing for that reason can be recognised rather than
+   * mistaken for an error, which is exactly what happened on one chart checked
+   * against Drik Panchang.
+   */
+  var HORA_LENGTH = { EQUAL: 'equal', SEASONAL: 'seasonal' };
+
+  // Hora lords step by two each hour through the weekday order.
+  var CHALDEAN = ['Saturn', 'Jupiter', 'Mars', 'Sun', 'Venus', 'Mercury', 'Moon'];
+
+  function horaLord(jd, span, varaLord, length) {
+    if (!span || span.sunrise === null) return null;
+    var index;
+    if (length === HORA_LENGTH.SEASONAL && span.sunset !== null &&
+        span.nextSunrise !== null) {
+      if (jd < span.sunset) {
+        var dayHora = (span.sunset - span.sunrise) / 12;
+        index = Math.min(11, Math.max(0, Math.floor((jd - span.sunrise) / dayHora)));
+      } else {
+        var nightHora = (span.nextSunrise - span.sunset) / 12;
+        index = 12 + Math.min(11, Math.max(0,
+          Math.floor((jd - span.sunset) / nightHora)));
+      }
+    } else {
+      var elapsed = (jd - span.sunrise) * 24;
+      if (elapsed < 0) elapsed += 24;
+      index = Math.floor(elapsed);
+    }
     var start = WEEKDAY_LORDS.indexOf(varaLord);
-    // Hora lords step by two each hour through the weekday order.
-    var CHALDEAN = ['Saturn', 'Jupiter', 'Mars', 'Sun', 'Venus', 'Mercury', 'Moon'];
     var from = CHALDEAN.indexOf(WEEKDAY_LORDS[start < 0 ? 0 : start]);
-    return CHALDEAN[(from + Math.floor(elapsed)) % 7];
+    return CHALDEAN[(from + index) % 7];
   }
 
   return {
@@ -792,6 +839,7 @@ var Shadbala = (function () {
     chestaKendraFrom: chestaKendraFrom,
     MOON_PAKSHA: MOON_PAKSHA,
     NAT_CLOCK: NAT_CLOCK,
+    HORA_LENGTH: HORA_LENGTH,
     // Exported for the worked examples in Raman s60-61 and BPHS ch.27 v.13.
     abdaLord: abdaLord, masaLord: masaLord,
     GRAHAS: GRAHAS,

@@ -1380,7 +1380,8 @@
         longitude: state.place.lon,
         tzOffsetMinutes: state.offset
       }, { moonPaksha: document.getElementById('moon-paksha').value,
-           natClock: document.getElementById('nat-clock').value });
+           natClock: document.getElementById('nat-clock').value,
+           horaLength: document.getElementById('hora-length').value });
     }
     return state.shadbala;
   }
@@ -3451,6 +3452,20 @@
     status.textContent = halved
       ? 'The Sun\u2019s ayana and the Moon\u2019s paksha are shown halved. The totals still count them doubled.'
       : 'The Sun\u2019s ayana and the Moon\u2019s paksha are shown as the texts compute them, doubled.';
+  });
+
+  document.getElementById('hora-length').addEventListener('change', function () {
+    var status = document.getElementById('settings-status');
+    var seasonal = this.value === 'seasonal';
+    if (!lastChart) {
+      status.textContent = 'Saved. The next chart will use it.';
+      return;
+    }
+    lastChart.shadbala = null;
+    render(lastChart);
+    status.textContent = seasonal
+      ? 'Horas now split the daylight into twelve and the night into twelve.'
+      : 'Horas are now the twenty-four equal parts the texts describe.';
   });
 
   /*

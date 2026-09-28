@@ -35,6 +35,79 @@ var rt = A.calendarDate(2436116.31);
 ok('calendarDate round-trip', rt.y === 1957 && rt.m === 10 && rt.d === 4 &&
    Math.abs(rt.hours - 19.44) < 0.01, rt.y + '-' + rt.m + '-' + rt.d + ' ' + rt.hours.toFixed(3) + 'h');
 
+console.log('\nHow long a hora is');
+/*
+ * Unanimous, and worth recording because it is the kind of thing that looks
+ * disputed and is not:
+ *
+ *   Raman section 69: "A hora is equal to 1/24th part of a day."
+ *   Santhanam on ch.27 v.13: "Each day from sunrise to sunrise is divided into
+ *     24 equal parts of one hour or 2.5 Ghatika."
+ *   Charak, citing Aryabhata: "There are 24 Horas in a day, each Hora being
+ *     (approximately!) equivalent to an hour."
+ *
+ * Splitting the daylight into twelve and the night into twelve is the older
+ * planetary-hour scheme and some software uses it, but no source consulted
+ * asks for it here. It is offered because the two hand the sixty to different
+ * grahas, which is worth recognising rather than puzzling over.
+ */
+(function () {
+  var S = require('../js/shadbala.js');
+  var place = { latitude: 40.6975, longitude: -73.8042, tzOffsetMinutes: -240 };
+  var chart = A.chart({ jdUT: A.julianDay(1946, 6, 14, 10 + 54 / 60 + 4),
+    latitude: place.latitude, longitude: place.longitude,
+    tzOffsetMinutes: place.tzOffsetMinutes });
+  var lordOf = function (opts) {
+    var r = S.compute(chart, place, opts);
+    return S.GRAHAS.filter(function (g) { return r.grahas[g].kala.hora > 0; })[0];
+  };
+  ok('equal horas are the default, and give Mars here',
+    lordOf() === 'Mars', String(lordOf()));
+  ok('seasonal horas give Jupiter, which is what Drik Panchang prints',
+    lordOf({ horaLength: S.HORA_LENGTH.SEASONAL }) === 'Jupiter',
+    String(lordOf({ horaLength: S.HORA_LENGTH.SEASONAL })));
+  ok('an unknown value falls back to equal',
+    lordOf({ horaLength: 'ghatika-ish' }) === 'Mars');
+
+  /*
+   * Exactly one graha may hold it, under either reading. Sixty virupas landing
+   * twice, or nowhere, is the failure mode worth guarding.
+   */
+  [undefined, { horaLength: S.HORA_LENGTH.SEASONAL }].forEach(function (o) {
+    var r = S.compute(chart, place, o);
+    var held = S.GRAHAS.filter(function (g) { return r.grahas[g].kala.hora > 0; });
+    ok('exactly one graha holds the hora (' + (o ? 'seasonal' : 'equal') + ')',
+      held.length === 1 && r.grahas[held[0]].kala.hora === 60, held.join(','));
+  });
+
+  /*
+   * A birth before dawn belongs to the previous Hindu day, so its night began
+   * at the previous sunset. Seasonal horas have to reach back for that or they
+   * measure from a sunset that has not happened yet.
+   */
+  var predawn = A.chart({ jdUT: A.julianDay(1946, 6, 14, 3 + 4), latitude: place.latitude,
+    longitude: place.longitude, tzOffsetMinutes: place.tzOffsetMinutes });
+  [undefined, { horaLength: S.HORA_LENGTH.SEASONAL }].forEach(function (o) {
+    var r = S.compute(predawn, place, o);
+    var held = S.GRAHAS.filter(function (g) { return r.grahas[g].kala.hora > 0; });
+    ok('a pre-dawn birth still gets exactly one hora lord (' +
+      (o ? 'seasonal' : 'equal') + ')', held.length === 1, held.join(','));
+  });
+
+  /*
+   * And nothing outside this row may notice the setting.
+   */
+  var a = S.compute(chart, place);
+  var b = S.compute(chart, place, { horaLength: S.HORA_LENGTH.SEASONAL });
+  ok('no other bala reads the hora length', S.GRAHAS.every(function (g) {
+    var x = a.grahas[g], y = b.grahas[g];
+    return Math.abs(x.sthana.total - y.sthana.total) < 1e-9 &&
+      Math.abs(x.kala.tribhaga - y.kala.tribhaga) < 1e-9 &&
+      Math.abs(x.kala.nathonnatha - y.kala.nathonnatha) < 1e-9 &&
+      Math.abs(x.cheshta - y.cheshta) < 1e-9 && Math.abs(x.drik - y.drik) < 1e-9;
+  }));
+})();
+
 console.log('\nWhich clock nata-unnata runs on');
 /*
  * Raman section 48 asks for the sundial by name, and it is two corrections
