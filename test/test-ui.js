@@ -3899,15 +3899,26 @@ console.log('\nThe Moon\u2019s paksha bala is a setting');
  * The control belongs with the ayanamsa and the node: all three are choices
  * about how to read a chart rather than facts about one.
  */
-ok('the reading is offered in settings, defaulting to the group rule',
+ok('the reading is offered in settings, defaulting to always-benefic',
   (function () {
     var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
     var at = html.indexOf('id="panel-settings"');
     var panel = html.slice(at, html.indexOf('</section>', at));
     return /<select id="moon-paksha">/.test(panel) &&
-      /<option value="group" selected>/.test(panel) &&
-      /<option value="benefic">/.test(panel);
+      /<option value="group">/.test(panel) &&
+      /<option value="benefic" selected>/.test(panel);
   })());
+/*
+ * The page and the engine default differently, on purpose. shadbala.js keeps
+ * the group reading when called with no options, because that is the one
+ * Parashara's verse and Raman both give and a library caller should get the
+ * conservative answer. The page ships the other because it was asked for. The
+ * two never disagree in practice, because the page always passes its choice
+ * explicitly rather than relying on the engine's default.
+ */
+ok('and the page never leans on the engine default',
+  /\{ moonPaksha: document\.getElementById\('moon-paksha'\)\.value \}/
+    .test(appSrc));
 /*
  * The note has to name who holds each reading, or the choice is just a
  * preference with no way to decide it.

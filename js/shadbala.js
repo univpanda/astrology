@@ -521,6 +521,12 @@ var Shadbala = (function () {
    * Only the Moon's own figure moves. The other six are unaffected, and so is
    * her benefic standing everywhere else - drik bala and the yogas still read
    * her by the ordinary rule.
+   *
+   * Called with no options this keeps 'group', the reading Parashara's verse
+   * and Raman both give, so a caller who expresses no preference gets the
+   * conservative answer. The page defaults the other way and says so in
+   * settings; it always passes its choice explicitly rather than relying on
+   * this.
    */
   var MOON_PAKSHA = { GROUP: 'group', BENEFIC: 'benefic' };
 

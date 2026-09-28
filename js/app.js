@@ -2952,7 +2952,7 @@
     time: '10:54:00',
     standard: 'zone',
     ayanamsa: 'lahiri',
-    trueNode: false,
+    trueNode: true,
     gender: 'male',
     celebrity: true,
     note: '10:54 am EDT at Jamaica Hospital, Queens, the time on the birth ' +
@@ -2972,7 +2972,7 @@
     time: '18:30:00',
     standard: 'zone',
     ayanamsa: 'lahiri',
-    trueNode: false,
+    trueNode: true,
     gender: 'male',
     celebrity: true
   }, {
@@ -2985,7 +2985,7 @@
     time: '19:10:00',
     standard: 'zone',
     ayanamsa: 'lahiri',
-    trueNode: false,
+    trueNode: true,
     gender: 'female',
     celebrity: true
   }, {
@@ -2998,7 +2998,7 @@
     time: '19:24:00',
     standard: 'zone',
     ayanamsa: 'lahiri',
-    trueNode: false,
+    trueNode: true,
     gender: 'male',
     celebrity: true
   }];
