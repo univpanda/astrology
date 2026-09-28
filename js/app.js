@@ -1381,7 +1381,8 @@
         tzOffsetMinutes: state.offset
       }, { moonPaksha: document.getElementById('moon-paksha').value,
            natClock: document.getElementById('nat-clock').value,
-           horaLength: document.getElementById('hora-length').value });
+           horaLength: document.getElementById('hora-length').value,
+           kranti: document.getElementById('kranti').value });
     }
     return state.shadbala;
   }
@@ -3452,6 +3453,20 @@
     status.textContent = halved
       ? 'The Sun\u2019s ayana and the Moon\u2019s paksha are shown halved. The totals still count them doubled.'
       : 'The Sun\u2019s ayana and the Moon\u2019s paksha are shown as the texts compute them, doubled.';
+  });
+
+  document.getElementById('kranti').addEventListener('change', function () {
+    var status = document.getElementById('settings-status');
+    var real = this.value === 'true';
+    if (!lastChart) {
+      status.textContent = 'Saved. The next chart will use it.';
+      return;
+    }
+    lastChart.shadbala = null;
+    render(lastChart);
+    status.textContent = real
+      ? 'Ayana bala now scales the true declination, ecliptic latitude included.'
+      : 'Ayana bala now takes the kranti from the sayana longitude, as Raman does.';
   });
 
   document.getElementById('hora-length').addEventListener('change', function () {

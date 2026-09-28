@@ -552,6 +552,8 @@ var Shadbala = (function () {
    *                that differs for this reason is easy to mistake for a
    *                difference of method.
    */
+  var KRANTI = { LONGITUDE: 'longitude', TRUE: 'true' };
+
   var NAT_CLOCK = { APPARENT: 'apparent', MEAN: 'mean', ZONE: 'zone' };
 
   function natHours(clock, jd, place) {
@@ -571,6 +573,8 @@ var Shadbala = (function () {
   function compute(chart, place, options) {
     var moonPaksha = (options && options.moonPaksha) === MOON_PAKSHA.BENEFIC
       ? MOON_PAKSHA.BENEFIC : MOON_PAKSHA.GROUP;
+    var kranti = (options && options.kranti) === KRANTI.TRUE
+      ? KRANTI.TRUE : KRANTI.LONGITUDE;
     var horaLength = (options && options.horaLength) === HORA_LENGTH.SEASONAL
       ? HORA_LENGTH.SEASONAL : HORA_LENGTH.EQUAL;
     var wanted = options && options.natClock;
@@ -619,31 +623,31 @@ var Shadbala = (function () {
       var p = positions[graha];
       var tropical = p.longitude + chart.ayanamsa;
       /*
-       * Declination from the sayana longitude alone, the Moon included.
+       * Which declination the kranti is. Two complete methods, and mixing them
+       * is the error this once made.
        *
-       * This passed the Moon's ecliptic latitude in, which gives her true
-       * declination and is the better number in every sense except the one
-       * that matters here: it is not the quantity Raman's method asks for. His
-       * section 73 derives the kranti from the bhuja of the sayana longitude
-       * through a table of six 15-degree steps, and a longitude has no
-       * latitude in it. Example 32 works all seven grahas that way, Chandra
-       * among them.
+       * 'longitude' - from the bhuja of the sayana longitude, Raman section 73,
+       *   through a table of six 15-degree steps. A longitude carries no
+       *   latitude, and his Example 32 works all seven grahas that way,
+       *   Chandra included. This pairs with his 24 and 48, because 24 is what a
+       *   declination read off a longitude reaches.
        *
-       * The pairing is the point. Raman's ayana formula divides by 48 because
-       * his kranti tops out at 24, and it tops out at 24 because it is read off
-       * a longitude. Feeding that formula a true declination that includes
-       * latitude mixes his constant with somebody else's quantity, which is a
-       * combination no text holds. Worth about 3.9 virupas on the Moon and as
-       * much as 6.6.
+       * 'true' - the real declination, latitude and all. Santhanam's note to
+       *   ch.27 vv.15-17 sends the reader straight to one: "Krantis (or
+       *   declinations) can be ascertained from standard modern ephemeris",
+       *   and gives the formula as (23 deg 27' + Kranti) x 1.2793, a 23.45
+       *   maximum to match. Drik Panchang computes the true declination and
+       *   reproduces exactly under this setting.
        *
-       * Parashara's side is coherent too and differs: Santhanam's note to
-       * ch.27 vv.15-17 gives (23 deg 27' + Kranti) x 1.2793 - a 23.45 maximum,
-       * matching the real obliquity - and says plainly that "Krantis (or
-       * declinations) can be ascertained from standard modern ephemeris",
-       * which for the Moon means latitude and all. Either package is defensible
-       * whole; this site takes Raman's, as it does throughout Shadbala.
+       * Worth up to 2.5 virupas on a planet and 6.6 on the Moon, who carries
+       * the largest latitude of the nine.
        */
       var latitude = 0;
+      if (kranti === KRANTI.TRUE) {
+        latitude = graha === 'Moon' ? Astro.moonLatitude(T)
+          : graha === 'Sun' ? 0
+          : (Astro.apparentLongitude(MEAN_KEY[graha], T, nut) || {}).lat || 0;
+      }
       var dec = Astro.declination(tropical, latitude, eps);
 
       var saptavargaja = saptavargajaBala(graha, chart, positions);
@@ -840,6 +844,7 @@ var Shadbala = (function () {
     MOON_PAKSHA: MOON_PAKSHA,
     NAT_CLOCK: NAT_CLOCK,
     HORA_LENGTH: HORA_LENGTH,
+    KRANTI: KRANTI,
     // Exported for the worked examples in Raman s60-61 and BPHS ch.27 v.13.
     abdaLord: abdaLord, masaLord: masaLord,
     GRAHAS: GRAHAS,

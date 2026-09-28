@@ -35,6 +35,75 @@ var rt = A.calendarDate(2436116.31);
 ok('calendarDate round-trip', rt.y === 1957 && rt.m === 10 && rt.d === 4 &&
    Math.abs(rt.hours - 19.44) < 0.01, rt.y + '-' + rt.m + '-' + rt.d + ' ' + rt.hours.toFixed(3) + 'h');
 
+console.log('\nWhich declination the kranti is');
+/*
+ * Two complete methods, and running half of each is the error this once made.
+ *
+ * Raman section 73 derives the kranti from the bhuja of the sayana longitude,
+ * through a table of six 15-degree steps; a longitude carries no latitude, and
+ * his Example 32 works all seven grahas that way. It pairs with his divisor of
+ * 48, because 24 is what a declination read off a longitude reaches.
+ *
+ * Santhanam's note to ch.27 vv.15-17 sends the reader to a modern ephemeris
+ * instead - "Krantis (or declinations) can be ascertained from standard modern
+ * ephemeris" - which gives the true declination, ecliptic latitude and all.
+ *
+ * Drik Panchang computes the true declination, and reproduces exactly on that
+ * setting. On Trump's chart the Moon hides the difference, sitting 0.45 degrees
+ * from Ketu with a latitude of 0.03, which is why the test below checks a
+ * planet rather than trusting her.
+ */
+(function () {
+  var S = require('../js/shadbala.js');
+  var place = { latitude: 40.6975, longitude: -73.8042, tzOffsetMinutes: -240 };
+  var chart = A.chart({ jdUT: A.julianDay(1946, 6, 14, 10 + 54 / 60 + 4),
+    latitude: place.latitude, longitude: place.longitude,
+    tzOffsetMinutes: place.tzOffsetMinutes });
+  var ayana = function (g, opts) {
+    return S.compute(chart, place, opts).grahas[g].kala.ayana;
+  };
+  check('Raman\u2019s longitude-derived kranti is the default',
+    ayana('Mercury'), 58.94, 0.05, 'virupas');
+  check('and the true declination reproduces Drik Panchang',
+    ayana('Mercury', { kranti: S.KRANTI.TRUE }), 61.44, 0.05, 'virupas');
+  check('Venus too', ayana('Venus', { kranti: S.KRANTI.TRUE }), 58.53, 0.05,
+    'virupas');
+  /*
+   * The Sun has no ecliptic latitude, so it must read the same either way. If
+   * it ever moves, a latitude is being invented for it.
+   */
+  ok('the Sun is untouched by the choice, having no latitude',
+    Math.abs(ayana('Sun') - ayana('Sun', { kranti: S.KRANTI.TRUE })) < 0.02);
+  ok('an unknown value falls back to the longitude reading',
+    Math.abs(ayana('Mercury', { kranti: 'ephemeris-ish' }) - ayana('Mercury')) < 1e-9);
+
+  /*
+   * The Moon is where it bites hardest, so check a chart where she is far from
+   * a node rather than Trump's, where she is on one.
+   */
+  var far = A.chart({ jdUT: A.julianDay(1961, 8, 4, 19 + 24 / 60 + 10),
+    latitude: 21.3069, longitude: -157.8583, tzOffsetMinutes: -600 });
+  var fp = { latitude: 21.3069, longitude: -157.8583, tzOffsetMinutes: -600 };
+  var byLon = S.compute(far, fp).grahas.Moon.kala.ayana;
+  var byTrue = S.compute(far, fp, { kranti: S.KRANTI.TRUE }).grahas.Moon.kala.ayana;
+  ok('the Moon moves by several virupas when she is off the nodes',
+    Math.abs(byLon - byTrue) > 5,
+    byLon.toFixed(2) + ' vs ' + byTrue.toFixed(2));
+
+  /*
+   * Cheshta follows for the Sun, who borrows his ayana, and nothing else may
+   * move: this is a declination, not a position.
+   */
+  var a = S.compute(chart, place), b = S.compute(chart, place, { kranti: S.KRANTI.TRUE });
+  ok('no bala outside ayana and the Sun\u2019s cheshta reads it',
+    S.GRAHAS.every(function (g) {
+      var x = a.grahas[g], y = b.grahas[g];
+      return Math.abs(x.sthana.total - y.sthana.total) < 1e-9 &&
+        Math.abs(x.dig - y.dig) < 1e-9 && Math.abs(x.drik - y.drik) < 1e-9 &&
+        Math.abs(x.kala.paksha - y.kala.paksha) < 1e-9;
+    }));
+})();
+
 console.log('\nHow long a hora is');
 /*
  * Unanimous, and worth recording because it is the kind of thing that looks
