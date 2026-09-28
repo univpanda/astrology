@@ -157,6 +157,11 @@
         showVargaView(which === 'charts');
       });
     });
+    ['table', 'chart'].forEach(function (which) {
+      document.getElementById('shadbala-as-' + which).addEventListener('click', function () {
+        showShadbalaView(which === 'chart');
+      });
+    });
   }
 
   /*
@@ -2014,6 +2019,23 @@
   }
 
   /*
+   * The same switch for Shadbala, and for the same reason: the table is fifteen
+   * rows of figures to look things up in, and the chart answers one question
+   * across all seven grahas. Neither replaces the other, so neither is shown
+   * over the other.
+   *
+   * One chart and not one a graha. The question it answers - who clears their
+   * own minimum - is a question about the seven together, and seven charts of
+   * one bar each would be seven ways of not asking it.
+   */
+  function showShadbalaView(asChart) {
+    document.getElementById('shadbala-chart').hidden = !asChart;
+    document.getElementById('shadbala-table-scroll').hidden = asChart;
+    document.getElementById('shadbala-as-chart').setAttribute('aria-pressed', String(asChart));
+    document.getElementById('shadbala-as-table').setAttribute('aria-pressed', String(!asChart));
+  }
+
+  /*
    * The yogas this grid already writes as a letter, so the hover does not say
    * them a second time: Parivartana is [X], Neecha Bhanga is [N] where it is the
    * raja form, and Kartari is [S] or [P]. A cell's hover carries what the cell
@@ -2845,8 +2867,8 @@
   var editButton = document.getElementById('edit-button');
 
   /*
-   * Three charts ship with the app, so the saved list is not empty before anyone
-   * has typed a birth time in. All three are picked for being checkable rather
+   * Four charts ship with the app, so the saved list is not empty before anyone
+   * has typed a birth time in. All four are picked for being checkable rather
    * than for being famous, and between them they show the three things that
    * decide whether a chart can be trusted: the time, the clock it is read on,
    * and the place.
@@ -2864,6 +2886,13 @@
    * print it: they give 0 Leo from Boon Hill, and Smithfield gives 29 Cancer.
    * Nothing this app shows moves, which is the point worth knowing about how
    * much precision a birthplace actually needs.
+   *
+   * Barack Obama's is the chart with none of those doubts in it. The hour is on
+   * the long form the White House published in 2011, the hospital is named on
+   * it, and Hawaii is the one state that has never kept daylight saving, so
+   * there is no second reading of the clock to argue about. What is left is the
+   * dasha: Jupiter from July 1996 to July 2012, which opens months before the
+   * Illinois senate seat and closes between the two presidential terms.
    */
   var STUDY_CHARTS = [{
     name: 'Donald Trump',
@@ -2910,6 +2939,19 @@
     ayanamsa: 'lahiri',
     trueNode: false,
     gender: 'female',
+    celebrity: true
+  }, {
+    name: 'Barack Obama',
+    placeLabel: 'Honolulu, Hawaii, United States',
+    latitude: 21.3069,
+    longitude: -157.8583,
+    zone: 'Pacific/Honolulu',
+    date: '1961-08-04',
+    time: '19:24:00',
+    standard: 'zone',
+    ayanamsa: 'lahiri',
+    trueNode: false,
+    gender: 'male',
     celebrity: true
   }];
 

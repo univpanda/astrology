@@ -346,7 +346,19 @@
       </div>
 
       <div id="panel-shadbala" role="tabpanel" aria-labelledby="tab-shadbala" hidden>
-        <div class="table-scroll">
+        <div class="varga-scheme-row">
+          <div class="view-switch" role="group" aria-label="How to show the strengths">
+            <button type="button" class="view-option" id="shadbala-as-table"
+                    aria-pressed="true">Table</button>
+            <button type="button" class="view-option" id="shadbala-as-chart"
+                    aria-pressed="false">Chart</button>
+          </div>
+        </div>
+        <!-- One chart for all seven, built in app.js: each graha's total as a
+             share of the minimum it is asked for, which is the one figure in
+             the table that compares across grahas. -->
+        <div id="shadbala-chart" hidden></div>
+        <div class="table-scroll" id="shadbala-table-scroll">
           <!-- Built in app.js: the columns are whichever grahas Shadbala reckons,
                so the header is the chart's own list rather than a fixed seven. -->
           <table id="shadbala-table">
@@ -354,10 +366,6 @@
             <tbody></tbody>
           </table>
         </div>
-        <!-- One chart, built in app.js: each graha's total as a share of the
-             minimum it is asked for, which is the one figure in the table that
-             compares across grahas. -->
-        <div id="shadbala-chart"></div>
         <p class="varga-note" id="shadbala-note"></p>
       </div>
 

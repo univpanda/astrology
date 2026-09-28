@@ -234,7 +234,7 @@ console.log('\nStudy charts that ship with the app');
   ok('STUDY_CHARTS is still a literal this test can read', !!literal);
   if (!literal) return;
   var charts = new Function('return ' + literal[1])();
-  ok('three charts ship', charts.length === 3, charts.map(function (c) { return c.name; }).join(', '));
+  ok('four charts ship', charts.length === 4, charts.map(function (c) { return c.name; }).join(', '));
 
   function cast(entry, offsetMinutes) {
     var t = entry.time.split(':').map(Number);
@@ -277,9 +277,10 @@ console.log('\nStudy charts that ship with the app');
   function named(name) {
     return charts.filter(function (c) { return c.name === name; })[0];
   }
-  var trump = named('Donald Trump'), kareem = named('Kareem Abdul-Jabbar'), ava = named('Ava Gardner');
-  ok('each chart checked below is still in the list', !!trump && !!kareem && !!ava);
-  if (!trump || !kareem || !ava) return;
+  var trump = named('Donald Trump'), kareem = named('Kareem Abdul-Jabbar');
+  var ava = named('Ava Gardner'), obama = named('Barack Obama');
+  ok('each chart checked below is still in the list', !!trump && !!kareem && !!ava && !!obama);
+  if (!trump || !kareem || !ava || !obama) return;
 
   var tc = cast(trump);
   ok('Trump: 6 Leo rises in Magha, as the note says',
@@ -396,6 +397,48 @@ console.log('\nStudy charts that ship with the app');
   ok('Gardner: Saturn dasha runs June 1931 to June 1950, over the MGM years',
      asat && asat.y === 1931 && asat.m === 6 && amer && amer.y === 1950 && amer.m === 6,
      (asat ? asat.y + '-' + asat.m : '?') + ' to ' + (amer ? amer.y + '-' + amer.m : '?'));
+
+  var oc = cast(obama);
+  ok('Obama: 24 Capricorn rises in Dhanishta',
+     oc.ascendant.signName === 'Capricorn' && Math.floor(oc.ascendant.longitude % 30) === 24 &&
+     oc.ascendant.nakshatra.name === 'Dhanishta',
+     oc.ascendant.signName + ' ' + (oc.ascendant.longitude % 30).toFixed(2) +
+     ' ' + oc.ascendant.nakshatra.name);
+  /*
+   * Hawaii has never kept daylight saving, so August needs no second reading of
+   * the clock. It did keep a half-hour zone until 1947, though, and a lookup
+   * that quietly rounded that to whole hours would put every chart cast there
+   * before the war seven degrees out. Both halves are checked, because only one
+   * of them is exercised by the chart that ships.
+   */
+  ok('Obama: 1961 Honolulu is ten hours behind, with no summer time to find',
+     Geo.offsetMinutes(obama.zone, 1961, 8, 4, 19, 24) === -600 &&
+     Geo.offsetMinutes(obama.zone, 1961, 1, 4, 19, 24) === -600,
+     Geo.formatOffset(Geo.offsetMinutes(obama.zone, 1961, 8, 4, 19, 24)));
+  ok('Obama: and the same zone keeps its half hour before 1947',
+     Geo.offsetMinutes(obama.zone, 1940, 8, 4, 19, 24) === -630,
+     Geo.formatOffset(Geo.offsetMinutes(obama.zone, 1940, 8, 4, 19, 24)));
+  var op = {};
+  oc.planets.forEach(function (planet) { op[planet.name] = planet; });
+  ok('Obama: Saturn in its own sign in the lagna, with Jupiter debilitated beside it',
+     op.Saturn.signName === 'Capricorn' && op.Saturn.dignity === 'Own Sign' &&
+     op.Saturn.house === 1 && op.Jupiter.signName === 'Capricorn' &&
+     op.Jupiter.dignity === 'Debilitated' && op.Jupiter.house === 1,
+     op.Saturn.dignity + ' Saturn, ' + op.Jupiter.dignity + ' Jupiter');
+  ok('Obama: Moon in its mooltrikona in Taurus, in Rohini',
+     op.Moon.signName === 'Taurus' && op.Moon.dignity === 'Mooltrikona' &&
+     op.Moon.nakshatra.name === 'Rohini', op.Moon.dignity + ' in ' + op.Moon.nakshatra.name);
+  ok('Obama: Sun with Mercury in Cancer in the 7th',
+     op.Sun.signName === 'Cancer' && op.Mercury.signName === 'Cancer' && op.Sun.house === 7);
+  ok('Obama: Mars with Rahu in Leo in the 8th',
+     op.Mars.signName === 'Leo' && op.Rahu.signName === 'Leo' && op.Mars.house === 8);
+  ok('Obama: Rohini birth nakshatra leaves just under 10 years of Moon dasha',
+     oc.dashas.birthNakshatra.name === 'Rohini' && Math.floor(oc.dashas.balanceYears) === 9,
+     oc.dashas.birthNakshatra.name + ', ' + oc.dashas.balanceYears.toFixed(2) + ' years');
+  var ojup = dashaStart(oc, 'Jupiter'), osat = dashaStart(oc, 'Saturn');
+  ok('Obama: Jupiter dasha runs July 1996 to July 2012',
+     ojup && ojup.y === 1996 && ojup.m === 7 && osat && osat.y === 2012 && osat.m === 7,
+     (ojup ? ojup.y + '-' + ojup.m : '?') + ' to ' + (osat ? osat.y + '-' + osat.m : '?'));
 })();
 
 /*
@@ -3819,6 +3862,33 @@ ok('the switch shows one at a time and says which is showing',
    /setAttribute\('aria-pressed', String\(asCharts\)\)/.test(appSrc));
 ok('and the table is what a reader sees first',
    /id="vargas-as-table"[\s\S]{0,80}aria-pressed="true"/.test(html));
+/*
+ * Shadbala takes the same switch, and for the same reason: fifteen rows of
+ * figures to look things up in, and one chart answering one question across
+ * all seven grahas. Neither replaces the other.
+ */
+ok('and Shadbala has the same switch, its table shown first',
+   /id="shadbala-table-scroll"/.test(html) && /id="shadbala-chart"/.test(html) &&
+   /id="shadbala-as-table"/.test(html) && /id="shadbala-as-chart"/.test(html) &&
+   /function showShadbalaView/.test(appSrc) &&
+   /document\.getElementById\('shadbala-chart'\)\.hidden = !asChart;/.test(appSrc) &&
+   /document\.getElementById\('shadbala-table-scroll'\)\.hidden = asChart;/.test(appSrc) &&
+   /id="shadbala-as-table"[\s\S]{0,80}aria-pressed="true"/.test(html) &&
+   /id="shadbala-chart" hidden/.test(html));
+/*
+ * One chart for the seven, not one a graha. The question it answers - who
+ * clears their own minimum - is a question about the seven together, and seven
+ * charts of one bar each would be seven ways of not asking it.
+ */
+ok('and it is one chart for the seven, not a facet each', (function () {
+  var at = appSrc.indexOf('function renderShadbalaChart');
+  var block = appSrc.slice(at, appSrc.indexOf('function renderShadbalaHead', at));
+  return (block.match(/barChart\(/g) || []).length === 1 &&
+    /rows: rows,/.test(block) && !/varga-facets/.test(block);
+})());
+ok('and both switches are wired from one place',
+   /\['table', 'chart'\]\.forEach\(function \(which\) \{/.test(appSrc) &&
+   /document\.getElementById\('shadbala-as-' \+ which\)\.addEventListener/.test(appSrc));
 
 /*
  * The flag key at the top of the tab defines all four flags, [V] among them, so
