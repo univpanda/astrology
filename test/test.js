@@ -35,6 +35,55 @@ var rt = A.calendarDate(2436116.31);
 ok('calendarDate round-trip', rt.y === 1957 && rt.m === 10 && rt.d === 4 &&
    Math.abs(rt.hours - 19.44) < 0.01, rt.y + '-' + rt.m + '-' + rt.d + ' ' + rt.hours.toFixed(3) + 'h');
 
+console.log('\nMoolatrikona as a dignity, in the rashi and nowhere else');
+/*
+ * Moolatrikona is a dignity in its own right rather than a special case of
+ * ownership, and varga viswa gives it a rung of its own at twenty. Asking
+ * about it only of owners left out the one graha it matters for: the Moon's
+ * moolatrikona is Taurus 3 to 30 and Taurus is Venus's, so she scored fifteen
+ * as Venus's friend while standing in her own moolatrikona.
+ *
+ * Still the rashi only. It is a span of degrees inside a sign, and a varga
+ * position is a place within a division stretched back across the whole
+ * thirty, so the degree a D60 reports is not a degree of any sign the graha
+ * stands in.
+ */
+(function () {
+  var place = { latitude: 21.3069, longitude: -157.8583, tzOffsetMinutes: -600 };
+  var chart = A.chart({ jdUT: A.julianDay(1961, 8, 4, 19 + 24 / 60 + 10),
+    latitude: place.latitude, longitude: place.longitude,
+    tzOffsetMinutes: place.tzOffsetMinutes });
+  var pos = {};
+  chart.planets.forEach(function (p) { pos[p.name] = p; });
+  var moon = A.vargaDignity('Moon', pos.Moon.longitude, 1, pos);
+  ok('the Moon reaches moolatrikona in a sign she does not own',
+    moon.relation === 'moolatrikona' && A.SIGN_LORDS[moon.sign] === 'Venus',
+    moon.relation + ' in ' + A.SIGN_LORDS[moon.sign] + "'s sign");
+  ok('and varga viswa scores it the full twenty',
+    A.VARGA_VISWA.moolatrikona === 20 && A.VARGA_VISWA.mitra === 15);
+
+  /*
+   * And never outside the rashi, in any of the sixteen.
+   */
+  var leaked = [];
+  for (var y = 1980; y < 2030; y += 2) {
+    var ch = A.chart({ jdUT: A.julianDay(y, 6, 15, 6.5), latitude: 28.61,
+      longitude: 77.21, tzOffsetMinutes: 330 });
+    var p2 = {};
+    ch.planets.forEach(function (p) { p2[p.name] = p; });
+    A.SHODASAVARGA.forEach(function (d) {
+      if (d === 1) return;
+      ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn']
+        .forEach(function (g) {
+          var vd = A.vargaDignity(g, p2[g].longitude, d, p2);
+          if (vd && vd.relation === 'moolatrikona') leaked.push(g + ' D' + d);
+        });
+    });
+  }
+  ok('and no division above the rashi ever claims it',
+    leaked.length === 0, leaked.slice(0, 3).join(', ') || 'none');
+})();
+
 console.log('\nCheshta bala by the eight motions');
 /*
  * Parashara gives both methods in consecutive verses: ch.27 vv.21-23 name the

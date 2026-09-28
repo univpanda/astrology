@@ -1289,21 +1289,25 @@ var Astro = (function () {
      */
     var ownsIt = lord === graha;
 
+    /*
+     * Moolatrikona is a dignity in its own right, not a special case of
+     * ownership, and varga viswa gives it a rung of its own at twenty. So it is
+     * asked about before ownership rather than inside it - which matters for
+     * exactly one graha. The Moon's moolatrikona is Taurus 3 to 30 and Taurus
+     * is Venus's sign; asking only of owners left her scored as Venus's friend
+     * at fifteen when she stands in her own moolatrikona.
+     *
+     * In the rashi and nowhere else. It is a span of degrees inside a sign, and
+     * vargaPosition stretches a position within a division back across the
+     * whole thirty, so the degree a varga reports is not a degree of any sign
+     * the graha stands in: reading moolatrikona off a D60 is meaningless. It
+     * was read off one in 2.7% of varga cells.
+     */
     var relation = null;
-    if (ownsIt) {
-      /*
-       * Moolatrikona is claimed in the rashi and nowhere else. It is a span of
-       * degrees inside a sign, and vargaPosition stretches a position within a
-       * division back across the whole thirty, so the degree a varga reports is
-       * not a degree of any sign the graha stands in: reading moolatrikona off
-       * it is meaningless. It was read off it in 2.7% of varga cells.
-       *
-       * Numerically inert, since varga viswa scores moolatrikona and own alike
-       * at twenty - which is why it went unnoticed. It was a false label on the
-       * grid rather than a wrong figure, and a false label is still worth not
-       * printing.
-       */
-      relation = division === 1 && own === 'Mooltrikona' ? 'moolatrikona' : 'own';
+    if (division === 1 && own === 'Mooltrikona') {
+      relation = 'moolatrikona';
+    } else if (ownsIt) {
+      relation = 'own';
     } else if (positionsD1 && positionsD1[lord] && positionsD1[graha]) {
       var apart = ((positionsD1[lord].sign - positionsD1[graha].sign) % 12 + 12) % 12 + 1;
       relation = compoundRelation(graha, lord, apart);

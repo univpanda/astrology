@@ -3576,7 +3576,7 @@ ok('and a dignity is coloured wherever it is written, cell or span', (function (
 })());
 
 ok('the library says exaltation is outside the classical steps',
-   /Exaltation has no rung either, so an exalted graha scores by its relation to the lord/
+   /Exaltation has no rung at all, so an exalted graha scores by its relation to the lord/
      .test(seeds));
 /*
  * The figures are varga viswa, from verses 21-25, and there are six of them, not
@@ -3588,9 +3588,21 @@ ok('and carries Parashara\'s own varga viswa figures, all six of them',
    ['the whole of it in its own sign', '18/20 in a great friend\'s',
     '15/20 a friend\'s', '10/20 a neutral\'s', '7/20 an enemy\'s',
     '5/20 a great enemy\'s'].every(function (t) { return seeds.indexOf(t) >= 0; }));
-ok('and says outright that moolatrikona is not one of the six',
-   /Moolatrikona is not given a rung of its own and keeps the same twenty as an own sign/
-     .test(seeds));
+/*
+ * Moolatrikona shares the top figure with an own sign rather than ranking
+ * apart, so it adds nothing to a graha already in its own. But it is a dignity
+ * rather than a kind of ownership, and the passage has to say so, because for
+ * the Moon the two part company: hers is in Venus's sign.
+ */
+ok('and says moolatrikona shares the top figure without being ownership',
+   /keeps the same twenty as an own sign/.test(seeds) &&
+   /the Moon's moolatrikona is Taurus 3 to 30, and Taurus is Venus's/.test(seeds));
+/*
+ * And that it belongs to the rashi, which is the part that was silently wrong
+ * in the grid for a long time.
+ */
+ok('and that it is claimed in the rashi only',
+   /And in the rashi only\. Moolatrikona is a span of degrees inside a sign/.test(seeds));
 /*
  * These two stay in the note. They are not doctrine about vimsopaka, they are
  * facts about what is on the screen: why the grid has seven rows and not nine,
