@@ -3607,7 +3607,6 @@ ok('each graha gets one chart carrying both scales', (function () {
   var block = appSrc.slice(at, appSrc.indexOf('function passageBlock', at));
   return /max: 20, outOf: 20,/.test(block) &&
     /rightMax: ceiling, rightOutOf: scheme\.count,/.test(block) &&
-    /leftName: '\/20', rightName: '\/' \+ scheme\.count,/.test(block) &&
     // and no separate score or well-placed chart survives
     !/title: 'Vimsopaka bala',/.test(block) &&
     !/Well placed, of/.test(block);
@@ -3628,14 +3627,11 @@ ok('and a bar is drawn against the scale it names', (function () {
  * would leave the leftmost bar looking like the first of a set rather than the
  * one thing measured differently.
  */
-ok('and a rule divides the two scales, each axis named and numbered', (function () {
+ok('and a rule divides the two scales', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
   return /class: 'chart-divide'/.test(appSrc) &&
     /while \(firstRight < opts\.rows\.length && !opts\.rows\[firstRight\]\.right\) firstRight\+\+;/
-      .test(appSrc) &&
-    /class: 'chart-axis-name'/.test(appSrc) &&
-    /class: 'chart-tick chart-tick-right'/.test(appSrc) &&
-    /\.chart-divide \{/.test(css) && /\.chart-tick-right \{/.test(css);
+      .test(appSrc) && /\.chart-divide \{/.test(css);
 })());
 /*
  * The score keeps the colour it wears elsewhere on the page, which is the other
@@ -3657,9 +3653,24 @@ ok('the facets share one scale on each side, read off the data', (function () {
   return /ceiling = Math\.max\(ceiling, r\.marks\[m\.key\]\)/.test(block) &&
     /rightMax: ceiling/.test(block);
 })());
-ok('and a count axis is labelled in whole numbers', (function () {
-  return /var ticks = Math\.min\(4, Math\.max\(1, Math\.round\(opts\.max\)\)\)/.test(appSrc);
+/*
+ * No axis is labelled at all, there being nothing for it to say. Every bar
+ * carries its own value above it, so a column of numbers down the side was the
+ * same figures a second time and less exactly - and with two scales it was two
+ * columns of them. The gridlines stay: they cost nothing and let a reader see
+ * that one bar is about twice another without counting.
+ */
+ok('no axis is labelled, the bars carrying their own figures', (function () {
+  var block = appSrc.slice(appSrc.indexOf('function barChart'),
+                           appSrc.indexOf('function renderVargaCharts'));
+  return !/chart-tick/.test(block) && !/chart-axis-name/.test(block) &&
+    /var ticks = 4;/.test(block) &&
+    /class: t === 0 \? 'chart-base' : 'chart-grid'/.test(block) &&
+    // and the value still goes above every bar
+    /class: 'chart-value'/.test(block);
 })());
+ok('and the margins shrink with the labels that needed them',
+   /var left = 4, right = 4, top = 18;/.test(appSrc));
 ok('every mark in the grid is counted in a facet', (function () {
   var at = appSrc.indexOf('var MARKS = [');
   var block = appSrc.slice(at, appSrc.indexOf('var ceiling', at));
@@ -3722,7 +3733,10 @@ ok('the two series that share a plot are different hues', (function () {
 // Values wear text tokens; the bar beside them carries the identity.
 ok('values are drawn in ink, not in the series colour', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-  return /\.chart-tick, \.chart-name, \.chart-value \{[^}]*fill: var\(--ink-faint\)/.test(css);
+  // The tick rule went with the tick labels; the two that remain are the bar's
+  // own figure and the name under it, and both still wear text tokens.
+  return /\.chart-name, \.chart-value \{[^}]*fill: var\(--ink-faint\)/.test(css) &&
+    !/chart-tick/.test(css);
 })());
 ok('a legend is drawn for the two-series plot and not for the one-series plot',
    /if \(series\.length > 1\) \{/.test(appSrc) && /chart-legend/.test(appSrc));
@@ -4068,10 +4082,11 @@ ok('the table is drawn once from both slots, not once per slot',
  * A chart is titled by its graha, the scheme being named in the picker above and
  * in the note beside it. The units are on the axes rather than in the title.
  */
-ok('a chart is titled by its graha, the units living on the axes',
+ok('a chart is titled by its graha, the units living in the note',
    /title: row\.graha,/.test(appSrc) &&
    !/Vimsopaka bala over the/.test(appSrc) &&
-   /leftName: '\/20'/.test(appSrc));
+   !/leftName/.test(appSrc) && !/rightName/.test(appSrc) &&
+   /out of twenty/.test(appSrc.replace(/'\s*\+\s*'/g, '')));
 /*
  * And it is called Vargottama, the name it has everywhere else on the page: [V]
  * on the chart, [V] in the graha table, [V] in the grid, Vargottama in the flag
@@ -4169,11 +4184,12 @@ ok('and every mark has a letter for the axis and a word for the hover',
 ok('the facets share one note, and it warns that the sides do not compare',
    (function () {
      var flat = appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
-     return /The first bar is its vimsopaka bala, read against the left axis and out of twenty/
-       .test(flat) &&
-       /a bar of a given height says one thing on the left of the rule and another on the right, so the two sides are compared within themselves and not across/
+     return /The first bar is its vimsopaka bala out of twenty/.test(flat) &&
+       /Every bar is labelled with its own figure, which is the number to read/
          .test(flat) &&
-       /One scale across all seven charts on each side/.test(flat) &&
+       /a bar of a given height says one thing left of the rule and another right of it, and heights are comparable within a side and not across/
+         .test(flat) &&
+       /Each side keeps one scale over all seven charts/.test(flat) &&
        !/strictly the word is the D9 case/.test(appSrc) &&
        /never on D1, where every graha would qualify\. In D9 it is vargottama proper/
          .test(html.replace(/\s+/g, ' '));

@@ -1124,8 +1124,7 @@ td.vimsopaka-poor { color: var(--retro); }
 /* Recessive: the grid is scaffolding, not data. */
 .chart-grid { stroke: var(--line-soft); stroke-width: 1; }
 .chart-base { stroke: var(--line); stroke-width: 1; }
-.chart-tick, .chart-name, .chart-value { font-family: var(--font); fill: var(--ink-faint); }
-.chart-tick { font-size: 10px; }
+.chart-name, .chart-value { font-family: var(--font); fill: var(--ink-faint); }
 .chart-name { font-size: 12px; fill: var(--ink-soft); }
 /* Values wear text tokens; the bar beside them carries the identity. */
 .chart-value { font-size: 10px; font-variant-numeric: tabular-nums; }
@@ -1146,16 +1145,10 @@ td.vimsopaka-poor { color: var(--retro); }
    nothing to tell apart. One colour for all five. */
 .series-mark rect { fill: var(--chart-vimsopaka); }
 
-/* The second scale: its numbers sit outside the plot on the right, and the rule
-   between the two halves is drawn over the bars rather than under them. Both are
-   recessive - they are furniture telling the reader which figures belong to
-   which side, not marks carrying data. */
-.chart-tick-right { fill: var(--ink-faint); }
-.chart-axis-name {
-  font-size: 9px;
-  fill: var(--ink-faint);
-  font-variant-numeric: tabular-nums;
-}
+/* The rule between the two scales, drawn over the bars rather than under them.
+   It is the only thing on the chart that says there are two, the numbers having
+   gone with the axes: every bar is labelled, so a column of figures down the
+   side was the same figures a second time and less exactly. */
 .chart-divide {
   stroke: var(--line);
   stroke-width: 1;

@@ -2172,12 +2172,15 @@
      * text to plot is what the number sets. Five of these sit where two of the
      * others do.
      */
+    /*
+     * No margin for tick labels, there being none. Every bar carries its own
+     * value above it, so a column of numbers down the side was the same figures
+     * a second time and less exactly - and with two scales it was two columns
+     * of them. The gridlines stay: they cost nothing and let a reader see that
+     * one bar is about twice another without counting.
+     */
     var W = opts.compact ? 300 : 500, H = opts.compact ? 165 : 215;
-    var left = opts.compact ? 22 : 28, top = 18;
-    // A second scale needs its numbers outside the plot on the right, and a
-    // line of headroom above for the two axis names.
-    var right = opts.rightMax !== undefined ? 22 : 8;
-    if (opts.rightMax !== undefined) top = 26;
+    var left = 4, right = 4, top = 18;
     var bottom = opts.compact ? 30 : 34;
     var plotW = W - left - right, plotH = H - top - bottom;
     var svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H, class: 'varga-chart',
@@ -2204,21 +2207,12 @@
       return rightMax !== undefined && row.right ? rightMax : opts.max;
     };
 
-    // Whole numbers on a count axis: four ticks over a max of 5 would label 1.25.
-    var ticks = Math.min(4, Math.max(1, Math.round(opts.max))), step = opts.max / ticks;
+    // Four bands, drawn and not labelled.
+    var ticks = 4;
     for (var t = 0; t <= ticks; t++) {
-      var value = t * step;
-      var y = top + plotH - (value / opts.max) * plotH;
+      var y = top + plotH - (t / ticks) * plotH;
       svg.appendChild(svgEl('line', { x1: left, y1: y, x2: W - right, y2: y,
                                       class: t === 0 ? 'chart-base' : 'chart-grid' }));
-      svg.appendChild(svgEl('text', { x: left - 6, y: y + 3.5, class: 'chart-tick',
-                                      'text-anchor': 'end' }, String(Math.round(value))));
-      if (rightMax !== undefined) {
-        svg.appendChild(svgEl('text', { x: W - right + 5, y: y + 3.5,
-                                        class: 'chart-tick chart-tick-right',
-                                        'text-anchor': 'start' },
-                              String(Math.round(t * (rightMax / ticks)))));
-      }
     }
 
     var band = plotW / opts.rows.length;
@@ -2292,11 +2286,6 @@
         svg.appendChild(svgEl('line', { x1: xRule, y1: top - 4, x2: xRule,
                                         y2: top + plotH, class: 'chart-divide' }));
       }
-      svg.appendChild(svgEl('text', { x: left - 6, y: top - 7, class: 'chart-axis-name',
-                                      'text-anchor': 'end' }, opts.leftName || ''));
-      svg.appendChild(svgEl('text', { x: W - right + 5, y: top - 7,
-                                      class: 'chart-axis-name chart-tick-right',
-                                      'text-anchor': 'start' }, opts.rightName || ''));
     }
 
     var figure = el('figure', 'varga-figure');
@@ -2384,7 +2373,6 @@
         rows: bars,
         max: 20, outOf: 20,
         rightMax: ceiling, rightOutOf: scheme.count,
-        leftName: '/20', rightName: '/' + scheme.count,
         compact: true,
         series: [{ label: row.graha, cls: 'series-mark',
                    value: function (r) { return r.value; },
@@ -2393,14 +2381,14 @@
     });
     host.appendChild(facets);
     host.appendChild(el('p', 'chart-note varga-facet-note',
-      'One chart a graha. The first bar is its vimsopaka bala, read against the left ' +
-      'axis and out of twenty; the six after the rule are how many of the ' +
-      scheme.count + ' divisions carry each of its marks, read against the right. Two ' +
-      'scales on one chart means a bar of a given height says one thing on the left of ' +
-      'the rule and another on the right, so the two sides are compared within ' +
-      'themselves and not across. One scale across all seven charts on each side, so a ' +
-      'tall bar is tall against the other grahas too. The grid above says which ' +
-      'divisions they are.'));
+      'One chart a graha. The first bar is its vimsopaka bala out of twenty; the six ' +
+      'after the rule are how many of the ' + scheme.count + ' divisions carry each of ' +
+      'its marks. Every bar is labelled with its own figure, which is the number to ' +
+      'read: the two sides are drawn to different scales, so a bar of a given height ' +
+      'says one thing left of the rule and another right of it, and heights are ' +
+      'comparable within a side and not across. Each side keeps one scale over all ' +
+      'seven charts, so a tall bar is tall against the other grahas too. The grid above ' +
+      'says which divisions they are.'));
   }
 
   /* --------------------------------------------------------------- yogas */
