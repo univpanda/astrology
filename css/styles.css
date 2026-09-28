@@ -564,6 +564,14 @@ input::placeholder { color: #a9bdb2; }
 }
 /* Every item is a statement with its reason beneath it, so the list is the
    card's body rather than a tail on the end of it. */
+/* Dignity belongs to the placement above it, so it sits tight under the sign
+   and house rather than joining the list of separate findings below. */
+.graha-card-dignity {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--ink);
+}
 .graha-card-list { margin: 0.55rem 0 0; padding: 0; list-style: none; }
 .graha-card-list li + li {
   margin-top: 0.5rem;

@@ -862,6 +862,49 @@
     });
   }
 
+  /*
+   * How each graha stands in the sign it occupies, for the hover card.
+   *
+   * Two things, because either alone leaves a gap. Dignity answers where the
+   * graha is exalted, debilitated, in its own sign or its moolatrikona - and
+   * says nothing at all for the majority of placements, which have none of
+   * those. The relation with the lord of the sign answers those: a graha in a
+   * friend's sign is in a different position from one in an enemy's, and that
+   * is most of what dignity means when there is no formal dignity to report.
+   *
+   * Friendship is read from the rashi even when a division is on screen, which
+   * is where the classical rule puts it and why this is computed here rather
+   * than inside the renderer.
+   */
+  function dignitiesByGraha(state, division) {
+    var chart = division === 1 ? state.chart
+      : Astro.chartInDivision(state.chart, division);
+    var d1 = {};
+    state.chart.planets.forEach(function (p) { d1[p.name] = p; });
+
+    var named = function (g) {
+      return g === 'Sun' || g === 'Moon' ? 'the ' + g : g;
+    };
+    var map = {};
+    chart.planets.forEach(function (p) {
+      var parts = [];
+      var dignity = Astro.dignityOf(p.name, p.sign, p.longitude % 30);
+      if (dignity) parts.push(dignity === 'Own Sign' ? 'In its own sign' : dignity);
+
+      var lord = Astro.SIGN_LORDS[p.sign];
+      if (lord && lord !== p.name && d1[lord] && d1[p.name]) {
+        var relation = Astro.compoundRelation(p.name, lord,
+          ((d1[lord].sign - d1[p.name].sign) % 12 + 12) % 12 + 1);
+        if (relation) {
+          parts.push((parts.length ? 'in ' : 'In ') + named(lord) + '’s sign, ' +
+            withArticle(Astro.RELATION_LABELS[relation]));
+        }
+      }
+      if (parts.length) map[p.name] = parts.join(', ') + '.';
+    });
+    return map;
+  }
+
   function slotSettings(slot) {
     return {
       reference: document.getElementById('ref-' + slot).value,
@@ -1026,6 +1069,13 @@
       card.appendChild(el('h4', 'graha-card-name', t.getAttribute('data-graha')));
       card.appendChild(el('p', 'graha-card-where', t.getAttribute('data-where')));
       /*
+       * Dignity sits with the placement rather than in the list below it: it
+       * qualifies where the graha is, where every line in the list is a
+       * separate thing that is true of it.
+       */
+      var dignity = t.getAttribute('data-dignity');
+      if (dignity) card.appendChild(el('p', 'graha-card-dignity', dignity));
+      /*
        * Every item is a statement with its reason beneath it: the state or the
        * yoga on one line, why it holds in this chart on the next. A name alone
        * says a thing is true and leaves the reader to take it on trust.
@@ -1093,7 +1143,8 @@
       ascendant: state.chart.ascendant.longitude,
       division: set.division,
       reference: set.reference,
-      yogas: yogasByGraha(state, set.division)
+      yogas: yogasByGraha(state, set.division),
+      dignities: dignitiesByGraha(state, set.division)
     });
     wireGrahaCard(document.getElementById('chart-' + slot));
     ensureLibrary();

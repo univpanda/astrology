@@ -6199,5 +6199,82 @@ console.log('\nMahabhagya needs two things the sky does not supply');
     F.yoga['Mahabhagya Yoga|general'] + '%');
 })();
 
+
+console.log('\nThe card says how the graha stands in its sign');
+/*
+ * Dignity alone answers only the minority of placements - exalted, debilitated,
+ * own sign, moolatrikona - and says nothing for the rest. The relation with the
+ * lord of the sign answers those, and is most of what dignity means when there
+ * is no formal dignity to report. The card carries both.
+ */
+(function () {
+  var src = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
+  var chartsSrc = fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8');
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+
+  ok('the map is built and handed to the renderer with the yogas',
+    /function dignitiesByGraha\(state, division\)/.test(src) &&
+    /dignities: dignitiesByGraha\(state, set\.division\)/.test(src));
+  ok('and the renderer carries it onto the graha',
+    /describeOccupant\(p, ctx\.sign, ctx\.house, ctx\.yogas, ctx\.sun,\s*\n?\s*ctx\.division, ctx\.dignities\)/
+      .test(chartsSrc) &&
+    /t\.setAttribute\('data-dignity', d\.dignity\)/.test(chartsSrc));
+  ok('the card prints it under the placement, not in the list of findings',
+    /var dignity = t\.getAttribute\('data-dignity'\)/.test(src) &&
+    /el\('p', 'graha-card-dignity', dignity\)/.test(src) &&
+    /\.graha-card-dignity \{/.test(css));
+
+  /*
+   * Friendship is read from the rashi even when a division is on screen, which
+   * is where the classical rule puts it. Computing it from the recast chart
+   * would give a different and wrong answer, so the map is built from the D1
+   * positions whatever division is being drawn.
+   */
+  ok('friendship is read from the rashi even for a division',
+    /var d1 = \{\};\s*\n\s*state\.chart\.planets\.forEach/.test(src));
+
+  /*
+   * Run the real thing rather than trust the source. Pull the builder out of
+   * app.js and check both halves answer on a chart that has each case.
+   */
+  var body = src.match(/function dignitiesByGraha\(state, division\) \{[\s\S]*?\n  \}/)[0];
+  var withArticle = function (label) {
+    if (label === 'neutral') return 'neutral';
+    return (label.charAt(0) === 'e' ? 'an ' : 'a ') + label;
+  };
+  var build = new Function('Astro', 'withArticle', body + '\n return dignitiesByGraha;')(
+    Astro, withArticle);
+
+  var chart = Astro.chart({ jdUT: Astro.julianDay(1975, 8, 20, 3), latitude: 28.61,
+    longitude: 77.21, tzOffsetMinutes: 330 });
+  var got = build({ chart: chart }, 1);
+
+  ok('a graha in its moolatrikona is named as such, with no dispositor clause',
+    got.Sun === 'Mooltrikona.', got.Sun);
+  ok('a graha with no formal dignity reports the lord of its sign instead',
+    /^In Saturn’s sign, an? /.test(got.Moon || ''), got.Moon);
+  ok('the luminaries take an article when they are the dispositor',
+    /In the Sun’s sign/.test(got.Mercury || ''), got.Mercury);
+  ok('and a debilitated graha says so',
+    (got.Rahu || '').indexOf('Debilitated') === 0, got.Rahu);
+
+  /*
+   * Every graha should get something: either it holds a dignity, or it sits in
+   * somebody's sign and has a view of them. A blank line would mean a case the
+   * builder does not cover.
+   */
+  var silent = chart.planets.filter(function (p) { return !got[p.name]; })
+    .map(function (p) { return p.name; });
+  ok('no graha is left with nothing said about where it stands',
+    silent.length === 0, silent.join(', ') || 'all nine covered');
+
+  /*
+   * The ascendant is a point and holds no dignity, so it must not appear -
+   * the card would otherwise claim a friendship for something that owns
+   * nothing and befriends nobody.
+   */
+  ok('the ascendant is not given a dignity', got.Ascendant === undefined);
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
