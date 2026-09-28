@@ -35,6 +35,64 @@ var rt = A.calendarDate(2436116.31);
 ok('calendarDate round-trip', rt.y === 1957 && rt.m === 10 && rt.d === 4 &&
    Math.abs(rt.hours - 19.44) < 0.01, rt.y + '-' + rt.m + '-' + rt.d + ' ' + rt.hours.toFixed(3) + 'h');
 
+console.log('\nThe Moon reaches her moolatrikona, which is not her own sign');
+/*
+ * Six of the seven have their moolatrikona inside a sign they own, so testing
+ * ownership first and asking about moolatrikona afterwards works for them. The
+ * Moon does not: hers is Taurus 3 to 30, and Taurus is Venus's. Gating the
+ * check behind ownership cost her the 45 and handed her a relation to Venus
+ * instead, 30 virupas short, in every chart with the Moon in that arc - about
+ * one in thirteen.
+ *
+ * Raman's Example 9 cannot catch this. His Moon is in Aquarius, so the case
+ * never arises and all 49 cells match either way. It took an outside
+ * calculator disagreeing by exactly 30 on one graha to find it.
+ */
+(function () {
+  var S = require('../js/shadbala.js');
+  // The Moon is the only one of the seven whose moolatrikona is another's sign.
+  var odd = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn']
+    .filter(function (g) {
+      var d = A.DIGNITY[g];
+      return d.mool && d.own.indexOf(d.mool.sign) < 0;
+    });
+  ok('the Moon is the sole graha whose moolatrikona is not her own sign',
+    odd.length === 1 && odd[0] === 'Moon', odd.join(','));
+
+  // Obama: Moon at Taurus 10, inside her moolatrikona. Drik Panchang gives
+  // 161.25 for her saptavargaja and every other graha in that chart agrees
+  // with us to the hundredth.
+  var place = { latitude: 21.3069, longitude: -157.8583, tzOffsetMinutes: -600 };
+  var chart = A.chart({ jdUT: A.julianDay(1961, 8, 4, 19 + 24 / 60 + 10),
+    latitude: place.latitude, longitude: place.longitude,
+    tzOffsetMinutes: place.tzOffsetMinutes });
+  var r = S.compute(chart, place);
+  check('and she is scored 45 for it in the rashi',
+    r.grahas.Moon.sthana.saptavargaja, 161.25, 0.01, 'virupas');
+
+  /*
+   * Still only in the rashi. Raman section 30 is explicit that the 45 belongs
+   * to the Moolatrikona Rasi "and not when it occupies any other of the 6
+   * vargas", and a varga degree is not a degree of any sign the graha stands
+   * in, so claiming it there would be meaningless as well as wrong.
+   */
+  var place2 = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+  var over = 0, scanned = 0;
+  for (var y = 1900; y < 2040; y += 3) {
+    for (var m = 1; m <= 12; m += 2) {
+      var ch = A.chart({ jdUT: A.julianDay(y, m, 15, 6.5), latitude: place2.latitude,
+        longitude: place2.longitude, tzOffsetMinutes: place2.tzOffsetMinutes });
+      var res = S.compute(ch, place2);
+      S.GRAHAS.forEach(function (g) {
+        scanned++;
+        if (res.grahas[g].sthana.saptavargaja > 225.0001) over++;
+      });
+    }
+  }
+  ok('and nowhere outside it: 45 once plus six thirties is the ceiling',
+    over === 0, over + ' of ' + scanned + ' readings passed 225');
+})();
+
 console.log('\nWhich declination the kranti is');
 /*
  * Two complete methods, and running half of each is the error this once made.

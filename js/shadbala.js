@@ -104,7 +104,22 @@ var Shadbala = (function () {
       var position = Astro.vargaPosition(planet.longitude, division);
       var lord = Astro.SIGN_LORDS[position.sign];
       var relation;
-      if (lord === graha) {
+      /*
+       * Moolatrikona first, and not behind ownership, because for one graha the
+       * two part company. The Moon's moolatrikona is Taurus 3 to 30, and Taurus
+       * is Venus's sign - she is the only one of the seven whose moolatrikona
+       * sits in somebody else's house. Testing ownership first cost her the 45
+       * and handed her a relation to Venus instead, 30 virupas short, in every
+       * chart with the Moon in that arc.
+       *
+       * Raman's Example 9 could not catch it: his Moon is in Aquarius, so the
+       * case never arises, and all 49 of his cells matched regardless.
+       */
+      var mool = division === 1 && Astro.dignityOf(graha, position.sign,
+        position.degreeInSign) === 'Mooltrikona';
+      if (mool) {
+        relation = 'moolatrikona';
+      } else if (lord === graha) {
         /*
          * Moolatrikona counts in the rashi and nowhere else. Raman section 30:
          * "45 Shashtiamsas have to be allotted for a planet only when it is in
@@ -118,9 +133,7 @@ var Shadbala = (function () {
          * of any sign the graha stands in. It claimed moolatrikona in 2.4% of
          * varga cells outside the rashi.
          */
-        var dignity = division === 1
-          ? Astro.dignityOf(graha, position.sign, position.degreeInSign) : null;
-        relation = dignity === 'Mooltrikona' ? 'moolatrikona' : 'own';
+        relation = 'own';
       } else if (!positionsD1[lord]) {
         relation = 'sama';           // the nodes disposit nothing; treat as neutral
       } else {
