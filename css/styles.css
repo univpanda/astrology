@@ -588,7 +588,15 @@ input::placeholder { color: #a9bdb2; }
   line-height: 1.45;
   color: var(--ink);
 }
-.graha-card-list { margin: 0.55rem 0 0; padding: 0; list-style: none; }
+/* The list rules a line between its own items but had none above the first, so
+   the placement and dignity ran straight into the findings. Same rhythm as
+   `li + li` below, so the whole card reads as one set of divisions. */
+.graha-card-list {
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0 0;
+  border-top: 1px solid var(--line-soft);
+  list-style: none;
+}
 .graha-card-list li + li {
   margin-top: 0.5rem;
   padding-top: 0.5rem;

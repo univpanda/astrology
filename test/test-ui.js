@@ -6276,6 +6276,14 @@ console.log('\nThe card says how the graha stands in its sign');
     /var dignity = t\.getAttribute\('data-dignity'\)/.test(src) &&
     /el\('p', 'graha-card-dignity', dignity\)/.test(src) &&
     /\.graha-card-dignity \{/.test(css));
+  /*
+   * And is divided from the findings by the same line the findings use between
+   * themselves: the placement and its dignity are one thing, each finding
+   * below another, and the card should show where that boundary is.
+   */
+  ok('a rule divides the placement from the findings, as between findings',
+    /\.graha-card-list \{[^}]*border-top: 1px solid var\(--line-soft\)/.test(css) &&
+    /\.graha-card-list li \+ li \{[^}]*border-top: 1px solid var\(--line-soft\)/.test(css));
 
   /*
    * Friendship is read from the rashi even when a division is on screen, which
