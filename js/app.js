@@ -859,7 +859,15 @@
         var list = map[name] || (map[name] = []);
         // The title alone says a yoga is present; the summary says why it is.
         if (!list.some(function (y) { return y.title === yoga.title; })) {
-          list.push({ title: yoga.title, summary: yoga.summary || '' });
+          /*
+           * subject and condition are the pair astro_readings is keyed by, so
+           * the card can ask the library for this yoga's own passage - and for
+           * the right one of them, which matters where a family has several.
+           * Pancha Mahapurusha has five, and only the graha that made it is to
+           * the point.
+           */
+          list.push({ title: yoga.title, summary: yoga.summary || '',
+            subject: yoga.subject || '', condition: yoga.condition || '' });
         }
       });
     });
@@ -881,6 +889,21 @@
   var STATE_NAMES = { R: 'Retrograde', C: 'Combust', V: 'Vargottama',
     Y: 'Yogakaraka' };
 
+  /*
+   * The library, fetched once and quietly, so a hover can explain a yoga
+   * without waiting on the network. The Lesson tab fills the same variable and
+   * will find it already there.
+   */
+  var libraryPending = false;
+  function ensureLibrary() {
+    if (lessonLibrary || libraryPending) return;
+    libraryPending = true;
+    fetchPassages({}, function (passages) {
+      lessonLibrary = passages || [];
+      libraryPending = false;
+    });
+  }
+
   function wireGrahaCard(container) {
     if (container.dataset && container.dataset.carded) return;
     if (container.dataset) container.dataset.carded = '1';
@@ -892,8 +915,55 @@
     var split = function (raw) {
       return (raw || '').split(REC).filter(Boolean).map(function (r) {
         var bits = r.split(FLD);
-        return { term: bits[0], why: bits[1] || '' };
+        return { term: bits[0], why: bits[1] || '',
+                 subject: bits[2] || '', condition: bits[3] || '' };
       });
+    };
+
+    /*
+     * What the yoga is, as against why it holds here. Taken from the library's
+     * own passage for it, matched on subject and condition so a family with
+     * several members answers about the one that actually formed - Pancha
+     * Mahapurusha has five and only one of them is to the point.
+     *
+     * Absent if the library has not arrived yet, which costs the card a line
+     * and nothing else.
+     */
+    var meaningOf = function (item) {
+      if (!lessonLibrary || !item.subject) return '';
+      var p = lessonLibrary.filter(function (x) {
+        return x.subject === item.subject && x.condition === item.condition;
+      })[0];
+      /*
+       * The heading, not the first point. Every passage's heading is already a
+       * one-line definition - "An angle lord and a trine lord, joined" - where
+       * the points run to a paragraph apiece and would bury the line under them
+       * that says what this chart actually did. The Lesson tab has the rest.
+       */
+      return p && p.heading ? p.heading : '';
+    };
+
+    /*
+     * How often the thing being reported is true at all, measured over the
+     * sample in data/frequencies.js rather than guessed.
+     *
+     * Rarity is most of what makes a finding worth reading, and it is not
+     * something anyone can judge from the one chart in front of them. A raja
+     * yoga by the angle-and-trine rule holds in most charts; Adhi yoga holds in
+     * about one in three hundred. Without the figure the card presents those
+     * two as equals and quietly misleads. The reverse case earns its line for
+     * the same reason: a node is retrograde in every chart, so the figure is
+     * how a reader learns that mark separates nobody from anybody.
+     */
+    var rarity = function (head, kind, key) {
+      var table = typeof FREQUENCIES === 'undefined' ? null : FREQUENCIES[kind];
+      var pct = table ? table[key] : undefined;
+      if (typeof pct !== 'number') return;
+      /* Whole numbers once they are big enough to survive rounding, a decimal
+         below that, where the difference between 0.3 and 1.2 is the point. */
+      var text = pct >= 99.95 ? 'every chart'
+        : (pct >= 10 ? Math.round(pct) : pct) + '% of charts';
+      head.appendChild(el('span', 'graha-card-freq', text));
     };
 
     var fill = function (t) {
@@ -909,16 +979,24 @@
       split(t.getAttribute('data-states')).forEach(function (item) {
         var li = el('li', 'graha-card-state');
         var head = el('p', 'graha-card-term');
-        head.appendChild(el('span', 'flag flag-' + item.term.toLowerCase(),
+        var label = el('span', 'graha-card-label');
+        label.appendChild(el('span', 'flag flag-' + item.term.toLowerCase(),
           '[' + item.term + ']'));
-        head.appendChild(document.createTextNode(' ' + STATE_NAMES[item.term]));
+        label.appendChild(document.createTextNode(' ' + STATE_NAMES[item.term]));
+        head.appendChild(label);
+        rarity(head, 'state', t.getAttribute('data-graha') + '/' + item.term);
         li.appendChild(head);
         if (item.why) li.appendChild(el('p', 'graha-card-why', item.why));
         list.appendChild(li);
       });
       split(t.getAttribute('data-yogas')).forEach(function (item) {
         var li = el('li', 'graha-card-yoga');
-        li.appendChild(el('p', 'graha-card-term', item.term));
+        var head = el('p', 'graha-card-term');
+        head.appendChild(el('span', 'graha-card-label', item.term));
+        rarity(head, 'yoga', item.subject + '|' + item.condition);
+        li.appendChild(head);
+        var means = meaningOf(item);
+        if (means) li.appendChild(el('p', 'graha-card-means', means));
         if (item.why) li.appendChild(el('p', 'graha-card-why', item.why));
         list.appendChild(li);
       });
@@ -963,6 +1041,7 @@
       yogas: yogasByGraha(state, set.division)
     });
     wireGrahaCard(document.getElementById('chart-' + slot));
+    ensureLibrary();
 
     var from = set.reference === 'Ascendant' ? 'from the ascendant' : 'from the ' + set.reference;
     document.getElementById('caption-' + slot).textContent =

@@ -303,6 +303,11 @@ node scripts/build-perturbations.mjs .
 # Ayanamsa constants, refitted against Swiss Ephemeris (see the header of
 # scripts/fit-ayanamsa.mjs for the pyswisseph snippet that produces the input)
 node scripts/fit-ayanamsa.mjs ayan-all.json
+
+# How common each yoga and each graha state is - needs no download, just the
+# engine. Re-run it whenever a detector is added or changed, or the new finding
+# will render without the figure beside it.
+node scripts/build-frequencies.mjs > data/frequencies.js
 ```
 
 ## Conventions worth knowing

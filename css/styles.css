@@ -541,7 +541,7 @@ input::placeholder { color: #a9bdb2; }
   transform: translateX(-50%);
   z-index: 5;
   min-width: 11rem;
-  max-width: 19rem;
+  max-width: 21rem;
   padding: 0.6rem 0.75rem;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -571,13 +571,35 @@ input::placeholder { color: #a9bdb2; }
   border-top: 1px solid var(--line-soft);
 }
 .graha-card-term {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
   margin: 0;
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--ink);
 }
-.graha-card-why {
+/* How common the finding is. Recessive, because it qualifies the statement
+   rather than competing with it - but present on every line, so the reader can
+   weigh a rare yoga against a near-universal one at a glance. */
+.graha-card-freq {
+  flex: none;
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+/* What the yoga is, from the library. Set apart from the reason it holds here,
+   which is the line under it: one is the rule, the other this chart. */
+.graha-card-means {
   margin: 0.15rem 0 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.graha-card-why {
+  margin: 0.25rem 0 0;
   font-size: 0.76rem;
   line-height: 1.5;
   color: var(--ink-soft);

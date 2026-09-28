@@ -418,3 +418,81 @@ on conflict (topic, subject, condition) do update set
   note = excluded.note,
   sort_order = excluded.sort_order,
   updated_at = now();
+
+-- Seven pairs the detectors produce that had no passage of their own, which was
+-- a third of all findings by count. A finding carries the subject and condition
+-- astro_readings is keyed by so it can ask the library about itself; where the
+-- library had nothing to answer with, the graha card could say a yoga was
+-- present and not what it was.
+
+insert into astro_readings (topic, subject, condition, heading, points, note, sort_order) values
+('yoga', 'Raja Yoga', 'angle-trine',
+ 'An angle lord and a trine lord, joined',
+ array[
+   'The angles are the 1st, 4th, 7th and 10th and the trines the 1st, 5th and 9th. When the lord of one is joined to the lord of the other - together, aspecting each other, or exchanging signs - the combination is a raja yoga: the houses of action and the houses of merit working through the same pair of grahas.',
+   'Parashara discusses the combination at length without giving it this name. Raja yoga is what later usage calls it, and it reaches the modern books through Uttara Kalamrita rather than through the Hora Shastra.',
+   'Being related is what the rule asks for, not being strong. Two grahas in one sign are joined; so are two that aspect each other across the chart; so are two that have exchanged signs. How much they can deliver is a separate question, and the Shadbala tab answers it.',
+   'The name is often stretched to cover any pleasant-looking combination. It is worth holding to the definition: an angle lord, a trine lord, and a relation between them.'
+ ],
+ 'What such a yoga delivers is read in the dasha of the grahas forming it.', 969),
+
+('yoga', 'Raja Yoga', 'dharma-karmadhipati',
+ 'Dharma joined to karma, the one pairing with a name',
+ array[
+   'The 9th is dharma and the 10th is karma - what a person is owed and what a person does. Their lords joined is the one angle-and-trine pairing the tradition singles out and names, and it is read as the strongest of them.',
+   'It satisfies the general rule as well, the 10th being an angle and the 9th a trine. This is a special case with a name of its own, not a separate rule.',
+   'Every other combination of an angle lord with a trine lord is a raja yoga and nothing more particular, which is worth saying because the name travels further than the definition does.'
+ ],
+ null, 970),
+
+('yoga', 'Anapha Yoga', 'general',
+ 'Anapha - grahas in the sign before the Moon',
+ array[
+   'Raman''s combination 3. Grahas in the 12th from the Moon, with the 2nd from her empty, is Anapha yoga.',
+   'It is one of four answers to a single question - what stands on either side of the Moon - so a chart gives Anapha or Sunapha or Durudhura or Kemadruma, and never two of them.',
+   'Grahas here means the five starry ones. The Sun is excluded by the definition and the nodes go with it, being shadows rather than bodies; the yoga is about the Moon having company.'
+ ],
+ 'The four are set out together under Sunapha.', 971),
+
+('yoga', 'Durudhura Yoga', 'general',
+ 'Durudhura - grahas on both sides of the Moon',
+ array[
+   'Raman''s combination 4. Grahas in the 2nd from the Moon and in the 12th at once is Durudhura yoga, the Moon attended on both sides.',
+   'It is the fullest of the four answers to the Moon''s company, and the only one that cannot arrive by half measures: two signs have to be occupied rather than one.',
+   'As with the others, the five starry grahas count and the Sun and the nodes do not.'
+ ],
+ 'The four are set out together under Sunapha.', 972),
+
+('yoga', 'Kemadruma Yoga', 'general',
+ 'Kemadruma - the Moon with nobody beside her',
+ array[
+   'Raman''s combination 5, and the answer given when the other three are not: no graha in the 2nd from the Moon and none in the 12th. The Moon stands alone.',
+   'It is the one of the four read as a misfortune rather than a blessing, and the reason is the same fact seen from the other side. The Moon is the mind, and a mind with no company is the image the yoga trades on.',
+   'Raman records the cancellations other authors give - a graha in a kendra from the lagna or from the Moon, or the Moon conjunct a graha - and declines them: "these observations are not generally acceptable". This site reports such a case where it arises rather than applying it, so a reader who holds to the cancellation can see it was available.'
+ ],
+ 'The four are set out together under Sunapha.', 973),
+
+('yoga', 'Kartari Yoga', 'shubha',
+ 'Shubha kartari - benefics for blades',
+ array[
+   'Benefics in both the 2nd and the 12th from the lagna, so the first house is held between two of them. The scissors close on something they mean well by.',
+   'It is read as shelter: what the first house stands for - the body, the life, the person - is hemmed by grahas that protect it, and is harder to reach than it would otherwise be.',
+   'It is the rarer of the two, there being fewer benefics to go round than malefics.'
+ ],
+ 'The [S] mark beside a graha reports the same shape around that graha rather than around the lagna.', 974),
+
+('yoga', 'Kartari Yoga', 'papa',
+ 'Papa kartari - malefics for blades',
+ array[
+   'Malefics in both the 2nd and the 12th from the lagna, the nodes counted among them. The first house is caught between two grahas that do not mean it well.',
+   'It is read as constraint: the affairs of the first house are pressed from both sides, and what the chart otherwise promises there is harder to come by.',
+   'Commoner than the benefic form, there being more malefics to go round - a thin Moon and a badly kept Mercury each count as one, and the nodes always do.'
+ ],
+ 'The [P] mark beside a graha reports the same shape around that graha rather than around the lagna.', 975)
+
+on conflict (topic, subject, condition) do update set
+  heading = excluded.heading,
+  points = excluded.points,
+  note = excluded.note,
+  sort_order = excluded.sort_order,
+  updated_at = now();

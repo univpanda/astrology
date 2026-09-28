@@ -138,7 +138,9 @@ var Charts = (function () {
       where: where,
       states: states.map(function (k) { return k + FLD + (why[k] || ''); }).join(REC),
       yogas: mine.map(function (y) {
-        return y.title + FLD + (y.summary || '');
+        // title, why it holds here, and the pair that names its passage
+        return [y.title, y.summary || '', y.subject || '', y.condition || '']
+          .join(FLD);
       }).join(REC),
       /* One flat sentence, for anyone reading by ear rather than by hover. */
       label: p.name + ' in ' + where +

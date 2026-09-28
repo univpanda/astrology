@@ -41,6 +41,7 @@ var document = {
 /* ------------------------------------------------- load the real modules */
 
 global.PERTURBATIONS = require('../data/perturbations.js');
+global.FREQUENCIES = require('../data/frequencies.js');
 var Astro = require('../js/astro.js');
 var citiesSrc = fs.readFileSync(path.join(root, 'data/cities.js'), 'utf8');
 global.window = {};
@@ -2929,11 +2930,12 @@ ok('every script the page loads parses', (function () {
   var loaded = true, why = '';
   try {
     new Function('document', 'window', 'location', 'history', 'navigator', 'fetch',
-                 'Astro', 'Geo', 'Charts', 'Shadbala', 'Yogas', 'PERTURBATIONS', '__out',
+                 'Astro', 'Geo', 'Charts', 'Shadbala', 'Yogas', 'PERTURBATIONS',
+                 'FREQUENCIES', '__out',
                  wired)(
       sandbox.document, sandbox.window, sandbox.location, sandbox.history,
       sandbox.navigator, sandbox.fetch, Astro, Geo, Charts, Shadbala, Yogas,
-      global.PERTURBATIONS, out);
+      global.PERTURBATIONS, global.FREQUENCIES, out);
   } catch (e) {
     loaded = false;
     why = e.message;
@@ -4065,6 +4067,72 @@ console.log('\nHovering a graha describes it');
     /\.graha-card \{[^}]*pointer-events: none/.test(css));
   ok('and the chart box is a positioning context for it',
     /#chart-a, #chart-b \{ position: relative; \}/.test(css));
+})();
+
+console.log('\nThe card says what a yoga is and what it did here');
+/*
+ * Two lines under each yoga: the rule, and this chart. The rule comes from the
+ * library's heading for that passage, which is already a one-line definition;
+ * the points run to a paragraph apiece and would bury the line that says what
+ * the chart actually did.
+ */
+ok('the definition is taken from the heading, not the first point',
+  /return p && p\.heading \? p\.heading : '';/.test(appSrc) &&
+  !/p\.points\[0\]/.test(appSrc));
+/*
+ * Matched on subject AND condition. A family with several members must answer
+ * about the one that formed - Pancha Mahapurusha has five, and Sasa is not
+ * Ruchaka.
+ */
+ok('and matched on the condition, not the subject alone',
+  /x\.subject === item\.subject && x\.condition === item\.condition/.test(appSrc));
+/*
+ * The library is fetched once in the background, so a hover does not wait on
+ * the network and the Lesson tab finds it already there.
+ */
+ok('the library is fetched once, ahead of the hover',
+  /function ensureLibrary\(\)/.test(appSrc) &&
+  /if \(lessonLibrary \|\| libraryPending\) return;/.test(appSrc));
+/*
+ * And the card survives the library being absent: it loses a line, not its
+ * contents.
+ */
+ok('and a missing library costs one line, not the card',
+  /if \(!lessonLibrary \|\| !item\.subject\) return '';/.test(appSrc));
+
+console.log('\nEvery finding can explain itself');
+/*
+ * A finding carries the subject and condition astro_readings is keyed by, so
+ * the graha card can ask the library what the yoga is - as against the summary,
+ * which says why it holds in this chart. A pair with no passage left the card
+ * saying a yoga was present and not what it was, and seven of them did: a third
+ * of all findings by count, the commonest being plain raja yoga.
+ */
+(function () {
+  var seeds = fs.readFileSync(path.join(root,
+    'supabase/seed/astro_readings_yogas.sql'), 'utf8');
+  var keyed = {};
+  (seeds.match(/^\('yoga', '([^']+)', '([^']+)',/gm) || []).forEach(function (m) {
+    var bits = m.match(/^\('yoga', '([^']+)', '([^']+)',/);
+    keyed[bits[1] + ' / ' + bits[2]] = true;
+  });
+  // Every pair the detectors can produce, swept over charts rather than guessed
+  var missing = {};
+  for (var y = 1950; y < 2025; y += 5) {
+    for (var m = 1; m <= 12; m += 4) {
+      var c = Astro.chart({ jdUT: Astro.julianDay(y, m, 15, 6.5), latitude: 28.61,
+        longitude: 77.21, tzOffsetMinutes: 330 });
+      Yogas.detect(c, Shadbala.compute(c,
+        { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 }))
+        .forEach(function (f) {
+          var k = (f.subject || '?') + ' / ' + (f.condition || '?');
+          if (!keyed[k]) missing[k] = true;
+        });
+    }
+  }
+  ok('every yoga a chart can produce has a passage of its own',
+    Object.keys(missing).length === 0,
+    Object.keys(missing).join(', ') || 'none unaccounted for');
 })();
 
 console.log('\nThe tab strip opens where it starts');
@@ -5632,6 +5700,123 @@ ok('an unreadable coordinate is flagged, not echoed as a number',
 ok('resetting the form clears all six boxes and both hemispheres',
    /document\.getElementById\('manual-' \+ which \+ '-' \+ part\)\.value = '';/.test(appSrc) &&
    /which === 'lat' \? 'N' : 'E'/.test(appSrc));
+
+console.log('\nHow rare a finding is, said out loud');
+/*
+ * Every line on the card carries how often it is true at all. Without it the
+ * card ranks a yoga holding in two charts out of three level with one holding
+ * in three out of a thousand, and a reader with one chart in front of them has
+ * no way to tell. The figures are measured, not asserted, so what the tests
+ * have to protect is that the measurement covers what the card can print and
+ * that the page actually loads it.
+ */
+(function () {
+  var F = global.FREQUENCIES;
+  ok('the frequency table is generated and shaped as the card expects',
+    F && F.charts > 1000 && F.yoga && F.state,
+    F ? 'charts=' + (F && F.charts) : 'absent');
+
+  var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  ok('the page loads the table before the code that reads it',
+    page.indexOf('data/frequencies.js') > -1 &&
+    page.indexOf('data/frequencies.js') < page.indexOf('js/app.js'));
+
+  /*
+   * A yoga added to the detectors without rebuilding the table would lose its
+   * figure silently - the line would simply render bare, which looks like a
+   * design choice rather than a gap. Sweep for the pairs and demand each one.
+   */
+  var missingYoga = {}, missingState = {};
+  var STATES = ['R', 'C', 'Y', 'V'];
+  for (var y = 1950; y < 2025; y += 5) {
+    for (var m = 1; m <= 12; m += 4) {
+      var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+      var c = Astro.chart({ jdUT: Astro.julianDay(y, m, 15, 6.5), latitude: 28.61,
+        longitude: 77.21, tzOffsetMinutes: 330 });
+      Yogas.detect(c, Shadbala.compute(c, place)).forEach(function (f) {
+        var k = (f.subject || '?') + '|' + (f.condition || '?');
+        if (typeof F.yoga[k] !== 'number') missingYoga[k] = true;
+      });
+      var at = {};
+      c.planets.forEach(function (p) { at[p.name] = p; });
+      c.planets.forEach(function (p) {
+        var holds = {
+          R: p.retrograde,
+          C: p.name !== 'Sun' && Astro.isCombust(p.name, p.longitude,
+            at.Sun.longitude, p.retrograde),
+          Y: Astro.isYogakaraka(p.name, c.ascendant.sign),
+          V: Astro.isVargottama(p.longitude)
+        };
+        STATES.forEach(function (s) {
+          if (holds[s] && typeof F.state[p.name + '/' + s] !== 'number') {
+            missingState[p.name + '/' + s] = true;
+          }
+        });
+      });
+    }
+  }
+  ok('every yoga a chart can produce has a measured frequency',
+    Object.keys(missingYoga).length === 0, Object.keys(missingYoga).join(', '));
+  ok('every state a graha can be in has a measured frequency',
+    Object.keys(missingState).length === 0, Object.keys(missingState).join(', '));
+
+  /*
+   * The figures have to be believable as probabilities, and the two ends have to
+   * be right: a node is retrograde always, and nothing the detectors report is
+   * so rare it never occurred in the sample - a zero would mean the sweep was
+   * too small for that finding rather than that the finding is impossible.
+   */
+  var outOfRange = Object.keys(F.yoga).concat(Object.keys(F.state))
+    .filter(function (k) {
+      var v = F.yoga[k] === undefined ? F.state[k] : F.yoga[k];
+      return !(v > 0 && v <= 100);
+    });
+  ok('every frequency is a real percentage that the sweep actually saw',
+    outOfRange.length === 0, outOfRange.join(', '));
+  ok('a node is retrograde in every chart',
+    F.state['Rahu/R'] === 100 && F.state['Ketu/R'] === 100,
+    F.state['Rahu/R'] + ' / ' + F.state['Ketu/R']);
+  /*
+   * The headline result, and the reason the feature exists: the commonest raja
+   * yoga is a majority event. If this ever stops being true the detector has
+   * changed, not the sky.
+   */
+  ok('raja yoga by angle-and-trine is reported as the common thing it is',
+    F.yoga['Raja Yoga|angle-trine'] > 50, String(F.yoga['Raja Yoga|angle-trine']));
+})();
+
+console.log('\nThe card prints the figure beside the finding');
+(function () {
+  var src = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
+  ok('the card asks the table for both kinds of line',
+    /rarity\(head, 'state', t\.getAttribute\('data-graha'\) \+ '\/' \+ item\.term\)/
+      .test(src) &&
+    /rarity\(head, 'yoga', item\.subject \+ '\|' \+ item\.condition\)/.test(src));
+
+  /*
+   * Run the renderer rather than trust the source: pull the formatter out of
+   * app.js and check both ends of the scale read as English.
+   */
+  var body = src.match(/var rarity = function \(head, kind, key\) \{[\s\S]*?\n    \};/)[0];
+  var said = [];
+  var fake = { appendChild: function (n) { said.push(n); } };
+  new Function('el', 'FREQUENCIES', 'head', body + '\n rarity(head, "state", "Rahu/R");' +
+    ' rarity(head, "yoga", "Adhi Yoga|general");' +
+    ' rarity(head, "yoga", "Budha Aditya Yoga|general");' +
+    ' rarity(head, "yoga", "no such yoga");')(
+      function (tag, cls, text) { return text; }, global.FREQUENCIES, fake);
+
+  ok('a mark true of every chart says so in words rather than as 100%',
+    said[0] === 'every chart', said[0]);
+  ok('a rare yoga keeps the decimal that makes it rare',
+    said[1] === global.FREQUENCIES.yoga['Adhi Yoga|general'] + '% of charts', said[1]);
+  ok('a common one is rounded to a whole number',
+    said[2] === Math.round(global.FREQUENCIES.yoga['Budha Aditya Yoga|general']) +
+      '% of charts', said[2]);
+  ok('an unmeasured key prints no line at all rather than a wrong one',
+    said.length === 3, said.join(' | '));
+})();
+
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
