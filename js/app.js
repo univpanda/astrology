@@ -1910,8 +1910,8 @@
       'has a row only where two of the five starry grahas stand within a degree of ' +
       'each other, which is about one chart in twelve; it is reckoned as Raman gives ' +
       'it, the quotient of the two grahas\u2019 aggregates over the difference of ' +
-      'their disc diameters. Saptavargaja uses Raman’s ladder, section 30 — 45 and ' +
-      '30 at the top, then halving at every step down to 1.875 — where Santhanam ' +
+      'their disc diameters. Saptavargaja uses Raman’s ladder, section 30 - 45 and ' +
+      '30 at the top, then halving at every step down to 1.875 - where Santhanam ' +
       'and Saravali give 20, 15, 10, 4 and 2 for the lower five, which is why ' +
       'totals here can differ from another calculator’s by a few virupas.';
   }

@@ -5883,5 +5883,56 @@ console.log('\nThe Budha-Aditya floor is a setting, defaulting to Raman');
     /floor\.value === 'none'/.test(src));
 })();
 
+console.log('\nEvery member of a family defines itself');
+/*
+ * Sunapha, Anapha, Durudhura and Kemadruma are four answers to one question, so
+ * the four passages were once one passage. When they were split, three got
+ * headings of their own and Sunapha kept the family's: the card showed "Sunapha
+ * yoga" over "The Moon's company, and the four answers to it", which names the
+ * question rather than the answer and tells a reader nothing about the finding
+ * in front of them. The heading is the one line the card has room for, so it
+ * has to be about the member.
+ */
+(function () {
+  var seeds = fs.readFileSync(path.join(root,
+    'supabase/seed/astro_readings_yogas.sql'), 'utf8');
+  var headingFor = function (subject) {
+    var m = seeds.match(new RegExp("\\('yoga', '" + subject +
+      "', '[^']+',\\s*\n '((?:[^']|'')+)'"));
+    return m ? m[1].replace(/''/g, "'") : null;
+  };
+  var FOUR = ['Sunapha Yoga', 'Anapha Yoga', 'Durudhura Yoga', 'Kemadruma Yoga'];
+  var bad = FOUR.filter(function (s) {
+    var h = headingFor(s);
+    return !h || h.indexOf(s.replace(' Yoga', '')) !== 0;
+  });
+  ok('each of the Moon\u2019s four answers is headed by its own name',
+    bad.length === 0, bad.map(function (s) {
+      return s + ': ' + headingFor(s);
+    }).join(' | '));
+
+  /*
+   * And the heading has to say what the placement is, since that is the whole
+   * of what the card can show before the reader has to go looking.
+   */
+  ok('and by what the placement actually is',
+    /Sunapha - grahas in the sign after the Moon/.test(seeds) &&
+    /Anapha - grahas in the sign before the Moon/.test(seeds) &&
+    /Durudhura - grahas on both sides of the Moon/.test(seeds));
+
+  /*
+   * House style, and a standing preference: hyphens, commas and colons carry
+   * these sentences. The rest of the library has never used an em-dash.
+   */
+  var dashed = fs.readdirSync(path.join(root, 'supabase/seed'))
+    .filter(function (n) { return /\.sql$/.test(n); })
+    .filter(function (n) {
+      return fs.readFileSync(path.join(root, 'supabase/seed', n), 'utf8')
+        .indexOf('\u2014') > -1;
+    });
+  ok('no passage in the library uses an em-dash', dashed.length === 0,
+    dashed.join(', '));
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
