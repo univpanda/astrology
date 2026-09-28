@@ -1017,7 +1017,7 @@ console.log('\nLesson library');
 (function () {
   var files = fs.readdirSync(path.join(root, 'supabase/seed'))
     .filter(function (f) { return /^astro_readings.*\.sql$/.test(f); });
-  var rows = [], unbalanced = [];
+  var rows = [], unbalanced = [], misaligned = [];
   files.forEach(function (f) {
     var src = fs.readFileSync(path.join(root, 'supabase/seed', f), 'utf8');
     var inserts = (src.match(/insert into astro_readings/g) || []).length;
@@ -1025,6 +1025,15 @@ console.log('\nLesson library');
     if (inserts !== conflicts || !inserts) unbalanced.push(f);
     var keys = src.match(/^\('([a-z]+)', '([^']+)', '([^']+)',/gm) || [];
     var orders = src.match(/,\s*(\d+)\)(?:,|\s*\n\s*\n\s*on conflict)/g) || [];
+    /*
+     * Both patterns are positional, so a row whose terminator is spelt
+     * "700)\n," instead of "700)," silently drops an order and shifts every
+     * row after it. That has happened three times while hand-editing these
+     * files; counting per file names the culprit instead of leaving a bare
+     * "some passage has no sort order" to hunt down.
+     */
+    if (keys.length !== orders.length) misaligned.push(
+      f + ' (' + keys.length + ' rows, ' + orders.length + ' sort orders)');
     keys.forEach(function (k, i) {
       var m = k.match(/^\('([a-z]+)', '([^']+)', '([^']+)',/);
       var o = orders[i] && orders[i].match(/(\d+)\)/);
@@ -1033,6 +1042,8 @@ console.log('\nLesson library');
     });
   });
 
+  ok('every seed row terminator parses, so orders line up with rows',
+     misaligned.length === 0, misaligned.join('; ') || files.length + ' files');
   ok('every seed file upserts rather than inserting blind',
      unbalanced.length === 0, unbalanced.join(', ') || files.length + ' files');
   ok('the library has grown past the yogas it started as',
@@ -3779,6 +3790,198 @@ ok('the score is centred with the rest, no longer ranged right', (function () {
   var block = css.slice(css.indexOf('#vargas-table td.vimsopaka'));
   block = block.slice(0, block.indexOf('}') + 1);
   return !/text-align/.test(block) && /tabular-nums/.test(block);
+})());
+
+console.log('\nThe chart service runs the same engine');
+/*
+ * Charts are built by a Supabase Edge Function by default and only fall back to
+ * this browser when the service is slow or absent. The function cannot import a
+ * classic script, so scripts/deploy-edge.sh appends an ESM export to a copy of
+ * js/astro.js - and a copy is a copy, which drifts the moment the original
+ * changes and the script is not run.
+ *
+ * It drifted for days across four engine changes: the sunrise window, the vara
+ * boundary, the ahargana and the Vimshottari year. The visible symptom was abda
+ * and masa bala reading zero for every graha, because the service's panchang
+ * had no ahargana for shadbala.js to count from - and nothing failed, because
+ * every test here runs the local engine, which was right.
+ *
+ * The file header already warned that this had happened once before, with the
+ * graha order. A comment is not a check.
+ */
+ok('the deployed engine copy matches js/astro.js', (function () {
+  var src = fs.readFileSync(path.join(root, 'js/astro.js'), 'utf8');
+  var copyPath = path.join(root, 'supabase/functions/chart/_astro.mjs');
+  if (!fs.existsSync(copyPath)) return false;
+  var copy = fs.readFileSync(copyPath, 'utf8');
+  // deploy-edge.sh appends exactly a blank line and the default export.
+  var expected = src + '\n' + 'export default Astro;\n';
+  return copy === expected;
+})());
+/*
+ * And the thing whose absence caused the symptom, named directly, so a future
+ * reader knows what the check is really protecting.
+ */
+ok('and carries the ahargana the year and month lords need', (function () {
+  var copy = fs.readFileSync(
+    path.join(root, 'supabase/functions/chart/_astro.mjs'), 'utf8');
+  return /ahargana: ahargana,/.test(copy) && /AHARGANA_EPOCH/.test(copy);
+})());
+
+console.log('\nThe Moon\u2019s paksha bala is a setting');
+/*
+ * Two authorities on each side, so the page offers both rather than picking.
+ * The control belongs with the ayanamsa and the node: all three are choices
+ * about how to read a chart rather than facts about one.
+ */
+ok('the reading is offered in settings, defaulting to the group rule',
+  (function () {
+    var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+    var at = html.indexOf('id="panel-settings"');
+    var panel = html.slice(at, html.indexOf('</section>', at));
+    return /<select id="moon-paksha">/.test(panel) &&
+      /<option value="group" selected>/.test(panel) &&
+      /<option value="benefic">/.test(panel);
+  })());
+/*
+ * The note has to name who holds each reading, or the choice is just a
+ * preference with no way to decide it.
+ */
+ok('and the note cites both sides', (function () {
+  var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  var at = html.indexOf('id="moon-paksha"');
+  var block = html.slice(at, html.indexOf('</div>', at));
+  return /Santhanam/.test(block) && /Raman/.test(block) &&
+    /Charak/.test(block) && /Phaladeepika/.test(block);
+})());
+/*
+ * It changes no position, so the chart is not recast - the cached Shadbala is
+ * dropped and the page redrawn.
+ */
+ok('changing it drops the cached strengths and redraws', (function () {
+  var at = appSrc.indexOf("getElementById('moon-paksha').addEventListener");
+  if (at < 0) return false;
+  var block = appSrc.slice(at, appSrc.indexOf('});\n\n', at));
+  return /lastChart\.shadbala = null;/.test(block) &&
+    /render\(lastChart\);/.test(block) && !/computeChart\(/.test(block);
+})());
+ok('and the choice reaches the engine', (function () {
+  return /\{ moonPaksha: document\.getElementById\('moon-paksha'\)\.value \}/
+    .test(appSrc);
+})());
+
+console.log('\nAyanamsa lives in settings');
+/*
+ * The ayanamsa is not a fact about a nativity. It is a choice about how every
+ * nativity is read, and while it sat in the per-chart calculation options it
+ * looked like the former. It is now in Chart settings beside the node, which is
+ * the other control of the same kind.
+ */
+ok('the ayanamsa select sits in the settings panel', (function () {
+  var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  var at = html.indexOf('id="panel-settings"');
+  var panel = html.slice(at, html.indexOf('</section>', at));
+  var options = html.slice(html.indexOf('class="options-grid"'),
+    html.indexOf('</details>'));
+  return at > 0 &&
+    /<select id="ayanamsa">/.test(panel) &&
+    !/id="ayanamsa"/.test(options) &&
+    /id="node-type"/.test(panel);
+})());
+/*
+ * And changing it recasts what is on screen. A chart drawn from one zero point
+ * while the select shows another is wrong by more than a degree, which is far
+ * too much to leave standing until something else happens to redraw.
+ */
+ok('and changing it recomputes the open chart', (function () {
+  var at = appSrc.indexOf("getElementById('ayanamsa').addEventListener");
+  if (at < 0) return false;
+  var block = appSrc.slice(at, appSrc.indexOf('});\n\n', at));
+  return /ayanamsa: wanted, trueNode: lastChart\.trueNode/.test(block) &&
+    /lastChart\.ayanamsa = wanted;/.test(block) &&
+    /render\(lastChart\);/.test(block) &&
+    /writeHash\(lastChart\);/.test(block) &&
+    /if \(!lastChart\)/.test(block);
+})());
+/*
+ * Moving it must not cost the per-chart record. A saved chart still carries the
+ * ayanamsa it was cast with, and opening one still puts the select where that
+ * chart put it, or the settings panel would lie about what is on screen.
+ */
+ok('and a saved chart still carries and restores its own', (function () {
+  return /ayanamsa: params\.ayanamsa, trueNode: params\.trueNode/.test(appSrc) &&
+    /document\.getElementById\('ayanamsa'\)\.value = entry\.ayanamsa \|\| 'lahiri';/
+      .test(appSrc) &&
+    /document\.getElementById\('ayanamsa'\)\.value = state\.ayanamsa;/.test(appSrc);
+})());
+/*
+ * The note under it is the only place a reader is told that the Shadbala tab is
+ * Raman's arithmetic on someone else's positions. That pairing is in no book,
+ * so the page has to be the one to say it.
+ */
+ok('and the note says whose positions Raman-method Shadbala is running on',
+  (function () {
+    var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+    var at = html.indexOf('id="panel-settings"');
+    var panel = html.slice(at, html.indexOf('</section>', at));
+    return /Raman/.test(panel) && /own ayanamsa/.test(panel) &&
+      /21&deg;11&prime;29&Prime;/.test(panel);
+  })());
+
+console.log('\nPassage sources');
+/*
+ * A passage that says two authorities read a verse differently is an assertion
+ * about books, and an assertion about books that does not name them cannot be
+ * checked. The column was on the table from the start and went unused; the
+ * lesson only became falsifiable once it rendered.
+ */
+ok('a passage renders the works it was read out of', (function () {
+  var at = appSrc.indexOf('function passageBlock');
+  var block = appSrc.slice(at, appSrc.indexOf('return block;', at));
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  return /if \(passage\.source\) \{/.test(block) &&
+    /el\('p', 'passage-source', passage\.source\)/.test(block) &&
+    /\.passage-source \{/.test(css);
+})());
+/*
+ * And the citation sits below the note rather than above the points: it is
+ * there to be checked afterwards, not read on the way in.
+ */
+ok('and it comes last, under the note', (function () {
+  var at = appSrc.indexOf('function passageBlock');
+  var block = appSrc.slice(at, appSrc.indexOf('return block;', at));
+  return block.indexOf('passage-note') < block.indexOf('passage-source');
+})());
+/*
+ * Every strength passage carries one. The seed is the only place the claim can
+ * be checked without a database, and a passage added later without a source
+ * would slip through silently otherwise.
+ */
+ok('every strength passage in the seed names its sources', (function () {
+  var sql = fs.readFileSync(path.join(root,
+    'supabase/seed/astro_readings_strength.sql'), 'utf8');
+  var rows = sql.split(/\n\('strength', /).slice(1);
+  if (rows.length !== 17) return false;
+  return rows.every(function (row) {
+    // the source is the literal between the note and the sort order
+    var tail = row.slice(row.indexOf(' ],\n') + 4);
+    tail = tail.slice(0, tail.search(/\n \d{3}\)/) + 6);
+    var cited = /(Parashara|Raman|Phaladeepika|Santhanam|Mantreswara|Sastri)/
+      .test(tail);
+    return cited && /,\s*7\d\d\)/.test(tail);
+  });
+})());
+/*
+ * Two works reach this site only through a third, and saying so is the whole
+ * value of the citation. Sripatipaddhati comes by way of Raman and Saravali by
+ * way of Santhanam's note; neither was read here, and a passage that cited them
+ * flatly would claim a check that was never made.
+ */
+ok('and works cited at second hand are marked as such', (function () {
+  var sql = fs.readFileSync(path.join(root,
+    'supabase/seed/astro_readings_strength.sql'), 'utf8');
+  return /Sripatipaddhati has not been read directly here/.test(sql) &&
+    /Kalyana Varma''s text has not been consulted directly/.test(sql);
 })());
 
 console.log('\nVarga charts');

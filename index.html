@@ -173,10 +173,6 @@
       <summary>Calculation options</summary>
       <div class="options-grid">
         <div class="field">
-          <label for="ayanamsa">Ayanamsa</label>
-          <select id="ayanamsa"></select>
-        </div>
-        <div class="field">
           <label for="time-standard">Time standard</label>
           <select id="time-standard">
             <option value="zone" selected>Zone time (from the place's timezone)</option>
@@ -457,6 +453,25 @@
     <div class="card">
       <h3>Chart settings</h3>
       <div class="field">
+        <label for="ayanamsa">Ayanamsa</label>
+        <select id="ayanamsa"></select>
+        <p class="field-note">Where the sidereal zodiac begins, and so where every
+          longitude on the page is measured from. There is no computing the right
+          answer: the schools differ by more than a degree and a half, which moves a
+          graha into another sign in about one reading in eleven and into another
+          nakshatra or pada in four out of ten. Lahiri is the Indian government
+          standard and the default here.
+          <br><br>
+          Worth knowing if you are checking this site against a book. The Shadbala
+          tab implements B. V. Raman&rsquo;s method throughout, and Raman worked in
+          his own ayanamsa, 21&deg;11&prime;29&Prime; for 1912 where Lahiri gives
+          22&deg;37&prime;. Run on Lahiri positions his arithmetic gives answers his
+          own worked examples will not reproduce: the totals shift by 19
+          shashtiamsas on average, by as much as three rupas, and 7% of
+          strong-or-weak verdicts turn over. Choose his ayanamsa here before
+          concluding our figures disagree with his book.</p>
+      </div>
+      <div class="field">
         <label for="node-type">Rahu and Ketu</label>
         <select id="node-type">
           <option value="mean" selected>Mean node (panchang standard)</option>
@@ -471,6 +486,31 @@
           degree, which moves Rahu into a different sign in about one chart in thirty-six
           and reassigns a chara karaka in one in five. Shadbala is reckoned for the seven
           grahas only and does not change at all.</p>
+      </div>
+      <div class="field">
+        <label for="moon-paksha">The Moon&rsquo;s paksha bala</label>
+        <select id="moon-paksha">
+          <option value="group" selected>By her fortnight group (Parashara, Raman)</option>
+          <option value="benefic">Always as a benefic (Phaladeepika, Charak)</option>
+        </select>
+        <p class="field-note">Paksha bala gives one figure to the benefics and
+          sixty less it to the malefics. Whether the Moon takes her turn in those
+          groups is genuinely disputed. Santhanam&rsquo;s notes to chapter 27 have
+          &ldquo;The Moon in dark half is a malefic&rdquo;, and then that her
+          paksha bala is doubled &ldquo;whether the Moon is in a group of
+          benefices or otherwise&rdquo; &mdash; which only needs saying if she can
+          fall in either; Raman puts the same rule inside the paksha chapter at
+          section 53. Against that, K. S. Charak lists her among the natural
+          benefics for this bala without qualification, and Phaladeepika IV.5
+          reads the same way: &ldquo;The Moon is strong and auspicious when she
+          has her full Paksha bala&rdquo;, which cannot hold under the group rule,
+          where it is the dark Moon that carries the high figure.
+          <br><br>
+          It shows up twice, because the Moon&rsquo;s cheshta bala is her paksha
+          bala. Only her own figure moves: the other six are untouched, and her
+          benefic standing for drik bala and the yogas is read the ordinary way
+          whichever is chosen here. The doubling is not in dispute &mdash; all
+          three authorities apply it.</p>
       </div>
       <p class="field-note" id="settings-status"></p>
     </div>

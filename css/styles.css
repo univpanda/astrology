@@ -1160,6 +1160,17 @@ td.vimsopaka-poor { color: var(--retro); }
 /* The vimsopaka score beside the chart's title: one number, so it is written
    and not drawn. Recessive against the graha's name, which is what the chart is
    of; the score is what that graha is worth, not a second title. */
+/* The works a passage was read out of. Smaller and quieter than the note above
+   it: a citation is there to be checked rather than read through. */
+.passage-source {
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+  line-height: 1.55;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--line-soft);
+}
+
 .chart-aside {
   font-weight: 400;
   color: var(--ink-soft);

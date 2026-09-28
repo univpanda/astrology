@@ -1379,7 +1379,7 @@
         latitude: state.place.lat,
         longitude: state.place.lon,
         tzOffsetMinutes: state.offset
-      });
+      }, { moonPaksha: document.getElementById('moon-paksha').value });
     }
     return state.shadbala;
   }
@@ -2493,6 +2493,16 @@
     });
     block.appendChild(list);
     if (passage.note) block.appendChild(el('p', 'passage-note', passage.note));
+    /*
+     * What the passage was read out of, where it names anything. The column has
+     * been on the table from the start and nothing wrote to it; a passage that
+     * says two authorities disagree is worth little without saying which books
+     * they are, and a reader comparing this site against another calculator
+     * needs the citation more than the conclusion.
+     */
+    if (passage.source) {
+      block.appendChild(el('p', 'passage-source', passage.source));
+    }
     return block;
   }
 
@@ -3390,6 +3400,62 @@
         ? 'Recomputed ' + lastChart.name + '\u2019s chart with the ' +
           (wanted ? 'true' : 'mean') + ' node.'
         : 'Recomputed with the ' + (wanted ? 'true' : 'mean') + ' node.';
+    });
+  });
+
+  /*
+   * Unlike the ayanamsa and the node, this changes no position - it decides
+   * which of two readings of one verse the strength table follows. So there is
+   * nothing to recompute in the ephemeris: drop the cached Shadbala and redraw.
+   */
+  document.getElementById('moon-paksha').addEventListener('change', function () {
+    var status = document.getElementById('settings-status');
+    var asBenefic = this.value === 'benefic';
+    if (!lastChart) {
+      status.textContent = 'Saved. The next chart will use it.';
+      return;
+    }
+    lastChart.shadbala = null;
+    render(lastChart);
+    status.textContent = 'The Moon\u2019s paksha bala now follows ' +
+      (asBenefic ? 'Phaladeepika and Charak, reading her always as a benefic.'
+                 : 'Parashara and Raman, by her fortnight group.');
+  });
+
+  /*
+   * The ayanamsa moved out of the per-chart calculation options and into
+   * settings, where it belongs: it is not a property of a nativity but a choice
+   * about how to read every nativity, and having it sit beside the birth time
+   * suggested otherwise.
+   *
+   * It behaves exactly as the node control above. The open chart is recast at
+   * once, because a chart on screen drawn from a different zero point than the
+   * one the select shows is simply wrong, and an ayanamsa is worth more than a
+   * degree - far too much to leave on screen until something else redraws.
+   */
+  document.getElementById('ayanamsa').addEventListener('change', function () {
+    var status = document.getElementById('settings-status');
+    var wanted = this.value;
+    var label = (Astro.AYANAMSA[wanted] || {}).label || wanted;
+    if (!lastChart) {
+      status.textContent = 'Saved. The next chart will use ' + label + '.';
+      return;
+    }
+    status.textContent = 'Recomputing\u2026';
+    computeChart({
+      jdUT: lastChart.chart.julianDay,
+      latitude: lastChart.place.lat, longitude: lastChart.place.lon,
+      tzOffsetMinutes: lastChart.offset,
+      ayanamsa: wanted, trueNode: lastChart.trueNode
+    }, function (chart, source) {
+      lastChart.chart = chart;
+      lastChart.ayanamsa = wanted;
+      lastChart.source = source;
+      render(lastChart);
+      writeHash(lastChart);
+      status.textContent = lastChart.name
+        ? 'Recomputed ' + lastChart.name + '\u2019s chart against ' + label + '.'
+        : 'Recomputed against ' + label + '.';
     });
   });
 
