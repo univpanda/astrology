@@ -547,7 +547,16 @@ input::placeholder { color: #a9bdb2; }
    * and a graha with five findings became a tall thin column. The card is a
    * popover and may be wider than the chart column it belongs to; it is kept
    * on screen by the clamp in app.js rather than by the column's edges.
+   *
+   * width: max-content is what makes that cap mean anything. The card is
+   * absolutely positioned with only `left` set, so without it the box shrinks
+   * to fit whatever space is left between `left` and the right edge of the
+   * chart column - and a graha further right got a narrower card from the same
+   * rule. Two cards on one page could differ by half their width with nothing
+   * to explain it. Taking the width from the content instead makes the cap the
+   * only thing that decides it.
    */
+  width: max-content;
   max-width: min(34rem, calc(100vw - 1.5rem));
   padding: 0.6rem 0.75rem;
   border: 1px solid var(--line);

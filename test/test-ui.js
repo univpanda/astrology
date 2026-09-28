@@ -6457,6 +6457,15 @@ console.log('\nThe card is wide enough to read and stays on screen');
     /max-width: min\(34rem, calc\(100vw - 1\.5rem\)\)/.test(css));
   ok('and never wider than the window it sits in',
     /calc\(100vw - 1\.5rem\)/.test(css));
+  /*
+   * Absolutely positioned with only `left` set, the box otherwise shrinks to
+   * fit the space left between `left` and the right edge of the chart column,
+   * so a graha further right got a narrower card from the same rule - two
+   * cards on one page differing by half their width. Taking the width from the
+   * content is what makes the cap the only thing that decides it.
+   */
+  ok('and its width comes from its content, not from where it happens to sit',
+    /\.graha-card \{[^}]*width: max-content/.test(css));
 
   /*
    * Run the placement rather than read it. The block is lifted out of app.js
