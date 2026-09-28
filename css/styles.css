@@ -541,7 +541,14 @@ input::placeholder { color: #a9bdb2; }
   transform: translateX(-50%);
   z-index: 5;
   min-width: 11rem;
-  max-width: 21rem;
+  /*
+   * Wide enough that a finding's name and its frequency sit on one line. At
+   * 21rem they did not, so every title wrapped - "Angle-/trine raja/yoga" -
+   * and a graha with five findings became a tall thin column. The card is a
+   * popover and may be wider than the chart column it belongs to; it is kept
+   * on screen by the clamp in app.js rather than by the column's edges.
+   */
+  max-width: min(34rem, calc(100vw - 1.5rem));
   padding: 0.6rem 0.75rem;
   border: 1px solid var(--line);
   border-radius: 8px;

@@ -1158,10 +1158,34 @@
        */
       var r = t.getBoundingClientRect(), c = container.getBoundingClientRect();
       card.hidden = false;
+      var GAP = 8;
+      var vw = window.innerWidth || document.documentElement.clientWidth || 0;
+      var vh = window.innerHeight || document.documentElement.clientHeight || 0;
+
+      /*
+       * Centred on the graha, then kept on screen. The clamp is against the
+       * viewport and not the container, because the card is allowed to be
+       * wider than the chart column it hangs off - clamping to the column
+       * would shove a wide card sideways until it ran off the page.
+       */
       var half = card.offsetWidth / 2;
-      var x = r.left - c.left + r.width / 2;
-      card.style.left = Math.max(half + 2, Math.min(c.width - half - 2, x)) + 'px';
-      card.style.top = (r.bottom - c.top + 8) + 'px';
+      var centre = r.left + r.width / 2;
+      var lo = half + GAP, hi = vw - half - GAP;
+      if (hi > lo) centre = Math.max(lo, Math.min(hi, centre));
+      card.style.left = (centre - c.left) + 'px';
+
+      /*
+       * Below the graha, unless it does not fit and there is more room above.
+       * A graha with several findings makes a long card, and the bottom of the
+       * window used to cut it off with no way to scroll - the card takes no
+       * pointer events, by design, so it cannot be scrolled into view.
+       */
+      var height = card.offsetHeight || 0;
+      var room = vh - r.bottom - GAP;
+      var above = r.top - GAP;
+      card.style.top = (height > room && above > room
+        ? r.top - c.top - height - GAP
+        : r.bottom - c.top + GAP) + 'px';
     };
 
     var show = function (e) {

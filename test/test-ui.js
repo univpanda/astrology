@@ -55,7 +55,7 @@ function makeNode(tag) {
      * rendered box and measures its own width, so those have to answer
      * something; the numbers do not matter, only that asking does not throw.
      */
-    dataset: {}, style: {}, hidden: false, offsetWidth: 0,
+    dataset: {}, style: {}, hidden: false, offsetWidth: 0, offsetHeight: 0,
     getBoundingClientRect: function () {
       return { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 };
     },
@@ -6431,6 +6431,88 @@ console.log('\nThe card carries the hemming the table already showed');
   }).map(function (n) { return n.attrs['data-graha']; });
   ok('and no graha is marked that the helper does not call hemmed',
     wrong.length === 0, wrong.join(', ') || 'all agree');
+})();
+
+
+console.log('\nThe card is wide enough to read and stays on screen');
+/*
+ * At 21rem every finding's name wrapped - "Angle-/trine raja/yoga" - because
+ * the name and its frequency had to share a line that was too narrow for them.
+ * A graha with five findings became a tall thin column running off the bottom
+ * of the window.
+ *
+ * Widening it breaks the old placement, which clamped the card inside the
+ * chart column: a card wider than its column gets shoved sideways until it
+ * runs off the page. So the clamp is against the viewport now, and a card too
+ * long to fit below the graha flips above it - it takes no pointer events by
+ * design, so it cannot be scrolled into view if it overflows.
+ */
+(function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var src = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
+
+  ok('the card is capped wide enough for a name and its figure on one line',
+    /max-width: min\(34rem, calc\(100vw - 1\.5rem\)\)/.test(css));
+  ok('and never wider than the window it sits in',
+    /calc\(100vw - 1\.5rem\)/.test(css));
+
+  /*
+   * Run the placement rather than read it. The block is lifted out of app.js
+   * and driven with rects, so the arithmetic is what is being checked.
+   */
+  var block = src.match(/var GAP = 8;[\s\S]*?card\.style\.top = [\s\S]*?\+ 'px';/)[0];
+  var place = function (target, box, size, view) {
+    var card = { style: {}, hidden: true,
+                 offsetWidth: size.w, offsetHeight: size.h };
+    var t = { getBoundingClientRect: function () { return target; } };
+    var container = { getBoundingClientRect: function () { return box; } };
+    new Function('card', 't', 'container', 'window', 'document',
+      'var r = t.getBoundingClientRect(), c = container.getBoundingClientRect();\n' + block)(
+        card, t, container, { innerWidth: view.w, innerHeight: view.h },
+        { documentElement: {} });
+    return { left: parseFloat(card.style.left), top: parseFloat(card.style.top) };
+  };
+
+  var view = { w: 1200, h: 800 };
+  var box = { left: 100, top: 50, width: 400, bottom: 450, right: 500 };
+
+  // A graha hard against the left of a narrow column, with a card wider than it.
+  var leftEdge = place({ left: 110, right: 130, width: 20, top: 100, bottom: 120 },
+    box, { w: 544, h: 300 }, view);
+  ok('a card wider than its column is not pushed off the left of the window',
+    leftEdge.left + box.left - 544 / 2 >= 0,
+    'viewport left edge at ' + (leftEdge.left + box.left - 272));
+
+  // And the same at the right-hand end of the page.
+  var rightEdge = place({ left: 1150, right: 1170, width: 20, top: 100, bottom: 120 },
+    box, { w: 544, h: 300 }, view);
+  ok('nor off the right',
+    rightEdge.left + box.left + 544 / 2 <= view.w,
+    'viewport right edge at ' + (rightEdge.left + box.left + 272));
+
+  /*
+   * Vertical: below by default, above when the card is too long for the room
+   * below and there is more of it above.
+   */
+  var roomy = place({ left: 300, right: 320, width: 20, top: 100, bottom: 120 },
+    box, { w: 544, h: 200 }, view);
+  ok('a card that fits below the graha hangs below it',
+    roomy.top === 120 - box.top + 8, roomy.top);
+
+  var cramped = place({ left: 300, right: 320, width: 20, top: 700, bottom: 720 },
+    box, { w: 544, h: 400 }, view);
+  ok('one too long for the room below flips above instead',
+    cramped.top === 700 - box.top - 400 - 8, cramped.top);
+
+  /*
+   * And when neither side has room - a card taller than the window - it stays
+   * below rather than being thrown upward off the top, which is the lesser of
+   * the two failures: the top of the card is what carries the graha's name.
+   */
+  var huge = place({ left: 300, right: 320, width: 20, top: 380, bottom: 400 },
+    box, { w: 544, h: 2000 }, view);
+  ok('a card taller than the window keeps its head on screen',
+    huge.top === 400 - box.top + 8, huge.top);
 })();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
