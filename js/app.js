@@ -1077,9 +1077,10 @@
     wireGrahaCard(document.getElementById('chart-' + slot));
     ensureLibrary();
 
-    var from = set.reference === 'Ascendant' ? 'from the ascendant' : 'from the ' + set.reference;
+    var from = set.reference === 'Ascendant' ? 'from the ascendant'
+      : 'from ' + set.reference;
     document.getElementById('caption-' + slot).textContent =
-      varga.name + ' \u00b7 ' + varga.label + ' \u2014 ' + varga.about + ', ' + from;
+      varga.name + ' \u00b7 ' + varga.label + ': ' + varga.about + ', ' + from;
   }
 
   /*
@@ -2612,7 +2613,7 @@
          * chart of [V] [X] [S] [P] [D] [N] wants that on hover rather than a
          * legend repeating the flag key.
          */
-        g.appendChild(svgEl('title', {}, (row.name || row.graha) + ' — ' + s.label +
+        g.appendChild(svgEl('title', {}, (row.name || row.graha) + ', ' + s.label +
           ': ' + s.readout(row) + (opts.outOf ? ' of ' + opts.outOf : '')));
         svg.appendChild(g);
 
@@ -2954,7 +2955,7 @@
       'and 10th. Aspect is not mutual, so the first two columns differ. ' +
       'The last column is K. N. Rao\u2019s rule, not a classical one: a retrograde graha also ' +
       'acts from the sign behind the one it occupies, while it is within the first ten degrees ' +
-      'of its sign \u2014 as far back as retrogression could carry it. Rahu and Ketu are left out ' +
+      'of its sign - as far back as retrogression could carry it. Rahu and Ketu are left out ' +
       'of that, being retrograde always. No Parashari text gives the rule, so it is kept in its ' +
       'own column for you to take or leave; only aspects it adds are shown. ' +
       'Otherwise retrogression does not change what a graha aspects, and tells instead on ' +
@@ -3708,8 +3709,8 @@
     }
     render(lastChart);
     status.textContent = open
-      ? 'Budha-Aditya now forms on any conjunction in one sign, as K. N. Rao reads it \u2014 about 52 per cent of charts.'
-      : 'Budha-Aditya now needs Mercury more than 10\u00b0 from the Sun, as Raman states it \u2014 about 28 per cent of charts.';
+      ? 'Budha-Aditya now forms on any conjunction in one sign, as K. N. Rao reads it - about 52 per cent of charts.'
+      : 'Budha-Aditya now needs Mercury more than 10\u00b0 from the Sun, as Raman states it - about 28 per cent of charts.';
   });
 
   document.getElementById('mercury-nature').addEventListener('change', function () {

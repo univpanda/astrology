@@ -4589,7 +4589,24 @@ ok('bars are capped rather than filling the band, and paired bars keep a gap',
    /Math\.min\(24, \(band \* 0\.62 - gap \* \(series\.length - 1\)\) \/ series\.length\)/.test(appSrc) &&
    /var gap = 2;/.test(appSrc));
 ok('every bar carries a hover readout, named by what the bar is',
-   /svgEl\('title', \{\}, \(row\.name \|\| row\.graha\) \+ ' \u2014 ' \+ s\.label/.test(appSrc));
+   /svgEl\('title', \{\}, \(row\.name \|\| row\.graha\) \+ ', ' \+ s\.label/.test(appSrc));
+
+/*
+ * House style, and a standing preference: hyphens, commas and colons carry
+ * these sentences. The seed files are already held to this; the code writes
+ * just as much of what a reader sees - captions, tooltips, status lines - so
+ * it is held to the same rule, and the setting explanations in the page with
+ * it. Checked on the source rather than on any one rendered string, since the
+ * point is that none of them can reintroduce it.
+ */
+ok('nothing the interface says uses an em-dash', (function () {
+  var dashed = ['js/app.js', 'js/charts.js', 'js/yogas.js', 'js/astro.js',
+    'js/shadbala.js', 'js/geo.js', 'index.html'].filter(function (n) {
+      var text = fs.readFileSync(path.join(root, n), 'utf8');
+      return text.indexOf('\u2014') > -1 || text.indexOf('&mdash;') > -1;
+    });
+  return dashed.length === 0;
+})());
 
 /*
  * The charts do not replace the table. The table is the readable form of the
