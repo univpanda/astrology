@@ -20,8 +20,47 @@ cd "$(dirname "$0")/.."
 
 # Only what the site actually serves. Tests, generator scripts and the git
 # history stay out of the bundle.
+STAGE="$(mktemp -d)/site"
+mkdir -p "$STAGE"
+cp -R index.html css js data "$STAGE/"
+
+# Amplify serves these with cache-control: public, max-age=604800 - a week -
+# and nothing here revalidates, so a returning browser does not even ask
+# whether a file changed. That produced a half-updated app: js/yogas.js was
+# refetched and data/frequencies.js was not, so new yogas appeared on the card
+# with no frequency beside them, because the cached table predated them.
+#
+# The site has no build step and should not grow one, so the version is stamped
+# into the copy being shipped rather than into the repo. Each asset gets the
+# first ten characters of its own SHA-256, so a file that did not change keeps
+# its URL and stays cached, and one that did gets a URL no browser has seen.
+STAMP=$(cd "$STAGE" && python3 - <<'STAMPER'
+import hashlib, io, os, re
+
+page = io.open('index.html', encoding='utf-8').read()
+stamped = 0
+
+def version(path):
+    with open(path, 'rb') as fh:
+        return hashlib.sha256(fh.read()).hexdigest()[:10]
+
+def rewrite(match):
+    global stamped
+    attr, path = match.group(1), match.group(2)
+    if not os.path.exists(path):
+        return match.group(0)
+    stamped += 1
+    return '%s="%s?v=%s"' % (attr, path, version(path))
+
+page = re.sub(r'\b(src|href)="((?:js|css|data)/[^"?]+)"', rewrite, page)
+io.open('index.html', 'w', encoding='utf-8').write(page)
+print(stamped)
+STAMPER
+)
+echo "cache-busted: $STAMP asset references"
+
 BUNDLE="$(mktemp -d)/site.zip"
-zip -q -r "$BUNDLE" index.html css js data -x '*.DS_Store'
+(cd "$STAGE" && zip -q -r "$BUNDLE" index.html css js data -x '*.DS_Store')
 echo "bundle: $(du -h "$BUNDLE" | cut -f1)"
 
 read -r JOB_ID UPLOAD_URL < <(aws amplify create-deployment \
