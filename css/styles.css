@@ -1130,10 +1130,7 @@ td.vimsopaka-poor { color: var(--retro); }
 .chart-value { font-size: 10px; font-variant-numeric: tabular-nums; }
 .series-vimsopaka rect { fill: var(--chart-vimsopaka); }
 .series-good rect { fill: var(--chart-good); }
-/* The score's own bar in the per-graha charts, in the colour it wears wherever
-   else it is drawn: it is the one bar read against the left axis, and keeping
-   its colour is half of what tells it from the six beside it. */
-.chart-bar.mark-bala rect { fill: var(--chart-good); }
+
 .series-vargottama rect { fill: var(--chart-vargottama); }
 .chart-legend { display: flex; gap: 1rem; margin-top: 0.4rem; font-size: 0.8rem;
   color: var(--ink-soft); }
@@ -1145,14 +1142,13 @@ td.vimsopaka-poor { color: var(--retro); }
    nothing to tell apart. One colour for all five. */
 .series-mark rect { fill: var(--chart-vimsopaka); }
 
-/* The rule between the two scales, drawn over the bars rather than under them.
-   It is the only thing on the chart that says there are two, the numbers having
-   gone with the axes: every bar is labelled, so a column of figures down the
-   side was the same figures a second time and less exactly. */
-.chart-divide {
-  stroke: var(--line);
-  stroke-width: 1;
-  stroke-dasharray: 2 2;
+/* The vimsopaka score beside the chart's title: one number, so it is written
+   and not drawn. Recessive against the graha's name, which is what the chart is
+   of; the score is what that graha is worth, not a second title. */
+.chart-aside {
+  font-weight: 400;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
 }
 /* Each bar in a graha's profile is a mark, so it wears that mark's own colour -
    the hue its letter wears in the grid above, so a reader crossing from table to

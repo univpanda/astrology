@@ -2187,26 +2187,14 @@
                              role: 'img', 'aria-label': opts.title });
 
     /*
-     * A second scale, where a chart has been given one.
-     *
-     * This is the thing the dataviz guidance names as the single worst mistake
-     * a chart can make, and the reason is worth keeping in front of whoever
-     * edits this: with two scales a bar of a given height means one thing on
-     * the left and another on the right, and the ratio between the two is
-     * whichever the author picked. It is used here because a graha's profile
-     * was asked for on one chart and its score and its counts are different
-     * measures - twenty points against sixteen divisions.
-     *
-     * What is done to make it readable: the left bar is one bar and the right
-     * six, they are separated by a rule rather than merely spaced, each axis is
-     * labelled in its own units, and the first bar keeps the colour the score
-     * wears everywhere else while the rest keep their marks'.
+     * One scale. There was a second for a while, the score on the left and the
+     * counts on the right, because a graha's whole profile was wanted on one
+     * chart - and two scales means a bar of a given height says one thing on
+     * one side and another on the other, which is the worst mistake a chart can
+     * make. The score is a single number, so it is written beside the title
+     * where a single number belongs and the chart is left to the one thing that
+     * is genuinely a series.
      */
-    var rightMax = opts.rightMax;
-    var maxFor = function (row) {
-      return rightMax !== undefined && row.right ? rightMax : opts.max;
-    };
-
     // Four bands, drawn and not labelled.
     var ticks = 4;
     for (var t = 0; t <= ticks; t++) {
@@ -2226,7 +2214,7 @@
 
       series.forEach(function (s, j) {
         var value = s.value(row);
-        var h = Math.max(0, (value / maxFor(row)) * plotH);
+        var h = Math.max(0, (value / opts.max) * plotH);
         var x = x0 + j * (barW + gap);
         var y = top + plotH - h;
         /*
@@ -2251,10 +2239,8 @@
          * chart of [V] [X] [S] [P] [D] [N] wants that on hover rather than a
          * legend repeating the flag key.
          */
-        var outOf = row.right && opts.rightOutOf !== undefined ? opts.rightOutOf
-          : opts.outOf;
         g.appendChild(svgEl('title', {}, (row.name || row.graha) + ' — ' + s.label +
-          ': ' + s.readout(row) + (outOf ? ' of ' + outOf : '')));
+          ': ' + s.readout(row) + (opts.outOf ? ' of ' + opts.outOf : '')));
         svg.appendChild(g);
 
         // Values wear text tokens, never the series colour; the bar carries identity.
@@ -2273,23 +2259,21 @@
                             row.axis || Astro.grahaAbbr(row.graha)));
     });
 
-    /*
-     * The rule between the two scales, drawn after the bars so it sits over
-     * them. Without it the leftmost bar looks like the first of a set rather
-     * than the one thing measured differently.
-     */
-    if (rightMax !== undefined) {
-      var firstRight = 0;
-      while (firstRight < opts.rows.length && !opts.rows[firstRight].right) firstRight++;
-      if (firstRight > 0 && firstRight < opts.rows.length) {
-        var xRule = left + band * firstRight;
-        svg.appendChild(svgEl('line', { x1: xRule, y1: top - 4, x2: xRule,
-                                        y2: top + plotH, class: 'chart-divide' }));
-      }
-    }
-
     var figure = el('figure', 'varga-figure');
-    figure.appendChild(el('figcaption', 'chart-title', opts.title));
+    var caption = el('figcaption', 'chart-title', opts.title);
+    /*
+     * One number beside the title rather than a bar of its own. A score out of
+     * twenty is a single figure and a stat tile is what the guidance calls for;
+     * a bar drawn beside six counts would have needed a scale of its own, and a
+     * second scale is the thing that makes two bars of one height mean two
+     * different things.
+     */
+    if (opts.aside) {
+      var aside = el('span', 'chart-aside', ' (' + opts.aside + ')');
+      if (opts.asideSays) aside.title = opts.asideSays;
+      caption.appendChild(aside);
+    }
+    figure.appendChild(caption);
     figure.appendChild(svg);
     if (series.length > 1) {
       var legend = el('div', 'chart-legend');
@@ -2360,35 +2344,29 @@
 
     var facets = el('div', 'varga-facets');
     rows.forEach(function (row) {
-      var bars = [{ graha: 'Vimsopaka', axis: 'Bala', name: 'Vimsopaka bala',
-                    cls: 'mark-bala', value: row.vimsopaka,
-                    readout: row.vimsopaka.toFixed(1) }]
-        .concat(MARKS.map(function (m) {
-          return { graha: m.label, axis: m.label, name: m.name, right: true,
-                   cls: 'mark-' + m.key.toLowerCase(), value: row.marks[m.key],
-                   readout: String(row.marks[m.key]) };
-        }));
       facets.appendChild(barChart({
         title: row.graha,
-        rows: bars,
-        max: 20, outOf: 20,
-        rightMax: ceiling, rightOutOf: scheme.count,
-        compact: true,
+        aside: row.vimsopaka.toFixed(1),
+        asideSays: row.graha + '\u2019s vimsopaka bala over the ' + scheme.label +
+          ': ' + row.vimsopaka.toFixed(2) + ' of 20.',
+        rows: MARKS.map(function (m) {
+          return { graha: m.label, axis: m.label, name: m.name,
+                   cls: 'mark-' + m.key.toLowerCase(), count: row.marks[m.key] };
+        }),
+        max: ceiling, outOf: scheme.count, compact: true,
         series: [{ label: row.graha, cls: 'series-mark',
-                   value: function (r) { return r.value; },
-                   readout: function (r) { return r.readout; } }]
+                   value: function (r) { return r.count; },
+                   readout: function (r) { return String(r.count); } }]
       }));
     });
     host.appendChild(facets);
     host.appendChild(el('p', 'chart-note varga-facet-note',
-      'One chart a graha. The first bar is its vimsopaka bala out of twenty; the six ' +
-      'after the rule are how many of the ' + scheme.count + ' divisions carry each of ' +
-      'its marks. Every bar is labelled with its own figure, which is the number to ' +
-      'read: the two sides are drawn to different scales, so a bar of a given height ' +
-      'says one thing left of the rule and another right of it, and heights are ' +
-      'comparable within a side and not across. Each side keeps one scale over all ' +
-      'seven charts, so a tall bar is tall against the other grahas too. The grid above ' +
-      'says which divisions they are.'));
+      'One chart a graha. The figure beside the name is its vimsopaka bala out of ' +
+      'twenty, which is one number and so is written rather than drawn. The bars are ' +
+      'how many of the ' + scheme.count + ' divisions carry each of its marks, on one ' +
+      'scale across all seven charts, so a tall bar is tall against the other grahas ' +
+      'and not only against the rest of its own chart. The grid above says which ' +
+      'divisions they are.'));
   }
 
   /* --------------------------------------------------------------- yogas */
