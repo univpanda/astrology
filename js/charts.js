@@ -93,7 +93,7 @@ var Charts = (function () {
   }
 
   var STATE_NAMES = { R: 'Retrograde', C: 'Combust', V: 'Vargottama',
-    Y: 'Yogakaraka' };
+    Y: 'Yogakaraka', P: 'Papa kartari', S: 'Shubha kartari' };
 
   /*
    * Records are separated by one control character and their two fields by
@@ -102,7 +102,8 @@ var Charts = (function () {
    */
   var REC = '\u001e', FLD = '\u001f';
 
-  function describeOccupant(p, sign, house, yogas, sun, division, dignities) {
+  function describeOccupant(p, sign, house, yogas, sun, division, dignities,
+                            hemming) {
     var states = [];
     /*
      * Each state says why it applies here, not merely that it does. The chart
@@ -129,6 +130,16 @@ var Charts = (function () {
     if (p.yogakaraka) {
       states.push('Y');
       why.Y = 'Owns both an angle and a trine, counted from house 1 of this chart.';
+    }
+    /*
+     * Hemmed between one kind on both sides. The graha table has carried these
+     * from the start and the card did not, so a chart could mark a graha [P] in
+     * one place and say nothing about it in the other.
+     */
+    var hemmed = hemming && hemming[p.name];
+    if (hemmed) {
+      states.push(hemmed.mark);
+      why[hemmed.mark] = hemmed.why;
     }
     var where = Astro.SIGNS[sign] + ' (' + Astro.SIGNS_SA[sign] + ')' +
       (p.name === 'Ascendant' ? '' : ', house ' + house);
@@ -179,7 +190,7 @@ var Charts = (function () {
         }, planetText(p));
         if (ctx) {
           var d = describeOccupant(p, ctx.sign, ctx.house, ctx.yogas, ctx.sun,
-            ctx.division, ctx.dignities);
+            ctx.division, ctx.dignities, ctx.hemming);
           t.setAttribute('data-graha', d.graha);
           t.setAttribute('data-where', d.where);
           if (d.dignity) t.setAttribute('data-dignity', d.dignity);
@@ -266,7 +277,7 @@ var Charts = (function () {
   }
 
   function renderNorth(container, planets, ascLongitude, division, reference, yogas,
-                       dignities) {
+                       dignities, hemming) {
     var data = occupantsBySign(planets, ascLongitude, division, reference);
     var svg = svgRoot('north');
     var m = 4, s = SIZE - 2 * m;
@@ -328,7 +339,8 @@ var Charts = (function () {
       numY += shortfall;
       drawOccupants(g, occ, cx, cy + 4 + shortfall, 0.20 * s,
         { sign: sign, house: h + 1, yogas: yogas, sun: sunOf(planets),
-          dignities: dignities });
+          dignities: dignities,
+          hemming: hemming });
       g.appendChild(el('text', {
         x: cx, y: numY.toFixed(1), class: 'sign-num', 'text-anchor': 'middle'
       }, String(sign + 1)));
@@ -339,7 +351,7 @@ var Charts = (function () {
   }
 
   function renderSouth(container, planets, ascLongitude, division, reference, yogas,
-                       dignities) {
+                       dignities, hemming) {
     var data = occupantsBySign(planets, ascLongitude, division, reference);
     var svg = svgRoot('south');
     var m = 4, cell = (SIZE - 2 * m) / 4;
@@ -364,7 +376,8 @@ var Charts = (function () {
         Astro.SIGN_ABBR[i] + ' · ' + house));
       drawOccupants(g, data.bySign[i], x + cell / 2, y + cell / 2 + 6, cell * 0.82,
         { sign: i, house: house, yogas: yogas, sun: sunOf(planets),
-          dignities: dignities });
+          dignities: dignities,
+          hemming: hemming });
       svg.appendChild(g);
     }
     // The blank 2x2 middle, left open as convention has it.
@@ -376,7 +389,7 @@ var Charts = (function () {
   function render(container, opts) {
     var fn = opts.style === 'south' ? renderSouth : renderNorth;
     fn(container, opts.planets, opts.ascendant, opts.division || 1, opts.reference,
-       opts.yogas, opts.dignities);
+       opts.yogas, opts.dignities, opts.hemming);
   }
 
   return { render: render };

@@ -905,6 +905,51 @@
     return map;
   }
 
+  /*
+   * Which grahas are hemmed in the division on screen, and by whom.
+   *
+   * The graha table has shown these as [P] and [S] since they existed; the
+   * hover card did not, so the same chart said a graha was hemmed in one place
+   * and stayed silent about it in the other. The card is where the reason
+   * fits, so it is the place the omission mattered most.
+   *
+   * Benefics are judged in the rashi, as everywhere else on this site, while
+   * the neighbours are read in the division being drawn - a graha's company
+   * changes with the recast, its nature does not.
+   */
+  function hemmingByGraha(state, division) {
+    var chart = division === 1 ? state.chart
+      : Astro.chartInDivision(state.chart, division);
+    var benefics = Astro.naturalBenefics(state.chart);
+    var marks = {};
+    chart.planets.forEach(function (p) {
+      var wants = Astro.hemmedByMalefics(p.name, p.sign, chart, benefics) ? false
+        : Astro.hemmedByBenefics(p.name, p.sign, chart, benefics) ? true : null;
+      if (wants === null) return;
+      var side = function (sign) {
+        return chart.planets.filter(function (q) {
+          return q.name !== p.name && q.sign === sign &&
+            (Astro.NODES.indexOf(q.name) < 0 && benefics[q.name] === true) === wants;
+        }).map(function (q) { return q.name; });
+      };
+      var before = side((p.sign + 11) % 12), after = side((p.sign + 1) % 12);
+      marks[p.name] = {
+        mark: wants ? 'S' : 'P',
+        why: listOfNames(before) + ' in ' + Astro.SIGNS[(p.sign + 11) % 12] +
+          ' before it and ' + listOfNames(after) + ' in ' +
+          Astro.SIGNS[(p.sign + 1) % 12] + ' after it, ' +
+          (wants ? 'both benefic' : 'both malefic') + '.'
+      };
+    });
+    return marks;
+  }
+
+  /** "Mars", "Mars and Ketu", "Mars, Saturn and Ketu". */
+  function listOfNames(names) {
+    if (names.length < 2) return names[0] || '';
+    return names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1];
+  }
+
   function slotSettings(slot) {
     return {
       reference: document.getElementById('ref-' + slot).value,
@@ -957,7 +1002,7 @@
    * pointing along a row of grahas does not churn the DOM.
    */
   var STATE_NAMES = { R: 'Retrograde', C: 'Combust', V: 'Vargottama',
-    Y: 'Yogakaraka' };
+    Y: 'Yogakaraka', P: 'Papa kartari', S: 'Shubha kartari' };
 
   /*
    * The library, fetched once and quietly, so a hover can explain a yoga
@@ -1144,7 +1189,8 @@
       division: set.division,
       reference: set.reference,
       yogas: yogasByGraha(state, set.division),
-      dignities: dignitiesByGraha(state, set.division)
+      dignities: dignitiesByGraha(state, set.division),
+      hemming: hemmingByGraha(state, set.division)
     });
     wireGrahaCard(document.getElementById('chart-' + slot));
     ensureLibrary();

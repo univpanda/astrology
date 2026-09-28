@@ -6216,8 +6216,7 @@ console.log('\nThe card says how the graha stands in its sign');
     /function dignitiesByGraha\(state, division\)/.test(src) &&
     /dignities: dignitiesByGraha\(state, set\.division\)/.test(src));
   ok('and the renderer carries it onto the graha',
-    /describeOccupant\(p, ctx\.sign, ctx\.house, ctx\.yogas, ctx\.sun,\s*\n?\s*ctx\.division, ctx\.dignities\)/
-      .test(chartsSrc) &&
+    /ctx\.division, ctx\.dignities, ctx\.hemming\)/.test(chartsSrc) &&
     /t\.setAttribute\('data-dignity', d\.dignity\)/.test(chartsSrc));
   ok('the card prints it under the placement, not in the list of findings',
     /var dignity = t\.getAttribute\('data-dignity'\)/.test(src) &&
@@ -6274,6 +6273,112 @@ console.log('\nThe card says how the graha stands in its sign');
    * nothing and befriends nobody.
    */
   ok('the ascendant is not given a dignity', got.Ascendant === undefined);
+})();
+
+
+console.log('\nThe card carries the hemming the table already showed');
+/*
+ * The graha table has marked [P] and [S] since they existed and the hover card
+ * never did, so the same chart could say Venus was hemmed in one place and stay
+ * silent about it in the other. The card is where the reason fits, so it is the
+ * place the omission mattered most.
+ */
+(function () {
+  var out = global.appExports || {};
+  var src = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
+  var chartsSrc = fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8');
+
+  ok('both mark tables know the two hemming letters',
+    /P: 'Papa kartari', S: 'Shubha kartari'/.test(src) &&
+    /P: 'Papa kartari', S: 'Shubha kartari'/.test(chartsSrc));
+  ok('the hemming is computed per division and handed to the renderer',
+    /function hemmingByGraha\(state, division\)/.test(src) &&
+    /hemming: hemmingByGraha\(state, set\.division\)/.test(src));
+  ok('and pushed as a state with its reason',
+    /states\.push\(hemmed\.mark\)/.test(chartsSrc) &&
+    /why\[hemmed\.mark\] = hemmed\.why/.test(chartsSrc));
+  /*
+   * Nature is judged in the rashi and company in the division: a graha's
+   * neighbours change with the recast, what it is does not.
+   */
+  ok('benefics are judged in the rashi while neighbours come from the division',
+    /var benefics = Astro\.naturalBenefics\(state\.chart\);/.test(src));
+
+  /*
+   * Measured, or the card prints a mark with no figure beside it while every
+   * other line has one. Nothing swept for these before.
+   */
+  var F = global.FREQUENCIES;
+  var missing = ['Venus/P', 'Mercury/P', 'Sun/S', 'Jupiter/S']
+    .filter(function (k) { return typeof F.state[k] !== 'number'; });
+  ok('and the hemming marks have measured frequencies like the rest',
+    missing.length === 0, missing.join(', ') || 'Venus/P at ' + F.state['Venus/P'] + '%');
+
+  /*
+   * Run it: draw a chart, hover a hemmed graha, and check the card says so.
+   * Then check the card and the table cannot disagree, since both now read the
+   * same helper over the same division.
+   */
+  if (!out.wireGrahaCard) { ok('the card wiring is reachable', false); return; }
+  var chart = Astro.chart({ jdUT: Astro.julianDay(1977, 8, 20, 3), latitude: 28.61,
+    longitude: 77.21, tzOffsetMinutes: 330 });
+  var benefics = Astro.naturalBenefics(chart);
+  var hemmed = chart.planets.filter(function (p) {
+    return Astro.hemmedByMalefics(p.name, p.sign, chart, benefics) ||
+           Astro.hemmedByBenefics(p.name, p.sign, chart, benefics);
+  });
+  ok('the sample chart has something hemmed to look at', hemmed.length > 0,
+    hemmed.map(function (p) { return p.name; }).join(', '));
+
+  var box = makeNode('div');
+  Charts.render(box, { style: 'north', planets: chart.planets,
+    ascendant: chart.ascendant.longitude, division: 1, reference: 'Ascendant',
+    yogas: {}, dignities: {},
+    hemming: (function () {
+      var marks = {};
+      hemmed.forEach(function (p) {
+        marks[p.name] = {
+          mark: Astro.hemmedByMalefics(p.name, p.sign, chart, benefics) ? 'P' : 'S',
+          why: 'flanked on both sides.'
+        };
+      });
+      return marks;
+    })() });
+
+  var labels = [];
+  (function walk(n) {
+    (n.children || []).forEach(function (c) {
+      if (c.attrs && c.attrs['data-graha']) labels.push(c);
+      walk(c);
+    });
+  })(box);
+  var target = labels.filter(function (n) {
+    return n.attrs['data-graha'] === hemmed[0].name;
+  })[0];
+  /* The states field packs "letter FLD reason", records joined by REC, so the
+     letters have to be parsed out rather than matched anywhere in the string -
+     a reason mentioning Saturn would otherwise read as an [S]. */
+  var letters = function (node) {
+    return (node.attrs['data-states'] || '').split(String.fromCharCode(30))
+      .filter(Boolean).map(function (r) { return r.split(String.fromCharCode(31))[0]; });
+  };
+  ok('the hemmed graha carries the mark in its states',
+    !!target && letters(target).some(function (k) { return k === 'P' || k === 'S'; }),
+    target ? letters(target).join(',') : 'not drawn');
+
+  /*
+   * And nothing unhemmed picks one up, which is the other half of agreeing
+   * with the table.
+   */
+  var wrong = labels.filter(function (n) {
+    var name = n.attrs['data-graha'];
+    if (name === 'Ascendant') return false;
+    var isHemmed = hemmed.some(function (p) { return p.name === name; });
+    var says = /?[PS]/.test(n.attrs['data-states'] || '');
+    return isHemmed !== says;
+  }).map(function (n) { return n.attrs['data-graha']; });
+  ok('and no graha is marked that the helper does not call hemmed',
+    wrong.length === 0, wrong.join(', ') || 'all agree');
 })();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
