@@ -541,7 +541,7 @@ input::placeholder { color: #a9bdb2; }
   transform: translateX(-50%);
   z-index: 5;
   min-width: 11rem;
-  max-width: 17rem;
+  max-width: 19rem;
   padding: 0.6rem 0.75rem;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -562,19 +562,26 @@ input::placeholder { color: #a9bdb2; }
   font-size: 0.78rem;
   color: var(--ink-soft);
 }
-.graha-card-states {
-  margin: 0.4rem 0 0;
-  font-size: 0.78rem;
-  color: var(--ink-soft);
-  line-height: 1.7;
+/* Every item is a statement with its reason beneath it, so the list is the
+   card's body rather than a tail on the end of it. */
+.graha-card-list { margin: 0.55rem 0 0; padding: 0; list-style: none; }
+.graha-card-list li + li {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--line-soft);
 }
-.graha-card-yogas {
-  margin: 0.45rem 0 0;
-  padding-left: 1rem;
-  font-size: 0.8rem;
+.graha-card-term {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
   color: var(--ink);
 }
-.graha-card-yogas li { margin-top: 0.15rem; }
+.graha-card-why {
+  margin: 0.15rem 0 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
 
 /* The label is hoverable and reachable, so it needs a focus ring of its own -
    SVG text takes none by default. */

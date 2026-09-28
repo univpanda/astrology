@@ -857,7 +857,10 @@
     Yogas.detect(chart, strengthsFor(state)).forEach(function (yoga) {
       (yoga.grahas || []).forEach(function (name) {
         var list = map[name] || (map[name] = []);
-        if (list.indexOf(yoga.title) < 0) list.push(yoga.title);
+        // The title alone says a yoga is present; the summary says why it is.
+        if (!list.some(function (y) { return y.title === yoga.title; })) {
+          list.push({ title: yoga.title, summary: yoga.summary || '' });
+        }
       });
     });
     return map;
@@ -885,25 +888,41 @@
     card.hidden = true;
     container.appendChild(card);
 
+    var REC = '\u001e', FLD = '\u001f';
+    var split = function (raw) {
+      return (raw || '').split(REC).filter(Boolean).map(function (r) {
+        var bits = r.split(FLD);
+        return { term: bits[0], why: bits[1] || '' };
+      });
+    };
+
     var fill = function (t) {
       card.innerHTML = '';
       card.appendChild(el('h4', 'graha-card-name', t.getAttribute('data-graha')));
       card.appendChild(el('p', 'graha-card-where', t.getAttribute('data-where')));
-      var states = (t.getAttribute('data-states') || '').split(',').filter(Boolean);
-      if (states.length) {
-        var line = el('p', 'graha-card-states');
-        states.forEach(function (k) {
-          line.appendChild(el('span', 'flag flag-' + k.toLowerCase(), '[' + k + ']'));
-          line.appendChild(document.createTextNode(' ' + STATE_NAMES[k] + ' '));
-        });
-        card.appendChild(line);
-      }
-      var yogas = (t.getAttribute('data-yogas') || '').split('|').filter(Boolean);
-      if (yogas.length) {
-        var ul = el('ul', 'graha-card-yogas');
-        yogas.forEach(function (y) { ul.appendChild(el('li', null, y)); });
-        card.appendChild(ul);
-      }
+      /*
+       * Every item is a statement with its reason beneath it: the state or the
+       * yoga on one line, why it holds in this chart on the next. A name alone
+       * says a thing is true and leaves the reader to take it on trust.
+       */
+      var list = el('ul', 'graha-card-list');
+      split(t.getAttribute('data-states')).forEach(function (item) {
+        var li = el('li', 'graha-card-state');
+        var head = el('p', 'graha-card-term');
+        head.appendChild(el('span', 'flag flag-' + item.term.toLowerCase(),
+          '[' + item.term + ']'));
+        head.appendChild(document.createTextNode(' ' + STATE_NAMES[item.term]));
+        li.appendChild(head);
+        if (item.why) li.appendChild(el('p', 'graha-card-why', item.why));
+        list.appendChild(li);
+      });
+      split(t.getAttribute('data-yogas')).forEach(function (item) {
+        var li = el('li', 'graha-card-yoga');
+        li.appendChild(el('p', 'graha-card-term', item.term));
+        if (item.why) li.appendChild(el('p', 'graha-card-why', item.why));
+        list.appendChild(li);
+      });
+      if (list.children.length) card.appendChild(list);
       /*
        * Placed from the rendered box rather than from SVG coordinates, because
        * the chart scales with the column and the two stop agreeing the moment

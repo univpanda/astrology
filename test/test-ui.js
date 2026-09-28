@@ -3991,7 +3991,12 @@ console.log('\nHovering a graha describes it');
   var container = makeNode('div');
   var chart = Astro.chart({ jdUT: Astro.julianDay(1961, 8, 4, 19 + 24 / 60 + 10),
     latitude: 21.3069, longitude: -157.8583, tzOffsetMinutes: -600 });
-  var yogas = { Saturn: ['Sasa yoga', 'Raja yoga'] };
+  var yogas = { Saturn: [
+    { title: 'Sasa yoga',
+      summary: 'Saturn is in its own sign in the 1st, a kendra, which is Sasa yoga.' },
+    { title: 'Raja yoga',
+      summary: 'Saturn, lord of the 1st, and Mercury, lord of the 9th, are related: they aspect each other.' }
+  ] };
   Charts.render(container, { style: 'north', planets: chart.planets,
     ascendant: chart.ascendant.longitude, division: 1, reference: 'Ascendant',
     yogas: yogas });
@@ -4006,10 +4011,35 @@ console.log('\nHovering a graha describes it');
   var sat = labels.filter(function (a) { return a['data-graha'] === 'Saturn'; })[0];
   ok('the card data names the sign and house',
     /^Capricorn \(Makara\), house \d+$/.test(sat['data-where']), sat['data-where']);
-  ok('and the states it is in', sat['data-states'].indexOf('R') >= 0,
-    sat['data-states']);
-  ok('and the yogas it takes part in',
-    sat['data-yogas'] === 'Sasa yoga|Raja yoga', sat['data-yogas']);
+  /*
+   * Each item is a statement and the reason it holds, packed as two fields.
+   * Control characters separate them because a yoga's own account of itself
+   * contains commas, pipes and semicolons and any of those would cut it in
+   * half.
+   */
+  var REC = String.fromCharCode(30), FLD = String.fromCharCode(31);
+  var parse = function (raw) {
+    return (raw || '').split(REC).filter(Boolean).map(function (r) {
+      var bits = r.split(FLD);
+      return { term: bits[0], why: bits[1] || '' };
+    });
+  };
+  var states = parse(sat['data-states']);
+  ok('and the states it is in, each with its reason',
+    states.length === 1 && states[0].term === 'R' &&
+    /Moving backwards/.test(states[0].why), states[0].why);
+  var mine = parse(sat['data-yogas']);
+  ok('and the yogas it takes part in, each with its reason',
+    mine.length === 2 && mine[0].term === 'Sasa yoga' &&
+    /own sign/.test(mine[0].why) && mine[1].term === 'Raja yoga',
+    mine.map(function (y) { return y.term; }).join(' + '));
+  /*
+   * A summary contains punctuation that would break a naive separator, which
+   * is why the control characters are there. Guard it.
+   */
+  ok('and a reason survives its own punctuation',
+    mine[1].why.indexOf(',') >= 0 && mine[1].why.indexOf(':') >= 0,
+    mine[1].why);
   /*
    * The ascendant is a point, not a graha: it has a sign but no house of its
    * own to be in, and owns nothing to be yogakaraka of.
