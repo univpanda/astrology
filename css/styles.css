@@ -493,7 +493,7 @@ input::placeholder { color: #a9bdb2; }
 .field-note { margin: 0.45rem 0 0; font-size: 0.85rem; color: var(--ink-soft); min-height: 1.2em; }
 
 .options { margin-top: 1.5rem; border-top: 1px solid var(--line-soft); padding-top: 1rem; }
-.options summary, .technical summary {
+.options summary, .technical summary, .flag-legend summary {
   cursor: pointer;
   color: var(--ink-soft);
   font-size: 0.8rem;
@@ -501,7 +501,18 @@ input::placeholder { color: #a9bdb2; }
   letter-spacing: 0.1em;
   font-weight: 600;
 }
-.options summary:hover, .technical summary:hover { color: var(--green); }
+.options summary:hover, .technical summary:hover,
+.flag-legend summary:hover { color: var(--green); }
+
+/* The mark legend. Nine entries of prose under every chart is a lot of page to
+   scroll past once you know them, and they are the kind of thing read twice and
+   then never again - so it is closed until asked for. */
+.flag-legend {
+  margin: 1.25rem 0 0;
+  border-top: 1px solid var(--line-soft);
+  padding-top: 0.9rem;
+}
+.flag-legend .flag-key { margin-top: 0.9rem; }
 .options-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));

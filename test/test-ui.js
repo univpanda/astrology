@@ -3964,6 +3964,44 @@ ok('and the choice reaches the engine', (function () {
     .test(appSrc);
 })());
 
+console.log('\nThe mark legend folds away');
+/*
+ * Nine entries of prose sit under every chart, and they are the kind of thing
+ * read twice and then never again. Closed by default, opened when wanted, and
+ * native <details> so it needs no script and keeps its keyboard behaviour.
+ */
+ok('the legend is a details, closed until asked for', (function () {
+  var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  var at = html.indexOf('<details class="flag-legend">');
+  if (at < 0) return false;
+  var block = html.slice(at, html.indexOf('</details>', at));
+  // no `open` attribute, so it starts folded
+  return !/<details class="flag-legend" open/.test(html) &&
+    /<summary>[^<]+<\/summary>/.test(block);
+})());
+/*
+ * All nine marks must still be inside it. Wrapping a list in a new element is
+ * an easy way to strand an entry outside the fold.
+ */
+ok('and still holds all nine marks', (function () {
+  var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  var at = html.indexOf('<details class="flag-legend">');
+  var block = html.slice(at, html.indexOf('</details>', at));
+  return ['flag-r', 'flag-v', 'flag-s', 'flag-p', 'flag-y', 'flag-x', 'flag-d',
+    'flag-c', 'flag-n'].every(function (f) { return block.indexOf(f) >= 0; }) &&
+    (block.match(/<dt>/g) || []).length === 9 &&
+    (block.match(/<dd>/g) || []).length === 9;
+})());
+/*
+ * And it borrows the summary styling the other two folds already use, rather
+ * than growing a third look.
+ */
+ok('and wears the same summary as the other folds', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  return /\.options summary, \.technical summary, \.flag-legend summary \{/.test(css) &&
+    /\.flag-legend \{/.test(css);
+})());
+
 console.log('\nAyanamsa lives in settings');
 /*
  * The ayanamsa is not a fact about a nativity. It is a choice about how every
