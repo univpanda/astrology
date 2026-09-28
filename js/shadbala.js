@@ -88,26 +88,24 @@ var Shadbala = (function () {
    * Chapter 27, verses 2-4. Two ladders circulate for this and they are not
    * equivalent.
    *
+   * Raman's, section 30: 45 in moolatrikona, 30 in an own sign, then halving at
+   * every step down - 22.5 in a great friend's, 15 in a friend's, 7.5 in a
+   * neutral's, 3.75 in an enemy's, 1.875 in a great enemy's. His worked table
+   * for the Standard Horoscope is built entirely from those figures, and the
+   * totals reconcile: Guru 1.875 + 7.5 + 15 + 7.5 + 7.5 + 30 + 1.875 = 71.25.
+   *
    * Santhanam's translation reads "45 Virupas, in own Rashi 30 Virupas, extreme
    * friend's Rashi 20 Virupas, friend's Rashi 15 Virupas, neutral's Rashi 10
-   * Virupas, enemy's Rashi 4 Virupas and in extreme enemy's Rashi 2 Virupas", and
-   * Saravali gives the same seven figures independently. The other ladder halves
-   * at each step: 45, 30, 22.5, 15, 7.5, 3.75, 1.875.
+   * Virupas, enemy's Rashi 4 Virupas and in extreme enemy's Rashi 2 Virupas",
+   * with Saravali corroborating, and that was used here until it was not.
    *
-   * This comment used to say the halving series "traces only to secondary
-   * compilations". That is wrong and worth recording as wrong: B. V. Raman uses
-   * it in section 30 of Graha and Bhava Balas, which is the standard English
-   * treatment of this chapter, and works every example in the book on it.
-   *
-   * So the two ladders are each carried by a primary authority and they disagree.
-   * Santhanam's is kept, being the one in the standard translation of Parashara
-   * himself and the one Saravali corroborates, but it is a choice and not a
-   * finding. Across 1800 sample births the two differ by a mean of 5.1 virupas
-   * and move 2.4% of strong/weak verdicts.
+   * Raman is followed, as everywhere else on this page where the two differ.
+   * The choice is not cosmetic: across 1800 sample births the two ladders differ
+   * by a mean of 5.1 virupas and move one strong/weak verdict in forty.
    */
   var RELATION_VALUE = {
-    moolatrikona: 45, own: 30, adhimitra: 20, mitra: 15,
-    sama: 10, shatru: 4, adhishatru: 2
+    moolatrikona: 45, own: 30, adhimitra: 22.5, mitra: 15,
+    sama: 7.5, shatru: 3.75, adhishatru: 1.875
   };
 
   function saptavargajaBala(graha, chart, positionsD1) {

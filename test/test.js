@@ -1385,17 +1385,35 @@ console.log('\nShadbala');
      !result.grahas.Rahu && !result.grahas.Ketu);
 
   /*
-   * Chapter 27, verses 2-4, pinned to the figure. Two ladders circulate: Santhanam
-   * and Saravali give these seven, while much of the web uses a halving series
-   * 45/30/22.5/15/7.5/3.75/1.875. Swapping them moves about 1.9% of strong/weak
-   * verdicts and reorders the grahas in roughly a third of charts, so the reading
-   * in use is held here rather than left to whoever edits the file next.
+   * Raman's ladder, section 30: 45 and 30 at the top, then halving at every step
+   * down. Santhanam and Saravali give 20/15/10/4/2 for the lower five instead,
+   * and that was used here until Raman was taken as the authority throughout.
+   * The choice moves about one strong/weak verdict in forty, so it is pinned
+   * rather than left to whoever edits the file next.
    */
-  ok('saptavargaja follows Santhanam\'s ladder, not the halving one', (function () {
+  ok('saptavargaja follows Raman\'s halving ladder', (function () {
     var v = Shadbala.SAPTAVARGAJA_VALUES;
-    return v.moolatrikona === 45 && v.own === 30 && v.adhimitra === 20 && v.mitra === 15 &&
-      v.sama === 10 && v.shatru === 4 && v.adhishatru === 2 &&
-      v.adhimitra !== 22.5 && v.sama !== 7.5;
+    return v.moolatrikona === 45 && v.own === 30 && v.adhimitra === 22.5 &&
+      v.mitra === 15 && v.sama === 7.5 && v.shatru === 3.75 && v.adhishatru === 1.875 &&
+      v.adhimitra !== 20 && v.sama !== 10;
+  })());
+  /*
+   * And it reproduces Raman's own worked column. His Standard Horoscope puts
+   * Guru in a great enemy's varga, a neutral's, a friend's, two neutrals', its
+   * own, and a great enemy's again, and prints 71.25 - which is the sum of this
+   * ladder read off those seven and of no other.
+   */
+  ok('and reconstructs Raman\'s worked total for Guru', (function () {
+    var v = Shadbala.SAPTAVARGAJA_VALUES;
+    var guru = ['adhishatru', 'sama', 'mitra', 'sama', 'sama', 'own', 'adhishatru'];
+    var sukra = ['adhimitra', 'sama', 'own', 'adhishatru', 'adhishatru', 'own', 'adhimitra'];
+    var sani = ['sama', 'sama', 'sama', 'adhimitra', 'adhimitra', 'adhimitra', 'sama'];
+    var add = function (keys) {
+      return keys.reduce(function (n, k) { return n + v[k]; }, 0);
+    };
+    return Math.abs(add(guru) - 71.25) < 1e-9 &&
+      Math.abs(add(sukra) - 116.25) < 1e-9 &&
+      Math.abs(add(sani) - 97.5) < 1e-9;
   })());
   ok('and the ladder only ever descends', (function () {
     var order = ['moolatrikona', 'own', 'adhimitra', 'mitra', 'sama', 'shatru', 'adhishatru'];

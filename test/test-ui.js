@@ -1776,8 +1776,13 @@ ok('and a weak verdict is said once, in words, not in the colour of a name',
        /x\.strong \? 'strong-flag' : 'weak-flag'/.test(appSrc);
    })());
 ok('the shadbala note names the ladder it uses, since totals differ between readings',
-   /45, 30, 20, 15, 10, 4, 2/.test(appSrc.replace(/'\s*\+\s*'/g, '')) &&
-   /halving series some calculators use/.test(appSrc.replace(/'\s*\+\s*'/g, '')));
+   (function () {
+     var flat = appSrc.replace(/'\s*\+\s*'/g, '');
+     return /Saptavargaja uses Raman’s ladder, section 30/.test(flat) &&
+       /30 at the top, then halving at every step down to 1\.875/.test(flat) &&
+       /Santhanam and Saravali give 20, 15, 10, 4 and 2 for the lower five/.test(flat) &&
+       !/45, 30, 20, 15, 10, 4, 2/.test(flat);
+   })());
 /*
  * Nothing is left out any more. Yuddha bala was the one share Parashara names
  * that this did not reckon, and the note said so; it is reckoned now, and the
