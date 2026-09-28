@@ -583,6 +583,41 @@ ok('a thin Moon is not rescued by the company it keeps', (function () {
  * Mercury keeps the one clause the verse does give: "Mercury, however, is a
  * malefic if he joins a malefic."
  */
+/*
+ * The Sun is judged by combustion and every other malefic by the sign. Raman's
+ * footnote to his drik bala table is where the asymmetry comes from: "Mercury
+ * is a malefic as he is very closely associated with Sun or combusted."
+ *
+ * It has to be asymmetric. Mercury is never more than about 28 degrees from the
+ * Sun and shares its sign in 44% of charts, so a same-sign test against the Sun
+ * reports Mercury's orbit rather than its company. The two tests disagree in
+ * 41% of charts and in both directions - same sign but far enough to keep its
+ * rays, and combust across a sign boundary.
+ */
+ok('Mercury is judged against the Sun by combustion, not by the sign',
+   (function () {
+     var at = A.COMBUSTION.Mercury.direct;      // 14 degrees, direct
+     var chart = function (gap) {
+       return { planets: [
+         { name: 'Sun', sign: 0, longitude: 1 },
+         { name: 'Moon', sign: 5, longitude: 160 },   // full, so benefic
+         { name: 'Mercury', sign: Math.floor((1 + gap) / 30), longitude: 1 + gap }] };
+     };
+     // Inside the orb and in the same sign: malefic. Outside the orb but still
+     // in the same sign: benefic, where a same-sign test would say otherwise.
+     return at === 14 &&
+       A.naturalBenefics(chart(5)).Mercury === false &&
+       A.naturalBenefics(chart(20)).Mercury === true;
+   })());
+ok('and across a sign boundary it is still combustion that decides', (function () {
+  // Sun at 27 Aries, Mercury at 3 Taurus: different signs, 6 degrees apart.
+  var chart = { planets: [
+    { name: 'Sun', sign: 0, longitude: 27 },
+    { name: 'Moon', sign: 5, longitude: 160 },
+    { name: 'Mercury', sign: 1, longitude: 33 }] };
+  return A.naturalBenefics(chart).Mercury === false;
+})());
+
 ok('Mercury is benefic alone and malefic beside a malefic', (function () {
   var full = { name: 'Moon', sign: 5, longitude: 160 };   // 160 degrees on, so benefic
   var alone = { planets: [

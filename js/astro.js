@@ -1386,6 +1386,21 @@ var Astro = (function () {
      * Mercury's sign may be either and the Moon's own nature no longer depends
      * on Mercury.
      *
+     * The Sun is judged by combustion and every other malefic by the sign. That
+     * asymmetry is Raman's, in the footnote to his drik bala table: "Mercury is
+     * a malefic as he is very closely associated with Sun or combusted." It has
+     * to be asymmetric, because Mercury is never more than about 28 degrees
+     * from the Sun and shares its sign in 44% of charts - a rule that made
+     * Mercury malefic every time it stood in the Sun's sign would be reporting
+     * Mercury's orbit rather than its company. The two tests disagree in 41% of
+     * charts, in both directions: same sign but far enough to keep its rays, or
+     * combust across a sign boundary.
+     *
+     * The nodes are not counted. Raman lists them among the malefics, so an
+     * argument for counting them exists, but it is a separate question from the
+     * one this clause answers and it moves Mercury the other way - benefic in
+     * 36% of charts rather than 43%.
+     *
      * Santhanam's two rescue clauses are gone with the boundary they belonged
      * to. A waning Moon conjunct or aspected by a benefic turning benefic, and a
      * waning Moon with Mercury making both benefic, are his notes on verse 11
@@ -1393,9 +1408,16 @@ var Astro = (function () {
      * charts respectively.
      */
     var mercury = positions.Mercury;
-    benefics.Mercury = !mercury || !Object.keys(benefics).some(function (g) {
-      return !benefics[g] && positions[g] && positions[g].sign === mercury.sign;
-    });
+    var badCompany = function () {
+      if (positions.Sun && isCombust('Mercury', mercury.longitude,
+          positions.Sun.longitude, mercury.retrograde)) return true;
+      return Object.keys(benefics).some(function (g) {
+        if (g === 'Sun' || g === 'Mercury') return false;
+        if (benefics[g] === true) return false;          // a benefic is good company
+        return positions[g] && positions[g].sign === mercury.sign;
+      });
+    };
+    benefics.Mercury = !mercury || !badCompany();
     return benefics;
   }
 
