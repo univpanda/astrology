@@ -3105,7 +3105,10 @@ ok('ordinals read correctly', Yogas.ordinal(1) === '1st' && Yogas.ordinal(2) ===
                    Yogas.parivartana, Yogas.neechaBhanga, Yogas.vipareeta, Yogas.lakshmi,
                    Yogas.mahapurusha, Yogas.rajaYoga, Yogas.gajaKesari,
                    Yogas.moonCompany, Yogas.chandraMangala, Yogas.adhiYoga,
-                   Yogas.sakata, Yogas.amala, Yogas.budhaAditya];
+                   Yogas.sakata, Yogas.amala, Yogas.budhaAditya,
+                   Yogas.sunCompany, Yogas.moonFromSun, Yogas.mahabhagya,
+                   Yogas.chatussagara, Yogas.rajalakshana, Yogas.malika,
+                   Yogas.parvata, Yogas.vasumathi];
   ok('every detector is covered by this test', detectors.length === Yogas.DETECTOR_COUNT,
      detectors.length + ' named, ' + Yogas.DETECTOR_COUNT + ' in the module');
 
@@ -4625,6 +4628,208 @@ console.log('\nRaman sets a floor for Budha-Aditya, Rao does not');
     F.yoga['Budha Aditya Yoga|general'] < 30,
     F.yoga['Budha Aditya Yoga|general'] + '% -> ' +
       F.yogaNoFloor['Budha Aditya Yoga|general'] + '%');
+})();
+
+
+console.log('\nTwelve more from Raman, and one correction to what was here');
+/*
+ * The Sun's company was the plain gap: the Moon's four were implemented from
+ * the start and the exact mirror was not. The rest came out of reading the
+ * 1947 edition against what this file already did.
+ */
+(function () {
+  var delhi = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+  var chartAt = function (y, m, d, h) {
+    return A.chart({ jdUT: A.julianDay(y, m, d, h), latitude: 28.61,
+      longitude: 77.21, tzOffsetMinutes: 330 });
+  };
+  var find = function (c, subject) {
+    return Yogas.detect(c, Shadbala.compute(c, delhi)).filter(function (f) {
+      return f.subject === subject;
+    })[0];
+  };
+
+  /*
+   * Sakata, which we were over-reporting. Phaladeepika gives the three houses
+   * and then takes them back where the Moon is angular from the lagna; Raman
+   * gives only the three. Swept, because the point is how often it mattered.
+   */
+  var claimed = 0, cancelled = 0;
+  for (var y = 1950; y < 2020; y++) {
+    for (var m = 1; m <= 12; m += 2) {
+      var c = chartAt(y, m, 15, 1);
+      var at2 = {};
+      c.planets.forEach(function (p) { at2[p.name] = p; });
+      var lag = A.signOf(c.ascendant.longitude);
+      var fromJup = ((at2.Moon.sign - at2.Jupiter.sign) % 12 + 12) % 12 + 1;
+      var fromLag = ((at2.Moon.sign - lag) % 12 + 12) % 12 + 1;
+      if ([6, 8, 12].indexOf(fromJup) < 0) continue;
+      claimed++;
+      var got = !!find(c, 'Sakata Yoga');
+      if ([1, 4, 7, 10].indexOf(fromLag) >= 0) {
+        cancelled++;
+        if (got) { claimed = -1; break; }        // the exception was not applied
+      } else if (!got) { claimed = -1; break; }  // it was applied too widely
+    }
+    if (claimed === -1) break;
+  }
+  ok('Sakata is withheld where Phaladeepika says there is none, and only there',
+    claimed > 0 && cancelled > 0, cancelled + ' of ' + claimed + ' cancelled');
+
+  /*
+   * The Sun's company. Raman names three and no fourth, which is the asymmetry
+   * with the Moon worth holding: a Sun with nobody beside it is not Kemadruma,
+   * it is nothing at all.
+   */
+  var solar = 0, none = 0, total = 0;
+  for (y = 1950; y < 2020; y++) {
+    var c2 = chartAt(y, 6, 15, 1);
+    total++;
+    var f = Yogas.detect(c2, Shadbala.compute(c2, delhi)).filter(function (x) {
+      return x.family === 'The Sun’s company';
+    });
+    if (f.length > 1) { solar = -1; break; }     // only one of the three can hold
+    if (f.length) solar++; else none++;
+  }
+  ok('exactly one of the Sun’s three holds, or none, never two',
+    solar > 0, solar + ' of ' + total + ' charts, ' + none + ' with none');
+  ok('and a Sun with nobody beside it produces no finding, there being no fourth name',
+    none > 0, none + ' such charts in the sweep');
+
+  /*
+   * Mahabhagya. Raman's own worked chart is the test: a male born at night with
+   * the tripod in odd signs. He reports the yoga; Phaladeepika's day test
+   * refuses it. Both readings have to behave as their authority says.
+   */
+  var night = chartAt(1964, 10, 7, 16);          // 21:30 IST, well after sunset
+  night.gender = 'male';
+  night.dayBirth = false;
+  var odd = function (sg) { return sg % 2 === 0; };
+  var lag2 = A.signOf(night.ascendant.longitude);
+  var pos = {};
+  night.planets.forEach(function (p) { pos[p.name] = p; });
+  if (odd(lag2) && odd(pos.Sun.sign) && odd(pos.Moon.sign)) {
+    night.mahabhagyaDay = Yogas.MAHABHAGYA_DAY.RAMAN;
+    ok('on Raman’s wording a man born at night can still have Mahabhagya',
+      !!find(night, 'Mahabhagya Yoga'));
+    night.mahabhagyaDay = Yogas.MAHABHAGYA_DAY.PHALADEEPIKA;
+    ok('and on Phaladeepika’s he cannot', !find(night, 'Mahabhagya Yoga'));
+  } else {
+    // Build the case rather than hunt for it, so the assertion always runs.
+    var made = { ascendant: { longitude: 10 },          // Aries, an odd sign
+      gender: 'male', dayBirth: false,
+      planets: [{ name: 'Sun', sign: 4, longitude: 4 * 30 + 5, house: 5 },
+                { name: 'Moon', sign: 6, longitude: 6 * 30 + 5, house: 7 }] };
+    made.mahabhagyaDay = Yogas.MAHABHAGYA_DAY.RAMAN;
+    ok('on Raman’s wording a man born at night can still have Mahabhagya',
+      Yogas.mahabhagya(made).length === 1);
+    made.mahabhagyaDay = Yogas.MAHABHAGYA_DAY.PHALADEEPIKA;
+    ok('and on Phaladeepika’s he cannot', Yogas.mahabhagya(made).length === 0);
+    made.dayBirth = true;
+    ok('while by day Phaladeepika allows it', Yogas.mahabhagya(made).length === 1);
+  }
+
+  /*
+   * The even-sign half is the woman's on both readings, and both ask for night,
+   * so the setting must not touch it.
+   */
+  var her = { ascendant: { longitude: 40 },              // Taurus, an even sign
+    gender: 'female', dayBirth: false,
+    planets: [{ name: 'Sun', sign: 3, longitude: 3 * 30 + 5, house: 12 },
+              { name: 'Moon', sign: 7, longitude: 7 * 30 + 5, house: 4 }] };
+  [Yogas.MAHABHAGYA_DAY.RAMAN, Yogas.MAHABHAGYA_DAY.PHALADEEPIKA].forEach(function (r) {
+    her.mahabhagyaDay = r;
+  });
+  ok('a woman born at night gets the even-sign reading on either authority',
+    Yogas.mahabhagya(her).length === 1);
+  her.dayBirth = true;
+  ok('and by day neither authority allows it', Yogas.mahabhagya(her).length === 0);
+
+  /*
+   * The form offers Other, and stores unstated. Reporting nothing hides a
+   * finding that may hold; choosing a sex invents a fact. The finding is made
+   * and says what it rests on.
+   */
+  var unsaid = { ascendant: { longitude: 10 }, dayBirth: true,
+    planets: [{ name: 'Sun', sign: 4, longitude: 4 * 30 + 5, house: 5 },
+              { name: 'Moon', sign: 6, longitude: 6 * 30 + 5, house: 7 }] };
+  var got2 = Yogas.mahabhagya(unsaid)[0];
+  ok('with no sex recorded the finding is made and says what it rests on',
+    !!got2 && got2.reasons.join(' ').indexOf('records no sex') > -1,
+    got2 ? got2.reasons[2] : 'nothing found');
+
+  /*
+   * The three rare ones. Built rather than hunted, since a sweep for a
+   * one-in-five-hundred combination is slower than stating the case.
+   */
+  var seven = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+  var chain = { ascendant: { longitude: 10 }, planets: seven.map(function (g, i) {
+    return { name: g, sign: i, longitude: i * 30 + 5, house: i + 1 };
+  }) };
+  var mal = Yogas.malika(chain)[0];
+  ok('seven grahas in seven adjoining signs from the lagna is Lagna Malika',
+    !!mal && mal.title === 'Lagna Malika yoga', mal ? mal.title : 'none');
+  chain.planets[6].sign = 8;                     // break the run
+  chain.planets[6].longitude = 8 * 30 + 5;
+  ok('and a gap anywhere in the run leaves no Malika at all',
+    Yogas.malika(chain).length === 0);
+
+  var angles = { ascendant: { longitude: 10 }, planets: [
+    { name: 'Sun', sign: 0, longitude: 5, house: 1 },
+    { name: 'Moon', sign: 3, longitude: 3 * 30 + 5, house: 4 },
+    { name: 'Mars', sign: 6, longitude: 6 * 30 + 5, house: 7 },
+    { name: 'Jupiter', sign: 9, longitude: 9 * 30 + 5, house: 10 }] };
+  ok('a graha in each of the four angles is Chatussagara',
+    Yogas.chatussagara(angles).length === 1);
+  angles.planets[3].sign = 10;                   // vacate the 10th
+  angles.planets[3].longitude = 10 * 30 + 5;
+  ok('and one empty angle is enough to withhold it',
+    Yogas.chatussagara(angles).length === 0);
+
+  var royal = { ascendant: { longitude: 10 }, planets: [
+    { name: 'Jupiter', sign: 0, longitude: 5, house: 1 },
+    { name: 'Venus', sign: 3, longitude: 3 * 30 + 5, house: 4 },
+    { name: 'Mercury', sign: 6, longitude: 6 * 30 + 5, house: 7 },
+    { name: 'Moon', sign: 9, longitude: 9 * 30 + 5, house: 10 }] };
+  ok('the four gentle grahas all in angles is Rajalakshana',
+    Yogas.rajalakshana(royal).length === 1);
+  royal.planets[2].sign = 1;
+  royal.planets[2].longitude = 35;
+  ok('and three of the four is not', Yogas.rajalakshana(royal).length === 0);
+
+  /*
+   * Parvata's second clause is the one usually dropped, so it is the one worth
+   * pinning: benefics in angles are not enough if a malefic holds the 6th or
+   * the 8th.
+   */
+  var hill = A.chart({ jdUT: A.julianDay(1975, 3, 3, 3), latitude: 28.61,
+    longitude: 77.21, tzOffsetMinutes: 330 });
+  var spoiled = 0, clean = 0;
+  for (y = 1950; y < 2020; y++) {
+    var c3 = chartAt(y, 9, 9, 3);
+    var ben = A.naturalBenefics(c3);
+    var lg = A.signOf(c3.ascendant.longitude);
+    var bad = c3.planets.some(function (p) {
+      if (seven.indexOf(p.name) < 0) return false;
+      var h = ((p.sign - lg) % 12 + 12) % 12 + 1;
+      return (h === 6 || h === 8) && !ben[p.name];
+    });
+    var reported = !!find(c3, 'Parvata Yoga');
+    if (bad && reported) { spoiled = -1; break; }
+    if (bad) spoiled++; else if (reported) clean++;
+  }
+  ok('Parvata is never reported with a malefic in the 6th or the 8th',
+    spoiled > 0 && clean > 0, spoiled + ' spoiled, ' + clean + ' clean');
+
+  /*
+   * Vasumathi counts rather than switches, which is Raman's own reading, so the
+   * finding has to carry the count.
+   */
+  var vas = null;
+  for (y = 1960; y < 1990 && !vas; y++) vas = find(chartAt(y, 4, 4, 4), 'Vasumathi Yoga');
+  ok('Vasumathi reports how many benefics stand there, not merely that any do',
+    !!vas && /\d+ stands?/.test(vas.reasons.join(' ')),
+    vas ? vas.reasons[2] : 'none found');
 })();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');

@@ -1350,10 +1350,22 @@ var Astro = (function () {
    * few rules are about the nativity rather than about the division and need the
    * original: vargottama is one, being D1 against D9 whatever else is on screen.
    */
+  /*
+   * Some of what hangs on a chart is not about the chart at all. Whether the
+   * native was born by day, whether they are a man or a woman, and which
+   * authority the reader has chosen for a contested rule are facts about the
+   * nativity and the reading; a division moves the grahas, it does not move
+   * those. They were being dropped here, so a setting chosen on the Chart tab
+   * quietly reverted to its default the moment a varga was read, and the same
+   * chart answered differently in D1 and D9.
+   */
+  var CARRIED = ['mercuryNature', 'budhaAdityaFloor', 'mahabhagyaDay',
+    'gender', 'dayBirth'];
+
   function chartInDivision(chart, division) {
     if (!division || division === 1) return chart;
     var asc = vargaPosition(chart.ascendant.longitude, division);
-    return {
+    var out = {
       division: division,
       ascendant: { longitude: asc.longitude, sign: asc.sign },
       planets: chart.planets.map(function (p) {
@@ -1369,6 +1381,10 @@ var Astro = (function () {
         };
       })
     };
+    CARRIED.forEach(function (k) {
+      if (chart[k] !== undefined) out[k] = chart[k];
+    });
+    return out;
   }
 
   /*

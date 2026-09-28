@@ -752,6 +752,27 @@
      * honoured by one of them would have the chart disagreeing with itself.
      */
     if (c) c.budhaAdityaFloor = document.getElementById('budha-floor').value;
+    if (c) c.mahabhagyaDay = document.getElementById('mahabhagya-day').value;
+    /*
+     * Two facts about the native rather than about the sky, both of which
+     * Mahabhagya turns on. The sex is asked for on the form already; whether
+     * the birth was by day is worked out here, from the real sunrise and sunset
+     * for the place, because a detector is handed a chart and not a place.
+     *
+     * Left undefined rather than guessed when either is missing, so the finding
+     * can say what it is resting on instead of pretending to know.
+     */
+    if (c) {
+      c.gender = state.gender && state.gender !== 'unstated' ? state.gender : undefined;
+      c.dayBirth = undefined;
+      if (place && c.julianDay !== undefined) {
+        var up = Astro.sunriseSunset(c.julianDay, place.lat, place.lon, false);
+        var down = Astro.sunriseSunset(c.julianDay, place.lat, place.lon, true);
+        if (up !== null && down !== null) {
+          c.dayBirth = c.julianDay > up && c.julianDay < down;
+        }
+      }
+    }
 
     // Just the name. The page is a chart; saying so in the heading of one adds
     // nothing, and a long name plus a possessive wraps on a phone.
@@ -2838,15 +2859,19 @@
         chosen.name + '. ' +
       'Raja yoga, parivartana, neecha bhanga, vipareeta raja, Lakshmi, Gaja Kesari, ' +
         'kartari, the five Mahapurusha yogas, the Moon’s own four - Sunapha, Anapha, ' +
-        'Durudhura and Kemadruma - Chandra Mangala, Adhi, Sakata, Amala and ' +
-        'Budha-Aditya are checked' + ' so far; the Lesson tab ' +
+        'Durudhura and Kemadruma - the Sun’s three - Vesi, Vasi and Ubhayachari - ' +
+        'the Moon read from the Sun as Adhama, Sama or Varishtha, Chandra Mangala, ' +
+        'Adhi, Sakata, Amala, Budha-Aditya, Mahabhagya, Chatussagara, Rajalakshana, ' +
+        'Malika, Parvata and Vasumathi are checked' + ' so far; the Lesson tab ' +
         'explains each.';
       return;
     }
     note.textContent = 'Raja yoga, parivartana, neecha bhanga, vipareeta raja, Lakshmi, Gaja Kesari, ' +
       'kartari, the five Mahapurusha yogas, the Moon’s own four - Sunapha, Anapha, ' +
-      'Durudhura and Kemadruma - Chandra Mangala, Adhi, Sakata, Amala and ' +
-      'Budha-Aditya are checked' + ' so far; more will follow. An angle-trine raja yoga ' +
+      'Durudhura and Kemadruma - the Sun’s three - Vesi, Vasi and Ubhayachari - ' +
+      'the Moon read from the Sun as Adhama, Sama or Varishtha, Chandra Mangala, ' +
+      'Adhi, Sakata, Amala, Budha-Aditya, Mahabhagya, Chatussagara, Rajalakshana, ' +
+      'Malika, Parvata and Vasumathi are checked' + ' so far; more will follow. An angle-trine raja yoga ' +
       'is common, present in roughly three charts in four, so it is read alongside the ' +
       'strength of the grahas forming it rather than on its own. The Lesson tab explains ' +
       'what each one means. Yogas are read in the division chosen above, which is ' +
@@ -3698,6 +3723,19 @@
     status.textContent = motion
       ? 'Cheshta bala now reads the eight motions. Four of their boundaries are this site\u2019s, not a text\u2019s.'
       : 'Cheshta bala now reads the chesta kendra, which is the verse that states a computation.';
+  });
+
+  document.getElementById('mahabhagya-day').addEventListener('change', function () {
+    var status = document.getElementById('settings-status');
+    var loose = this.value === 'raman';
+    if (!lastChart) {
+      status.textContent = 'Saved. The next chart will use it.';
+      return;
+    }
+    render(lastChart);
+    status.textContent = loose
+      ? 'Mahabhagya no longer asks a man to be born by day, which is Raman\u2019s wording.'
+      : 'Mahabhagya asks a man to be born by day, which is what Phaladeepika states.';
   });
 
   document.getElementById('budha-floor').addEventListener('change', function () {

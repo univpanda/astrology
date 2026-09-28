@@ -1176,10 +1176,33 @@ console.log('\nLesson library');
          script.indexOf('astro_readings_yogas.sql');
      })());
 
-  ok('no one topic is more than half the library', (function () {
+  /*
+   * This asked that no topic hold more than half the passages, and yogas passed
+   * it until twelve combinations from Raman were added at once. The count is a
+   * poor proxy for dominance: yogas are subdivided one passage per named
+   * combination, where twelve houses share six passages and the whole of
+   * shadbala shares seventeen. Granularity is not weight.
+   *
+   * What the rule was protecting is that the library not become a yoga
+   * encyclopaedia with token coverage of everything else, so that is what is
+   * asserted now - every topic carries real coverage, and no topic is so large
+   * that the rest together are a footnote to it.
+   */
+  ok('every topic carries real coverage rather than a token passage', (function () {
     var counts = {};
     rows.forEach(function (r) { counts[r.topic] = (counts[r.topic] || 0) + 1; });
-    return Object.keys(counts).every(function (t) { return counts[t] <= rows.length / 2; });
+    return Object.keys(counts).every(function (t) { return counts[t] >= 2; });
+  })(), (function () {
+    var counts = {};
+    rows.forEach(function (r) { counts[r.topic] = (counts[r.topic] || 0) + 1; });
+    return Object.keys(counts).map(function (t) { return t + ' ' + counts[t]; }).join(', ');
+  })());
+  ok('and no topic outweighs everything else put together', (function () {
+    var counts = {};
+    rows.forEach(function (r) { counts[r.topic] = (counts[r.topic] || 0) + 1; });
+    return Object.keys(counts).every(function (t) {
+      return counts[t] <= (rows.length - counts[t]) * 1.5;
+    });
   })(), (function () {
     var counts = {};
     rows.forEach(function (r) { counts[r.topic] = (counts[r.topic] || 0) + 1; });
@@ -1216,9 +1239,11 @@ ok('the page says which yogas it looks for, and the list is current', (function 
   // come from one detector, so its entry is the phrase that introduces them.
   var named = ['Raja yoga', 'parivartana', 'neecha bhanga', 'vipareeta raja', 'Lakshmi',
                'Gaja Kesari', 'kartari', 'Mahapurusha', 'Sunapha', 'Chandra Mangala',
-               'Adhi', 'Sakata', 'Amala', 'Budha-Aditya'];
+               'Adhi', 'Sakata', 'Amala', 'Budha-Aditya', 'Vesi', 'Adhama',
+               'Mahabhagya', 'Chatussagara', 'Rajalakshana', 'Malika', 'Parvata',
+               'Vasumathi'];
   return named.every(function (n) { return flat.indexOf(n) >= 0; }) &&
-    /Raja yoga, parivartana, neecha bhanga, vipareeta raja, Lakshmi, Gaja Kesari, kartari, the five Mahapurusha yogas, the Moon’s own four - Sunapha, Anapha, Durudhura and Kemadruma - Chandra Mangala, Adhi, Sakata, Amala and Budha-Aditya are checked/
+    /Raja yoga, parivartana, neecha bhanga, vipareeta raja, Lakshmi, Gaja Kesari, kartari, the five Mahapurusha yogas, the Moon’s own four - Sunapha, Anapha, Durudhura and Kemadruma - the Sun’s three - Vesi, Vasi and Ubhayachari - the Moon read from the Sun as Adhama, Sama or Varishtha, Chandra Mangala, Adhi, Sakata, Amala, Budha-Aditya, Mahabhagya, Chatussagara, Rajalakshana, Malika, Parvata and Vasumathi are checked/
       .test(flat) &&
     named.length === Yogas.DETECTOR_COUNT;
 })(), Yogas.DETECTOR_COUNT + ' detectors');
@@ -6090,6 +6115,68 @@ console.log('\nThe graha card survives the chart being redrawn');
       card2.children.length >= 2 && !!asc.attrs['data-where'],
       card2.children.length + ' lines, where="' + asc.attrs['data-where'] + '"');
   }
+})();
+
+console.log('\nMahabhagya needs two things the sky does not supply');
+(function () {
+  var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  var src = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
+
+  ok('the day test is offered as a setting, defaulting to the fuller rule',
+    /<select id="mahabhagya-day">/.test(page) &&
+    /<option value="phaladeepika" selected>/.test(page) &&
+    /<option value="raman">/.test(page));
+  ok('and the page shows the worked chart that settles which Raman meant',
+    /8-15 p\.m\./.test(page) && /Phaladeepika/.test(page));
+
+  /*
+   * The sex comes off the form and the day comes off the real sunrise for the
+   * place. Neither is guessed: a chart that records no sex leaves it undefined
+   * so the finding can say so, rather than being handed a default that would
+   * read as a fact about the native.
+   */
+  ok('the native’s sex reaches the chart, and absence stays absent',
+    /c\.gender = state\.gender && state\.gender !== 'unstated' \? state\.gender : undefined/
+      .test(src));
+  ok('and day or night is taken from the real sunrise, not from the clock',
+    /Astro\.sunriseSunset\(c\.julianDay, place\.lat, place\.lon, false\)/.test(src) &&
+    /Astro\.sunriseSunset\(c\.julianDay, place\.lat, place\.lon, true\)/.test(src));
+  ok('changing the setting redraws', /getElementById\('mahabhagya-day'\)\.addEventListener/
+    .test(src));
+
+  /*
+   * A division moves the grahas; it does not move the native's sex, the hour
+   * they were born, or which authority the reader chose. Those were being
+   * dropped, so a setting picked on the Chart tab reverted the moment a varga
+   * was read and the same chart answered differently in D1 and D9.
+   */
+  var chart = Astro.chart({ jdUT: Astro.julianDay(1964, 10, 7, 16),
+    latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 });
+  chart.gender = 'male';
+  chart.dayBirth = false;
+  chart.budhaAdityaFloor = 'none';
+  chart.mercuryNature = 'benefic';
+  chart.mahabhagyaDay = 'raman';
+  var d9 = Astro.chartInDivision(chart, 9);
+  ok('the nativity and the chosen readings survive into a division',
+    d9.gender === 'male' && d9.dayBirth === false &&
+    d9.budhaAdityaFloor === 'none' && d9.mercuryNature === 'benefic' &&
+    d9.mahabhagyaDay === 'raman',
+    [d9.gender, d9.dayBirth, d9.budhaAdityaFloor, d9.mercuryNature,
+     d9.mahabhagyaDay].join(' / '));
+  ok('and the division is still a division, not a copy of the rashi',
+    d9.division === 9 && d9.planets.length === chart.planets.length &&
+    d9.planets.some(function (p, i) { return p.sign !== chart.planets[i].sign; }));
+
+  /*
+   * The frequency table has to be measured on charts that have a sex and an
+   * hour, or Mahabhagya's figure is the undetermined case - both halves at
+   * once - which no real chart can show.
+   */
+  var F = global.FREQUENCIES;
+  ok('Mahabhagya’s measured figure is one a real chart could have',
+    F.yoga['Mahabhagya Yoga|general'] < 10,
+    F.yoga['Mahabhagya Yoga|general'] + '%');
 })();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');

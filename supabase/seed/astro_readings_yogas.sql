@@ -500,3 +500,133 @@ on conflict (topic, subject, condition) do update set
   note = excluded.note,
   sort_order = excluded.sort_order,
   updated_at = now();
+
+-- Twelve combinations from Raman's Three Hundred Important Combinations and
+-- from Phaladeepika, added after a survey of what the book holds that this site
+-- did not. The Sun's three were the plain gap: the Moon's company was here from
+-- the start and its exact mirror was not.
+
+insert into astro_readings (topic, subject, condition, heading, points, note, sort_order) values
+
+('yoga', 'Vesi Yoga', 'general',
+ 'Vesi - grahas in the sign after the Sun',
+ array[
+   'Raman''s combination 16: "If planets other than the Moon occupy the 2nd from the Sun, Vesi Yoga is formed." Read for good fortune, standing and an even temper.',
+   'One of three answers to what stands beside the Sun, exactly mirroring the Moon''s four: the sign after the Sun is Vesi, the sign before it is Vasi, both is Ubhayachari. The grahas that count are the same five, and Raman is explicit about the exclusion: "Excepting the Moon and Rahu and Kethu, any other planet or planets may cause Vesi Yoga."',
+   'There is no fourth. The Moon standing alone is Kemadruma and is read darkly; the Sun standing alone has no name at all, and Raman explains why the case hardly arises: "Mercury is always confined within a certain elongation from the Sun and unless the Sun is in the last part of a sign and Mercury has attained his greatest elongation ... Vesi or Vasi Yoga will invariably be present." Measured, one of the three holds in 89 per cent of charts and none in 11.',
+   'Benefic and malefic forms are named apart, as the kartari yogas are: "If malefics occupy the second from the Sun, papavesi is caused while subhavesi is given rise to by the presence of benefic planets." The results above are for the benefic form and reverse for the malefic one. A mixture is reported as neither, since Raman writes no results for it.',
+   'Raman keeps them in proportion: "these Solar Yogas cannot be compared in their eminence to Rajayogas. They indicate more or less the ego development of the individual concerned."'
+ ],
+ 'The three are set out together here; Vasi and Ubhayachari point back to this passage.', 976),
+
+('yoga', 'Vasi Yoga', 'general',
+ 'Vasi - grahas in the sign before the Sun',
+ array[
+   'Raman''s combination 17: "Planets other than the Moon occupying the 12th from the Sun give rise to Vasi Yoga." Read for happiness, liberality and the favour of those in charge.',
+   'It is one of the three answers to the Sun''s company, so a chart gives Vasi or Vesi or Ubhayachari, or none of them.',
+   'The benefic form is what the results are written for - subhavasi - and Raman reverses them for the malefic: "If malefics are present in the 12th, the results will be quite the reverse."',
+   'The five starry grahas count. The Moon is excluded by the definition and the nodes go with her, so the Sun can be flanked by the Moon and Rahu and still have no company by this rule.'
+ ],
+ 'The three are set out together under Vesi.', 977),
+
+('yoga', 'Ubhayachari Yoga', 'general',
+ 'Ubhayachari - grahas on both sides of the Sun',
+ array[
+   'Raman''s combination 18: "If planets other than the Moon are present on either side of the Sun, Obhayachari is caused." Read for eloquence, good proportion and being widely liked.',
+   'The fullest of the three answers to the Sun''s company, and the only one that cannot arrive by halves: two signs have to be occupied rather than one.',
+   'As with the other two, the five starry grahas count and the Sun''s own Moon and nodes do not.'
+ ],
+ 'The three are set out together under Vesi.', 978),
+
+('yoga', 'Adhama Yoga', 'general',
+ 'Adhama - the Moon in an angle from the Sun',
+ array[
+   'Phaladeepika ch.6 shloka 14: "The Adhama, Sama and Varishtha Yogas are formed when the Moon occupies respectively a Kendra, a Panaphara and an Apoklima house counted from the Sun."',
+   'Three answers to one question and one of them is true of every chart, so the presence of a reading here says nothing - only which of the three it is. Adhama is the lowest of them, Sama the middling, Varishtha the best.',
+   'What the scale measures is how far the Moon has drawn away from the Sun, which is to say how much light she carries. The angles keep her nearest and the cadent houses furthest, so the order runs the opposite way to the usual reading of those houses.',
+   'Measured, the three fall at about a third of charts each - 33, 34 and 33 per cent - which is what a rule dividing twelve houses into three groups of four should do.'
+ ],
+ 'The three are set out together here; Sama and Varishtha point back to this passage.', 979),
+
+('yoga', 'Sama Yoga', 'general',
+ 'Sama - the Moon in a succedent house from the Sun',
+ array[
+   'Phaladeepika ch.6 shloka 14. The Moon in a panaphara - the 2nd, 5th, 8th or 11th - counted from the Sun.',
+   'The middling of the three, between Adhama in the angles and Varishtha in the cadent houses.'
+ ],
+ 'The three are set out together under Adhama.', 980),
+
+('yoga', 'Varishtha Yoga', 'general',
+ 'Varishtha - the Moon in a cadent house from the Sun',
+ array[
+   'Phaladeepika ch.6 shloka 14. The Moon in an apoklima - the 3rd, 6th, 9th or 12th - counted from the Sun, and the best of the three.',
+   'It is the Moon at her furthest from the Sun, carrying the most light. The cadent houses are usually the weak ones, and this is one of the few rules that reads them as the strong place to be.'
+ ],
+ 'The three are set out together under Adhama.', 981),
+
+('yoga', 'Mahabhagya Yoga', 'general',
+ 'Mahabhagya - the tripod of life all on one side',
+ array[
+   'The ascendant, the Sun and the Moon are what Raman calls the tripod of life, "ruling as they do the body, the soul and the mind respectively". Mahabhagya asks that all three fall on one side of the zodiac: odd signs for a man, even signs for a woman.',
+   'Mantreswara states it symmetrically. Phaladeepika ch.6 shloka 14: "If, at a day-birth in the case of a male, the Sun, the Moon and the Lagna are in odd signs, the Mahabhagya Yoga is formed. The same Yoga in the case of females will arise when the birth is at night and the Sun, the Moon and the Lagna are posited in even signs."',
+   'Raman keeps the night for women and drops the day for men: "In the case of a man, the Sun, the Moon and the Lagna should be in odd signs. In case of women, when the birth is during night, the Sun, the Moon and Lagna must be in even signs." Two scans of the 1947 edition read alike, so it is not the printing.',
+   'His worked chart settles that he means it. Combination 25 takes a male born at 8-15 p.m., which is night, and reads "the Lagna is Aries, the Sun is in Leo and the Moon is in Libra - all odd signs, consequently Mahabhagya Yoga is fully present". Under Phaladeepika''s rule that birth fails the day test and there is no yoga at all.',
+   'So the day test is a setting on the Chart tab, defaulting to Phaladeepika: he states the fuller rule and states it evenly, where Raman''s two halves do not match each other. It matters - the male reading falls from 12.5 per cent of charts to 6.2 when the day test is applied. The female reading is 6.0 per cent either way, both authorities asking for night.',
+   'The rule is written for a man or a woman, and a chart may record neither. Where the sex is not given this site reports the half the signs fit and says what it rests on, rather than choosing a sex that was never stated or hiding a finding that may well hold.'
+ ],
+ 'Whether the birth was by day is taken from the real sunrise and sunset for the place, not from the clock.', 982),
+
+('yoga', 'Chatussagara Yoga', 'general',
+ 'Chatussagara - every angle occupied',
+ array[
+   'Raman''s combination 8: "Chatussagara is caused when all the kendras are occupied by the planets." Read for reputation that travels, in the phrase of the name, to the confines of the four oceans.',
+   'It asks four houses to be filled from seven grahas, and grahas cluster - Mercury and Venus are never far from the Sun, and the nodes are always opposite each other. So it is rare: under one chart in a hundred.',
+   'The seven starry grahas count. The nodes are left out here as everywhere else on this site, being shadows rather than bodies.'
+ ],
+ null, 983),
+
+('yoga', 'Rajalakshana Yoga', 'general',
+ 'Rajalakshana - the four gentle grahas in angles',
+ array[
+   'Raman''s combination 10: "Jupiter, Venus, Mercury and the Moon should be in Lagna or they should be placed in kendra." The name means the marks of royalty, and is read for a dignified and well-regarded character rather than for power.',
+   'All four, not any of them, which is what makes it uncommon: about one chart in a hundred.',
+   'These are the four natural benefics of the standard list, so the rule is the gentle half of the chart holding the houses of action at once.'
+ ],
+ null, 984),
+
+('yoga', 'Malika Yoga', 'general',
+ 'Malika - all seven in seven adjoining signs',
+ array[
+   'Raman''s combinations 33 to 44: "If all the seven planets occupy the seven houses contiguously, reckoned from Lagna or any particular Bhava, the appropriate Malika Yoga is caused."',
+   'Twelve of them, one for each house the run can begin from, and each named for that house: Lagna, Dhana, Vikrama, Sukha, Putra, Satru, Kalatra, Randhra, Bhagya, Karma, Labha and Vraya Malika. The readings differ sharply - Lagna Malika is read for rule and wealth, Randhra Malika for poverty.',
+   'This is the rarest combination on this site by a wide margin: about one chart in five hundred. It asks the seven grahas to be spread across seven signs and confined to those seven at once, which are opposing demands.',
+   'Raman records a dissent worth knowing: "Bhavartha Ratnakara makes a departure and suggests that the Malika Yoga should always commence from Lagna and be disposed within five to nine houses from Lagna. According to this view, evidently no contiguity is implied." The general view is what is implemented, as Raman implements it.'
+ ],
+ 'The nodes are excluded, which Raman states here explicitly.', 985),
+
+('yoga', 'Parvata Yoga', 'general',
+ 'Parvata - benefics in the angles, the houses of harm clear',
+ array[
+   'Raman''s combination 14: "Benefics being disposed in Kendras, the 6th and 8th houses should either be unoccupied or occupied by benefic planets." Read for wealth, liberality and good humour.',
+   'Two clauses, and the second is the one usually dropped. Benefics holding angles is not enough on its own; the two houses of harm have to be clear of malefics as well, which is what the rule spends half its words on.',
+   'Common even so, at about two charts in five, because an empty 6th and 8th is not unusual and one benefic in one angle satisfies the first clause.'
+ ],
+ null, 986),
+
+('yoga', 'Vasumathi Yoga', 'general',
+ 'Vasumathi - benefics in the houses of growth',
+ array[
+   'Raman''s combination 9: "If benefics occupy the upachayas (3, 6, 10, 11) either from the ascendant or from the Moon, the combination goes under the name of Vasumathi Yoga." Read for wealth that is one''s own rather than depended upon.',
+   'Raman reads it as a scale and not a switch: "two benefics will give less wealth while only one benefic will give ordinary wealth". So the count is what is reported, not merely that the yoga is there.',
+   'He holds the two reference points unequal: "The Vasumathi resulting from the Lagna seems to have more influence than the one formed with reference to the Moon."',
+   'Two reference points and three benefics to place make this the commonest finding on the site by some way. Either point alone holds in about 61 per cent of charts, and since either will do, one or the other holds in 84 per cent - five charts in six. It is a condition rather than a distinction, commoner even than the angle-trine raja yoga, and the figure beside it is the honest way to read it.',
+   'He adds a check worth keeping in mind: "When counted from the Moon all the four upachayas cannot be occupied because there will be only three benefics left."'
+ ],
+ null, 987)
+
+on conflict (topic, subject, condition) do update set
+  heading = excluded.heading,
+  points = excluded.points,
+  note = excluded.note,
+  sort_order = excluded.sort_order,
+  updated_at = now();

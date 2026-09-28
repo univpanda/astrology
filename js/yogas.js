@@ -1037,6 +1037,14 @@ var Yogas = (function () {
    * Combination 12. "The Moon in the 12th, 6th or 8th from Jupiter gives rise to
    * Sakata Yoga." The one affliction among these, and the counting runs from
    * Jupiter to the Moon rather than the other way.
+   *
+   * Raman stops there. Mantreswara does not: Phaladeepika ch.6 shloka 14 gives
+   * the same three houses and then takes them back in one clause - "But if the
+   * Moon be in a Kendra house from the Lagna, there is no Sakata." This site
+   * reported the affliction anyway, on about one chart in twelve where
+   * Phaladeepika says there is none, which was simply wrong: it is not that the
+   * two authorities disagree, it is that one of them states an exception and
+   * the other is silent, and a rule no text affirms is not a rule.
    */
   function sakata(chart) {
     var positions = {};
@@ -1045,6 +1053,9 @@ var Yogas = (function () {
     if (!moon || !jupiter) return [];
     var house = ((moon.sign - jupiter.sign) % 12 + 12) % 12 + 1;
     if ([6, 8, 12].indexOf(house) < 0) return [];
+    var lagna = Astro.signOf(chart.ascendant.longitude);
+    var fromLagna = ((moon.sign - lagna) % 12 + 12) % 12 + 1;
+    if (KENDRAS.indexOf(fromLagna) >= 0) return [];
     return [{
       yoga: 'Sakata Yoga',
       kind: 'general',
@@ -1210,8 +1221,524 @@ var Yogas = (function () {
     }];
   }
 
+
+  /* ------------------------------------------------- the Sun's company */
+
+  /*
+   * Raman's combinations 16 to 18, and the exact mirror of the Moon's company
+   * above: grahas in the 2nd from the Sun is Vesi, in the 12th is Vasi, both is
+   * Ubhayachari. Same five grahas, and Raman's exclusion is explicit -
+   * "Excepting the Moon and Rahu and Kethu, any other planet or planets may
+   * cause Vesi Yoga."
+   *
+   * The asymmetry with the Moon is worth noticing and is the reason this is a
+   * separate detector rather than the same one run twice. The Moon alone has a
+   * name and a dark reading; the Sun alone has neither, and Raman says why the
+   * question hardly arises: "One or more of the above three Yogas caused by the
+   * Sun would be present in almost every horoscope. Mercury is always confined
+   * within a certain elongation from the Sun and unless the Sun is in the last
+   * part of a sign and Mercury has attained his greatest elongation ... Vesi or
+   * Vasi Yoga will invariably be present." Measured, one of the three holds in
+   * 89 per cent of charts.
+   *
+   * Benefic and malefic forms are named apart, as the kartari yogas are:
+   * "If malefics occupy the second from the Sun, papavesi is caused while
+   * subhavesi is given rise to by the presence of benefic planets."
+   */
+  var SUN_COMPANY = ['Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+
+  function sunCompany(chart) {
+    var positions = {};
+    chart.planets.forEach(function (p) { positions[p.name] = p; });
+    var sun = positions.Sun;
+    if (!sun) return [];
+    var benefics = Astro.naturalBenefics(chart);
+
+    var inSign = function (sign) {
+      return SUN_COMPANY.filter(function (g) {
+        return positions[g] && positions[g].sign === sign;
+      });
+    };
+    var second = inSign((sun.sign + 1) % 12);
+    var twelfth = inSign((sun.sign + 11) % 12);
+    if (!second.length && !twelfth.length) return [];   // Raman names no fourth
+
+    var all = second.concat(twelfth);
+    var good = all.filter(function (g) { return benefics[g]; });
+    var bad = all.filter(function (g) { return !benefics[g]; });
+    /*
+     * Raman's results are written for the benefic form and reversed for the
+     * malefic one, so a mixture belongs to neither and is named as mixed
+     * rather than forced into whichever side has the larger count.
+     */
+    var kind = good.length && bad.length ? 'mixed' : (bad.length ? 'papa' : 'subha');
+
+    var name = second.length && twelfth.length ? 'Ubhayachari'
+      : (second.length ? 'Vesi' : 'Vasi');
+    var where = second.length && twelfth.length
+      ? listOf(twelfth) + ' in the sign before the Sun and ' + listOf(second) +
+        ' in the sign after it'
+      : (second.length ? listOf(second) + ' in the 2nd from the Sun'
+                       : listOf(twelfth) + ' in the 12th from the Sun');
+
+    var reasons = [where];
+    reasons.push(kind === 'subha'
+      ? 'every one of them is benefic, which is the form Raman writes the ' +
+        'results for - subha' + name.toLowerCase()
+      : kind === 'papa'
+      ? 'all of them are malefic, which is papa' + name.toLowerCase() +
+        ': Raman gives the same results reversed'
+      : listOf(good) + ' benefic against ' + listOf(bad) + ' malefic, so it is ' +
+        'neither the subha form Raman writes the results for nor the papa form ' +
+        'he reverses them for');
+    reasons.push('the Moon is excluded by the definition and the nodes with ' +
+      'her, so the Sun can be flanked by them and still have no company by ' +
+      'this rule');
+
+    return [{
+      yoga: name + ' Yoga',
+      kind: kind,
+      subject: name + ' Yoga',
+      condition: 'general',
+      title: name + ' yoga',
+      family: 'The Sun’s company',
+      grahas: ['Sun'].concat(all),
+      houses: [],
+      reasons: reasons,
+      summary: where.charAt(0).toUpperCase() + where.slice(1) + ', which is ' +
+        name + ' yoga.'
+    }];
+  }
+
+  /* ------------------------------------------- the Moon from the Sun */
+
+  /*
+   * Phaladeepika ch.6 shloka 14, the same verse that cancels Sakata: "The
+   * Adhama, Sama and Varishtha Yogas are formed when the Moon occupies
+   * respectively a Kendra, a Panaphara and an Apoklima house counted from the
+   * Sun."
+   *
+   * Three answers to one question and one of them is always true, so this says
+   * nothing by being present - only by which of the three it is. Worst when the
+   * Moon is nearest the Sun in the angles, best when furthest off in the
+   * cadents, which is the waxing Moon read as a scale.
+   */
+  var MOON_FROM_SUN = [
+    { houses: [1, 4, 7, 10], name: 'Adhama', label: 'a kendra',
+      says: 'the lowest of the three' },
+    { houses: [2, 5, 8, 11], name: 'Sama', label: 'a panaphara',
+      says: 'the middling one' },
+    { houses: [3, 6, 9, 12], name: 'Varishtha', label: 'an apoklima',
+      says: 'the best of the three' }
+  ];
+
+  function moonFromSun(chart) {
+    var positions = {};
+    chart.planets.forEach(function (p) { positions[p.name] = p; });
+    var moon = positions.Moon, sun = positions.Sun;
+    if (!moon || !sun) return [];
+    var house = ((moon.sign - sun.sign) % 12 + 12) % 12 + 1;
+    var band = MOON_FROM_SUN.filter(function (b) {
+      return b.houses.indexOf(house) >= 0;
+    })[0];
+
+    return [{
+      yoga: band.name + ' Yoga',
+      kind: 'general',
+      subject: band.name + ' Yoga',
+      condition: 'general',
+      title: band.name + ' yoga',
+      family: 'The Moon from the Sun',
+      grahas: ['Moon', 'Sun'],
+      houses: [],
+      reasons: [
+        'the Moon stands in the ' + ordinal(house) + ' from the Sun, ' +
+          band.label,
+        'one of these three is true of every chart, so what it says is which ' +
+          'of them holds rather than that any does: this is ' + band.says
+      ],
+      summary: 'The Moon is in the ' + ordinal(house) + ' from the Sun, ' +
+        band.label + ', which is ' + band.name + ' yoga.'
+    }];
+  }
+
+
+  /* ----------------------------------------------------- Mahabhagya */
+
+  /*
+   * Combination 25, and the one place where Raman and his own source part.
+   *
+   * Raman: "In the case of a man, the Sun, the Moon and the Lagna should be in
+   * odd signs. In case of women, when the birth is during night, the Sun, the
+   * Moon and Lagna must be in even signs." Night for women, nothing for men -
+   * and both scans of the 1947 edition read the same, so it is not the OCR.
+   *
+   * Phaladeepika ch.6 shloka 14, which is where the combination comes from, is
+   * symmetric: "If, at a day-birth in the case of a male, the Sun, the Moon and
+   * the Lagna are in odd signs, the Mahabhagya Yoga is formed. The same Yoga in
+   * the case of females will arise when the birth is at night and the Sun, the
+   * Moon and the Lagna are posited in even signs."
+   *
+   * Raman means it. His own worked chart for the combination - No. 25, a male
+   * born at 8-15 p.m., which is night - reads "the Lagna is Aries, the Sun is
+   * in Leo and the Moon is in Libra - all odd signs, consequently Mahabhagya
+   * Yoga is fully present." Under Phaladeepika's rule that birth fails the day
+   * test and there is no yoga.
+   *
+   * So it is a setting, defaulting to Phaladeepika: he states the fuller rule,
+   * the two halves are symmetric in a way Raman's are not, and the day test
+   * halves how often the male form is claimed, from 12.5 per cent of charts to
+   * 6.2.
+   */
+  var MAHABHAGYA_DAY = { PHALADEEPIKA: 'phaladeepika', RAMAN: 'raman' };
+
+  function mahabhagya(chart) {
+    var positions = {};
+    chart.planets.forEach(function (p) { positions[p.name] = p; });
+    var sun = positions.Sun, moon = positions.Moon;
+    if (!sun || !moon) return [];
+    var lagna = Astro.signOf(chart.ascendant.longitude);
+    // Sign indices count from 0 for Aries, so the odd signs are the even ones.
+    var odd = function (sign) { return sign % 2 === 0; };
+    var allOdd = odd(lagna) && odd(sun.sign) && odd(moon.sign);
+    var allEven = !odd(lagna) && !odd(sun.sign) && !odd(moon.sign);
+    if (!allOdd && !allEven) return [];
+
+    var gender = chart.gender;
+    var day = chart.dayBirth;
+    var ramanReading = chart.mahabhagyaDay === MAHABHAGYA_DAY.RAMAN;
+
+    var signs = 'the Sun in ' + Astro.SIGNS[sun.sign] + ', the Moon in ' +
+      Astro.SIGNS[moon.sign] + ' and the ascendant in ' + Astro.SIGNS[lagna] +
+      ', all ' + (allOdd ? 'odd' : 'even') + ' signs';
+    var tripod = 'the ascendant, the Sun and the Moon are the tripod of life, ' +
+      'ruling the body, the soul and the mind, and the yoga asks that all ' +
+      'three fall on one side of the zodiac';
+
+    /*
+     * The rule is written for a man or a woman and the form offers neither as
+     * an option as well. Choosing one of them for a native who did not say
+     * would be inventing a fact; reporting nothing would hide a finding that
+     * may well hold. So where the sex is not given, the half that the signs
+     * fit is reported with the condition it rests on said out loud.
+     */
+    var male = gender === 'male', female = gender === 'female';
+    var known = male || female;
+    var reasons = [signs, tripod];
+
+    if (allOdd) {
+      if (known && !male) return [];              // the odd-sign half is the man's
+      if (!ramanReading && day === false) {
+        return [];                                 // Phaladeepika wants a day birth
+      }
+      if (male) {
+        reasons.push(ramanReading
+          ? 'the odd signs are the reading for a man, and on Raman’s ' +
+            'wording that is the whole of it'
+          : 'the odd signs are the reading for a man, born by day, which this ' +
+            'birth was');
+      } else {
+        reasons.push('the odd signs are the reading for a man; this chart ' +
+          'records no sex, so the finding holds only if the native is one' +
+          (ramanReading ? '' : ', and the birth is by day as the rule asks'));
+      }
+      if (!ramanReading && day === undefined) {
+        reasons.push('whether the birth was by day could not be determined ' +
+          'here, and Phaladeepika asks for it');
+      }
+    } else {
+      if (known && !female) return [];
+      if (day === true) return [];                 // both authorities want night
+      if (female) {
+        reasons.push('the even signs are the reading for a woman born at ' +
+          'night, which both Raman and Phaladeepika ask for');
+      } else {
+        reasons.push('the even signs are the reading for a woman born at ' +
+          'night; this chart records no sex, so the finding holds only if the ' +
+          'native is one');
+      }
+    }
+
+    return [{
+      yoga: 'Mahabhagya Yoga',
+      kind: allOdd ? 'odd' : 'even',
+      subject: 'Mahabhagya Yoga',
+      condition: 'general',
+      title: 'Mahabhagya yoga',
+      family: null,
+      grahas: ['Sun', 'Moon'],
+      houses: [1],
+      reasons: reasons,
+      summary: 'The tripod of life - ascendant, Sun and Moon - falls entirely ' +
+        'in ' + (allOdd ? 'odd' : 'even') + ' signs, which is Mahabhagya yoga.'
+    }];
+  }
+
+  /* --------------------------------------------- four by placement */
+
+  /*
+   * Combination 8. "Chatussagara is caused when all the kendras are occupied by
+   * the planets." The seven starry grahas; the nodes are left out here as they
+   * are everywhere else in this file, being shadows rather than bodies.
+   *
+   * Rare, which is what makes it worth reporting: four houses to fill from
+   * seven grahas, and they cluster.
+   */
+  function chatussagara(chart) {
+    var lagna = Astro.signOf(chart.ascendant.longitude);
+    var held = {};
+    chart.planets.forEach(function (p) {
+      if (GRAHAS.indexOf(p.name) < 0) return;
+      var house = ((p.sign - lagna) % 12 + 12) % 12 + 1;
+      (held[house] || (held[house] = [])).push(p.name);
+    });
+    if (!KENDRAS.every(function (h) { return held[h]; })) return [];
+
+    return [{
+      yoga: 'Chatussagara Yoga',
+      kind: 'general',
+      subject: 'Chatussagara Yoga',
+      condition: 'general',
+      title: 'Chatussagara yoga',
+      family: null,
+      grahas: KENDRAS.reduce(function (all, h) { return all.concat(held[h]); }, []),
+      houses: KENDRAS.slice(),
+      reasons: [
+        KENDRAS.map(function (h) {
+          return listOf(held[h]) + ' in the ' + ordinal(h);
+        }).join(', '),
+        'all four angles occupied, which takes at least four of the seven ' +
+          'grahas spread across houses that tend to cluster - it falls in ' +
+          'under one chart in a hundred'
+      ],
+      summary: 'Every angle is occupied, which is Chatussagara yoga.'
+    }];
+  }
+
+  /*
+   * Combination 10. "Jupiter, Venus, Mercury and the Moon should be in Lagna or
+   * they should be placed in kendra." All four, which is what makes it rare.
+   */
+  var RAJALAKSHANA = ['Jupiter', 'Venus', 'Mercury', 'Moon'];
+
+  function rajalakshana(chart) {
+    var positions = {};
+    chart.planets.forEach(function (p) { positions[p.name] = p; });
+    var lagna = Astro.signOf(chart.ascendant.longitude);
+    var where = {};
+    var all = RAJALAKSHANA.every(function (g) {
+      if (!positions[g]) return false;
+      var house = ((positions[g].sign - lagna) % 12 + 12) % 12 + 1;
+      where[g] = house;
+      return KENDRAS.indexOf(house) >= 0;
+    });
+    if (!all) return [];
+
+    return [{
+      yoga: 'Rajalakshana Yoga',
+      kind: 'general',
+      subject: 'Rajalakshana Yoga',
+      condition: 'general',
+      title: 'Rajalakshana yoga',
+      family: null,
+      grahas: RAJALAKSHANA.slice(),
+      houses: RAJALAKSHANA.map(function (g) { return where[g]; }),
+      reasons: [
+        RAJALAKSHANA.map(function (g) {
+          return g + ' in the ' + ordinal(where[g]);
+        }).join(', ') + ', every one of them an angle',
+        'the name means the marks of royalty, and the rule asks for all four ' +
+          'together rather than any of them: it falls in about one chart in a ' +
+          'hundred'
+      ],
+      summary: 'Jupiter, Venus, Mercury and the Moon all hold angles, which is ' +
+        'Rajalakshana yoga.'
+    }];
+  }
+
+  /*
+   * Combinations 33 to 44. "If all the seven planets occupy the seven houses
+   * contiguously, reckoned from Lagna or any particular Bhava, the appropriate
+   * Malika Yoga is caused." Twelve of them, one per starting house, and Raman
+   * names each after the bhava it begins from.
+   *
+   * The rarest thing this file looks for, by a wide margin. Seven grahas have
+   * to fall in seven adjoining signs and no others, which asks them to be both
+   * spread out and bounded.
+   *
+   * Raman records a dissent worth keeping: "Bhavartha Ratnakara makes a
+   * departure and suggests that the Malika Yoga should always commence from
+   * Lagna and be disposed within five to nine houses from Lagna. According to
+   * this view, evidently no contiguity is implied." The general view is the one
+   * implemented, as Raman implements it.
+   */
+  var MALIKA_NAMES = ['Lagna', 'Dhana', 'Vikrama', 'Sukha', 'Putra', 'Satru',
+    'Kalatra', 'Randhra', 'Bhagya', 'Karma', 'Labha', 'Vraya'];
+
+  function malika(chart) {
+    var lagna = Astro.signOf(chart.ascendant.longitude);
+    var held = {};
+    chart.planets.forEach(function (p) {
+      if (GRAHAS.indexOf(p.name) < 0) return;
+      (held[p.sign] || (held[p.sign] = [])).push(p.name);
+    });
+    var signs = Object.keys(held).map(Number);
+    if (signs.length !== 7) return [];          // seven signs, seven grahas
+
+    var start = null;
+    for (var s = 0; s < 12 && start === null; s++) {
+      var run = true;
+      for (var k = 0; k < 7; k++) {
+        if (!held[(s + k) % 12]) { run = false; break; }
+      }
+      if (run) start = s;
+    }
+    if (start === null) return [];
+
+    var house = ((start - lagna) % 12 + 12) % 12 + 1;
+    var name = MALIKA_NAMES[house - 1];
+    return [{
+      yoga: 'Malika Yoga',
+      kind: name.toLowerCase(),
+      subject: 'Malika Yoga',
+      condition: 'general',
+      title: name + ' Malika yoga',
+      family: 'Malika',
+      grahas: GRAHAS.slice(),
+      houses: [house],
+      reasons: [
+        'all seven grahas stand in seven adjoining signs, running from ' +
+          Astro.SIGNS[start] + ' to ' + Astro.SIGNS[(start + 6) % 12],
+        'the run begins in the ' + ordinal(house) + ', so of Raman’s twelve ' +
+          'it is the ' + name + ' Malika',
+        'it asks the grahas to be spread across seven signs and confined to ' +
+          'them at once, and falls in about one chart in five hundred'
+      ],
+      summary: 'All seven grahas fall in seven adjoining signs from the ' +
+        ordinal(house) + ', which is ' + name + ' Malika yoga.'
+    }];
+  }
+
+
+  /*
+   * Combination 14. "Benefics being disposed in Kendras, the 6th and 8th houses
+   * should either be unoccupied or occupied by benefic planets."
+   *
+   * Two clauses, and the second is the one usually dropped: it is not enough
+   * for benefics to hold angles, the two houses of harm have to be clear of
+   * malefics as well.
+   */
+  function parvata(chart) {
+    var lagna = Astro.signOf(chart.ascendant.longitude);
+    var benefics = Astro.naturalBenefics(chart);
+    var houseOf = function (sign) { return ((sign - lagna) % 12 + 12) % 12 + 1; };
+
+    var inAngles = [], spoilers = [], guests = [];
+    chart.planets.forEach(function (p) {
+      if (GRAHAS.indexOf(p.name) < 0) return;      // nodes are not counted
+      var house = houseOf(p.sign);
+      if (benefics[p.name] && KENDRAS.indexOf(house) >= 0) inAngles.push(p.name);
+      if (house === 6 || house === 8) {
+        guests.push(p.name);
+        if (!benefics[p.name]) spoilers.push(p.name);
+      }
+    });
+    if (!inAngles.length || spoilers.length) return [];
+
+    return [{
+      yoga: 'Parvata Yoga',
+      kind: 'general',
+      subject: 'Parvata Yoga',
+      condition: 'general',
+      title: 'Parvata yoga',
+      family: null,
+      grahas: inAngles.concat(guests),
+      houses: [6, 8],
+      reasons: [
+        listOf(inAngles) + ' in the angles, ' +
+          (guests.length ? 'and the 6th and 8th hold only ' + listOf(guests) +
+            ', benefic' : 'and the 6th and 8th are both empty'),
+        'the second clause is the one usually dropped: benefics in the angles ' +
+          'are not enough on their own, the two houses of harm have to be ' +
+          'clear of malefics as well'
+      ],
+      summary: 'Benefics hold the angles and nothing malefic sits in the 6th ' +
+        'or 8th, which is Parvata yoga.'
+    }];
+  }
+
+  /*
+   * Combination 9. "If benefics occupy the upachayas (3, 6, 10, 11) either from
+   * the ascendant or from the Moon, the combination goes under the name of
+   * Vasumathi Yoga."
+   *
+   * Raman reads it as a scale rather than a switch - "two benefics will give
+   * less wealth while only one benefic will give ordinary wealth" - so the
+   * count is reported, not just the fact. He also holds the lagna form the
+   * stronger: "The Vasumathi resulting from the Lagna seems to have more
+   * influence than the one formed with reference to the Moon."
+   *
+   * Either reference point will do, which is most of why it is so common.
+   * Each alone holds in about 61 per cent of charts; because either satisfies
+   * the rule, one or the other holds in 84 - five charts in six, commoner than
+   * the angle-trine raja yoga and the commonest finding here.
+   */
+  var UPACHAYAS = [3, 6, 10, 11];
+
+  function vasumathi(chart) {
+    var positions = {};
+    chart.planets.forEach(function (p) { positions[p.name] = p; });
+    var lagna = Astro.signOf(chart.ascendant.longitude);
+    var moon = positions.Moon;
+    var benefics = Astro.naturalBenefics(chart);
+
+    var from = function (anchor) {
+      return GRAHAS.filter(function (g) {
+        if (!benefics[g] || !positions[g] || g === 'Moon') return false;
+        var house = ((positions[g].sign - anchor) % 12 + 12) % 12 + 1;
+        return UPACHAYAS.indexOf(house) >= 0;
+      });
+    };
+    var fromLagna = from(lagna);
+    var fromMoon = moon ? from(moon.sign) : [];
+    if (!fromLagna.length && !fromMoon.length) return [];
+
+    var seats = [];
+    if (fromLagna.length) seats.push(listOf(fromLagna) + ' in the upachayas from the ascendant');
+    if (fromMoon.length) seats.push(listOf(fromMoon) + ' in the upachayas from the Moon');
+    var most = Math.max(fromLagna.length, fromMoon.length);
+
+    return [{
+      yoga: 'Vasumathi Yoga',
+      kind: fromLagna.length ? 'lagna' : 'moon',
+      subject: 'Vasumathi Yoga',
+      condition: 'general',
+      title: 'Vasumathi yoga',
+      family: null,
+      grahas: fromLagna.concat(fromMoon.filter(function (g) {
+        return fromLagna.indexOf(g) < 0;
+      })),
+      houses: UPACHAYAS.slice(),
+      reasons: [
+        seats.join(', and '),
+        fromLagna.length
+          ? 'Raman holds the form from the ascendant the stronger of the two'
+          : 'only the Moon gives it here, which Raman reads as the weaker form',
+        'Raman reads the count and not just the fact - "two benefics will give ' +
+          'less wealth while only one benefic will give ordinary wealth", so ' +
+          'more is more - and ' + most + ' stand' + (most === 1 ? 's' : '') +
+          ' here',
+        'the Moon is not counted among the benefics occupying them, being the ' +
+          'reference point for half the rule'
+      ],
+      summary: 'Benefics occupy the upachayas, which is Vasumathi yoga.'
+    }];
+  }
+
   var DETECTORS = [parivartana, neechaBhanga, vipareeta, lakshmi, mahapurusha, rajaYoga,
-    moonCompany, chandraMangala, adhiYoga, sakata, amala, budhaAditya,
+    moonCompany, sunCompany, moonFromSun, mahabhagya,
+    chatussagara, rajalakshana, malika, parvata, vasumathi,
+    chandraMangala, adhiYoga, sakata, amala, budhaAditya,
                    gajaKesari, kartari];
 
   /**
@@ -1234,6 +1761,11 @@ var Yogas = (function () {
     moonCompany: moonCompany, chandraMangala: chandraMangala, adhiYoga: adhiYoga,
     sakata: sakata, amala: amala, budhaAditya: budhaAditya,
     BUDHA_ADITYA_FLOOR: BUDHA_ADITYA_FLOOR, BUDHA_FLOOR: BUDHA_FLOOR,
+    MAHABHAGYA_DAY: MAHABHAGYA_DAY, SUN_COMPANY: SUN_COMPANY,
+    MALIKA_NAMES: MALIKA_NAMES, MOON_FROM_SUN: MOON_FROM_SUN,
+    sunCompany: sunCompany, moonFromSun: moonFromSun, mahabhagya: mahabhagya,
+    chatussagara: chatussagara, rajalakshana: rajalakshana, malika: malika,
+    parvata: parvata, vasumathi: vasumathi, UPACHAYAS: UPACHAYAS,
     MOON_COMPANY: MOON_COMPANY,
     vipareeta: vipareeta, lakshmi: lakshmi, mahapurusha: mahapurusha,
     rajaYoga: rajaYoga, gajaKesari: gajaKesari,

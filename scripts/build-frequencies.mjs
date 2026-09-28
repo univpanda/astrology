@@ -43,6 +43,18 @@ for (let y = 1930; y < 2030; y++) {
         jdUT: Astro.julianDay(y, m, day, hour - place[2] / 60),
         latitude: place[0], longitude: place[1], tzOffsetMinutes: place[2]
       });
+      /*
+       * Two facts about the native that some readings turn on. Mahabhagya is
+       * defined for a man or a woman and tests the birth against sunrise, so a
+       * sweep that left both unset would measure the undetermined case - which
+       * reports both halves - and print a figure no real chart can have. The
+       * sexes alternate because roughly half of people are each.
+       */
+      chart.gender = step % 2 ? 'female' : 'male';
+      const up = Astro.sunriseSunset(chart.julianDay, place[0], place[1], false);
+      const down = Astro.sunriseSunset(chart.julianDay, place[0], place[1], true);
+      chart.dayBirth = up === null || down === null ? undefined
+        : chart.julianDay > up && chart.julianDay < down;
       charts++;
 
       const at = {};
