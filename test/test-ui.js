@@ -6506,6 +6506,14 @@ console.log('\nThe card is wide enough to read and stays on screen');
   ok('one too long for the room below flips above instead',
     cramped.top === 700 - box.top - 400 - 8, cramped.top);
 
+  /* More room above does not help when the card still cannot fit there. The
+     old comparison used `above > room`, flipped this case, and put the card's
+     heading above the viewport. */
+  var neither = place({ left: 300, right: 320, width: 20, top: 600, bottom: 620 },
+    box, { w: 544, h: 700 }, view);
+  ok('one that fits on neither side keeps its heading below the graha',
+    neither.top === 620 - box.top + 8, neither.top);
+
   /*
    * And when neither side has room - a card taller than the window - it stays
    * below rather than being thrown upward off the top, which is the lesser of

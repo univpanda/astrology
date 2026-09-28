@@ -1211,15 +1211,15 @@
       card.style.left = (centre - c.left) + 'px';
 
       /*
-       * Below the graha, unless it does not fit and there is more room above.
-       * A graha with several findings makes a long card, and the bottom of the
-       * window used to cut it off with no way to scroll - the card takes no
-       * pointer events, by design, so it cannot be scrolled into view.
+       * Below the graha, unless it does not fit there but does fit above. Merely
+       * having more room above is not enough: a card taller than both spaces
+       * would otherwise flip to a negative top and lose its name off-screen.
+       * In that case keeping its head below the graha is the useful failure.
        */
       var height = card.offsetHeight || 0;
       var room = vh - r.bottom - GAP;
       var above = r.top - GAP;
-      card.style.top = (height > room && above > room
+      card.style.top = (height > room && height <= above
         ? r.top - c.top - height - GAP
         : r.bottom - c.top + GAP) + 'px';
     };
