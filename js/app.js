@@ -1634,6 +1634,8 @@
           x.strong ? 'Strong' : 'Weak');
       }));
 
+    renderShadbalaChart(grahas, result);
+
     document.getElementById('shadbala-note').textContent =
       'In shashtiamsas; sixty make one Rupa. Where a row name carries a second ' +
       'figure, that is the most the row can be worth, and a pair of figures means ' +
@@ -1652,6 +1654,50 @@
       '— 45, 30, 20, 15, 10, 4, 2 — rather than the halving series some ' +
       'calculators use, which is why totals here can differ from theirs by a few ' +
       'virupas.';
+  }
+
+  /**
+   * Each graha's total as a share of the minimum it is asked for.
+   *
+   * The one figure in the table that compares across grahas, so the one worth
+   * plotting: the totals themselves cannot be, the minimums differing, and a
+   * chart of them would put Mercury's 394 beside the Sun's 558 and say nothing
+   * about which of the two is strong.
+   *
+   * One measure, one axis, and a line at the hundred. The line is the whole of
+   * what the chart is for - a bar is above it or below it - so it is drawn
+   * across the plot and labelled rather than left to a gridline that happens to
+   * be near. No colour codes the verdict: the bar's own height against the line
+   * says it, and the table beside this gives it in words.
+   */
+  function renderShadbalaChart(grahas, result) {
+    var host = document.getElementById('shadbala-chart');
+    if (!host) return;
+    host.innerHTML = '';
+    if (!grahas.length) return;
+
+    var rows = grahas.map(function (graha) {
+      var x = result.grahas[graha];
+      return { graha: graha, percent: x.ratio * 100, rupas: x.rupas,
+               required: x.required, strong: x.strong };
+    });
+    /*
+     * Headroom above the tallest bar, and never less than the line: a chart
+     * where nothing reaches a hundred still has to show where the hundred is.
+     */
+    var top = rows.reduce(function (n, r) { return Math.max(n, r.percent); }, 0);
+    var max = Math.max(120, Math.ceil(top / 20) * 20);
+
+    host.appendChild(barChart({
+      title: 'Against what each graha needs',
+      rows: rows, max: max, rule: 100, ruleLabel: '100%',
+      series: [{ label: 'Of its minimum', cls: 'series-vimsopaka',
+                 value: function (r) { return r.percent; },
+                 readout: function (r) { return Math.round(r.percent) + '%'; } }],
+      note: 'Rupas over the minimum that graha is asked for. A bar above the line ' +
+        'is strong. Totals are not plotted because they cannot be compared: ' +
+        'Mercury is asked for seven rupas and the Sun for five.'
+    }));
   }
 
   /*
@@ -2218,6 +2264,23 @@
       var y = top + plotH - (t / ticks) * plotH;
       svg.appendChild(svgEl('line', { x1: left, y1: y, x2: W - right, y2: y,
                                       class: t === 0 ? 'chart-base' : 'chart-grid' }));
+    }
+
+    /*
+     * A threshold, where the chart has one. It is the whole of what the
+     * shadbala chart is for - a bar is above the line or below it - so it is
+     * drawn across the plot and labelled at its own height rather than left to
+     * be inferred from a gridline that happens to be near.
+     */
+    if (opts.rule !== undefined && opts.rule <= opts.max) {
+      var ruleY = top + plotH - (opts.rule / opts.max) * plotH;
+      svg.appendChild(svgEl('line', { x1: left, y1: ruleY, x2: W - right, y2: ruleY,
+                                      class: 'chart-rule' }));
+      if (opts.ruleLabel) {
+        svg.appendChild(svgEl('text', { x: W - right, y: ruleY - 4,
+                                        class: 'chart-rule-label',
+                                        'text-anchor': 'end' }, opts.ruleLabel));
+      }
     }
 
     var band = plotW / opts.rows.length;

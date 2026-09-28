@@ -1142,6 +1142,21 @@ td.vimsopaka-poor { color: var(--retro); }
    nothing to tell apart. One colour for all five. */
 .series-mark rect { fill: var(--chart-vimsopaka); }
 
+/* A threshold drawn across a plot. The shadbala chart's hundred per cent is the
+   whole of what that chart says - a bar is above the line or below it - so it is
+   a line a reader can see rather than a gridline they have to trust. */
+.chart-rule {
+  stroke: var(--ink-faint);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+}
+.chart-rule-label {
+  font-family: var(--font);
+  font-size: 9px;
+  fill: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
 /* The vimsopaka score beside the chart's title: one number, so it is written
    and not drawn. Recessive against the graha's name, which is what the chart is
    of; the score is what that graha is worth, not a second title. */

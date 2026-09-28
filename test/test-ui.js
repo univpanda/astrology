@@ -1663,6 +1663,47 @@ ok('and the margin is shown, not only the verdict', (function () {
  * The percentage and the verdict must not be able to disagree: both are the
  * same comparison, one with the margin left in.
  */
+/*
+ * And it is the one figure worth plotting, for the same reason. A chart of the
+ * totals would put Mercury's 394 beside the Sun's 558 and say nothing about
+ * which of the two is strong.
+ */
+ok('and it is what the chart plots, the totals not being comparable', (function () {
+  var at = appSrc.indexOf('function renderShadbalaChart');
+  if (at < 0) return false;
+  var block = appSrc.slice(at, appSrc.indexOf('function renderShadbalaHead', at));
+  return /percent: x\.ratio \* 100/.test(block) &&
+    /rule: 100, ruleLabel: '100%'/.test(block) &&
+    /id="shadbala-chart"/.test(html) &&
+    /renderShadbalaChart\(grahas, result\);/.test(appSrc) &&
+    !/value: function \(r\) \{ return r\.totalShashtiamsa/.test(block);
+})());
+/*
+ * The line is the whole of what that chart says, so it is drawn and labelled
+ * rather than left to a gridline that happens to fall near it - and the scale
+ * always reaches it, or a chart where nothing is strong would not show where
+ * strong begins.
+ */
+ok('and the hundred is drawn, labelled, and always on the scale', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var at = appSrc.indexOf('function renderShadbalaChart');
+  var block = appSrc.slice(at, appSrc.indexOf('function renderShadbalaHead', at));
+  return /var max = Math\.max\(120, Math\.ceil\(top \/ 20\) \* 20\);/.test(block) &&
+    /class: 'chart-rule'/.test(appSrc) &&
+    /class: 'chart-rule-label'/.test(appSrc) &&
+    /\.chart-rule \{/.test(css) && /\.chart-rule-label \{/.test(css);
+})());
+/*
+ * No colour codes the verdict. The bar's height against the line says it, the
+ * table beside the chart gives it in words, and a status colour carrying it
+ * alone is the thing the guidance reserves those colours against.
+ */
+ok('and nothing codes the verdict in colour alone', (function () {
+  var at = appSrc.indexOf('function renderShadbalaChart');
+  var block = appSrc.slice(at, appSrc.indexOf('function renderShadbalaHead', at));
+  return /cls: 'series-vimsopaka'/.test(block) && !/cls: r\.strong/.test(block) &&
+    !/strong-flag/.test(block) && !/weak-flag/.test(block);
+})());
 ok('and the two cannot disagree, being one comparison', (function () {
   var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
   for (var y = 1950; y < 2000; y++) {
