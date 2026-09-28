@@ -61,17 +61,6 @@ var Shadbala = (function () {
   var SAPTAVARGA = [1, 2, 3, 7, 9, 12, 30];
   var WEEKDAY_LORDS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
 
-  // Mean daily motion, and the deepest retrograde each graha reaches, degrees.
-  var MOTION = {
-    Sun: { mean: 0.9856, slowest: 0.9530, fastest: 1.0200 },
-    Moon: { mean: 13.176, slowest: 11.76, fastest: 15.39 },
-    Mars: { mean: 0.5240, slowest: -0.4010, fastest: 0.7920 },
-    Mercury: { mean: 4.0923, slowest: -1.3900, fastest: 2.2020 },
-    Jupiter: { mean: 0.0831, slowest: -0.1360, fastest: 0.2420 },
-    Venus: { mean: 1.6021, slowest: -0.6350, fastest: 1.2580 },
-    Saturn: { mean: 0.0335, slowest: -0.0800, fastest: 0.1340 }
-  };
-
   var shortestArc = function (a, b) {
     var d = Math.abs(Astro.norm360(a - b));
     return d > 180 ? 360 - d : d;
@@ -232,15 +221,71 @@ var Shadbala = (function () {
 
   /* ------------------------------------------------------ cheshta bala */
 
-  function cheshtaBala(graha, speed, ayana, paksha) {
-    // The luminaries never retrograde, so they borrow another strength: the Sun
-    // its ayana bala, the Moon its paksha bala.
+  /*
+   * Motional strength, from the chesta kendra - Raman sections 105 to 107.
+   *
+   * "The Chesta kendra is also called Seeghra kendra. According to Sripathi it
+   * is obtained by applying the formula: Graha's Seeghrochcha minus (its mean
+   * long. + its true long.) / 2." And section 107: "The Chesta Bala is zero when
+   * the Chesta kendra is also zero. When it is 180 the Chesta Bala is 60
+   * Shashtiamsas. In intermediate position ... Reduced Chesta kendra / 3."
+   *
+   * This was a proxy: how fast the graha was moving against its own mean and
+   * extremes. The two track each other for the outer three - 0.99 for Saturn
+   * and Jupiter - and not at all for Venus, which retrogrades at inferior
+   * conjunction where the proxy reads it as fast and direct. On one sample
+   * chart the proxy gave Venus 3.9 where the kendra gives 28.7.
+   *
+   * The seeghrocha differs by kind, which is the whole of why the proxy failed.
+   * An outer graha turns retrograde at opposition, so the Sun is its seeghrocha
+   * and the kendra is the elongation. An inner one turns at inferior
+   * conjunction, where its elongation is near nothing; its own mean longitude
+   * is the seeghrocha and the Sun's stands in as its mean, which is the Indian
+   * convention - Mercury and Venus share the Sun's mean motion as seen from
+   * here.
+   *
+   * The Sun and the Moon never retrograde and borrow instead, section 106: "For
+   * the Sun and the Moon, there is no separate method of Cheshta Bala
+   * computation. The Sun's Ayana Bala will itself be his Cheshta Bala while the
+   * Moon's Paksha Bala is her Cheshta Bala."
+   *
+   * One caveat, recorded rather than hidden. Raman's mean longitudes come from
+   * the Surya Siddhanta motions his Tables IV to IX tabulate, and these come
+   * from Standish; the two models do not agree to the degree. Against one
+   * worked reference this reproduces Jupiter, Venus and Saturn to about a
+   * virupa and a half and misses Mars and Mercury by rather more, which is what
+   * that difference looks like.
+   */
+  var INNER = ['Mercury', 'Venus'];
+  var MEAN_KEY = { Mars: 'mars', Mercury: 'mercury', Jupiter: 'jupiter',
+    Venus: 'venus', Saturn: 'saturn' };
+
+  /** Halfway between two longitudes, the short way round. */
+  function midpoint(a, b) {
+    return Astro.norm360(a + (Astro.norm360(b - a + 180) - 180) / 2);
+  }
+
+  /**
+   * The chesta kendra, 0 to 180: nothing where the graha is at its fastest and
+   * a half circle where it is deepest in retrogression.
+   */
+  function chestaKendra(graha, longitude, T, ayanamsa) {
+    var key = MEAN_KEY[graha];
+    if (!key) return 0;
+    var sidereal = function (tropical) { return Astro.norm360(tropical - ayanamsa); };
+    var sunMean = sidereal(Astro.sunMeanLongitude(T));
+    var own = sidereal(Astro.meanLongitude(key, T));
+    var kendra = INNER.indexOf(graha) >= 0
+      ? Astro.norm360(own - midpoint(longitude, sunMean))
+      : Astro.norm360(sunMean - midpoint(longitude, own));
+    return kendra > 180 ? 360 - kendra : kendra;
+  }
+
+  function cheshtaBala(graha, longitude, T, ayanamsa, ayana, paksha) {
+    // The luminaries never retrograde, so they borrow another strength.
     if (graha === 'Sun') return ayana;
     if (graha === 'Moon') return paksha;
-    var motion = MOTION[graha];
-    var span = motion.fastest - motion.slowest;
-    var fromFastest = (motion.fastest - speed) / span;
-    return Math.max(0, Math.min(1, fromFastest)) * 60;
+    return chestaKendra(graha, longitude, T, ayanamsa) / 3;
   }
 
   /* -------------------------------------------------------- yuddha bala */
@@ -466,7 +511,7 @@ var Shadbala = (function () {
         kala.masa + kala.vara + kala.hora + kala.ayana;
 
       var dig = digBala(graha, p.longitude, chart.ascendant.longitude, chart.midheaven.longitude);
-      var cheshta = cheshtaBala(graha, p.speed, ayana, paksha);
+      var cheshta = cheshtaBala(graha, p.longitude, T, chart.ayanamsa, ayana, paksha);
       var naisargika = NAISARGIKA[graha];
       var drik = drikBala(graha, positions, benefics);
 

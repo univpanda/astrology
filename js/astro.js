@@ -546,6 +546,26 @@ var Astro = (function () {
     return { lon: norm360(ofDate.lon + nut.dpsi), lat: ofDate.lat, distance: rho2 };
   }
 
+  /**
+   * A planet's mean longitude, tropical, from the same Standish elements the
+   * positions come from.
+   *
+   * The mean planet is where a body would be if it moved at its average rate -
+   * the uniform circular motion the true position oscillates around. Cheshta
+   * bala is the one thing here that needs it: the chesta kendra is measured
+   * from a mean longitude, not from the true one.
+   */
+  function meanLongitude(bodyKey, T) {
+    var el = ELEMENTS[bodyKey];
+    if (!el) return null;
+    return norm360(el[0][3] + el[1][3] * T);
+  }
+
+  /** The Sun's mean longitude: the Earth's, seen from the other end. */
+  function sunMeanLongitude(T) {
+    return norm360(meanLongitude('earth', T) + 180);
+  }
+
   /* ------------------------------------------------- karakas and avasthas */
 
   /*
@@ -1727,6 +1747,7 @@ var Astro = (function () {
     apparentSiderealTime: apparentSiderealTime,
     moonLongitude: moonLongitude,
     moonLatitude: moonLatitude,
+    meanLongitude: meanLongitude, sunMeanLongitude: sunMeanLongitude,
     charaKarakas: charaKarakas, CHARA_KARAKAS: CHARA_KARAKAS,
     KARAKA_GRAHAS: KARAKA_GRAHAS,
     baladiAvastha: baladiAvastha, BALADI: BALADI, BALADI_WORTH: BALADI_WORTH,

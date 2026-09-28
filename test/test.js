@@ -1609,6 +1609,72 @@ console.log('\nShadbala');
     return seenInRashi;          // and the case really occurs, so this proves something
   })());
 
+  /*
+   * Cheshta bala from the chesta kendra, Raman sections 105-107: nothing where
+   * the kendra is nothing and sixty where it is a half circle, the kendra over
+   * three in between.
+   *
+   * The seeghrocha it is measured from differs by kind, and that is the whole
+   * of the point. An outer graha turns retrograde at opposition, so the Sun is
+   * its seeghrocha and the kendra is its elongation. An inner one turns at
+   * inferior conjunction, where its elongation is near nothing - which is why
+   * the speed proxy this replaces read Venus as fast and direct at the moment
+   * it was deepest in retrogression, and gave it 3.9 where the kendra gives
+   * 28.7 on the same chart.
+   */
+  ok('cheshta is the chesta kendra over three, and never passes sixty',
+     (function () {
+       var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+       var seenHigh = false, seenLow = false;
+       for (var y = 1950; y < 2010; y++) {
+         var c = A.chart({ jdUT: A.julianDay(y, 1 + y % 12, 15, 6.5),
+                           latitude: place.latitude, longitude: place.longitude,
+                           tzOffsetMinutes: place.tzOffsetMinutes });
+         var r = Shadbala.compute(c, place);
+         for (var i = 0; i < Shadbala.GRAHAS.length; i++) {
+           var v = r.grahas[Shadbala.GRAHAS[i]].cheshta;
+           if (v < 0 || v > 60.0001) return false;
+           if (v > 50) seenHigh = true;
+           if (v < 10) seenLow = true;
+         }
+       }
+       return seenHigh && seenLow;
+     })());
+  /*
+   * An outer graha is strongest at opposition, where it retrogrades, and
+   * weakest at conjunction. Checked on the elongation rather than on a
+   * remembered figure: the two ends of the synodic cycle must come out at the
+   * two ends of the scale.
+   */
+  ok('and an outer graha peaks at opposition and bottoms at conjunction',
+     (function () {
+       var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+       var best = { v: -1 }, worst = { v: 99 };
+       for (var d = 0; d < 900; d += 3) {
+         var c = A.chart({ jdUT: A.julianDay(2000, 1, 1, 12) + d,
+                           latitude: place.latitude, longitude: place.longitude,
+                           tzOffsetMinutes: place.tzOffsetMinutes });
+         var r = Shadbala.compute(c, place);
+         var by = {};
+         c.planets.forEach(function (p) { by[p.name] = p; });
+         var el = A.norm360(by.Saturn.longitude - by.Sun.longitude);
+         if (el > 180) el = 360 - el;
+         var v = r.grahas.Saturn.cheshta;
+         if (v > best.v) best = { v: v, el: el };
+         if (v < worst.v) worst = { v: v, el: el };
+       }
+       // Saturn's strongest sample should sit near opposition, its weakest near
+       // conjunction, both within a few degrees of the ends.
+       return best.el > 170 && worst.el < 15;
+     })());
+  /*
+   * And the luminaries borrow rather than compute, section 106. They never
+   * retrograde, so there is no kendra to take.
+   */
+  ok('and the luminaries borrow, the Sun its ayana and the Moon its paksha',
+     Math.abs(result.grahas.Sun.cheshta - result.grahas.Sun.kala.ayana / 2) < 1e-9 &&
+     Math.abs(result.grahas.Moon.cheshta - result.grahas.Moon.kala.paksha / 2) < 1e-9);
+
   // Ceilings, each from its own definition.
   ok('no component exceeds its maximum', Shadbala.GRAHAS.every(function (g) {
     var x = result.grahas[g];

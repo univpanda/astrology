@@ -1503,9 +1503,12 @@
         'together for five grahas, and at 450 for the Moon and the Sun, whose ' +
         'paksha and ayana count double.' },
     { key: 'cheshta', label: 'Cheshta bala', en: 'Motional', max: 60,
-      says: 'Motional strength, read off how far the graha is from its mean motion ' +
-        'and deepest retrograde. The Sun and Moon never retrograde, so theirs is ' +
-        'taken from ayana and paksha bala instead.' },
+      says: 'Motional strength, from the chesta kendra: the graha’s distance from ' +
+        'its seeghrocha, nothing where that is nothing and sixty where it is a ' +
+        'half circle. An outer graha turns retrograde at opposition, so the Sun is ' +
+        'its seeghrocha; an inner one turns at inferior conjunction, so its own ' +
+        'mean longitude is. The Sun and Moon never retrograde and borrow instead, ' +
+        'the Sun its ayana bala and the Moon its paksha.' },
     { key: 'naisargika', label: 'Naisargika bala', en: 'Natural', max: 60,
       says: 'Natural strength, a constant per graha: the same figure in every ' +
         'chart, running from the Sun’s sixty down to Saturn’s 8.57.' },
