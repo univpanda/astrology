@@ -5214,5 +5214,77 @@ console.log('\nEach yoga counted from what its text counts from');
     Yogas.mahapurusha(moonKendra).length === 1);
 })();
 
+
+console.log('\nEvery finding says what happened in this chart');
+/*
+ * The twelve combinations added from Raman all summarised themselves by
+ * restating the rule - "The navamsa lord of the 10th lord is exalted in the
+ * 10th with the ascendant lord" - where every older detector names the grahas:
+ * "Venus is in its exaltation sign in the 10th, a kendra." The card shows the
+ * rule already, on the line above, taken from the lesson library; the summary
+ * is the only place that says what this chart did, so an abstract one says
+ * nothing twice.
+ *
+ * Swept rather than sampled, because the faults this catches - a graha named
+ * three times over, a doubled comma where two clauses met, a sentence opening
+ * on a lowercase "the Moon" - only appear when one graha happens to fill
+ * several roles at once.
+ */
+(function () {
+  var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+  var GRAHAS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn',
+    'Rahu', 'Ketu'];
+  var seen = {}, counted = 0;
+  for (var y = 1950; y < 2025; y++) {
+    for (var m = 1; m <= 12; m += 2) {
+      var c = A.chart({ jdUT: A.julianDay(y, m, 15, 3), latitude: 28.61,
+        longitude: 77.21, tzOffsetMinutes: 330 });
+      Yogas.detect(c, Shadbala.compute(c, place)).forEach(function (f) {
+        counted++;
+        if (!seen[f.subject + '|' + f.condition]) {
+          seen[f.subject + '|' + f.condition] = f.summary || '';
+        }
+      });
+    }
+  }
+  var all = Object.keys(seen);
+  ok('the sweep reaches most of what the detectors can produce',
+    all.length >= 30 && counted > 1000, all.length + ' distinct, ' + counted + ' findings');
+
+  var flawed = all.filter(function (k) {
+    var t = seen[k];
+    return !t || /,\s*,|\s{2}|\ban an\b|\bthe the\b|,\.|\s\./.test(t) ||
+      t[0] !== t[0].toUpperCase();
+  });
+  ok('no summary is malformed, doubled or opened in lower case',
+    flawed.length === 0,
+    flawed.map(function (k) { return k + ' -> ' + seen[k]; }).join(' | '));
+
+  /*
+   * The substance: a summary has to name at least one graha, or it is the rule
+   * restated rather than the chart reported. A handful describe an absence -
+   * Kemadruma is the Moon with nobody beside her - and those name the Moon.
+   */
+  var abstract = all.filter(function (k) {
+    // Malika is about all seven at once and names them collectively, which is
+    // the only honest way to put it: listing seven names would say less.
+    if (/all seven grahas/i.test(seen[k])) return false;
+    return !GRAHAS.some(function (g) { return seen[k].indexOf(g) >= 0; });
+  });
+  ok('every summary names at least one graha', abstract.length === 0,
+    abstract.map(function (k) { return k + ' -> ' + seen[k]; }).join(' | '));
+
+  /*
+   * And the luminaries take their article. "with Moon, lord of the 9th" was
+   * the tell that a name had been dropped into a sentence unexamined.
+   */
+  var bareLuminary = all.filter(function (k) {
+    return /(?:with|beside|and|of) (Sun|Moon)\b/.test(seen[k]);
+  });
+  ok('the Sun and the Moon are not left bare after a preposition',
+    bareLuminary.length === 0,
+    bareLuminary.map(function (k) { return k + ' -> ' + seen[k]; }).join(' | '));
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
