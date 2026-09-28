@@ -1743,9 +1743,500 @@ var Yogas = (function () {
     }];
   }
 
+
+  /* ------------------------------------ combinations 11 to 48, by lordship */
+
+  /*
+   * The combinations from here on turn on lords rather than on grahas, so they
+   * share a few small readings of the chart. Kept together rather than repeated
+   * inside each detector.
+   */
+  function lordship(chart) {
+    var at = {};
+    chart.planets.forEach(function (p) { at[p.name] = p; });
+    var lagna = Astro.signOf(chart.ascendant.longitude);
+    return {
+      at: at,
+      lagna: lagna,
+      lordOf: function (house) { return Astro.SIGN_LORDS[(lagna + house - 1) % 12]; },
+      houseOf: function (name) {
+        return at[name] ? ((at[name].sign - lagna) % 12 + 12) % 12 + 1 : null;
+      },
+      apart: function (a, b) {
+        if (!at[a] || !at[b]) return null;
+        return ((at[a].sign - at[b].sign) % 12 + 12) % 12 + 1;
+      },
+      // "In mutual kendras" is symmetric, so either direction answers it.
+      mutualKendra: function (a, b) {
+        var d = this.apart(a, b);
+        return d !== null && KENDRAS.indexOf(d) >= 0;
+      },
+      dignity: function (name) {
+        return at[name] ? Astro.dignityOf(name, at[name].sign,
+          at[name].longitude % 30) : null;
+      },
+      exalted: function (name) { return this.dignity(name) === 'Exalted'; },
+      together: function (a, b) {
+        return at[a] && at[b] && at[a].sign === at[b].sign;
+      },
+      /* The lord of the navamsa a graha occupies - the D9 sign's ruler, which
+         several of these combinations reach for. */
+      navamsaLord: function (name) {
+        if (!at[name]) return null;
+        return Astro.SIGN_LORDS[Astro.vargaPosition(at[name].longitude, 9).sign];
+      }
+    };
+  }
+
+  // "Strongly disposed" and "powerful" are the same test Lakshmi yoga makes:
+  // the graha meets the minimum Parashara sets for it in the Shadbala reading.
+  function isStrong(strengths, graha) {
+    return !!(strengths && strengths[graha] && strengths[graha].strong);
+  }
+
+  function finding(subject, title, reasons, summary, grahas, houses) {
+    return [{
+      yoga: subject, kind: 'general', subject: subject, condition: 'general',
+      title: title, family: null, grahas: grahas || [], houses: houses || [],
+      reasons: reasons, summary: summary
+    }];
+  }
+
+  /*
+   * Combination 11. "The Lagna is occupied by a malefic with Gulika in a trine;
+   * or Gulika is associated with the lords of Kendras and Thrikonas; or the
+   * lord of lagna is combined with Rahu, Sani or Kethu."
+   *
+   * Three alternative clauses and two of them need Gulika, which this site does
+   * not compute. Gulika is an upagraha found by dividing the day into eight
+   * parts and taking the one Saturn rules, but the rule has variants - which
+   * end of the part is taken, and which lord opens the night - and no text
+   * available here states one. So only the third clause is tested, and the
+   * finding says so: a chart can have this yoga by either of the other two and
+   * be reported as not having it.
+   */
+  var VANCHANA_COMPANY = ['Rahu', 'Saturn', 'Ketu'];
+
+  function vanchanachorabheethi(chart) {
+    var c = lordship(chart);
+    var lord = c.lordOf(1);
+    var with_ = VANCHANA_COMPANY.filter(function (g) {
+      return g !== lord && c.together(lord, g);
+    });
+    if (!with_.length) return [];
+
+    return finding('Vanchanachorabheethi Yoga', 'Vanchanachorabheethi yoga', [
+      lord + ', lord of the ascendant, stands with ' + listOf(with_) + ' in ' +
+        Astro.SIGNS[c.at[lord].sign],
+      'read for a turn of mind rather than an event: a person who expects to ' +
+        'be cheated or robbed, and is watchful about it',
+      'this is the third of Raman’s three clauses. The other two need Gulika, ' +
+        'which is not computed here because no text available to this site ' +
+        'states which of the competing rules for finding it to use - so a ' +
+        'chart may hold this yoga by one of those and be reported without it'
+    ], lord + ', the ascendant lord, is joined by ' + listOf(with_) +
+       ', which is Vanchanachorabheethi yoga.', [lord].concat(with_), [1]);
+  }
+
+  /*
+   * Combination 15. "Lords of the fourth and ninth houses should be in Kendras
+   * from each other and the lord of Lagna should be strongly disposed."
+   *
+   * Raman's own caution on this one is worth carrying: "No yogas should be
+   * interpreted verbatim if the results are to hold good to modern life and
+   * conditions." His results read a commander of a small army and a few
+   * villages.
+   */
+  function kahala(chart, strengths) {
+    var c = lordship(chart);
+    var fourth = c.lordOf(4), ninth = c.lordOf(9), lagnaLord = c.lordOf(1);
+    if (fourth === ninth) return [];              // one graha is not two lords apart
+    if (!c.mutualKendra(fourth, ninth)) return [];
+    if (!isStrong(strengths, lagnaLord)) return [];
+
+    return finding('Kahala Yoga', 'Kahala yoga', [
+      fourth + ' rules the 4th and ' + ninth + ' the 9th, and they stand in ' +
+        'angles from each other',
+      lagnaLord + ', lord of the ascendant, is strong, which the rule asks ' +
+        'for and which is what keeps this from being common',
+      'Raman warns against reading the old results literally: "No yogas ' +
+        'should be interpreted verbatim if the results are to hold good to ' +
+        'modern life and conditions"'
+    ], 'The lords of the 4th and 9th stand in angles from each other with a ' +
+       'strong ascendant lord, which is Kahala yoga.',
+       [fourth, ninth, lagnaLord], [4, 9]);
+  }
+
+  /*
+   * Combination 26. "The lord of the sign occupied by the Moon (who should be
+   * associated with lord of Lagna) should be in a Kendra or in the house of an
+   * intimate friend aspecting Lagna and at the same time, Lagna should be
+   * occupied by a powerful planet."
+   *
+   * Raman calls it "somewhat complicated" himself. Read as three things at
+   * once: the Moon's dispositor keeping company with the ascendant lord, that
+   * dispositor well placed, and the ascendant itself tenanted by something
+   * strong.
+   */
+  function pushkala(chart, strengths) {
+    var c = lordship(chart);
+    if (!c.at.Moon) return [];
+    var dispositor = Astro.SIGN_LORDS[c.at.Moon.sign];
+    var lagnaLord = c.lordOf(1);
+    if (dispositor !== lagnaLord && !c.together(dispositor, lagnaLord)) return [];
+    if (!c.at[dispositor]) return [];
+
+    var house = c.houseOf(dispositor);
+    var inKendra = KENDRAS.indexOf(house) >= 0;
+    /*
+     * "The house of an intimate friend" is the compound relation adhimitra,
+     * read between the graha and the lord of the sign it sits in - the same
+     * reading the graha table prints.
+     */
+    var seatLord = Astro.SIGN_LORDS[c.at[dispositor].sign];
+    var friendly = seatLord !== dispositor &&
+      Astro.compoundRelation(dispositor, seatLord,
+        ((c.at[dispositor].sign - c.at[seatLord].sign) % 12 + 12) % 12 + 1) === 'adhimitra';
+    var seesLagna = aspects(dispositor, c.at[dispositor].sign, c.lagna);
+    if (!inKendra && !(friendly && seesLagna)) return [];
+
+    var tenants = GRAHAS.filter(function (g) {
+      return c.houseOf(g) === 1 && isStrong(strengths, g);
+    });
+    if (!tenants.length) return [];
+
+    return finding('Pushkala Yoga', 'Pushkala yoga', [
+      dispositor + ' rules the sign the Moon occupies and ' +
+        (dispositor === lagnaLord
+          ? 'is himself the lord of the ascendant'
+          : 'stands with ' + lagnaLord + ', the ascendant lord'),
+      inKendra
+        ? dispositor + ' holds the ' + ordinal(house) + ', an angle'
+        : dispositor + ' sits in the sign of ' + seatLord + ', an intimate ' +
+          'friend, and aspects the ascendant',
+      listOf(tenants) + ' occupies the ascendant and is strong, which is the ' +
+        'last of the three things the rule asks at once',
+      'Raman calls the combination "somewhat complicated" himself'
+    ], 'The Moon’s dispositor keeps company with the ascendant lord and is ' +
+       'well placed, with a strong graha in the ascendant, which is Pushkala ' +
+       'yoga.', [dispositor, lagnaLord].concat(tenants), [1]);
+  }
+
+  /*
+   * Combination 28. "The lord of the Navamsa occupied by the lord of the 10th
+   * should join the 10th in exaltation and combined with the lord of Lagna."
+   *
+   * Raman notes a second definition in circulation - "Here again two
+   * definitions are to be found" - but the scan breaks before giving it, so
+   * only the one above is implemented.
+   */
+  function gauri(chart) {
+    var c = lordship(chart);
+    var tenth = c.lordOf(10), lagnaLord = c.lordOf(1);
+    var amsaLord = c.navamsaLord(tenth);
+    if (!amsaLord || !c.at[amsaLord]) return [];
+    if (c.houseOf(amsaLord) !== 10) return [];
+    if (!c.exalted(amsaLord)) return [];
+    if (amsaLord !== lagnaLord && !c.together(amsaLord, lagnaLord)) return [];
+
+    return finding('Gauri Yoga', 'Gauri yoga', [
+      amsaLord + ' rules the navamsa that ' + tenth + ', lord of the 10th, ' +
+        'occupies',
+      amsaLord + ' stands in the 10th himself and exalted there',
+      amsaLord === lagnaLord
+        ? amsaLord + ' is also the lord of the ascendant, which satisfies the ' +
+          'last clause in one graha'
+        : 'and with ' + lagnaLord + ', the lord of the ascendant',
+      'Raman records a second definition in circulation without giving it in ' +
+        'the text available here, so only this one is tested'
+    ], 'The navamsa lord of the 10th lord is exalted in the 10th with the ' +
+       'ascendant lord, which is Gauri yoga.', [amsaLord, tenth, lagnaLord], [10]);
+  }
+
+  /*
+   * Combination 29. "The lords of the Navamsas occupied by the lords of the
+   * 2nd, 5th and 11th should be exalted and combined with the 9th lord."
+   *
+   * Raman points out that this is three yogas and not one: "Three Yogas are
+   * given rise to inasmuch as the 9th lord cannot be in simultaneous
+   * conjunction with all the three Navamsa lords." So any one of the three
+   * forms it, and the finding names which.
+   */
+  var BHARATHI_HOUSES = [2, 5, 11];
+
+  function bharathi(chart) {
+    var c = lordship(chart);
+    var ninth = c.lordOf(9);
+    var made = [];
+    BHARATHI_HOUSES.forEach(function (h) {
+      var lord = c.lordOf(h);
+      var amsaLord = c.navamsaLord(lord);
+      if (!amsaLord || !c.at[amsaLord]) return;
+      if (!c.exalted(amsaLord)) return;
+      if (amsaLord !== ninth && !c.together(amsaLord, ninth)) return;
+      made.push({ house: h, lord: lord, amsaLord: amsaLord });
+    });
+    if (!made.length) return [];
+
+    return finding('Bharathi Yoga', 'Bharathi yoga', [
+      made.map(function (m) {
+        return m.amsaLord + ', lord of the navamsa ' + m.lord + ' occupies as ' +
+          'lord of the ' + ordinal(m.house) + ', exalted';
+      }).join('; and '),
+      (made.length === 1 ? 'and standing with ' : 'each standing with ') +
+        ninth + ', the lord of the 9th',
+      'Raman counts this as three yogas rather than one, "inasmuch as the 9th ' +
+        'lord cannot be in simultaneous conjunction with all the three ' +
+        'Navamsa lords", so any one of the three forms it'
+    ], 'An exalted navamsa lord of the 2nd, 5th or 11th lord stands with the ' +
+       '9th lord, which is Bharathi yoga.',
+       made.map(function (m) { return m.amsaLord; }).concat([ninth]),
+       made.map(function (m) { return m.house; }));
+  }
+
+  /*
+   * Combination 30. "If Jupiter is in Lagna, the Moon in the seventh and the
+   * Sun in the 2nd, the combination goes under the name of Kusuma."
+   *
+   * Raman gives a rival definition from elsewhere and does not adopt it:
+   * "Professor Rao gives an altogether different version in his Satayoga
+   * Manjari when he says that Kusuma Yoga is caused if Venus occupies a fixed
+   * sign in a Kendra, the weak Moon ..." - the scan breaks there. Only Raman's
+   * own is implemented.
+   */
+  function kusuma(chart) {
+    var c = lordship(chart);
+    if (c.houseOf('Jupiter') !== 1) return [];
+    if (c.houseOf('Moon') !== 7) return [];
+    if (c.houseOf('Sun') !== 2) return [];
+
+    return finding('Kusuma Yoga', 'Kusuma yoga', [
+      'Jupiter in the ascendant, the Moon in the 7th and the Sun in the 2nd, ' +
+        'which is the whole of the rule',
+      'three fixed placements and nothing else asked, which makes it one of ' +
+        'the plainest combinations in the book and one of the rarest',
+      'Raman records a different version from Satayoga Manjari and does not ' +
+        'adopt it; his own is what is tested here'
+    ], 'Jupiter holds the ascendant, the Moon the 7th and the Sun the 2nd, ' +
+       'which is Kusuma yoga.', ['Jupiter', 'Moon', 'Sun'], [1, 2, 7]);
+  }
+
+  /*
+   * Combination 31. "If the Ascendant lord is exalted and the fourth and tenth
+   * lords have interchanged houses, Chapa Yoga is caused."
+   *
+   * Raman's own finding on it, from observation rather than text, is the
+   * interesting part: "My observations extending over nearly twenty years lead
+   * me to conclude that Chapa Yoga makes one control the wealth of others
+   * rather than make him rich."
+   */
+  function chapa(chart) {
+    var c = lordship(chart);
+    var lagnaLord = c.lordOf(1), fourth = c.lordOf(4), tenth = c.lordOf(10);
+    if (!c.exalted(lagnaLord)) return [];
+    if (fourth === tenth || !c.at[fourth] || !c.at[tenth]) return [];
+    var fourthSign = (c.lagna + 3) % 12, tenthSign = (c.lagna + 9) % 12;
+    if (c.at[fourth].sign !== tenthSign || c.at[tenth].sign !== fourthSign) return [];
+
+    return finding('Chapa Yoga', 'Chapa yoga', [
+      lagnaLord + ', lord of the ascendant, is exalted in ' +
+        Astro.SIGNS[c.at[lagnaLord].sign],
+      fourth + ' and ' + tenth + ', the lords of the 4th and 10th, have ' +
+        'exchanged signs',
+      'Raman reports twenty years of observation against the literal reading: ' +
+        '"Chapa Yoga makes one control the wealth of others rather than make ' +
+        'him rich" - he found it in the charts of bank officers'
+    ], 'The ascendant lord is exalted and the 4th and 10th lords have ' +
+       'exchanged signs, which is Chapa yoga.',
+       [lagnaLord, fourth, tenth], [1, 4, 10]);
+  }
+
+  /*
+   * Combination 32. "If the exalted lord of the seventh occupies the tenth and
+   * the lord of the 10th is in the 9th, Sreenatha Yoga is caused."
+   *
+   * Raman rates it: "Sreenatha Yoga may be said to be one of the important Raja
+   * Yogas inasmuch as a point of contact is established between the 7th, the
+   * 9th and the 10th."
+   *
+   * It cannot happen. The first clause asks the 7th lord to be exalted while
+   * standing in the 10th, so the 10th sign has to be that lord's exaltation
+   * sign, and across all twelve ascendants that is true of exactly one -
+   * Sagittarius, whose 7th is Gemini and whose 10th is Virgo, both ruled by
+   * Mercury. The second clause then asks the lord of the 10th to be in the 9th,
+   * and that is the same graha, which cannot hold two houses at once.
+   *
+   * The detector is kept rather than deleted. It is a correct reading of the
+   * rule, and the rule is what the site claims to implement; what makes it
+   * unsatisfiable is the exaltation table, not the code. A test holds the
+   * arithmetic so that if that table is ever parameterised this stops being
+   * silently dead.
+   */
+  function sreenatha(chart) {
+    var c = lordship(chart);
+    var seventh = c.lordOf(7), tenth = c.lordOf(10);
+    if (seventh === tenth) return [];
+    if (c.houseOf(seventh) !== 10 || !c.exalted(seventh)) return [];
+    if (c.houseOf(tenth) !== 9) return [];
+
+    return finding('Sreenatha Yoga', 'Sreenatha yoga', [
+      seventh + ', lord of the 7th, stands exalted in the 10th',
+      tenth + ', lord of the 10th, stands in the 9th',
+      'Raman counts it among the important raja yogas, "inasmuch as a point ' +
+        'of contact is established between the 7th, the 9th and the 10th"'
+    ], 'The exalted 7th lord holds the 10th while the 10th lord holds the 9th, ' +
+       'which is Sreenatha yoga.', [seventh, tenth], [7, 9, 10]);
+  }
+
+  /*
+   * Combination 45. "The lords of the 5th and 6th should be in mutual kendras
+   * and the lord of Lagna must be powerful."
+   */
+  function sankha(chart, strengths) {
+    var c = lordship(chart);
+    var fifth = c.lordOf(5), sixth = c.lordOf(6), lagnaLord = c.lordOf(1);
+    if (fifth === sixth) return [];
+    if (!c.mutualKendra(fifth, sixth)) return [];
+    if (!isStrong(strengths, lagnaLord)) return [];
+
+    return finding('Sankha Yoga', 'Sankha yoga', [
+      fifth + ' rules the 5th and ' + sixth + ' the 6th, and they stand in ' +
+        'angles from each other',
+      lagnaLord + ', lord of the ascendant, is strong',
+      'an odd pairing to read as fortunate, the 6th being a house of harm; ' +
+        'what the rule joins is the house of merit to the house of effort'
+    ], 'The lords of the 5th and 6th stand in angles from each other with a ' +
+       'strong ascendant lord, which is Sankha yoga.',
+       [fifth, sixth, lagnaLord], [5, 6]);
+  }
+
+  /*
+   * Combination 46. "If Venus, lord of Lagna and Jupiter are in mutual Kendras
+   * and the lord of the 9th is powerfully disposed, Bheri Yoga is caused."
+   */
+  function bheri(chart, strengths) {
+    var c = lordship(chart);
+    var lagnaLord = c.lordOf(1), ninth = c.lordOf(9);
+    var three = ['Venus', lagnaLord, 'Jupiter'].filter(function (g, i, all) {
+      return all.indexOf(g) === i;
+    });
+    var mutual = true;
+    for (var i = 0; i < three.length && mutual; i++) {
+      for (var j = i + 1; j < three.length; j++) {
+        if (!c.mutualKendra(three[i], three[j])) { mutual = false; break; }
+      }
+    }
+    if (!mutual) return [];
+    if (!isStrong(strengths, ninth)) return [];
+
+    return finding('Bheri Yoga', 'Bheri yoga', [
+      listOf(three) + ' stand in angles from one another' +
+        (three.length < 3 ? ', the ascendant lord being one of the other two' : ''),
+      ninth + ', lord of the 9th, is strong, which the rule asks for',
+      'read for long life free of illness and for income from several sources'
+    ], 'Venus, the ascendant lord and Jupiter stand in angles from one another ' +
+       'with a strong 9th lord, which is Bheri yoga.',
+       three.concat([ninth]), [1, 9]);
+  }
+
+  /*
+   * Combination 47. "Malefics should be disposed in Lagna and the 9th; the
+   * fifth house should contain both malefics and benefics; and the fourth and
+   * 8th should be occupied by malefics."
+   *
+   * Four clauses, every one of them about malefics, and the results are
+   * favourable: "a clever prophet, an ocean of kindness, intelligent". One of
+   * the few places the book reads a chart full of malefics as a blessing.
+   */
+  function matsya(chart) {
+    var c = lordship(chart);
+    var benefics = Astro.naturalBenefics(chart);
+    var inHouse = function (h) {
+      return GRAHAS.concat(['Rahu', 'Ketu']).filter(function (g) {
+        return c.houseOf(g) === h;
+      });
+    };
+    var malefic = function (list) {
+      return list.filter(function (g) { return !benefics[g]; });
+    };
+    var first = malefic(inHouse(1)), ninth = malefic(inHouse(9));
+    if (!first.length || !ninth.length) return [];
+    var fifth = inHouse(5);
+    var fifthGood = fifth.filter(function (g) { return benefics[g]; });
+    var fifthBad = malefic(fifth);
+    if (!fifthGood.length || !fifthBad.length) return [];
+    var fourth = malefic(inHouse(4)), eighth = malefic(inHouse(8));
+    if (!fourth.length || !eighth.length) return [];
+
+    return finding('Matsya Yoga', 'Matsya yoga', [
+      listOf(first) + ' in the ascendant and ' + listOf(ninth) + ' in the 9th, ' +
+        'both malefic',
+      listOf(fifthGood) + ' and ' + listOf(fifthBad) + ' together in the 5th, ' +
+        'which the rule asks to hold both kinds',
+      listOf(fourth) + ' in the 4th and ' + listOf(eighth) + ' in the 8th',
+      'four clauses, every one about malefics, and the reading is favourable ' +
+        'throughout - "a clever prophet, an ocean of kindness". It is one of ' +
+        'the few places the book reads a chart full of malefics as a blessing'
+    ], 'Malefics hold the ascendant, the 4th, the 8th and the 9th with the 5th ' +
+       'mixed, which is Matsya yoga.',
+       first.concat(ninth, fifth, fourth, eighth), [1, 4, 5, 8, 9]);
+  }
+
+  /*
+   * Combination 48. "The lord of the Navamsa occupied by an exalted planet
+   * should be posited in a trine or quadrant identical with friendly or exalted
+   * sign, and the lord of Lagna should be strongly disposed."
+   *
+   * Raman says the wording is unclear and then reads it out: "The definition of
+   * the Yoga is somewhat confusing. Some planet is exalted and he occupies some
+   * Navamsa. The lord of the said ..." - the scan breaks there, but the reading
+   * he begins is the one taken here.
+   */
+  function mridanga(chart, strengths) {
+    var c = lordship(chart);
+    var lagnaLord = c.lordOf(1);
+    if (!isStrong(strengths, lagnaLord)) return [];
+
+    var made = null;
+    GRAHAS.forEach(function (g) {
+      if (made || !c.exalted(g)) return;
+      var amsaLord = c.navamsaLord(g);
+      if (!amsaLord || !c.at[amsaLord]) return;
+      var house = c.houseOf(amsaLord);
+      if (KENDRAS.indexOf(house) < 0 && TRIKONAS.indexOf(house) < 0) return;
+      var dignity = c.dignity(amsaLord);
+      var seatLord = Astro.SIGN_LORDS[c.at[amsaLord].sign];
+      var relation = seatLord === amsaLord ? 'own'
+        : Astro.compoundRelation(amsaLord, seatLord,
+            ((c.at[amsaLord].sign - c.at[seatLord].sign) % 12 + 12) % 12 + 1);
+      var welcome = dignity === 'Exalted' || relation === 'own' ||
+        relation === 'mitra' || relation === 'adhimitra';
+      if (!welcome) return;
+      made = { exalted: g, amsaLord: amsaLord, house: house, relation: relation,
+               dignity: dignity };
+    });
+    if (!made) return [];
+
+    return finding('Mridanga Yoga', 'Mridanga yoga', [
+      made.exalted + ' is exalted, and ' + made.amsaLord + ' rules the navamsa ' +
+        made.exalted + ' occupies',
+      made.amsaLord + ' stands in the ' + ordinal(made.house) + ', ' +
+        (KENDRAS.indexOf(made.house) >= 0 ? 'an angle' : 'a trine') + ', in ' +
+        (made.dignity === 'Exalted' ? 'exaltation'
+          : made.relation === 'own' ? 'his own sign' : 'a friendly sign'),
+      lagnaLord + ', lord of the ascendant, is strong',
+      'Raman calls the wording "somewhat confusing" and begins reading it out ' +
+        'before the page breaks; the reading he starts is the one taken here'
+    ], 'The navamsa lord of an exalted graha stands well placed in an angle or ' +
+       'trine with a strong ascendant lord, which is Mridanga yoga.',
+       [made.exalted, made.amsaLord, lagnaLord], [made.house]);
+  }
+
   var DETECTORS = [parivartana, neechaBhanga, vipareeta, lakshmi, mahapurusha, rajaYoga,
     moonCompany, sunCompany, moonFromSun, mahabhagya,
     chatussagara, rajalakshana, malika, parvata, vasumathi,
+    vanchanachorabheethi, kahala, pushkala, gauri, bharathi, kusuma,
+    chapa, sreenatha, sankha, bheri, matsya, mridanga,
     chandraMangala, adhiYoga, sakata, amala, budhaAditya,
                    gajaKesari, kartari];
 
@@ -1788,6 +2279,10 @@ var Yogas = (function () {
     sunCompany: sunCompany, moonFromSun: moonFromSun, mahabhagya: mahabhagya,
     chatussagara: chatussagara, rajalakshana: rajalakshana, malika: malika,
     parvata: parvata, vasumathi: vasumathi, UPACHAYAS: UPACHAYAS,
+    vanchanachorabheethi: vanchanachorabheethi, kahala: kahala,
+    pushkala: pushkala, gauri: gauri, bharathi: bharathi, kusuma: kusuma,
+    chapa: chapa, sreenatha: sreenatha, sankha: sankha, bheri: bheri,
+    matsya: matsya, mridanga: mridanga,
     MOON_COMPANY: MOON_COMPANY,
     vipareeta: vipareeta, lakshmi: lakshmi, mahapurusha: mahapurusha,
     rajaYoga: rajaYoga, gajaKesari: gajaKesari,

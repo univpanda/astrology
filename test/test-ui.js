@@ -1241,9 +1241,11 @@ ok('the page says which yogas it looks for, and the list is current', (function 
                'Gaja Kesari', 'kartari', 'Mahapurusha', 'Sunapha', 'Chandra Mangala',
                'Adhi', 'Sakata', 'Amala', 'Budha-Aditya', 'Vesi', 'Adhama',
                'Mahabhagya', 'Chatussagara', 'Rajalakshana', 'Malika', 'Parvata',
-               'Vasumathi'];
+               'Vasumathi', 'Vanchanachorabheethi', 'Kahala', 'Pushkala',
+               'Gauri', 'Bharathi', 'Kusuma', 'Chapa', 'Sreenatha', 'Sankha',
+               'Bheri', 'Matsya', 'Mridanga'];
   return named.every(function (n) { return flat.indexOf(n) >= 0; }) &&
-    /Raja yoga, parivartana, neecha bhanga, vipareeta raja, Lakshmi, Gaja Kesari, kartari, the five Mahapurusha yogas, the Moon’s own four - Sunapha, Anapha, Durudhura and Kemadruma - the Sun’s three - Vesi, Vasi and Ubhayachari - the Moon read from the Sun as Adhama, Sama or Varishtha, Chandra Mangala, Adhi, Sakata, Amala, Budha-Aditya, Mahabhagya, Chatussagara, Rajalakshana, Malika, Parvata and Vasumathi are checked/
+    /Raja yoga, parivartana, neecha bhanga, vipareeta raja, Lakshmi, Gaja Kesari, kartari, the five Mahapurusha yogas, the Moon’s own four - Sunapha, Anapha, Durudhura and Kemadruma - the Sun’s three - Vesi, Vasi and Ubhayachari - the Moon read from the Sun as Adhama, Sama or Varishtha, Chandra Mangala, Adhi, Sakata, Amala, Budha-Aditya, Mahabhagya, Chatussagara, Rajalakshana, Malika, Parvata, Vasumathi, Vanchanachorabheethi, Kahala, Pushkala, Gauri, Bharathi, Kusuma, Chapa, Sreenatha, Sankha, Bheri, Matsya and Mridanga are checked/
       .test(flat) &&
     named.length === Yogas.DETECTOR_COUNT;
 })(), Yogas.DETECTOR_COUNT + ' detectors');

@@ -2862,7 +2862,9 @@
         'Durudhura and Kemadruma - the Sun’s three - Vesi, Vasi and Ubhayachari - ' +
         'the Moon read from the Sun as Adhama, Sama or Varishtha, Chandra Mangala, ' +
         'Adhi, Sakata, Amala, Budha-Aditya, Mahabhagya, Chatussagara, Rajalakshana, ' +
-        'Malika, Parvata and Vasumathi are checked' + ' so far; the Lesson tab ' +
+        'Malika, Parvata, Vasumathi, Vanchanachorabheethi, Kahala, Pushkala, Gauri, ' +
+        'Bharathi, Kusuma, Chapa, Sreenatha, Sankha, Bheri, Matsya and Mridanga ' +
+        'are checked' + ' so far; the Lesson tab ' +
         'explains each.';
       return;
     }
@@ -2871,7 +2873,9 @@
       'Durudhura and Kemadruma - the Sun’s three - Vesi, Vasi and Ubhayachari - ' +
       'the Moon read from the Sun as Adhama, Sama or Varishtha, Chandra Mangala, ' +
       'Adhi, Sakata, Amala, Budha-Aditya, Mahabhagya, Chatussagara, Rajalakshana, ' +
-      'Malika, Parvata and Vasumathi are checked' + ' so far; more will follow. An angle-trine raja yoga ' +
+      'Malika, Parvata, Vasumathi, Vanchanachorabheethi, Kahala, Pushkala, Gauri, ' +
+      'Bharathi, Kusuma, Chapa, Sreenatha, Sankha, Bheri, Matsya and Mridanga ' +
+      'are checked' + ' so far; more will follow. An angle-trine raja yoga ' +
       'is common, present in roughly three charts in four, so it is read alongside the ' +
       'strength of the grahas forming it rather than on its own. The Lesson tab explains ' +
       'what each one means. Yogas are read in the division chosen above, which is ' +

@@ -3108,7 +3108,11 @@ ok('ordinals read correctly', Yogas.ordinal(1) === '1st' && Yogas.ordinal(2) ===
                    Yogas.sakata, Yogas.amala, Yogas.budhaAditya,
                    Yogas.sunCompany, Yogas.moonFromSun, Yogas.mahabhagya,
                    Yogas.chatussagara, Yogas.rajalakshana, Yogas.malika,
-                   Yogas.parvata, Yogas.vasumathi];
+                   Yogas.parvata, Yogas.vasumathi,
+                   Yogas.vanchanachorabheethi, Yogas.kahala, Yogas.pushkala,
+                   Yogas.gauri, Yogas.bharathi, Yogas.kusuma, Yogas.chapa,
+                   Yogas.sreenatha, Yogas.sankha, Yogas.bheri, Yogas.matsya,
+                   Yogas.mridanga];
   ok('every detector is covered by this test', detectors.length === Yogas.DETECTOR_COUNT,
      detectors.length + ' named, ' + Yogas.DETECTOR_COUNT + ' in the module');
 
@@ -4888,6 +4892,118 @@ console.log('\nThe strengths a detector is handed');
   }
   ok('no detector reports differently for the two shapes', mixed === 0,
     mixed + ' charts disagreed');
+})();
+
+
+console.log('\nEverything Raman numbers up to 50');
+(function () {
+  var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+  var P = function (n, h, d) {
+    return { name: n, sign: (h - 1) % 12, longitude: ((h - 1) % 12) * 30 + (d || 5),
+             house: h };
+  };
+
+  /*
+   * Sreenatha cannot occur, and that is arithmetic rather than opinion. The
+   * 7th lord must be exalted while standing in the 10th, so the 10th sign has
+   * to be that lord's exaltation sign; across twelve ascendants that is true of
+   * Sagittarius alone, where the same graha rules both the 7th and the 10th and
+   * would have to hold two houses at once.
+   *
+   * Held here so that if the exaltation table is ever parameterised this stops
+   * being silently dead code.
+   */
+  var EXALTS = { Sun: 0, Moon: 1, Mars: 9, Mercury: 5, Jupiter: 3, Venus: 11, Saturn: 6 };
+  var possible = [];
+  for (var L = 0; L < 12; L++) {
+    var seventh = A.SIGN_LORDS[(L + 6) % 12], tenth = A.SIGN_LORDS[(L + 9) % 12];
+    if (EXALTS[seventh] === (L + 9) % 12) possible.push({ lagna: L, seventh: seventh, tenth: tenth });
+  }
+  ok('only one ascendant lets the 7th lord be exalted in the 10th',
+    possible.length === 1 && possible[0].lagna === 8,
+    possible.map(function (p) { return A.SIGNS[p.lagna]; }).join(', ') || 'none');
+  ok('and there the 7th and 10th are ruled by the same graha, so Sreenatha cannot form',
+    possible[0].seventh === possible[0].tenth, possible[0].seventh);
+
+  /*
+   * Matsya is not impossible, only very constrained, and the constraint is
+   * worth pinning: five houses need a malefic apiece and no two of them are
+   * opposite, so the nodes fill one slot between them. The fifth malefic has to
+   * be a dark Moon, which puts her beside the Sun.
+   */
+  var SET = [1, 4, 5, 8, 9];
+  ok('no two of Matsya’s five houses are opposite, so the nodes fill only one',
+    SET.filter(function (h) { return SET.indexOf(((h + 5) % 12) + 1) >= 0; }).length === 0);
+  var fish = { ascendant: { longitude: 5 }, planets: [
+    P('Rahu', 1), P('Sun', 4, 25), P('Moon', 5, 8), P('Jupiter', 5, 20),
+    P('Mars', 8), P('Saturn', 9), P('Ketu', 7), P('Mercury', 11), P('Venus', 12)] };
+  ok('and with a dark Moon beside the Sun it can be built',
+    Yogas.matsya(fish).length === 1);
+  fish.planets[2].longitude = (5 - 1) * 30 + 8 + 150;   // move the Moon into the light
+  ok('while a bright Moon in the same seat leaves the 5th without a malefic',
+    Yogas.matsya(fish).length === 0);
+
+  /*
+   * Kusuma asks for three fixed placements and nothing else, which makes it the
+   * easiest of these to state and among the rarest to meet.
+   */
+  var flower = { ascendant: { longitude: 5 }, planets: [
+    P('Jupiter', 1), P('Sun', 2), P('Moon', 7), P('Mars', 3), P('Mercury', 4),
+    P('Venus', 5), P('Saturn', 6)] };
+  ok('Jupiter rising, the Sun in the 2nd and the Moon in the 7th is Kusuma',
+    Yogas.kusuma(flower).length === 1);
+  flower.planets[1].house = 3;
+  flower.planets[1].sign = 2;
+  ok('and moving any one of the three ends it', Yogas.kusuma(flower).length === 0);
+
+  /*
+   * The three that turn on a strength reading must all withhold when the graha
+   * the rule names is weak, since that clause is what keeps them uncommon.
+   */
+  var weak = {};
+  ['Kahala', 'Sankha', 'Bheri'].forEach(function (name) { weak[name] = 0; });
+  var strengthless = 0, withheld = 0;
+  for (var y = 1950; y < 2020; y += 2) {
+    var c = A.chart({ jdUT: A.julianDay(y, 5, 5, 5), latitude: 28.61,
+      longitude: 77.21, tzOffsetMinutes: 330 });
+    var full = Shadbala.compute(c, place);
+    var withStrength = Yogas.detect(c, full).filter(function (f) {
+      return ['Kahala Yoga', 'Sankha Yoga', 'Bheri Yoga', 'Mridanga Yoga',
+              'Pushkala Yoga'].indexOf(f.subject) >= 0;
+    }).length;
+    var without = Yogas.detect(c, {}).filter(function (f) {
+      return ['Kahala Yoga', 'Sankha Yoga', 'Bheri Yoga', 'Mridanga Yoga',
+              'Pushkala Yoga'].indexOf(f.subject) >= 0;
+    }).length;
+    strengthless += without;
+    if (withStrength > 0) withheld++;
+  }
+  ok('the strength clauses are real: with no strength reading none of them form',
+    strengthless === 0 && withheld > 0,
+    strengthless + ' formed without strengths, ' + withheld + ' charts had one with');
+
+  /*
+   * Vanchanachorabheethi tests only the third of Raman's three clauses, the
+   * other two needing Gulika. The finding has to say so rather than let a
+   * reader take absence for absence.
+   */
+  var suspicious = null;
+  for (y = 1950; y < 2000 && !suspicious; y++) {
+    var c2 = A.chart({ jdUT: A.julianDay(y, 8, 8, 8), latitude: 28.61,
+      longitude: 77.21, tzOffsetMinutes: 330 });
+    suspicious = Yogas.vanchanachorabheethi(c2)[0];
+  }
+  ok('Vanchanachorabheethi admits that two of its three clauses are not tested',
+    !!suspicious && suspicious.reasons.join(' ').indexOf('Gulika') > -1,
+    suspicious ? 'found' : 'no chart produced it');
+
+  /*
+   * And the count: everything the book numbers up to 50 that can be verified
+   * from the scans, which is all but 49 and 50 themselves.
+   */
+  var detectors = Yogas.DETECTOR_COUNT;
+  ok('the module carries a detector for each of them', detectors === 34,
+    detectors + ' detectors');
 })();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');

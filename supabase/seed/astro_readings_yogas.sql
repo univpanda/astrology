@@ -630,3 +630,128 @@ on conflict (topic, subject, condition) do update set
   note = excluded.note,
   sort_order = excluded.sort_order,
   updated_at = now();
+
+-- Raman's combinations 11 to 48, completing everything the book numbers up to
+-- 50 that this site can verify. Two are left out and say so: 49 breaks across a
+-- page in both scans available, and 50 is absent from the body of both.
+
+insert into astro_readings (topic, subject, condition, heading, points, note, sort_order) values
+
+('yoga', 'Vanchanachorabheethi Yoga', 'general',
+ 'Vanchanachorabheethi - the ascendant lord in hard company',
+ array[
+   'Raman''s combination 11: "The Lagna is occupied by a malefic with Gulika in a trine; or Gulika is associated with the lords of Kendras and Thrikonas; or the lord of lagna is combined with Rahu, Sani or Kethu." Read for a turn of mind rather than an event - a person who expects to be cheated, swindled or robbed, and is watchful about it.',
+   'Three alternative clauses, any one of which forms the yoga. Two of them need Gulika, and this site does not compute Gulika.',
+   'That is a deliberate gap, not an oversight. Gulika is an upagraha found by dividing the day into eight parts and taking the one Saturn rules, but the rule has variants - which end of the part is taken as the position, and which lord opens the reckoning at night - and none of the texts consulted for this site states one. Implementing a version nobody here can cite would be exactly the mistake these lessons are about.',
+   'So only the third clause is tested, and a chart can hold this yoga by one of the other two and be reported without it. The finding says so where it appears.'
+ ],
+ 'The nodes count as malefic company here, which is what the clause names.', 988),
+
+('yoga', 'Kahala Yoga', 'general',
+ 'Kahala - the 4th and 9th lords in angles from each other',
+ array[
+   'Raman''s combination 15: "Lords of the fourth and ninth houses should be in Kendras from each other and the lord of Lagna should be strongly disposed."',
+   'Two clauses, and the second does most of the work: mutual angles between two particular lords is common, a strong ascendant lord by Shadbala is not.',
+   'Raman''s results read oddly to a modern eye - "stubborn, not well informed, daring, head of a small army and a few villages" - and he says so himself in the same breath: "No yogas should be interpreted verbatim if the results are to hold good to modern life and conditions."'
+ ],
+ null, 989),
+
+('yoga', 'Pushkala Yoga', 'general',
+ 'Pushkala - the Moon''s dispositor with the ascendant lord',
+ array[
+   'Raman''s combination 26: "The lord of the sign occupied by the Moon (who should be associated with lord of Lagna) should be in a Kendra or in the house of an intimate friend aspecting Lagna and at the same time, Lagna should be occupied by a powerful planet."',
+   'Raman calls it "somewhat complicated" himself, and it is: three things are asked at once. The graha ruling the Moon''s sign must keep company with the ascendant lord; that same graha must be either in an angle or in the sign of an intimate friend while aspecting the ascendant; and the ascendant must hold a graha that is strong.',
+   '"Intimate friend" is read here as the compound relation adhimitra - natural and temporal friendship together - which is the reading the graha table prints elsewhere on this site.'
+ ],
+ null, 990),
+
+('yoga', 'Gauri Yoga', 'general',
+ 'Gauri - the navamsa lord of the 10th lord, exalted in the 10th',
+ array[
+   'Raman''s combination 28: "The lord of the Navamsa occupied by the lord of the 10th should join the 10th in exaltation and combined with the lord of Lagna."',
+   'A chain of three steps: find the 10th lord, find which navamsa it occupies, take that navamsa''s ruler - and that ruler must stand exalted in the 10th house, with the ascendant lord beside it.',
+   'Raman notes "here again two definitions are to be found" and the scan available here breaks before giving the second, so only this one is tested.'
+ ],
+ null, 991),
+
+('yoga', 'Bharathi Yoga', 'general',
+ 'Bharathi - an exalted navamsa lord with the 9th lord',
+ array[
+   'Raman''s combination 29: "The lords of the Navamsas occupied by the lords of the 2nd, 5th and 11th should be exalted and combined with the 9th lord."',
+   'Raman points out that this is three yogas and not one: "Three Yogas are given rise to inasmuch as the 9th lord cannot be in simultaneous conjunction with all the three Navamsa lords." So any one of the three forms it, and the finding names which.',
+   'Read for learning and for fame in it - a reputed scholar, fond of music, with bewitching eyes.'
+ ],
+ null, 992),
+
+('yoga', 'Kusuma Yoga', 'general',
+ 'Kusuma - Jupiter rising, the Moon setting, the Sun in the 2nd',
+ array[
+   'Raman''s combination 30: "If Jupiter is in Lagna, the Moon in the seventh and the Sun in the 2nd, the combination goes under the name of Kusuma."',
+   'Three fixed placements and nothing else asked, which makes it one of the plainest rules in the book and one of the rarest findings on this site - about one chart in a thousand.',
+   'Raman records a rival definition and does not adopt it: "Professor Rao gives an altogether different version in his Satayoga Manjari when he says that Kusuma Yoga is caused if Venus occupies a fixed sign in a Kendra, the weak Moon ..." The scan breaks there. Raman''s own is what is implemented.'
+ ],
+ null, 993),
+
+('yoga', 'Chapa Yoga', 'general',
+ 'Chapa - an exalted ascendant lord with the 4th and 10th exchanged',
+ array[
+   'Raman''s combination 31: "If the Ascendant lord is exalted and the fourth and tenth lords have interchanged houses, Chapa Yoga is caused."',
+   'The most interesting thing about it is not the definition but what Raman says he found: "My observations extending over nearly twenty years lead me to conclude that Chapa Yoga makes one control the wealth of others rather than make him rich." He reports finding it in the charts of bank officers.',
+   'That is a rare thing in these books - a stated result revised against cases rather than repeated - and it is worth more than the original reading of a treasury officer.'
+ ],
+ null, 994),
+
+('yoga', 'Sreenatha Yoga', 'general',
+ 'Sreenatha - a combination that cannot occur',
+ array[
+   'Raman''s combination 32: "If the exalted lord of the seventh occupies the tenth and the lord of the 10th is in the 9th, Sreenatha Yoga is caused." He rates it highly: "Sreenatha Yoga may be said to be one of the important Raja Yogas inasmuch as a point of contact is established between the 7th, the 9th and the 10th."',
+   'It cannot happen. The first clause asks the 7th lord to be exalted while standing in the 10th, so the 10th sign must be that lord''s own exaltation sign. Across all twelve ascendants that is true of exactly one: Sagittarius, whose 7th house is Gemini and whose 10th is Virgo - both ruled by Mercury.',
+   'The second clause then asks the lord of the 10th to stand in the 9th. That is the same graha, and it cannot hold two houses at once. So on the literal reading, with the standard exaltation signs, no chart can carry Sreenatha yoga.',
+   'This site implements it anyway and reports nothing, which is the honest outcome: the rule is what is claimed to be implemented, and what makes it unsatisfiable is the exaltation table rather than the code. A test holds the arithmetic so the finding does not quietly become dead code.',
+   'The likely explanation is that "exalted" was not meant to be read as strictly as it looks, or that the houses have been transmitted wrongly somewhere. Neither is something this site can settle, so it says what it can check.'
+ ],
+ 'Checked against the standard exaltations: Sun in Aries, Moon Taurus, Mars Capricorn, Mercury Virgo, Jupiter Cancer, Venus Pisces, Saturn Libra.', 995),
+
+('yoga', 'Sankha Yoga', 'general',
+ 'Sankha - the 5th and 6th lords in angles from each other',
+ array[
+   'Raman''s combination 45: "The lords of the 5th and 6th should be in mutual kendras and the lord of Lagna must be powerful."',
+   'An odd pairing to read as fortunate, the 6th being a house of harm. What the rule joins is the house of merit to the house of effort, and the reading is of a long life well spent rather than of wealth.',
+   'As with Kahala and Bheri, the strength clause is what keeps it from being common.'
+ ],
+ null, 996),
+
+('yoga', 'Bheri Yoga', 'general',
+ 'Bheri - Venus, the ascendant lord and Jupiter in mutual angles',
+ array[
+   'Raman''s combination 46: "If Venus, lord of Lagna and Jupiter are in mutual Kendras and the lord of the 9th is powerfully disposed, Bheri Yoga is caused."',
+   'Three grahas in mutual angles, not two, so every pair among them has to stand four, seven or ten houses apart - or together. Where the ascendant lord is Venus or Jupiter the rule collapses to two, which is worth saying because it makes the yoga easier for those ascendants.',
+   'Read for long life free of disease, income from several sources, and a generous temper.'
+ ],
+ null, 997),
+
+('yoga', 'Matsya Yoga', 'general',
+ 'Matsya - malefics almost everywhere, read as a blessing',
+ array[
+   'Raman''s combination 47: "Malefics should be disposed in Lagna and the 9th; the fifth house should contain both malefics and benefics; and the fourth and 8th should be occupied by malefics." Read for a clever prophet, an ocean of kindness, intelligent and learned.',
+   'Four clauses, every one of them about malefics, and the results are favourable throughout. It is one of the few places in the book where a chart crowded with malefics is read as a blessing rather than an affliction.',
+   'It is very rare, and the reason is structural. Five houses need a malefic apiece - the 1st, 4th, 5th, 8th and 9th - and no two of those are opposite each other, so Rahu and Ketu can only fill one slot between them. That leaves the Sun, Mars and Saturn for four remaining houses.',
+   'The fifth malefic has to be the Moon, which means a dark Moon, which means a Moon standing close to the Sun. So the combination effectively requires the Sun and Moon to be near each other and in two of those five houses. It did not occur once in 9,600 sampled charts, though it can be constructed.'
+ ],
+ 'Whether the Moon and Mercury count as malefic here follows the settings on the Chart tab, so this yoga is one the Mercury setting can affect.', 998),
+
+('yoga', 'Mridanga Yoga', 'general',
+ 'Mridanga - the navamsa lord of an exalted graha, well placed',
+ array[
+   'Raman''s combination 48: "The lord of the Navamsa occupied by an exalted planet should be posited in a trine or quadrant identical with friendly or exalted sign, and the lord of Lagna should be strongly disposed."',
+   'Raman says the wording is unclear and then reads it out: "The definition of the Yoga is somewhat confusing. Some planet is exalted and he occupies some Navamsa. The lord of the said ..." The scan breaks there, but the reading he begins is the one implemented - take any exalted graha, find the ruler of the navamsa it occupies, and ask where that ruler stands.',
+   'Read for influence and for being well regarded by those in charge.'
+ ],
+ 'Where several grahas are exalted, the first that satisfies the rest of the rule is the one reported.', 999)
+
+on conflict (topic, subject, condition) do update set
+  heading = excluded.heading,
+  points = excluded.points,
+  note = excluded.note,
+  sort_order = excluded.sort_order,
+  updated_at = now();
