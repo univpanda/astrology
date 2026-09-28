@@ -1998,17 +1998,18 @@ ok('each mark says which of the three surfaces it sits on', (function () {
     /On a dignity, not on a graha or a chart/.test(flat);
 })());
 /*
- * Eight marks and three surfaces that each take a different subset, so the page
- * says which goes where rather than leaving a reader to infer it from absence.
+ * And nothing says where each of them appears. A paragraph under the key used
+ * to, naming the kundli and the Vimsopaka grid and what each carried, and it
+ * was wrong by the end: it never mentioned the graha table, which carries eight
+ * of the nine spread across its rows.
+ *
+ * It was never needed either. The key says what a mark means, which is what a
+ * reader who has found one wants; where a mark appears is answered by its
+ * appearing. Saying it a second time only gave it somewhere to go stale.
  */
-ok('and the page says which surface carries which marks', (function () {
-  var flat = html.replace(/\s+/g, ' ');
-  return /The kundli carries \[R\], \[V\], \[Y\] and \[C\]/.test(flat) &&
-    /a corner triangle will not hold more/.test(flat) &&
-    /The Vimsopaka Bala grid carries \[R\] and \[C\] on the name and \[V\], \[X\], \[S\], \[P\], \[D\] and \[N\] in the cells/
-      .test(flat) &&
-    /every one of them something that score cannot see/.test(flat);
-})());
+ok('and nothing lists which surface carries which, the key defining them once',
+   !/The kundli carries/.test(html) && !/flag-where/.test(html) &&
+   (html.match(/<dt>/g) || []).length === 9);
 /*
  * [R] and [C] belong on the grid too, and by its own rule: the score counts
  * dignity, and neither a backward graha nor a burnt one changes the sign it
