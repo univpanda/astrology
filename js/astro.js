@@ -364,7 +364,19 @@ var Astro = (function () {
       return asind(sin(latitude) * sin(dec) + cos(latitude) * cos(dec) * cos(ha));
     };
 
-    var midnight = Math.floor(jdUT - longitude / 360 - 0.5) + 0.5 + longitude / -360;
+    /*
+     * Local midnight at or before jdUT, so the scan below covers the local day
+     * that contains it. East longitude runs ahead of UT, so it is ADDED to reach
+     * local time and subtracted again to come back; getting that sign backwards
+     * shifts the window by twice the longitude and hands back a neighbouring
+     * day's sunrise. It did, for a long time: at Delhi every birth between
+     * sunrise and about 10:39 got the previous day's, and at New York, where the
+     * sign error pushes the other way, most of the day was wrong.
+     *
+     * Nothing caught it because the tests here only asked that sunrise precede
+     * sunset, which stays true when both are a day out.
+     */
+    var midnight = Math.floor(jdUT + longitude / 360 - 0.5) + 0.5 - longitude / 360;
     var start = midnight, step = 1 / 48;
     for (var i = 0; i < 48; i++) {
       var a = start + i * step, b = a + step;
@@ -695,7 +707,28 @@ var Astro = (function () {
   // Vimshottari: nakshatra lord cycle and each lord's dasha length in years.
   var DASHA_ORDER = ['Ketu', 'Venus', 'Sun', 'Moon', 'Mars', 'Rahu', 'Jupiter', 'Saturn', 'Mercury'];
   var DASHA_YEARS = { Ketu: 7, Venus: 20, Sun: 6, Moon: 10, Mars: 7, Rahu: 18, Jupiter: 16, Saturn: 19, Mercury: 17 };
-  var YEAR_DAYS = 365.2425;
+  /*
+   * How long a dasha year is. Every text gives the cycle as 120 years and
+   * almost none says how many days a year holds, which is a number a program
+   * cannot avoid choosing: Parashara's ch.46 gives the lords, the order and the
+   * years and stops; Raman never states one; Charak gives this exact
+   * proportional method and then refers the reader to tables.
+   *
+   * The one author who states a year in a book about this dasha is K. N. Rao,
+   * whose Dasha Nirnay opens: "The Sun takes 365 days 6 hours 12 minutes and 36
+   * seconds to complete a round of the zodiac." Written out exactly that is
+   * 365.25875 days, the sidereal year of the Surya Siddhanta, and a round of
+   * the zodiac is the
+   * point - the Sun back to the same fixed star, not the tropical year of the
+   * seasons. Charak arrives in the same frame from the other end, using the
+   * sidereal year for the annual chart.
+   *
+   * This was 365.2425 - the Gregorian calendar's mean year, which is an
+   * artifact of which century years take a leap day, is not an astronomical
+   * quantity, and is proposed by nobody. Worth about a third of a day across a
+   * twenty-year dasha and two days across the whole cycle.
+   */
+  var YEAR_DAYS = 365 + 6 / 24 + 12 / 1440 + 36 / 86400;   // 365.25875
 
   var TITHIS = ['Pratipada', 'Dwitiya', 'Tritiya', 'Chaturthi', 'Panchami', 'Shashthi',
     'Saptami', 'Ashtami', 'Navami', 'Dashami', 'Ekadashi', 'Dwadashi', 'Trayodashi',
@@ -706,6 +739,11 @@ var Astro = (function () {
     'Shubha', 'Shukla', 'Brahma', 'Indra', 'Vaidhriti'];
   var KARANAS = ['Bava', 'Balava', 'Kaulava', 'Taitila', 'Garaja', 'Vanija', 'Vishti'];
   var VARAS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  // Days from Creation as of 1 January 1860, after Burgess's Surya Siddhanta,
+  // with the civil day number this engine counts from the same date.
+  var AHARGANA_EPOCH = 714404108573;
+  var AHARGANA_EPOCH_DAY = Math.floor(julianDay(1860, 1, 1, 0) + 0.5);
   var VARA_LORDS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
 
   /*
@@ -1707,7 +1745,8 @@ var Astro = (function () {
         sign: signOf(norm360(mcTropical - ayanTrue))
       },
       planets: planets,
-      panchang: panchang(sunLon, moonLon, jdUT, o.tzOffsetMinutes || 0),
+      panchang: panchang(sunLon, moonLon, jdUT, o.tzOffsetMinutes || 0,
+        o.latitude, o.longitude),
       dashas: vimshottari(moonLon, jdUT)
     };
   }
@@ -1742,15 +1781,57 @@ var Astro = (function () {
   }
 
   /** Tithi, nakshatra-based yoga, karana and vara for the birth moment. */
-  function panchang(sunLon, moonLon, jdUT, tzOffsetMinutes) {
+  function panchang(sunLon, moonLon, jdUT, tzOffsetMinutes, latitude, longitude) {
     var elong = norm360(moonLon - sunLon);
     var tithiIdx = Math.floor(elong / 12);
     var karanaIdx = Math.floor(elong / 6);
     var yogaIdx = Math.floor(norm360(sunLon + moonLon) / (360 / 27));
-    // Weekday of the local civil date; Vedic days really start at sunrise, so a
-    // birth between midnight and sunrise belongs to the previous vara.
-    var localJd = jdUT + tzOffsetMinutes / 1440;
+    /*
+     * The vara runs sunrise to sunrise, not midnight to midnight. Raman is
+     * flat about it at section 69: "The Hindu day begins with sunrise and
+     * continues till next sunrise. The first hora on any day will be the first
+     * hour after sunrise and the last hora, the hour before sunrise the next
+     * day."
+     *
+     * So a birth after midnight but before dawn still belongs to the previous
+     * weekday. This used the civil date and carried a comment saying the rule
+     * it was not following, which cost a quarter of all births the wrong vara
+     * lord - and with it vara bala's 45 virupas, and hora bala's 60, since the
+     * hora chain starts from the weekday lord.
+     *
+     * Where no sunrise can be had - a polar day, or no place given - the civil
+     * date is the only answer left, and is used.
+     */
+    var dayStart = latitude === undefined || longitude === undefined ? null
+      : sunriseSunset(jdUT, latitude, longitude, false);
+    /*
+     * sunriseSunset answers for the local day holding the moment asked about,
+     * which may be the sunrise still to come rather than the one that opened
+     * the current Hindu day. Step back a day when it is, and the result is the
+     * last sunrise at or before the birth in every case.
+     */
+    if (dayStart !== null && dayStart > jdUT) {
+      dayStart = sunriseSunset(jdUT - 1, latitude, longitude, false);
+    }
+    // The vara is the weekday of the civil date that sunrise fell on.
+    var localJd = (dayStart === null ? jdUT : dayStart) + tzOffsetMinutes / 1440;
     var weekday = Math.floor(localJd + 1.5) % 7;
+    /*
+     * Srishtyadi Ahargana: days elapsed since the creation of the world. It is
+     * what the lords of the astrological year and month are counted from, and
+     * those are two of kala bala's eight parts.
+     *
+     * The epoch is Burgess's, quoted in Santhanam's note to ch.27 v.13 - "as on
+     * January 1, 1860, the number of days past from the beginning of Creation
+     * are 714,404,108,573". Raman gives a second figure for a date 58 years
+     * later, 714,404,130,045 on 16 October 1918, and the two agree to the day.
+     *
+     * Counted on the same Hindu day as the vara, which is also the check the
+     * texts prescribe for it: the ahargana taken modulo 7 has to land on the
+     * weekday the birth actually fell on, or the count is wrong.
+     */
+    var dayNumber = Math.floor(localJd + 0.5);
+    var ahargana = AHARGANA_EPOCH + (dayNumber - AHARGANA_EPOCH_DAY);
     var karanaName;
     if (karanaIdx === 0) karanaName = 'Kimstughna';
     else if (karanaIdx >= 57) karanaName = ['Shakuni', 'Chatushpada', 'Naga'][karanaIdx - 57];
@@ -1763,6 +1844,7 @@ var Astro = (function () {
       karana: karanaName,
       vara: VARAS[weekday],
       varaLord: VARA_LORDS[weekday],
+      ahargana: ahargana,
       moonPhaseAngle: elong
     };
   }

@@ -216,11 +216,38 @@ var Shadbala = (function () {
     return byNight[Math.max(0, Math.min(2, nightPart))] === graha ? 60 : 0;
   }
 
-  /** Also undoubled; see the note on paksha bala above. */
+  /*
+   * Raman section 75, the formula he gives as Kesava Daivagna's:
+   *
+   *     (24 + Kranti) / 48 x 60
+   *
+   * The 24 is the maximum declination and the 48 is twice it, so both constants
+   * are one obliquity, stated at section 73: "The maximum declination of 24 is
+   * reached when the planet has advanced 90 from any one of the equinoctial
+   * points."
+   *
+   * This used 23.45 and 46.9, which was recorded here for a while as a modern
+   * obliquity smuggled into a classical formula. That was wrong: it is
+   * Parashara's figure, in Santhanam's note to ch.27 vv.15-17, where the
+   * formula is given as (23 deg 27' + Kranti) x 1.2793 - and 23 deg 27' is
+   * 23.45, while 1.2793 is 60/46.9 exactly.
+   *
+   * So both constants are sourced and the choice is between two authorities
+   * rather than between a text and an invention. They differ by at most 0.70
+   * virupas. Raman's is used because the rest of Shadbala here is his, and
+   * because his constant and his longitude-only kranti belong together: 24 is
+   * the maximum a declination read off a longitude reaches. Parashara's 23.45
+   * pairs with the true declination his note sends the reader to a modern
+   * ephemeris for. Mixing the two, as this did, belongs to neither.
+   *
+   * Worth up to 0.70 virupas, and double that for the Sun.
+   *
+   * Also undoubled; see the note on paksha bala above.
+   */
   function ayanaBala(graha, dec) {
     var north = NORTH_STRONG.indexOf(graha) >= 0;
     var effective = graha === 'Mercury' ? Math.abs(dec) : (north ? dec : -dec);
-    return 60 * (23.45 + effective) / 46.9;
+    return 60 * (24 + effective) / 48;
   }
 
   /* ------------------------------------------------------ cheshta bala */
@@ -273,16 +300,40 @@ var Shadbala = (function () {
    * The chesta kendra, 0 to 180: nothing where the graha is at its fastest and
    * a half circle where it is deepest in retrogression.
    */
+  /*
+   * The formula alone, section 105: "Graha's Seeghrochcha minus (its mean long.
+   * + its true long.) / 2", reduced by section 106 to at most 180.
+   *
+   * Kept separate from the ephemeris that feeds it so the two can fail
+   * separately. Raman works all five grahas of his Standard Horoscope at
+   * Examples 49 to 51 and this reproduces every one of them exactly - but only
+   * because his printed longitudes go in. What this engine computes for those
+   * same longitudes is a different question, and the answer is that Surya
+   * Siddhanta mean motions and Standish's elements part by a few degrees.
+   */
+  function chestaKendraFrom(seeghrocha, meanLong, trueLong) {
+    var kendra = Astro.norm360(seeghrocha - midpoint(trueLong, meanLong));
+    return kendra > 180 ? 360 - kendra : kendra;
+  }
+
+  /*
+   * Which longitude plays which part depends on the kind of graha, and that is
+   * the whole of the difference. For Mars, Jupiter and Saturn the seeghrocha is
+   * the Sun's mean longitude and the "mean long." of the formula is the graha's
+   * own. For Mercury and Venus it is the other way about: the graha's own mean
+   * longitude is the seeghrocha and the Sun's stands in as the mean. Raman's
+   * Example 49 shows it plainly - Budha and Sukra are both worked with 181.23,
+   * the Sun's mean, where Kuja, Guru and Sani use their own.
+   */
   function chestaKendra(graha, longitude, T, ayanamsa) {
     var key = MEAN_KEY[graha];
     if (!key) return 0;
     var sidereal = function (tropical) { return Astro.norm360(tropical - ayanamsa); };
     var sunMean = sidereal(Astro.sunMeanLongitude(T));
     var own = sidereal(Astro.meanLongitude(key, T));
-    var kendra = INNER.indexOf(graha) >= 0
-      ? Astro.norm360(own - midpoint(longitude, sunMean))
-      : Astro.norm360(sunMean - midpoint(longitude, own));
-    return kendra > 180 ? 360 - kendra : kendra;
+    return INNER.indexOf(graha) >= 0
+      ? chestaKendraFrom(own, sunMean, longitude)
+      : chestaKendraFrom(sunMean, own, longitude);
   }
 
   function cheshtaBala(graha, longitude, T, ayanamsa, ayana, paksha) {
@@ -444,7 +495,38 @@ var Shadbala = (function () {
    * @param {Object} chart   from Astro.chart
    * @param {Object} place   { latitude, longitude, tzOffsetMinutes }
    */
-  function compute(chart, place) {
+  /*
+   * Which group the Moon joins for her own paksha bala. The authorities split,
+   * and both readings are held by people on the same shelf.
+   *
+   *   'group'   - she joins the benefics or the malefics like anyone else, so a
+   *               thin Moon takes sixty less the brightness. Santhanam's note to
+   *               ch.27 vv.10-11 has "The Moon in dark half is a malefic" and
+   *               then "Whether the Moon is in a group of benefices or
+   *               otherwise, her Paksha Bala is always doubled", which only
+   *               needs saying if she can fall in either. Raman puts the rule
+   *               inside the paksha chapter itself, section 53.
+   *
+   *   'benefic' - she is always counted a benefic and takes the brightness
+   *               outright. K. S. Charak lists her among the natural benefics
+   *               for this bala without qualification, and Phaladeepika IV.5
+   *               reads the same way: "The Moon is strong and auspicious when
+   *               she has her full Paksha bala" - which cannot be right under
+   *               the group rule, where a dark Moon is the one with the high
+   *               figure.
+   *
+   * It reaches further than its own row, because the Moon's cheshta bala is her
+   * paksha bala (ch.27 v.18), so the choice shows up twice in the table.
+   *
+   * Only the Moon's own figure moves. The other six are unaffected, and so is
+   * her benefic standing everywhere else - drik bala and the yogas still read
+   * her by the ordinary rule.
+   */
+  var MOON_PAKSHA = { GROUP: 'group', BENEFIC: 'benefic' };
+
+  function compute(chart, place, options) {
+    var moonPaksha = (options && options.moonPaksha) === MOON_PAKSHA.BENEFIC
+      ? MOON_PAKSHA.BENEFIC : MOON_PAKSHA.GROUP;
     var jd = chart.julianDay;
     var T = (jd + Astro.deltaT(jd) / 86400 - 2451545.0) / 36525;
     var nut = Astro.nutation(T);
@@ -477,7 +559,32 @@ var Shadbala = (function () {
     GRAHAS.forEach(function (graha) {
       var p = positions[graha];
       var tropical = p.longitude + chart.ayanamsa;
-      var latitude = graha === 'Moon' ? Astro.moonLatitude(T) : 0;
+      /*
+       * Declination from the sayana longitude alone, the Moon included.
+       *
+       * This passed the Moon's ecliptic latitude in, which gives her true
+       * declination and is the better number in every sense except the one
+       * that matters here: it is not the quantity Raman's method asks for. His
+       * section 73 derives the kranti from the bhuja of the sayana longitude
+       * through a table of six 15-degree steps, and a longitude has no
+       * latitude in it. Example 32 works all seven grahas that way, Chandra
+       * among them.
+       *
+       * The pairing is the point. Raman's ayana formula divides by 48 because
+       * his kranti tops out at 24, and it tops out at 24 because it is read off
+       * a longitude. Feeding that formula a true declination that includes
+       * latitude mixes his constant with somebody else's quantity, which is a
+       * combination no text holds. Worth about 3.9 virupas on the Moon and as
+       * much as 6.6.
+       *
+       * Parashara's side is coherent too and differs: Santhanam's note to
+       * ch.27 vv.15-17 gives (23 deg 27' + Kranti) x 1.2793 - a 23.45 maximum,
+       * matching the real obliquity - and says plainly that "Krantis (or
+       * declinations) can be ascertained from standard modern ephemeris",
+       * which for the Moon means latitude and all. Either package is defensible
+       * whole; this site takes Raman's, as it does throughout Shadbala.
+       */
+      var latitude = 0;
       var dec = Astro.declination(tropical, latitude, eps);
 
       var saptavargaja = saptavargajaBala(graha, chart, positions);
@@ -496,17 +603,19 @@ var Shadbala = (function () {
       sthana.total = sthana.uchcha + sthana.saptavargaja + sthana.ojhayugma +
         sthana.kendradi + sthana.drekkana;
 
-      var paksha = pakshaBala(elongation, benefics[graha]);
+      var paksha = pakshaBala(elongation,
+        graha === 'Moon' && moonPaksha === MOON_PAKSHA.BENEFIC
+          ? true : benefics[graha]);
       var ayana = ayanaBala(graha, dec);
       var kala = {
         nathonnatha: nathonnathaBala(graha, localHours),
         paksha: graha === 'Moon' ? paksha * 2 : paksha,   // doubled for the Moon
         tribhaga: (sunrise && sunset && nextSunrise)
           ? tribhagaBala(graha, jd, sunrise, sunset, nextSunrise) : 0,
-        // The year's and the month's lords, taken as the weekday lords of the
-        // days those solar periods began.
-        abda: WEEKDAY_LORDS[solarPeriodWeekday(jd, 360)] === graha ? 15 : 0,
-        masa: WEEKDAY_LORDS[solarPeriodWeekday(jd, 30)] === graha ? 30 : 0,
+        // The lords of the weekdays the astrological year and month opened on,
+        // counted from the ahargana rather than from any solar ingress.
+        abda: abdaLord(chart.panchang.ahargana) === graha ? 15 : 0,
+        masa: masaLord(chart.panchang.ahargana) === graha ? 30 : 0,
         vara: chart.panchang.varaLord === graha ? 45 : 0,
         hora: horaLord(jd, sunrise, chart.panchang.varaLord) === graha ? 60 : 0,
         ayana: graha === 'Sun' ? ayana * 2 : ayana        // doubled for the Sun
@@ -578,25 +687,35 @@ var Shadbala = (function () {
     return { grahas: results, ranking: ranked, wars: wars, sunrise: sunrise, sunset: sunset };
   }
 
-  /** Weekday index of the day a solar period of `arc` degrees began. */
-  function solarPeriodWeekday(jd, arc) {
-    var T = (jd + Astro.deltaT(jd) / 86400 - 2451545.0) / 36525;
-    var sunNow = Astro.norm360(Astro.apparentLongitude('sun', T, Astro.nutation(T)).lon -
-      Astro.ayanamsa(T, 'lahiri'));
-    var into = arc === 360 ? sunNow : sunNow % arc;
-    // The Sun covers close to a degree a day, so stepping back that many days
-    // lands within a day of the boundary; then walk to the exact crossing.
-    var guess = jd - into / 0.9856;
-    for (var i = 0; i < 40; i++) {
-      var Tg = (guess + Astro.deltaT(guess) / 86400 - 2451545.0) / 36525;
-      var lon = Astro.norm360(Astro.apparentLongitude('sun', Tg, Astro.nutation(Tg)).lon -
-        Astro.ayanamsa(Tg, 'lahiri'));
-      var excess = arc === 360 ? lon : lon % arc;
-      if (excess > arc / 2) excess -= arc;
-      if (Math.abs(excess) < 1e-6) break;
-      guess -= excess / 0.9856;
-    }
-    return Math.floor(guess + 1.5) % 7;
+  /*
+   * The lords of the astrological year and month, from the ahargana.
+   *
+   * These are not solar periods, and reading them as such is the natural
+   * mistake - this code computed the Sun's ingress into Aries and into the
+   * current sign for a long time, which is a different quantity that happens to
+   * sound like the same one. Raman is blunt at section 59: "The Hindus, for
+   * astrological purposes, consider a year and month of 360 and 30 days
+   * respectively. They are neither solar, nor lunar, nor luni-solar."
+   *
+   * So both are pure arithmetic on days elapsed since Creation. A 360-day year
+   * advances its opening weekday by 3 each time and a 30-day month by 2, which
+   * is where the multipliers come from; the +1 makes the count inclusive, and
+   * the remainder is counted from Sunday.
+   *
+   * Parashara's method, in Santhanam's note to ch.27 v.13, is the same
+   * arithmetic to the letter, and his worked example for 1 June 1984 and
+   * Raman's for 16 October 1918 both come out right from either epoch.
+   */
+  function lordFromRemainder(remainder) {
+    return WEEKDAY_LORDS[((remainder % 7) + 6) % 7];   // remainder 1 is Sunday
+  }
+
+  function abdaLord(ahargana) {
+    return lordFromRemainder((Math.floor(ahargana / 360) * 3 + 1) % 7);
+  }
+
+  function masaLord(ahargana) {
+    return lordFromRemainder((Math.floor(ahargana / 30) * 2 + 1) % 7);
   }
 
   /** Which graha rules the hour; hours run from sunrise in the weekday order. */
@@ -613,6 +732,20 @@ var Shadbala = (function () {
 
   return {
     compute: compute,
+    // Exported only so Raman's Example 33 can be checked against it directly.
+    // The constants in it were wrong for a long time and nothing caught it,
+    // because every test went through a total that the error was too small to
+    // move past its tolerance.
+    ayanaBala: ayanaBala,
+    // Exported so Raman's Examples 54 and 55 can be run against it directly.
+    // It takes a map of {graha: {longitude}} and a map of {graha: boolean}, so
+    // his Standard Horoscope can be fed in as printed without casting a chart.
+    drikBala: drikBala,
+    // Exported for Raman's Examples 49-51, as drikBala is for 54-55.
+    chestaKendraFrom: chestaKendraFrom,
+    MOON_PAKSHA: MOON_PAKSHA,
+    // Exported for the worked examples in Raman s60-61 and BPHS ch.27 v.13.
+    abdaLord: abdaLord, masaLord: masaLord,
     GRAHAS: GRAHAS,
     SAPTAVARGAJA_VALUES: RELATION_VALUE,
     REQUIRED_RUPAS: REQUIRED_RUPAS,

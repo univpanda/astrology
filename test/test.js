@@ -35,6 +35,300 @@ var rt = A.calendarDate(2436116.31);
 ok('calendarDate round-trip', rt.y === 1957 && rt.m === 10 && rt.d === 4 &&
    Math.abs(rt.hours - 19.44) < 0.01, rt.y + '-' + rt.m + '-' + rt.d + ' ' + rt.hours.toFixed(3) + 'h');
 
+console.log('\nKranti comes from the longitude, not the true declination');
+/*
+ * Raman's kranti is read off the bhuja of the sayana longitude, section 73,
+ * through a table of six 15-degree steps - and a longitude carries no
+ * latitude. His Example 32 works all seven grahas that way, Chandra included.
+ *
+ * This engine passed the Moon's ecliptic latitude in for years, which gives her
+ * true declination: the better number, and the wrong quantity. It matters
+ * because his formula divides by 48 on the strength of a kranti that tops out
+ * at 24, and it only tops out at 24 because it is read off a longitude. Worth
+ * about 3.9 virupas on the Moon and up to 6.6.
+ *
+ * Parashara's side is coherent and different - Santhanam's note gives
+ * (23 deg 27' + Kranti) x 1.2793 and sends the reader to a modern ephemeris
+ * for the kranti, latitude and all. Either package holds together; the hybrid
+ * this had belongs to neither.
+ */
+(function () {
+  var place = { latitude: 21.3069, longitude: -157.8583, tzOffsetMinutes: -600 };
+  var chart = A.chart({ jdUT: A.julianDay(1961, 8, 4, 19 + 24 / 60 + 10),
+    latitude: place.latitude, longitude: place.longitude,
+    tzOffsetMinutes: place.tzOffsetMinutes });
+  var S = require('../js/shadbala.js');
+  var r = S.compute(chart, place);
+  /*
+   * A chart whose Moon carries over five degrees of latitude, so the two
+   * readings are far apart: her true declination is 15.7 and the longitude
+   * gives 20.8.
+   */
+  check('the Moon\u2019s ayana follows her longitude',
+    r.grahas.Moon.kala.ayana, 4.0, 0.2, 'virupas');
+  /*
+   * Guard against the latitude creeping back: with it, the same chart gives
+   * 10.4, so anything near that is the old quantity returning.
+   */
+  ok('and not her true declination', r.grahas.Moon.kala.ayana < 7,
+    r.grahas.Moon.kala.ayana.toFixed(1));
+  /*
+   * The two constants are both sourced, which was not always recorded here.
+   * Raman's 24/48 is used; Parashara's 23.45/46.9 differs by at most 0.7, and
+   * the pair of them bound how far this row can move on authority alone.
+   */
+  var k = 12.34;
+  var raman = 60 * (24 + k) / 48, parashara = 60 * (23.45 + k) / 46.9;
+  ok('the two sourced constants stay within 0.7 virupas',
+    Math.abs(raman - parashara) < 0.7,
+    Math.abs(raman - parashara).toFixed(3));
+})();
+
+console.log('\nThe year and month lords, from the ahargana');
+/*
+ * Abda and masa bala are not solar periods, and reading them as such is the
+ * natural mistake - this engine computed the Sun's ingress into Aries and into
+ * its current sign for a long time, which sounds like the same thing and is
+ * not. Raman section 59: "The Hindus, for astrological purposes, consider a
+ * year and month of 360 and 30 days respectively. They are neither solar, nor
+ * lunar, nor luni-solar."
+ *
+ * Two authorities give worked examples 66 years apart, from two different
+ * epochs, and both come out right - which is the real check, because it tests
+ * the epoch and the arithmetic at once.
+ */
+(function () {
+  var S = require('../js/shadbala.js');
+  function aharganaOn(y, m, d) {
+    return A.chart({ jdUT: A.julianDay(y, m, d, 12), latitude: 13,
+      longitude: 77.58, tzOffsetMinutes: 330 }).panchang.ahargana;
+  }
+  // Raman's Standard Horoscope, section 58: 714,404,130,045 days from Creation.
+  var raman = aharganaOn(1918, 10, 16);
+  check('Raman\u2019s ahargana for 16 Oct 1918', raman, 714404130045, 0, 'days');
+  ok('and his Abdadhipathi is Sani', S.abdaLord(raman) === 'Saturn',
+    S.abdaLord(raman));
+  ok('and his Masadhipathi is Budha', S.masaLord(raman) === 'Mercury',
+    S.masaLord(raman));
+
+  /*
+   * Santhanam's note to ch.27 v.13 works 1 June 1984 from Burgess's epoch and
+   * gets Jupiter and Venus. A different anchor, a different century, the same
+   * arithmetic.
+   */
+  var bphs = aharganaOn(1984, 6, 1);
+  ok('Parashara\u2019s worked Varsha lord for 1 June 1984 is Jupiter',
+    S.abdaLord(bphs) === 'Jupiter', S.abdaLord(bphs));
+  ok('and his Masa lord is Venus', S.masaLord(bphs) === 'Venus',
+    S.masaLord(bphs));
+
+  /*
+   * The check both texts prescribe for the ahargana itself: taken modulo 7 it
+   * must land on the weekday the birth actually fell on. If the epoch were off
+   * by a day this is what would catch it.
+   */
+  var VARAS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
+    'Saturday'];
+  var slipped = [];
+  for (var y = 1900; y <= 2040; y += 7) {
+    for (var m = 1; m <= 12; m += 5) {
+      var c = A.chart({ jdUT: A.julianDay(y, m, 14, 12), latitude: 13,
+        longitude: 77.58, tzOffsetMinutes: 330 });
+      var fromAhargana = VARAS[((c.panchang.ahargana % 7) + 6) % 7];
+      if (fromAhargana !== c.panchang.vara) slipped.push(y + '-' + m);
+    }
+  }
+  ok('the ahargana agrees with the weekday it should, across 140 years',
+    slipped.length === 0, slipped.join(', ') || 'no slips');
+})();
+
+console.log('\nThe Moon\u2019s paksha bala, both readings');
+/*
+ * Paksha bala hands one figure to the benefics and sixty less it to the
+ * malefics, and whether the Moon takes her turn in those groups is disputed by
+ * authorities who are equally worth reading. Santhanam and Raman put her in the
+ * groups; Charak lists her among the benefics unconditionally, and Phaladeepika
+ * IV.5 - "The Moon is strong and auspicious when she has her full Paksha bala"
+ * - cannot be read the other way, since under the group rule it is the dark
+ * Moon that carries the high figure.
+ *
+ * So it is a setting rather than a fix, and these pin both readings and the
+ * blast radius of the choice.
+ */
+(function () {
+  var S = require('../js/shadbala.js');
+  // Obama: a thin waning Moon, 291 degrees of elongation, so the two readings
+  // land on opposite sides. Star Jyotish reports 23 for her cheshta here.
+  var place = { latitude: 21.3069, longitude: -157.8583, tzOffsetMinutes: -600 };
+  var chart = A.chart({ jdUT: A.julianDay(1961, 8, 4, 19 + 24 / 60 + 10),
+    latitude: place.latitude, longitude: place.longitude,
+    tzOffsetMinutes: place.tzOffsetMinutes });
+  var byGroup = S.compute(chart, place);
+  var asBenefic = S.compute(chart, place, { moonPaksha: S.MOON_PAKSHA.BENEFIC });
+
+  check('a dark Moon by her group takes the complement',
+    byGroup.grahas.Moon.kala.paksha, 73.9, 0.1, 'virupas');
+  check('and read as a benefic she takes the brightness',
+    asBenefic.grahas.Moon.kala.paksha, 46.1, 0.1, 'virupas');
+  // Both doubled: Parashara, Raman and Charak all apply it, so it is not the
+  // thing in dispute and must survive either choice.
+  check('the doubling survives either reading',
+    asBenefic.grahas.Moon.kala.paksha / 2, 23.05, 0.1, 'virupas');
+  /*
+   * And it reaches cheshta, because ch.27 v.18 makes her paksha bala her
+   * cheshta bala. Undoubled there, since cheshta is capped at sixty.
+   */
+  check('her cheshta follows it, undoubled',
+    asBenefic.grahas.Moon.cheshta, 23.05, 0.1, 'virupas');
+
+  /*
+   * Nothing else may move. The other six read the fortnight the same way under
+   * either setting, and the default stays the group reading.
+   */
+  var others = S.GRAHAS.filter(function (g) { return g !== 'Moon'; });
+  ok('no other graha\u2019s paksha bala moves', others.every(function (g) {
+    return Math.abs(byGroup.grahas[g].kala.paksha -
+      asBenefic.grahas[g].kala.paksha) < 1e-9;
+  }));
+  ok('and no other graha\u2019s total moves', others.every(function (g) {
+    return Math.abs(byGroup.grahas[g].rupas - asBenefic.grahas[g].rupas) < 1e-9;
+  }));
+  ok('the group reading is the default',
+    Math.abs(S.compute(chart, place).grahas.Moon.kala.paksha -
+      byGroup.grahas.Moon.kala.paksha) < 1e-9);
+  /*
+   * Her drik bala must not move either - the setting governs paksha alone, not
+   * whether she counts benefic when she aspects somebody.
+   */
+  ok('her benefic standing elsewhere is untouched',
+    Math.abs(byGroup.grahas.Sun.drik - asBenefic.grahas.Sun.drik) < 1e-9);
+})();
+
+console.log('\nChesta bala against Raman Examples 49 to 51');
+/*
+ * Raman works the chesta kendra for all five starry grahas of his Standard
+ * Horoscope at Example 49, reduces them at 50 and divides by three at 51,
+ * printing his seeghrocha, mean and true longitude for each. Feeding those
+ * printed numbers in reproduces every figure.
+ *
+ * His own table is what settles the inner-planet convention, which is the part
+ * everybody gets wrong: Budha and Sukra are both worked with 181.23 standing
+ * in as the "mean long.", and 181.23 is the Sun's mean longitude, not theirs.
+ * So for the inner two the graha's own mean longitude is the seeghrocha and
+ * the Sun's is the mean, exactly reversing the outer case.
+ */
+(function () {
+  var S = require('../js/shadbala.js');
+  var SUN_MEAN = 181.23;      // his section 101, the seeghrocha of the outer three
+  // graha, seeghrocha, "mean long.", true long., his kendra, his chesta bala
+  [['Kuja', 181.23, 266.34, 229.50, 66.69, 22.23],
+   ['Budha', 174.49, SUN_MEAN, 181.52, 6.89, 2.30],
+   ['Guru', 181.23, 66.91, 84.01, 105.77, 35.26],
+   ['Sukra', 158.35, SUN_MEAN, 171.16, 17.85, 5.95],
+   ['Sani', 181.23, 111.23, 124.39, 63.42, 21.14]].forEach(function (r) {
+    var kendra = S.chestaKendraFrom(r[1], r[2], r[3]);
+    check(r[0] + ', reduced chesta kendra, Example 50', kendra, r[4], 0.02, 'deg');
+    check(r[0] + ', chesta bala, Example 51', kendra / 3, r[5], 0.02, 'virupas');
+  });
+  // Section 107: nothing at a kendra of zero, sixty at half a circle.
+  check('zero kendra gives no chesta bala', S.chestaKendraFrom(100, 100, 100) / 3,
+    0, 1e-9, 'virupas');
+  check('half a circle gives sixty', S.chestaKendraFrom(100, 280, 280) / 3, 60,
+    1e-9, 'virupas');
+})();
+
+console.log('\nDrik bala against Raman Examples 54 and 55');
+/*
+ * The strongest verification in this suite, and the one that settles a
+ * long-running disagreement with an outside calculator.
+ *
+ * Raman works the whole of drik bala for his Standard Horoscope: Example 54
+ * gives the drishti pinda on each of the seven grahas and Example 55 divides
+ * each by four. His own benefic set for that chart is printed with it - the
+ * Subhadrishti rows are Guru, Chandra and Sukra, the Asubha rows Ravi, Kuja,
+ * Sani and Budha, with the footnote "Mercury is a malefic as he is very
+ * closely associated with Sun or combusted".
+ *
+ * Feeding his longitudes and his classification, this implementation
+ * reproduces all fourteen of his printed figures. The residual is under 0.05
+ * virupas and is his rounding: he prints positions to the arcsecond.
+ */
+(function () {
+  var S = require('../js/shadbala.js');
+  function dms(d, m, sec) { return d + m / 60 + sec / 3600; }
+  // Nirayana longitudes of the Standard Horoscope, Graha and Bhava Balas p.2
+  var at = { Sun: dms(180, 53, 55), Moon: dms(311, 17, 19), Mars: dms(229, 30, 34),
+    Mercury: dms(181, 31, 34), Jupiter: dms(84, 0, 49), Venus: dms(171, 9, 56),
+    Saturn: dms(124, 22, 41) };
+  var positions = {};
+  Object.keys(at).forEach(function (g) { positions[g] = { longitude: at[g] }; });
+  var benefics = { Sun: false, Moon: true, Mars: false, Mercury: false,
+    Jupiter: true, Venus: true, Saturn: false };
+  // Example 55, his printed Drik Bala column
+  var want = { Sun: 15.86, Moon: -21.73, Mars: 0.95, Mercury: 15.64,
+    Jupiter: -16.04, Venus: 18.47, Saturn: 7.21 };
+  Object.keys(want).forEach(function (g) {
+    check(g + ', Example 55', S.drikBala(g, positions, benefics), want[g], 0.05,
+      'virupas');
+  });
+
+  /*
+   * And the ceiling the definition imposes, which is what rules out an outside
+   * calculator's figures rather than merely differing from them. With every
+   * aspecting graha counted benefic the pinda is maximal, so no choice of
+   * benefics can push drik bala past a quarter of the unsigned sum.
+   */
+  var allBenefic = {};
+  Object.keys(at).forEach(function (g) { allBenefic[g] = true; });
+  Object.keys(at).forEach(function (g) {
+    var ceiling = S.drikBala(g, positions, allBenefic);
+    var actual = S.drikBala(g, positions, benefics);
+    ok(g + ': no classification can exceed the all-benefic ceiling',
+      Math.abs(actual) <= ceiling + 1e-9,
+      actual.toFixed(2) + ' within ' + ceiling.toFixed(2));
+  });
+})();
+
+console.log('\nAyana bala against Raman Example 33');
+/*
+ * Raman section 75 gives the formula as Kesava Daivagna's, (24 + Kranti) / 48
+ * x 60, and works all seven grahas of the Standard Horoscope through it at
+ * Example 33. Four of his printed results survive the scan cleanly enough to
+ * check against; the other three have their declinations mangled by the OCR
+ * and are left out rather than guessed at.
+ *
+ * This exists because the constants were silently 23.45 and 46.9 for a long
+ * time - a modern obliquity in the two places his 24 belongs - and no test
+ * noticed. The error was worth at most 0.7 virupas, which is smaller than the
+ * tolerance of every total it fed into. A constant taken from a book should be
+ * checked against that book's own arithmetic, not against a total downstream
+ * of it.
+ *
+ * The sign convention is his: north declination is additive for the Sun, Mars,
+ * Jupiter and Venus and subtractive for the Moon and Saturn, either way
+ * additive for Mercury. So the declination passed here is whatever produces
+ * the effective value he printed.
+ */
+(function () {
+  var S = require('../js/shadbala.js');
+  // graha, declination to pass, Raman's printed Ayanabala (before the Sun's
+  // doubling, which happens outside this function)
+  [['Mercury', 9, 41.25, '24 + 9'],
+   ['Saturn', 13, 13.75, '24 - 13'],
+   ['Moon', -10.75, 43.44, '24 + 10.75'],
+   ['Sun', -8.75, 19.06, '24 - 8.75']].forEach(function (row) {
+    check(row[0] + ', ' + row[3], S.ayanaBala(row[0], row[1]), row[2], 0.01,
+      'virupas');
+  });
+  // And the ceiling he states at section 73: the formula reaches sixty exactly
+  // at his maximum declination of 24, which is the whole reason the divisor is
+  // 48. A modern obliquity in either constant breaks this.
+  check('sixty at his maximum declination', S.ayanaBala('Sun', 24), 60, 1e-9,
+    'virupas');
+  check('and nothing at the opposite one', S.ayanaBala('Sun', -24), 0, 1e-9,
+    'virupas');
+})();
+
 console.log('\nNutation and obliquity (Meeus example 22.a, 1987 Apr 10.0 TD)');
 var T87 = (A.julianDay(1987, 4, 10, 0) - 2451545.0) / 36525;
 var nut = A.nutation(T87);
@@ -1385,6 +1679,161 @@ ok('the last sub reaches the end of the nakshatra', (function () {
   var n = A.nakshatraOf(span - 1e-9);
   return Math.abs((n.subStart + n.subSpan) - span) < 1e-6;
 })());
+
+console.log('\nThe dasha year is the one an authority states');
+/*
+ * The cycle is 120 years in every text and almost none says how long a year
+ * is, so the constant has to come from somewhere. K. N. Rao's Dasha Nirnay,
+ * the one book on this dasha that states a year, opens with "The Sun takes 365
+ * days 6 hours 12 minutes and 36 seconds to complete a round of the zodiac" -
+ * the Surya Siddhanta's sidereal year.
+ *
+ * It was 365.2425 for a long time, the Gregorian calendar's mean year, which
+ * is an artifact of the leap-year rule and is proposed by no authority. As with
+ * the ayana constant, nothing caught it, because a dasha boundary is years wide
+ * and the error is a third of a day.
+ */
+(function () {
+  var RAO = 365 + 6 / 24 + 12 / 1440 + 36 / 86400;      // 365.2587
+  var c = A.chart({ jdUT: A.julianDay(1975, 6, 15, 6.5), latitude: 28.61,
+    longitude: 77.21, tzOffsetMinutes: 330 });
+  var p = c.dashas.periods;
+  check('a period spans its years at Rao\u2019s year length',
+    (p[1].endJd - p[1].startJd) / p[1].years, RAO, 1e-6, 'days');
+  /*
+   * And explicitly not the values it is easiest to drift back to. A calendar
+   * year here is a silent error that no test would otherwise see.
+   */
+  var got = (p[1].endJd - p[1].startJd) / p[1].years;
+  ok('and not the Gregorian calendar year', Math.abs(got - 365.2425) > 1e-4,
+    got.toFixed(6));
+  ok('and not the Julian year', Math.abs(got - 365.25) > 1e-4, got.toFixed(6));
+  /*
+   * The balance at birth is the unelapsed part of the Moon's nakshatra, so the
+   * first period is short and the eight that follow are whole.
+   */
+  ok('the first period is the unelapsed balance',
+    p[0].endJd - p[0].startJd > 0 &&
+    c.dashas.balanceYears <= p[0].years + 1e-9 &&
+    c.dashas.balanceYears > 0,
+    c.dashas.balanceYears.toFixed(3) + ' of ' + p[0].years + ' years');
+  ok('and the cycle totals 120 years',
+    p.reduce(function (t, d) { return t + d.years; }, 0) === 120);
+})();
+
+console.log('\nThe vara begins at sunrise');
+/*
+ * Raman section 69: "The Hindu day begins with sunrise and continues till next
+ * sunrise." A birth after midnight but before dawn keeps the previous
+ * weekday's vara, which is not a fine point - it carries vara bala's 45
+ * virupas and, because the hora chain starts from the weekday lord, hora
+ * bala's 60 as well.
+ *
+ * The code used the civil date for a long time while carrying a comment that
+ * stated the rule it was not following. A quarter of all births got the wrong
+ * lord.
+ */
+(function () {
+  // Delhi, 2024-01-03: a civil Wednesday whose sunrise is about 07:14 IST.
+  var before = A.chart({ jdUT: A.julianDay(2024, 1, 3, 6 - 5.5), latitude: 28.61,
+    longitude: 77.21, tzOffsetMinutes: 330 });
+  var after = A.chart({ jdUT: A.julianDay(2024, 1, 3, 9 - 5.5), latitude: 28.61,
+    longitude: 77.21, tzOffsetMinutes: 330 });
+  ok('a pre-dawn birth keeps the previous vara',
+    before.panchang.vara === 'Tuesday' && before.panchang.varaLord === 'Mars',
+    before.panchang.vara);
+  ok('and after sunrise the day has turned',
+    after.panchang.vara === 'Wednesday' && after.panchang.varaLord === 'Mercury',
+    after.panchang.vara);
+
+  /*
+   * The boundary is sunrise itself, not midnight and not any fixed hour. Walk
+   * the clock and the vara must change exactly once, within a few minutes of
+   * the sunrise the engine reports.
+   */
+  [['Delhi', 28.61, 77.21, 330], ['New York', 40.71, -74.01, -300],
+   ['Sydney', -33.87, 151.21, 600]].forEach(function (p) {
+    var name = p[0], lat = p[1], lon = p[2], tz = p[3];
+    var changes = [], prev = null;
+    for (var i = 0; i <= 24 * 12; i++) {
+      var jd = A.julianDay(2024, 1, 3, i / 12 - tz / 60);
+      var vara = A.chart({ jdUT: jd, latitude: lat, longitude: lon,
+        tzOffsetMinutes: tz }).panchang.vara;
+      if (prev !== null && vara !== prev) changes.push(jd);
+      prev = vara;
+    }
+    ok(name + ': the vara turns over exactly once in a day',
+      changes.length === 1, changes.length + ' changes');
+    if (changes.length === 1) {
+      var rise = A.sunriseSunset(changes[0], lat, lon, false);
+      ok(name + ': and it turns at sunrise',
+        Math.abs((changes[0] - rise) * 24) < 0.2,
+        ((changes[0] - rise) * 60 * 24).toFixed(0) + ' min from sunrise');
+    }
+  });
+
+  /*
+   * With no place to find a sunrise from there is nothing to do but fall back
+   * to the civil date, and that must not throw.
+   */
+  var placeless = A.chart({ jdUT: A.julianDay(2024, 1, 3, 0.5) });
+  ok('a chart cast without a place still reports a vara',
+    typeof placeless.panchang.vara === 'string' && !!placeless.panchang.varaLord);
+})();
+
+console.log('\nSunrise lands on the right day');
+/*
+ * The contract is "the sunrise of the local day containing jdUT". Callers lean
+ * on it: tribhaga bala branches on whether the birth precedes it, and hora bala
+ * counts hours from it, so a sunrise from the wrong day silently rewrites two
+ * of kala bala's eight parts.
+ *
+ * It was wrong for a long time - the longitude term that converts UT to local
+ * time carried the wrong sign, so the 24-hour scan window sat twice the
+ * longitude away from where it belonged. The tests below it only asked that
+ * sunrise precede sunset, which is just as true when both are a day out, so
+ * nothing complained.
+ *
+ * These check the two things that actually pin it: the answer matches the
+ * almanac, and it does not jump between query times inside one local day.
+ */
+(function () {
+  // Delhi 2024-01-03, sunrise 07:14 IST (= 01:44 UT). New York the same date,
+  // 07:20 EST (= 12:20 UT). Both east and west of Greenwich, because the sign
+  // error was invisible at one of them and glaring at the other.
+  [['Delhi', 28.61, 77.21, 330, 7 + 14 / 60],
+   ['New York', 40.71, -74.01, -300, 7 + 20 / 60]].forEach(function (p) {
+    var name = p[0], lat = p[1], lon = p[2], tz = p[3], wantLocal = p[4];
+    var noon = A.julianDay(2024, 1, 3, 12 - tz / 60);
+    var rise = A.sunriseSunset(noon, lat, lon, false);
+    var local = ((rise + tz / 1440 + 0.5) % 1) * 24;
+    check(name + ' sunrise, local clock', local, wantLocal, 4 / 60, 'hours');
+  });
+
+  /*
+   * And the invariant that the sign error broke: walking the clock through one
+   * local day, the sunrise must never be more than a day from the query, and
+   * must not step to a neighbouring day partway through the afternoon.
+   */
+  [['Delhi', 28.61, 77.21, 330], ['New York', 40.71, -74.01, -300],
+   ['Sydney', -33.87, 151.21, 600]].forEach(function (p) {
+    var name = p[0], lat = p[1], lon = p[2], tz = p[3];
+    var worst = 0, distinct = {};
+    for (var h = 0; h < 24; h++) {
+      var jd = A.julianDay(2024, 1, 3, h - tz / 60);
+      var rise = A.sunriseSunset(jd, lat, lon, false);
+      worst = Math.max(worst, Math.abs((jd - rise) * 24));
+      distinct[rise.toFixed(3)] = true;
+    }
+    ok(name + ': every hour gets a sunrise inside one day',
+      worst < 24, 'worst ' + worst.toFixed(2) + ' h');
+    // A local day spans at most two sunrise dates: the one it holds, and the
+    // previous day's for the hours before dawn.
+    ok(name + ': and no more than two distinct sunrises across the day',
+      Object.keys(distinct).length <= 2,
+      Object.keys(distinct).length + ' distinct');
+  });
+})();
 
 console.log('\nMoon latitude and sunrise');
 // Meeus example 47.a: 1992 April 12.0 TD gives beta = -3.229126 degrees.
