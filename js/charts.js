@@ -75,8 +75,13 @@ var Charts = (function () {
    * Stack a house's occupants around an anchor point. Two columns are used once
    * there are more than three, so a stellium still fits inside its triangle.
    */
+  var LINE_HEIGHT = 17;
+
+  /**
+   * Returns the y of the first row, so a caller can keep something clear of it.
+   */
   function drawOccupants(group, occupants, cx, cy, maxWidth) {
-    var lineHeight = 17;
+    var lineHeight = LINE_HEIGHT;
     var perRow = occupants.length > 3 ? 2 : 1;
     var rows = [];
     for (var i = 0; i < occupants.length; i += perRow) rows.push(occupants.slice(i, i + perRow));
@@ -93,6 +98,7 @@ var Charts = (function () {
         group.appendChild(t);
       });
     });
+    return top;
   }
 
   /**
@@ -199,11 +205,36 @@ var Charts = (function () {
       var a = NORTH_ANCHORS[h];
       var cx = m + a[0] * s, cy = m + a[1] * s;
       var g = el('g', { class: 'house' + (h === 0 ? ' first-house' : '') });
-      // Sign number, the way it is written on a hand-drawn North Indian chart.
+      /*
+       * Occupants first, because the sign number has to clear them.
+       *
+       * The stack is centred on its anchor and grows in both directions, so it
+       * climbs towards the number as a house fills. At three rows the gap was
+       * seven pixels against fourteen-pixel text and the number was struck
+       * through; at four it sat behind the first graha entirely.
+       *
+       * The stack stays where it is - it is centred for balance, and pushing it
+       * down would run it out of the triangle in the lower houses - and the
+       * number steps up instead, only as far as it must, and never out of the
+       * box.
+       */
+      var occ = data.bySign[sign];
+      var rowCount = Math.ceil(occ.length / (occ.length > 3 ? 2 : 1)) || 1;
+      var idealTop = cy + 4 - ((rowCount - 1) * LINE_HEIGHT) / 2;
+      var numY = Math.min(cy - 20, idealTop - LINE_HEIGHT);
+      /*
+       * In the corner houses the anchor sits close to the top edge, so a tall
+       * stack can want the number further up than the box allows. Where that
+       * happens the stack gives way instead and slides down by the shortfall:
+       * there is always room below a corner anchor and never above it. The gap
+       * is then one line height in every house, at every count.
+       */
+      var shortfall = Math.max(0, (m + 12) - numY);
+      numY += shortfall;
+      drawOccupants(g, occ, cx, cy + 4 + shortfall, 0.20 * s);
       g.appendChild(el('text', {
-        x: cx, y: cy - 20, class: 'sign-num', 'text-anchor': 'middle'
+        x: cx, y: numY.toFixed(1), class: 'sign-num', 'text-anchor': 'middle'
       }, String(sign + 1)));
-      drawOccupants(g, data.bySign[sign], cx, cy + 4, 0.20 * s);
       g.appendChild(el('title', {}, 'House ' + (h + 1) + ' - ' + Astro.SIGNS[sign] +
         ' (' + Astro.SIGNS_SA[sign] + ')'));
       svg.appendChild(g);

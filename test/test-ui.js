@@ -3964,6 +3964,53 @@ ok('and the choice reaches the engine', (function () {
     .test(appSrc);
 })());
 
+console.log('\nThe sign number keeps clear of the grahas');
+/*
+ * The stack is centred on its anchor and grows in both directions, so it climbs
+ * towards the sign number as a house fills. The number sat at a fixed offset,
+ * so at three rows the gap was seven pixels against fourteen-pixel text and the
+ * number was struck through; at four it sat behind the first graha.
+ *
+ * Reproduced here from the same constants the renderer uses, since the chart is
+ * SVG built in a browser and there is no DOM in this suite.
+ */
+(function () {
+  var src = fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8');
+  var SIZE = Number(src.match(/var SIZE = (\d+)/)[1]);
+  var LH = Number(src.match(/var LINE_HEIGHT = (\d+)/)[1]);
+  var m = 4, s = SIZE - 2 * m;
+  var anchors = [[0.50, 0.23], [0.25, 0.10], [0.10, 0.25], [0.23, 0.50],
+    [0.10, 0.75], [0.25, 0.90], [0.50, 0.77], [0.75, 0.90], [0.90, 0.75],
+    [0.77, 0.50], [0.90, 0.25], [0.75, 0.10]];
+  var worst = Infinity, above = Infinity, below = -Infinity;
+  anchors.forEach(function (a) {
+    var cy = m + a[1] * s;
+    for (var n = 1; n <= 9; n++) {
+      var rows = Math.ceil(n / (n > 3 ? 2 : 1));
+      var ideal = cy + 4 - ((rows - 1) * LH) / 2;
+      var numY = Math.min(cy - 20, ideal - LH);
+      var shortfall = Math.max(0, (m + 12) - numY);
+      numY += shortfall;
+      var top = ideal + shortfall;
+      worst = Math.min(worst, top - numY);
+      above = Math.min(above, numY);
+      below = Math.max(below, top + (rows - 1) * LH);
+    }
+  });
+  ok('the number clears the first graha by a full line, at every count',
+    worst >= LH - 0.01, worst.toFixed(1) + 'px');
+  ok('and nothing is pushed outside the box',
+    above >= m && below <= SIZE - m,
+    'top ' + above.toFixed(0) + ', bottom ' + below.toFixed(0));
+  /*
+   * The renderer must actually derive the number's position from the stack
+   * rather than going back to a fixed offset.
+   */
+  ok('the renderer positions the number from the stack it drew',
+    /var numY = Math\.min\(cy - 20, idealTop - LINE_HEIGHT\);/.test(src) &&
+    /var shortfall = Math\.max\(0, \(m \+ 12\) - numY\);/.test(src));
+})();
+
 console.log('\nSettings show the choice and fold the argument');
 /*
  * Nine choices, each needing a paragraph or two to say why anybody would pick
