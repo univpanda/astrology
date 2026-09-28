@@ -35,6 +35,63 @@ var rt = A.calendarDate(2436116.31);
 ok('calendarDate round-trip', rt.y === 1957 && rt.m === 10 && rt.d === 4 &&
    Math.abs(rt.hours - 19.44) < 0.01, rt.y + '-' + rt.m + '-' + rt.d + ' ' + rt.hours.toFixed(3) + 'h');
 
+console.log('\nWhich clock nata-unnata runs on');
+/*
+ * Raman section 48 asks for the sundial by name, and it is two corrections
+ * away from the clock on the wall: a timezone is an administrative band, and
+ * even on its meridian a clock keeps mean time. Both are commonly skipped, so
+ * the three readings are offered and the sourced one is the default.
+ *
+ * Drik Panchang reckons it by the zone. On Trump's chart that is the whole of
+ * the difference between its nata-unnata row and this one, and being able to
+ * say so is the reason the option exists.
+ */
+(function () {
+  var S = require('../js/shadbala.js');
+  var place = { latitude: 40.6975, longitude: -73.8042, tzOffsetMinutes: -240 };
+  var chart = A.chart({ jdUT: A.julianDay(1946, 6, 14, 10 + 54 / 60 + 4),
+    latitude: place.latitude, longitude: place.longitude,
+    tzOffsetMinutes: place.tzOffsetMinutes });
+  var sun = function (opts) {
+    return S.compute(chart, place, opts).grahas.Sun.kala.nathonnatha;
+  };
+  check('the sundial is the default', sun(), 49.90, 0.05, 'virupas');
+  check('and zone time reproduces Drik Panchang',
+    sun({ natClock: S.NAT_CLOCK.ZONE }), 54.50, 0.05, 'virupas');
+  ok('an unknown value falls back to the sundial rather than guessing',
+    Math.abs(sun({ natClock: 'sundial-ish' }) - sun()) < 1e-9);
+
+  /*
+   * All three must be genuinely distinct, which mid-June hides: the equation
+   * of time is near zero then, so apparent and mean coincide. Early November
+   * is near its peak and separates them.
+   */
+  var nov = { latitude: 40.6975, longitude: -73.8042, tzOffsetMinutes: -300 };
+  var c2 = A.chart({ jdUT: A.julianDay(1946, 11, 3, 10 + 54 / 60 + 5),
+    latitude: nov.latitude, longitude: nov.longitude,
+    tzOffsetMinutes: nov.tzOffsetMinutes });
+  var at = function (k) {
+    return S.compute(c2, nov, k ? { natClock: k } : undefined).grahas.Sun.kala.nathonnatha;
+  };
+  ok('apparent, mean and zone are three different clocks',
+    Math.abs(at() - at('mean')) > 0.5 && Math.abs(at('mean') - at('zone')) > 0.2,
+    [at(), at('mean'), at('zone')].map(function (v) { return v.toFixed(2); }).join(' / '));
+
+  /*
+   * And nothing else may move: the clock is read by nata-unnata alone.
+   */
+  var a = S.compute(chart, place);
+  var z = S.compute(chart, place, { natClock: S.NAT_CLOCK.ZONE });
+  ok('no other bala reads the clock', S.GRAHAS.every(function (g) {
+    var x = a.grahas[g], y = z.grahas[g];
+    return Math.abs(x.sthana.total - y.sthana.total) < 1e-9 &&
+      Math.abs(x.dig - y.dig) < 1e-9 && Math.abs(x.cheshta - y.cheshta) < 1e-9 &&
+      Math.abs(x.drik - y.drik) < 1e-9 &&
+      Math.abs(x.kala.hora - y.kala.hora) < 1e-9 &&
+      Math.abs(x.kala.tribhaga - y.kala.tribhaga) < 1e-9;
+  }));
+})();
+
 console.log('\nThe seven vargas saptavargaja reads');
 /*
  * Saptavargaja scores a graha in D1, D2, D3, D7, D9, D12 and D30, so a wrong

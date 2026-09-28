@@ -1379,7 +1379,8 @@
         latitude: state.place.lat,
         longitude: state.place.lon,
         tzOffsetMinutes: state.offset
-      }, { moonPaksha: document.getElementById('moon-paksha').value });
+      }, { moonPaksha: document.getElementById('moon-paksha').value,
+           natClock: document.getElementById('nat-clock').value });
     }
     return state.shadbala;
   }
@@ -3450,6 +3451,24 @@
     status.textContent = halved
       ? 'The Sun\u2019s ayana and the Moon\u2019s paksha are shown halved. The totals still count them doubled.'
       : 'The Sun\u2019s ayana and the Moon\u2019s paksha are shown as the texts compute them, doubled.';
+  });
+
+  /*
+   * Same shape as the Moon's paksha reading: no position moves, so the cached
+   * strengths are dropped and the page redrawn.
+   */
+  document.getElementById('nat-clock').addEventListener('change', function () {
+    var status = document.getElementById('settings-status');
+    var names = { apparent: 'the sundial at the birthplace',
+      mean: 'local mean time', zone: 'zone time' };
+    var chosen = names[this.value] || this.value;
+    if (!lastChart) {
+      status.textContent = 'Saved. The next chart will use it.';
+      return;
+    }
+    lastChart.shadbala = null;
+    render(lastChart);
+    status.textContent = 'Nata-unnata bala now reckoned by ' + chosen + '.';
   });
 
   /*

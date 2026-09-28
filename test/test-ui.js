@@ -1440,10 +1440,16 @@ ok('and nata-unnata follows the verse it comes from', (function () {
  */
 ok('and it is measured by the sundial, not the timezone', (function () {
   var shadSrc = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8');
-  if (!/var localHours = Astro\.localApparentTime\(jd, place\.longitude\);/.test(shadSrc)) {
+  /*
+   * The clock is a setting now, since widely used software reckons it by the
+   * zone and a row differing for that reason is easy to mistake for a
+   * difference of method. But the sundial is what Raman asks for at section
+   * 48, so it has to be what you get without asking.
+   */
+  if (!/return Astro\.localApparentTime\(jd, place\.longitude\);/.test(shadSrc)) {
     return false;
   }
-  if (/tzOffsetMinutes \|\| 0\) \/ 1440/.test(shadSrc)) return false;
+  if (!/\? wanted : NAT_CLOCK\.APPARENT;/.test(shadSrc)) return false;
   // Two places on one timezone, far apart in longitude, must disagree.
   var jd = Astro.julianDay(2000, 6, 15, 6);
   var at = function (lon) {
@@ -3917,7 +3923,7 @@ ok('the reading is offered in settings, defaulting to always-benefic',
  * explicitly rather than relying on the engine's default.
  */
 ok('and the page never leans on the engine default',
-  /\{ moonPaksha: document\.getElementById\('moon-paksha'\)\.value \}/
+  /moonPaksha: document\.getElementById\('moon-paksha'\)\.value,\s*\n\s*natClock: document\.getElementById\('nat-clock'\)\.value/
     .test(appSrc));
 /*
  * The note has to name who holds each reading, or the choice is just a
@@ -3942,7 +3948,7 @@ ok('changing it drops the cached strengths and redraws', (function () {
     /render\(lastChart\);/.test(block) && !/computeChart\(/.test(block);
 })());
 ok('and the choice reaches the engine', (function () {
-  return /\{ moonPaksha: document\.getElementById\('moon-paksha'\)\.value \}/
+  return /moonPaksha: document\.getElementById\('moon-paksha'\)\.value,\s*\n\s*natClock: document\.getElementById\('nat-clock'\)\.value/
     .test(appSrc);
 })());
 

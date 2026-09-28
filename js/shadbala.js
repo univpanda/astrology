@@ -528,11 +528,52 @@ var Shadbala = (function () {
    * settings; it always passes its choice explicitly rather than relying on
    * this.
    */
+  /*
+   * Which clock nata-unnata measures the day by. Nothing else reads it.
+   *
+   * Raman asks for the sundial, by name, at section 48: "Midday of any place is
+   * the local noon when the Sun passes over its meridian. The Hindus consider
+   * the apparent noon ... if birth time is marked in local mean time, it must
+   * be converted into the apparent time by applying equation of time."
+   *
+   * That is two corrections away from the clock on the wall, and both are
+   * commonly skipped. A timezone is an administrative band, so a place can sit
+   * an hour or more from the meridian it keeps time by; and even on that
+   * meridian a clock keeps mean time, which the equation of time parts from
+   * the Sun by up to sixteen minutes either way.
+   *
+   *   'apparent' - the hour angle of the true Sun. Raman's reading, the default.
+   *   'mean'     - local mean time: the longitude correction but not the
+   *                equation of time. The halfway house Raman describes and
+   *                then tells the reader to finish.
+   *   'zone'     - the clock on the wall. No authority asks for this; it is
+   *                what a program does when it treats the birth time as given.
+   *                Offered because widely used software does it, and a row
+   *                that differs for this reason is easy to mistake for a
+   *                difference of method.
+   */
+  var NAT_CLOCK = { APPARENT: 'apparent', MEAN: 'mean', ZONE: 'zone' };
+
+  function natHours(clock, jd, place) {
+    if (clock === NAT_CLOCK.ZONE) {
+      var local = jd + (place.tzOffsetMinutes || 0) / 1440 + 0.5;
+      return (local - Math.floor(local)) * 24;
+    }
+    if (clock === NAT_CLOCK.MEAN) {
+      var lmt = jd + place.longitude / 360 + 0.5;
+      return (lmt - Math.floor(lmt)) * 24;
+    }
+    return Astro.localApparentTime(jd, place.longitude);
+  }
+
   var MOON_PAKSHA = { GROUP: 'group', BENEFIC: 'benefic' };
 
   function compute(chart, place, options) {
     var moonPaksha = (options && options.moonPaksha) === MOON_PAKSHA.BENEFIC
       ? MOON_PAKSHA.BENEFIC : MOON_PAKSHA.GROUP;
+    var wanted = options && options.natClock;
+    var natClock = wanted === NAT_CLOCK.ZONE || wanted === NAT_CLOCK.MEAN
+      ? wanted : NAT_CLOCK.APPARENT;
     var jd = chart.julianDay;
     var T = (jd + Astro.deltaT(jd) / 86400 - 2451545.0) / 36525;
     var nut = Astro.nutation(T);
@@ -559,7 +600,7 @@ var Shadbala = (function () {
      * apparent. Honolulu is half an hour of time west of its own zone meridian,
      * which is three virupas of nata bala.
      */
-    var localHours = Astro.localApparentTime(jd, place.longitude);
+    var localHours = natHours(natClock, jd, place);
 
     var results = {};
     GRAHAS.forEach(function (graha) {
@@ -750,6 +791,7 @@ var Shadbala = (function () {
     // Exported for Raman's Examples 49-51, as drikBala is for 54-55.
     chestaKendraFrom: chestaKendraFrom,
     MOON_PAKSHA: MOON_PAKSHA,
+    NAT_CLOCK: NAT_CLOCK,
     // Exported for the worked examples in Raman s60-61 and BPHS ch.27 v.13.
     abdaLord: abdaLord, masaLord: masaLord,
     GRAHAS: GRAHAS,
