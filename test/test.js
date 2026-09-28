@@ -35,6 +35,86 @@ var rt = A.calendarDate(2436116.31);
 ok('calendarDate round-trip', rt.y === 1957 && rt.m === 10 && rt.d === 4 &&
    Math.abs(rt.hours - 19.44) < 0.01, rt.y + '-' + rt.m + '-' + rt.d + ' ' + rt.hours.toFixed(3) + 'h');
 
+console.log('\nThe seven vargas saptavargaja reads');
+/*
+ * Saptavargaja scores a graha in D1, D2, D3, D7, D9, D12 and D30, so a wrong
+ * scheme moves a whole column without any friendship being involved. Raman's
+ * Example 9 turns out to be a weak check on this - feeding it a D7 counted the
+ * wrong way still matches 48 of his 49 cells - so the schemes are pinned here
+ * against the two places they are actually stated.
+ *
+ * Brihat Parashara Hora Shastra ch.6 and K. S. Charak's Elements of Vedic
+ * Astrology, which agree with each other on every one of the seven.
+ */
+(function () {
+  var L = A.SIGN_LORDS;
+  // D2, Charak: first 15 degrees of an odd sign to the Sun (Leo), second to the
+  // Moon (Cancer); reversed in an even sign.
+  ok('D2 gives the odd sign Leo first, the even sign Cancer first',
+    A.vargaPosition(5, 2).sign === 4 && A.vargaPosition(20, 2).sign === 3 &&
+    A.vargaPosition(35, 2).sign === 3 && A.vargaPosition(50, 2).sign === 4);
+  // D3: first decanate the same sign, second the 5th from it, third the 9th.
+  ok('D3 steps to the 5th and the 9th', (function () {
+    for (var sign = 0; sign < 12; sign++) {
+      var b = sign * 30;
+      if (A.vargaPosition(b + 1, 3).sign !== sign) return false;
+      if (A.vargaPosition(b + 11, 3).sign !== (sign + 4) % 12) return false;
+      if (A.vargaPosition(b + 21, 3).sign !== (sign + 8) % 12) return false;
+    }
+    return true;
+  })());
+  // D7, Charak: odd signs run from the sign itself, even signs from the 7th.
+  ok('D7 runs from the sign in an odd one and from the 7th in an even one',
+    (function () {
+      for (var sign = 0; sign < 12; sign++) {
+        var b = sign * 30, from = sign % 2 === 0 ? sign : (sign + 6) % 12;
+        for (var i = 0; i < 7; i++) {
+          var lon = b + i * (30 / 7) + 0.5;
+          if (A.vargaPosition(lon, 7).sign !== (from + i) % 12) return false;
+        }
+      }
+      return true;
+    })());
+  // D9: movable from itself, fixed from the 9th, dual from the 5th.
+  ok('D9 starts movable from itself, fixed from the 9th, dual from the 5th',
+    (function () {
+      var start = [0, 8, 4];
+      for (var sign = 0; sign < 12; sign++) {
+        var want = (sign + start[sign % 3]) % 12;
+        if (A.vargaPosition(sign * 30 + 1, 9).sign !== want) return false;
+      }
+      return true;
+    })());
+  // D12: from the sign itself, one sign per part.
+  ok('D12 runs from the sign itself', (function () {
+    for (var sign = 0; sign < 12; sign++) {
+      for (var i = 0; i < 12; i++) {
+        if (A.vargaPosition(sign * 30 + i * 2.5 + 0.5, 12).sign !== (sign + i) % 12) {
+          return false;
+        }
+      }
+    }
+    return true;
+  })());
+  /*
+   * D30, Charak: an odd sign gives 5 degrees to Mars, 5 to Saturn, 8 to
+   * Jupiter, 7 to Mercury and 5 to Venus; an even sign reverses the order with
+   * widths 5, 7, 8, 5 and 5. The unequal widths are the whole of this division,
+   * and getting them symmetric is the usual way to have it wrong.
+   */
+  ok('D30 keeps the unequal widths and the reversed even order', (function () {
+    var odd = [[2.5, 'Mars'], [7.5, 'Saturn'], [14, 'Jupiter'], [21.5, 'Mercury'],
+      [27.5, 'Venus']];
+    var even = [[2.5, 'Venus'], [8.5, 'Mercury'], [14, 'Jupiter'], [20, 'Saturn'],
+      [27.5, 'Mars']];
+    return odd.every(function (r) {
+      return L[A.vargaPosition(r[0], 30).sign] === r[1];       // Aries, odd
+    }) && even.every(function (r) {
+      return L[A.vargaPosition(30 + r[0], 30).sign] === r[1];  // Taurus, even
+    });
+  })());
+})();
+
 console.log('\nKranti comes from the longitude, not the true declination');
 /*
  * Raman's kranti is read off the bhuja of the sayana longitude, section 73,
