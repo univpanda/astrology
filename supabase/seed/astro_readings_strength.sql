@@ -5,9 +5,14 @@
 -- answers "is that a good thing". The distinction is easy to lose once a page
 -- prints a number, so it is written down rather than assumed.
 --
+-- Every passage carries its source. The column has been on the table since the
+-- beginning and nothing wrote to it; a passage that says two authorities differ
+-- is worth little without naming the books, and a reader comparing this site
+-- against another calculator needs the citation more than the conclusion.
+--
 --   psql "$DATABASE_URL" -f supabase/seed/astro_readings_strength.sql
 
-insert into astro_readings (topic, subject, condition, heading, points, note, sort_order) values
+insert into astro_readings (topic, subject, condition, heading, points, note, source, sort_order) values
 ('strength', 'Strength and influence', 'general',
  'Strength is not the same as influence',
  array[
@@ -18,7 +23,9 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'So a high total is never on its own a reason to expect good from a graha. It says the graha will act, fully and in its own nature. Whether that is welcome is read from ownership, from the house, and from what else touches it.',
    'The same holds in reverse: a weak benefic may promise more than it can deliver, which is why a promising yoga is still read alongside a strength measure rather than instead of one.'
  ],
- 'What a high total does tell you follows below.', 700),
+ 'What a high total does tell you follows below.',
+ 'Not stated in one place in the texts. It follows from reading the vimsopaka bands of Brihat Parashara Hora Shastra ch.7 vv.26-27 beside the benefic and malefic rules of ch.2 v.11 - the first grades every graha on one scale, the second says they are not alike.',
+ 700),
 
 ('strength', 'Strength and influence', 'magnitude',
  'What a high total does tell you',
@@ -29,7 +36,9 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'So it is better read as magnitude than as direction. It scales whatever the graha was going to do rather than deciding what that is, which is why the same figure means opposite things on a benefic ruling a trikona and on a malefic reaching a house it has no claim to.',
    'That also explains why it is worth computing at all for a yoga that is already present. The yoga says what is promised and vimsopaka bala says how much of it the graha can actually carry.'
  ],
- null, 701),
+ null,
+ 'Brihat Parashara Hora Shastra ch.7, tr. R. Santhanam (Ranjan Publications). The scaling reading is how B. V. Raman applies strength to yogas throughout Three Hundred Important Combinations.',
+ 701),
 
 ('strength', 'Strength and influence', 'bands',
  'Why the classical bands say "favourable"',
@@ -40,7 +49,9 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'For a benefic ruling a good house those come to the same thing. For a malefic afflicting a house it does not own they do not, and the band label is the least useful part of the reading.',
    'This page prints Parashara''s words for the bands because they are his, and says here what they should not be taken to mean.'
  ],
- null, 702),
+ null,
+ 'Brihat Parashara Hora Shastra ch.7 vv.26-27, tr. R. Santhanam. The band labels quoted are Santhanam''s English; the reading offered for them is this site''s and is not his.',
+ 702),
 
 ('strength', 'Vimsopaka Bala', 'reading',
  'Reading a vimsopaka total',
@@ -52,7 +63,9 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'Each share-out has its own place in chapter 7. The Shadvarga and the Saptavarga are given at verses 17-19, the Dasavarga at verse 20, and the Shodasavarga at verses 21-25 - which is also where the varga viswa fractions above are given, the four bands following at verses 26-27.',
    'It measures dignity across divisions and nothing else. It does not know which houses the graha rules, where it sits, or what aspects it, so it is one input to a judgement rather than the judgement.'
  ],
- 'What a high total does and does not mean is set out under Strength and influence.', 703),
+ 'What a high total does and does not mean is set out under Strength and influence.',
+ 'Brihat Parashara Hora Shastra ch.7 vv.17-27, tr. R. Santhanam. Unlike Shadbala, vimsopaka bala has no competing modern working: the verses are followed directly.',
+ 703),
 
 ('strength', 'Vimsopaka Bala', 'limits',
  'What vimsopaka bala cannot see',
@@ -66,7 +79,9 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'None of these is an oversight to be patched into the total. They are separate measures, and the classical practice is to read them beside it rather than fold them in.',
    'On this page: vargottama is marked [V] beside the graha in the chart; an exchange and a cancelled debilitation are both reported among the yogas; and dig bala is a column of its own in Shadbala, which is the broader instrument and carries it as one of its six.'
  ],
- null, 704),
+ null,
+ 'Brihat Parashara Hora Shastra ch.7 for what the score counts; dig bala from ch.27 and B. V. Raman, Graha and Bhava Balas §§41-45. That these four fall outside the total is an observation about the scheme rather than a claim any of the three texts makes.',
+ 704),
 
 ('strength', 'Vimsopaka Bala', 'exclusions',
  'Who the count leaves out, and who stands in',
@@ -77,12 +92,14 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'So in D30 the Sun is judged as Mars would be and the Moon as Venus would be, which is what lets a luminary hold a trimsamsa of its own rather than being a guest in every one of them.',
    'The substitution is for ownership only. Everything else about the two - their exaltation, their debilitation, their friendships with the other grahas - is read as the Sun and the Moon, not as their stand-ins.'
  ],
- 'The nodes'' exaltation signs are set out under Dignity.', 705),
+ 'The nodes'' exaltation signs are set out under Dignity.',
+ 'Trimsamsa lords from Brihat Parashara Hora Shastra ch.6 vv.27-28. The nodes'' exaltation signs are Raman''s, in Hindu Predictive Astrology; Parashara assigns the nodes none, which is itself one of the places the authorities part. The luminaries'' stand-ins in D30 follow from the lord list rather than from a rule any text states.',
+ 705),
 
 -- Shadbala. The panel prints fifteen rows and a verdict; what a reader cannot
 -- get from the panel is what each share is measuring, what the verdict is
--- measured against, and which of the figures rest on a reading that another
--- authority contradicts. Those three go here.
+-- measured against, which of the figures rest on a reading another authority
+-- contradicts, and which books those authorities are. Those four go here.
 
 ('strength', 'Shadbala', 'general',
  'What the six strengths are',
@@ -96,18 +113,23 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'Drik bala, aspectual. What the benefics aspecting the graha are worth less what the malefics are, quartered. The only share that can be negative.',
    'Rahu and Ketu are outside all of it. Shadbala is reckoned for the seven grahas only.'
  ],
- 'What a high total does and does not mean is set out under Strength and influence.', 706),
+ 'What a high total does and does not mean is set out under Strength and influence.',
+ 'Brihat Parashara Hora Shastra ch.27, tr. R. Santhanam; B. V. Raman, Graha and Bhava Balas, chapters II to VIII. Mantreswara''s Phaladeepika treats the whole subject in one chapter, Adhyaya IV, and at sloka 24 refers the reader elsewhere for the working.',
+ 706),
 
 ('strength', 'Shadbala', 'reading',
  'What a Shadbala total is measured against',
  array[
    'The requirement differs by graha, so a total is only ever read against its own minimum and never against another graha''s. Raman gives them as 300 shashtiamsas for the Sun, 360 for the Moon, 300 for Mars, 420 for Mercury, 390 for Jupiter, 330 for Venus and 300 for Saturn - five, six, five, seven, six and a half, five and a half and five rupas.',
    'That is why Mercury so often reads weak. It is asked for more than any other graha, and a total that would make the Sun comfortably strong leaves Mercury short.',
+   'The Sun''s figure is the one that is disputed, and the dispute is not small. Parashara''s verse 32-33 gives the seven requirements as 390, 360, 300, 420, 390, 330 and 300, putting the Sun at 390 rather than 300; Mantreswara, writing independently, gives the Sun six and a half rupas as well. Raman''s 300 is the minority reading. This site uses it, and the ratio chart is where the choice shows: at 300 the Sun leads that chart in 96 charts in a hundred and at 390 in 65, and the graha standing highest changes in about a third of charts.',
    'There is a second set of minimums that the panel does not print. Chapter 27 verses 34-36 give a required figure for each share separately, by group: Jupiter, Mercury and the Sun want 165 sthana, 35 dig, 50 kala, 112 cheshta and 30 ayana; the Moon and Venus want 133, 50, 30, 100 and 40; Mars and Saturn want 96, 30, 40, 67 and 20.',
    'Santhanam''s note on those verses is that meeting them makes a graha considerably favourable even where the total falls short of the overall requirement. Read the other way, a graha can clear its total while failing several of its parts, which is worth knowing before a single verdict is trusted.',
    'A war changes the total. Where two of the five starry grahas stand within a degree of each other the loser gives strength to the winner, and a graha''s verdict can turn on it.'
  ],
- 'The war is set out under Yuddha bala.', 707),
+ 'The war is set out under Yuddha bala.',
+ 'B. V. Raman, Graha and Bhava Balas §122 and the table at p.110; Brihat Parashara Hora Shastra ch.27 vv.32-36, tr. R. Santhanam; Mantreswara, Phaladeepika IV.22-23, tr. V. Subrahmanya Sastri. Why Raman''s Sun is preferred over the two classical figures is set out under Where the teachings differ.',
+ 707),
 
 ('strength', 'Yuddha bala', 'general',
  'Planetary war, and why the answer is small',
@@ -119,7 +141,9 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'The disc diameters are the whole of the difference, and the bare verse does not mention them. A war between Jupiter and Saturn, whose discs are both large and close in size, is divided by a small number and so counts for more; a war between Mercury and Mars, whose discs are small and closer still, counts for more again; a war between Jupiter and Mercury is divided by almost the full 190 and nearly vanishes.',
    'This site follows Raman. A calculator that applies the difference raw will disagree sharply on any chart that holds a war, and one that omits yuddha bala altogether will disagree in the other direction.'
  ],
- 'The aggregate compared is sthana, dig and kala as far as hora bala, so ayana and the war itself stay out of it.', 708),
+ 'The aggregate compared is sthana, dig and kala as far as hora bala, so ayana and the war itself stay out of it.',
+ 'B. V. Raman, Graha and Bhava Balas §§76-77, including his table of disc diameters; Brihat Parashara Hora Shastra ch.27 v.20 for the correction and ch.79 for the victor, tr. R. Santhanam.',
+ 708),
 
 ('strength', 'Drik bala', 'general',
  'Aspect strength, and the shape of a drishti',
@@ -128,27 +152,146 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'It is nothing at 30 degrees, fifteen at 60, forty-five at 90, thirty at 120, nothing again at 150, sixty at 180, and falls away to nothing at 300. Between those points it moves in straight lines, so a graha''s drishti changes with every degree it travels.',
    'The familiar table - a quarter aspect on the 3rd and 10th, a half on the 5th and 9th, three quarters on the 4th and 8th, full on the 7th - is that curve read off at the cusps and nowhere else. It is exact at seven points of the circle and an approximation everywhere between them.',
    'Visesha drishti, the special aspect, adds to the ordinary value rather than replacing it: fifteen more for Mars on the 4th and 8th, thirty for Jupiter on the 5th and 9th, forty-five for Saturn on the 3rd and 10th. Each brings the total to exactly sixty at the cusp, which is why replacing it with sixty looks right until a graha is anywhere but the cusp.',
-   'The drishti pinda is the sum of all of it over one graha, benefic aspects positive and malefic negative. Drik bala is a quarter of that pinda, and nothing else. Santhanam''s verse 19 adds "super add the entire aspect of Mercury and Jupiter"; Raman''s section 120 has no such clause, and his worked example settles it - his Sun takes a pinda of +63.45 and a drik bala of +15.86, the quarter exactly, with Jupiter among the grahas aspecting it.'
+   'The drishti pinda is the sum of all of it over one graha, benefic aspects positive and malefic negative. Drik bala is a quarter of that pinda, and nothing else. Santhanam''s verse 19 adds "super add the entire aspect of Mercury and Jupiter"; Raman''s section 120 has no such clause, and his worked examples rule it out.',
+   'Those examples are worth knowing about, because they are the only place in the whole of Shadbala where an authority shows his working for all seven grahas at once. Example 54 gives the drishti pinda on each graha of his Standard Horoscope, with his own benefic set printed beside it - Jupiter, the Moon and Venus benefic, the Sun, Mars, Saturn and a combust Mercury malefic - and Example 55 divides each by four. This site reproduces all fourteen of those figures to within 0.05 virupas, which is his rounding of the positions.',
+   'The definition also puts a ceiling on the answer, and the ceiling is the most useful thing here for anyone comparing calculators. Since drik bala is a quarter of a signed sum, its size can never exceed a quarter of the unsigned sum of the drishti falling on that graha. That bound can be computed for any chart, and it depends on the positions alone: no reading of who is benefic can push a figure past it.',
+   'That turns a vague disagreement into a decidable one. Checked against one widely used program over three charts, 9 of its 21 figures stood above the ceiling the definition allows, by as much as 26 virupas, and its figures correlate with these at 0.10 - which is to say not at all. So the difference was never about the Moon''s nature or Mercury''s company, which is where such a search naturally starts and where a good deal of effort went. A quantity that breaks the bound is not this quantity under another reading; it is a different measurement wearing the same name, and the two should not be compared at all.',
+   'The practical consequence is worth stating, because it does not stay inside this row. That program''s aspect figures average about 31 virupas where these average 2, so its Shadbala totals will run roughly half a rupa per graha higher, which is enough to move verdicts. Two totals built on different aspect measures are not close readings of one quantity and there is no reconciling them by argument.'
  ],
- 'It is the one share that can be negative, so a graha can lose strength by being looked at.', 709),
+ 'It is the one share that can be negative, so a graha can lose strength by being looked at.',
+ 'B. V. Raman, Graha and Bhava Balas §§114-115 for the curve, which he takes from Sripathi, §120 for the quarter, and Examples 54 and 55 for the worked table this site is checked against; Brihat Parashara Hora Shastra ch.27 vv.14-19, tr. R. Santhanam. Sripatipaddhati has not been read directly here - the curve reaches this site through Raman.',
+ 709),
+
+('strength', 'Paksha bala', 'general',
+ 'The fortnight, and the Moon''s own place in it',
+ array[
+   'Paksha bala asks how far into the bright or the dark half the birth fell. Subtract the Sun''s longitude from the Moon''s, reduce anything over 180 by taking it from 360, and divide by three: that figure goes to every benefic, and sixty less it goes to every malefic. One number for each group, not one for each graha.',
+   'So it is not a measure of the Moon. It is a measure of the fortnight, and what the fortnight does for the two kinds of graha is opposite: a bright half strengthens the benefics and a dark half strengthens the malefics.',
+   'Two questions about the Moon then have to be settled, and only one of them is contested. Uncontested: the Moon''s figure is doubled. Raman states it as rule (c) of section 55, "Chandra''s Paksha Bala is always to be doubled", and Santhanam''s note to verses 10-11 says the same in as many words, adding that it holds whether she is counted a benefic or not.',
+   'Contested: which group she joins. Santhanam reads the "decreasing Moon" of chapter 2 as the dark half, which puts the boundary at opposition. Raman fixes it at the eighth day either side - benefic from the eighth of the bright half to the eighth of the dark half - and says so inside the paksha bala chapter itself, at section 53, so it is the rule he means to govern this row. This site follows Raman.',
+   'Together the doubling and the group rule produce a result that looks wrong and is not: a thin Moon ends with more paksha bala than a half-lit one, because she has joined the malefics and taken the complement.',
+   'But there is a second reading, and it is held by authorities worth reading rather than by careless software. K. S. Charak lists the Moon among the natural benefics for this bala with no qualification attached, so she takes the brightness outright whatever her phase. Phaladeepika IV.5 points the same way and is the sharper argument of the two: "The Moon is strong and auspicious when she has her full Paksha bala" cannot be said under the group rule, where a full paksha bala for the Moon means a dark Moon.',
+   'The disagreement is not really about arithmetic. It is about what paksha bala measures. If it measures what the fortnight does to a graha, the Moon is a graha like the rest and takes her turn in the groups. If it measures the Moon''s own condition, her brightness is the answer and the groups are beside the point. This site defaults to the first and offers the second under Chart settings, because the case for each is good and the choice changes her figure by up to sixty.',
+   'One position that no authority consulted here holds: reporting her brightness undoubled. That agrees with neither reading, since Santhanam, Raman and Charak all apply the doubling.',
+   'The doubling is why this row carries two ceilings. Sixty bounds it for six grahas and a hundred and twenty for the Moon.',
+   'It reaches further than its own row. Cheshta bala for the Moon is her paksha bala - chapter 27 verse 18, which Charak repeats - the Moon never retrograding, so whichever reading is taken shows up twice in the same table. Worth knowing alongside it that Raman''s own worked Shadbala leaves the cheshta row blank for both luminaries, against that verse.'
+ ],
+ 'The Sun''s ayana bala is doubled for the same reason and in the same way.',
+ 'For the group reading: B. V. Raman, Graha and Bhava Balas §§52-55 with his Example 18, and Brihat Parashara Hora Shastra ch.27 vv.10-11, v.18 and ch.2 v.11 with Santhanam''s notes. For the other: K. S. Charak, Elements of Vedic Astrology, under Kaala Bala, which lists the Moon among the natural benefics and directs that her figure be doubled; and Mantreswara''s Phaladeepika IV.5 and IV.21, tr. V. Subrahmanya Sastri.',
+ 711),
+
+('strength', 'Nata-Unnata bala', 'general',
+ 'Which midnight, and whose clock',
+ array[
+   'Nata is the birth time measured back to the nearer midnight, deducted from thirty ghatis and doubled. The Moon, Mars and Saturn take it and are strongest at midnight; the Sun, Jupiter and Venus take sixty less it and are strongest at noon; Mercury takes the full sixty at any hour.',
+   'The arithmetic is simple and the trap is in the clock. Raman is explicit at section 48: "Midday of any place is the local noon when the Sun passes over its meridian. The Hindus consider the apparent noon ... if birth time is marked in local mean time, it must be converted into the apparent time by applying equation of time."',
+   'That asks for two corrections, and a timezone makes neither. A zone is an administrative band, so a place can sit an hour or more from the meridian it keeps time by; and even on that meridian a clock keeps mean time, which the equation of time parts from the Sun by up to sixteen minutes either way.',
+   'The cost is a function of geography rather than of astrology. At Delhi the two clocks differ by about 35 minutes, which is three virupas; at New York 70 minutes and six; at Vigo, on the western edge of a zone it shares with central Europe, 169 minutes and fourteen - a quarter of the range of the whole measure.',
+   'This site reckons it by local apparent time: the hour angle of the true Sun at the birthplace, nothing at its lower meridian and twelve at its upper. Two births at the same clock time in two cities of one timezone will differ, which is the point.'
+ ],
+ null,
+ 'B. V. Raman, Graha and Bhava Balas §47 for the measure and §48 for the clock, quoted above; Brihat Parashara Hora Shastra ch.27 vv.6-7, tr. R. Santhanam. No classical text could have raised the question Raman answers - zone time is younger than both of them - which is why he is the authority here and not a witness against one.',
+ 712),
 
 ('strength', 'Shadbala', 'limits',
- 'Where the authorities disagree, and what this site chose',
+ 'Where the teachings differ, and what this site chose',
  array[
-   'Shadbala looks like arithmetic and is partly interpretation. Several of its figures rest on a reading that another primary authority contradicts, and a total is only as settled as the choices behind it. These are the ones that move results here.',
-   'The saptavargaja ladder. Raman''s section 30 gives 45 in moolatrikona and 30 in an own sign, then halves at every step down: 22.5 in a great friend''s varga, 15 in a friend''s, 7.5 in a neutral''s, 3.75 in an enemy''s, 1.875 in a great enemy''s. Santhanam''s translation of chapter 27 gives 20, 15, 10, 4 and 2 for those lower five instead, with Saravali corroborating. This site uses Raman''s, his worked table for the Standard Horoscope being built entirely from those figures. The two differ by about five shashtiamsas on average and move one verdict in forty.',
-   'Cheshta bala. Reckoned from the chesta kendra, as Raman does: the graha''s distance from its seeghrocha, nothing where that is nothing and sixty where it is a half circle. The seeghrocha differs by kind, and that is the whole of the point - an outer graha turns retrograde at opposition, so the Sun is its seeghrocha and the kendra is its elongation, while an inner one turns at inferior conjunction where its elongation is near nothing and its own mean longitude is the seeghrocha instead. The Sun and Moon never retrograde and borrow, the Sun its ayana bala and the Moon its paksha.',
-   'One thing about it will not reconcile exactly with Raman''s printed figures. His mean longitudes come from the Surya Siddhanta motions tabulated at the back of his book, and this engine''s come from Standish''s elements; the two models do not agree to the degree. Against one worked reference this reproduces Jupiter, Venus and Saturn to about a virupa and a half and misses Mars and Mercury by more, which is what that difference looks like rather than an error in the method.',
-   'The Moon''s nature. Chapter 2 verse 11 names the "decreasing Moon" among the malefics and does not say where decreasing begins. Santhanam reads it as the dark fortnight, so the boundary falls at opposition. Raman reads it as the thin Moon and fixes the boundary at the eighth day either side - full and strong from the eighth of the bright half to the eighth of the dark half - which is the reading in general use. This site follows Raman. The two disagree in half of all charts, and the Moon''s nature feeds paksha bala, drik bala and every yoga that asks whether a graha is benefic.',
-   'Two clauses go with that choice. Santhanam''s notes add that a waning Moon conjunct or aspected by a benefic turns benefic, and that a waning Moon with Mercury makes both benefic. Both are his commentary rather than the verse and Raman carries neither, so neither is applied here. What the verse itself gives Mercury is kept: it is a malefic if it joins a malefic.',
-   'Ayana bala. Raman scales it by a constant 24 degrees after Kesava Daivagna; this site uses the true obliquity. The difference is about half a shashtiamsa.',
-   'None of these is a defect to be patched. They are places where two primary sources say different things, and the useful habit is to know which reading produced a figure before comparing it with a figure from somewhere else.'
+   'Shadbala looks like arithmetic and is partly interpretation. A dozen of its figures rest on a reading that some other authority contradicts, and a total is only as settled as the choices behind it. Two figures from two calculators that disagree are not evidence that one is broken; they are usually evidence that they read different books. These are the places it happens.',
+   'The saptavargaja ladder. Raman''s section 30 gives 45 in moolatrikona and 30 in an own sign, then halves at every step down: 22.5 in a great friend''s varga, 15 in a friend''s, 7.5 in a neutral''s, 3.75 in an enemy''s, 1.875 in a great enemy''s. Parashara''s own verses - chapter 27, shlokas 2-4, not a translator''s note - give 20, 15, 10, 4 and 2 for those lower five instead. This site uses Raman''s, because his worked table for the Standard Horoscope is built entirely from those figures and so cannot be reconciled with any other ladder. The two differ by about five shashtiamsas on average and move one verdict in forty.',
+   'The Sun''s requirement. Parashara''s verse 32-33 puts it at 390 shashtiamsas and Mantreswara at six and a half rupas, which is the same figure arrived at independently; Raman''s section 122 says five, twice - in prose and in the table of Example 57. Two classical witnesses against one modern one is ordinarily decisive, and this is the one place the site goes the other way. The reason is that Raman''s number is load-bearing: his worked ranking of the Standard Horoscope calls the Sun the most powerful graha in it, which is true at 300 and false at 390, so adopting Parashara''s figure inside an otherwise Raman calculation would contradict the example the rest of the method is checked against. It is the most consequential open choice here - the graha topping the ratio chart changes in about a third of charts - and the least comfortable.',
+   'Where moolatrikona counts. Raman restricts it to the rashi - "45 Shashtiamsas ... only when it is in its Moolatrikona Rasi, and not when it occupies any other of the 6 vargas". The arithmetic agrees with him: moolatrikona is a span of degrees inside a sign, and a varga position is a place within a division stretched back across the whole thirty, so the degree a division reports is not a degree of any sign the graha stands in.',
+   'Cheshta bala. Reckoned from the chesta kendra: the graha''s distance from its seeghrocha, nothing where that is nothing and sixty where it is a half circle. The seeghrocha differs by kind, and that is the whole of the point - an outer graha turns retrograde at opposition, so the Sun is its seeghrocha and the kendra is its elongation, while an inner one turns at inferior conjunction where its elongation is near nothing and its own mean longitude is the seeghrocha instead. A method that reads motion rather than the kendra gets the outer three about right and Venus badly wrong, for exactly that reason.',
+   'One thing in it will not reconcile with Raman''s printed figures whatever is done. His mean longitudes come from the Surya Siddhanta motions tabulated at the back of his book; a modern engine''s come from Standish''s elements, and the two models do not agree to the degree. Jupiter, Venus and Saturn come out within a virupa and a half; Mars and Mercury do not.',
+   'The Moon''s nature. Chapter 2 verse 11 names the "decreasing Moon" among the malefics and does not say where decreasing begins, and three readings of it are on record. Santhanam takes it as the dark fortnight, putting the boundary at opposition. Raman takes it as the thin Moon and fixes the boundary at the eighth day either side, which is 90 to 270 degrees of elongation. Santhanam''s own note preserves a third, the Yavanas'' by way of his translation of Saravali, page 70: very auspicious from 120 to 240 degrees. This site follows Raman - and the third witness is why. Raman''s rule and the Yavanas'' are the same kind of rule, a band of elongation centred on opposition differing only in width, and they agree in 83 charts in a hundred; the fortnight rule is a different kind of rule and agrees with Raman''s in 50, which is what agreement by coincidence looks like.',
+   'Two clauses go with that choice. Santhanam''s notes add that a waning Moon conjunct or aspected by a benefic turns benefic, and that a waning Moon with Mercury makes both benefic. Both are his commentary rather than the verse and Raman carries neither, so neither is applied here.',
+   'Mercury''s company. The verse says only that "Mercury is a malefic if he joins a malefic", and what joining means matters more for Mercury than for anyone: it is never more than about 28 degrees from the Sun and shares its sign in 44% of charts, so a same-sign test against the Sun reports Mercury''s orbit rather than its company. Raman''s footnote to his drik bala table fixes it - "Mercury is a malefic as he is very closely associated with Sun or combusted" - so the Sun is judged by combustion and every other malefic by the sign. The two tests disagree in 41% of charts, in both directions.',
+   'Which clock the day is measured by. Nata-unnata bala and the hora both turn on the time of day, and a timezone is not the time of day: it is an administrative band, and it keeps mean time where the rule asks for apparent. Raman asks for both corrections by name at section 48. At the western edge of a wide zone the difference reaches a quarter of nata bala''s whole range.',
+   'The combustion orbs. Santhanam''s chapter 4 table and Raman''s Hindu Predictive Astrology section 54 agree on six of the seven and on every retrograde figure, and differ on Saturn alone - 16 degrees against 15. Raman''s is used.',
+   'Yuddha bala. The bare verse adds the difference between two Shad-balas to the victor and deducts it from the vanquished, which reaches 272 shashtiamsas and can make a pair exchange totals outright. Raman divides that difference by the difference between the diameters of the two grahas'' discs, which the verse never mentions and which brings the median correction down from 83 to one. He also makes the victor the graha of lesser longitude where chapter 79 makes it the more northerly, and the two disagree about who won in half of all wars.',
+   'Drik bala. Santhanam''s verse 19 ends "super add the entire aspect of Mercury and Jupiter", which would add about 41 virupas on average. Raman''s section 120 is the quarter of the drishti pinda and nothing else, and his own worked example rules the clause out: his Sun takes a pinda of +63.45 and a drik bala of +15.86, the quarter exactly, with Jupiter among the grahas aspecting it. Not applied.',
+   'Ayana bala, where two whole methods are on offer and the mistake is to take half of each. Raman''s section 75 gives Kesava Daivagna''s formula, the declination added to 24 degrees over 48, and his section 73 says where that declination comes from: the bhuja of the sayana longitude, read off a table of six fifteen-degree steps. The two halves belong together, because a declination derived from a longitude is exactly what tops out at 24.',
+   'Parashara''s is the other whole method. Santhanam''s note to chapter 27 verses 15-17 gives the formula as the kranti added to 23 degrees 27 minutes, times 1.2793 - which is 23.45 over 46.9, the real obliquity in both places - and says plainly that "Krantis (or declinations) can be ascertained from standard modern ephemeris". A modern ephemeris gives the true declination, and for the Moon that includes her ecliptic latitude.',
+   'So the constants are not the interesting part; they differ by at most 0.7 virupas. What matters is that each pairs with its own kind of declination, and mixing them is the error. This site fed Raman''s 24 and 48 a true declination including the Moon''s latitude, which is neither author''s method and cost her about 3.9 virupas, as much as 6.6. It now follows Raman''s throughout: the kranti from the sayana longitude, the Moon included, computed exactly rather than by interpolating his table, which he offers as a convenience for the same quantity rather than as the quantity itself.',
+   'None of these is a defect to be patched. They are places where careful authorities read the same verses differently, and the useful habit is to know which reading produced a figure before comparing it with a figure from somewhere else.'
  ],
- 'What vimsopaka bala cannot see is a separate list, under Vimsopaka Bala.', 710)
+ 'What vimsopaka bala cannot see is a separate list, under Vimsopaka Bala.',
+ 'Brihat Parashara Hora Shastra chs.2 and 27 tr. R. Santhanam; B. V. Raman, Graha and Bhava Balas and Hindu Predictive Astrology; Mantreswara''s Phaladeepika tr. V. Subrahmanya Sastri; Saravali at second hand through Santhanam. The rule for choosing between them is under The books behind the numbers. Every percentage quoted here was measured on this site''s own engine over 1,800 or 18,000 charts and is a property of this implementation, not a claim from any text.',
+ 713),
+
+('strength', 'Shadbala', 'sources',
+ 'The books behind the numbers',
+ array[
+   'Five works do the real work on this page, and they are not equal in kind: two are classical Sanskrit texts and three are twentieth-century workings of them. Where they conflict there is a standing order of precedence, and it is worth stating plainly, because it explains nearly every figure another calculator will disagree about.',
+   'Brihat Parashara Hora Shastra, in R. Santhanam''s translation for Ranjan Publications. The parent text. Shadbala''s six shares are its chapter 27, vimsopaka bala its chapter 7, the trimsamsa lords chapter 6, the benefics and malefics chapter 2, the chara karakas chapter 32, the baladi avasthas chapter 45 and planetary war chapter 79.',
+   'A Santhanam volume carries two kinds of text and only one of them is Parashara. The translated shloka is the text; the Notes underneath it are Santhanam''s own commentary, often excellent and sometimes citing works the sage could not have known. Several of the disagreements listed under Where the teachings differ are between Parashara and his translator rather than between two classical authorities, which is a much weaker thing, and where a note adds a rule the verse does not contain this site does not apply it.',
+   'Mantreswara''s Phaladeepika, in V. Subrahmanya Sastri''s translation. Independent of Parashara and of roughly comparable standing. It is brief on this subject - the whole treatment is Adhyaya IV, and its last sloka sends the reader to the translator''s own edition of Sripatipaddhati for anything further - but brevity is not the point. Its value is that it is a second witness: where it agrees with Parashara a reading has two independent sources, and where it agrees with Parashara against Raman, as it does on the Sun''s requirement, that is the strongest case any objection to this site''s figures has.',
+   'B. V. Raman''s Graha and Bhava Balas. The standard English working of chapter 27 and the book this site actually computes from. What makes it the operative authority is not its age but that it is worked: every rule arrives with a numbered example for a single Standard Horoscope, so a question about what Raman meant is answered by a figure he printed rather than by argument. Where the verses are terse - and chapter 27 is very terse - he is the one who had to make them compute, and an implementer inherits that problem rather than the sage''s freedom to leave it open.',
+   'So the precedence runs: Parashara''s verse first; Raman where the verse is silent, ambiguous, or could not have anticipated the question; Santhanam''s notes last, and only where nothing contradicts them. Phaladeepika is a check on the first rather than a fourth vote. The Sun''s requirement is the single place this site overrides that order, for a reason given in full where the choice is described.',
+   'Raman''s other two books cover what falls outside chapter 27: Hindu Predictive Astrology for the combustion orbs at section 54 and for the nodal exaltations, and Three Hundred Important Combinations for the yogas.',
+   'Sripathi is behind more of this than his name suggests. The drishti curve this site uses is his, reaching it through Raman''s sections 114 and 115; Mantreswara points at the same work for the arithmetic his own chapter leaves out; and the translator of Phaladeepika is also the translator of Sripatipaddhati. Two independent chains run back to one book, which has not been read here directly.',
+   'Saravali is cited only where Santhanam cites it - the Yavana band for the Moon''s nature is his report of his own translation, page 70, not a reading this site checked. Kalyana Varma''s text has not been consulted directly and nothing here should be taken as evidence of what it says.',
+   'Light on Life, by Hart de Fouw and Robert Svoboda, is the odd one out and is here for what it declines to do. It lays out dignity, combustion and the avasthas carefully and stops short of shadbala''s arithmetic, on the ground that a single number invites being read as a verdict on a graha. That objection is not answered by computing the number more accurately, and it is the reason the first passage in this section is about what strength does not mean.'
+ ],
+ 'Where each of these choices actually bites is set out under Where the teachings differ.',
+ 'Santhanam''s Brihat Parashara Hora Shastra, Raman''s Graha and Bhava Balas, Hindu Predictive Astrology and Three Hundred Important Combinations, Subrahmanya Sastri''s Phaladeepika, and de Fouw and Svoboda''s Light on Life, in those editions. Section and page numbers throughout were checked against the texts rather than taken from secondary summaries; where a work is cited at second hand, as Sripatipaddhati and Saravali are, the passage says so.',
+ 714),
+
+-- The three below are the ones that are hard to get anywhere else. Disagreements
+-- between authorities are at least written down somewhere; the clocks kala bala
+-- runs on, and the errors an implementation actually makes, are not, and every
+-- trap listed under 'traps' was in this site's own code first.
+
+('strength', 'Kala bala', 'clocks',
+ 'The four clocks kala bala runs on',
+ array[
+   'Kala bala looks like one measure of time and is really four different reckonings of it, wearing one name. More disagreement between calculators comes from this than from any point of doctrine, because two of the four are easy to get wrong without anything looking wrong.',
+   'Apparent solar time, for nata-unnata. The hour angle of the true Sun at the birthplace: nothing at its lower meridian, twelve at its upper. Not zone time, which is an administrative band, and not mean time, which the equation of time parts from the Sun by up to sixteen minutes either way. Raman asks for both corrections by name at section 48.',
+   'Sunrise to sunrise, for the vara, the hora and the tribhaga. "The Hindu day begins with sunrise and continues till next sunrise," section 69. So a birth at three in the morning belongs to the previous weekday, and about a quarter of all births fall in that window. The hora is then counted in equal hours from that sunrise, the first ruled by the lord of the weekday.',
+   'A year and month that are not astronomical at all, for abda and masa bala. Raman is blunt at section 59: "The Hindus, for astrological purposes, consider a year and month of 360 and 30 days respectively. They are neither solar, nor lunar, nor luni-solar." Both are pure arithmetic on the ahargana, the days elapsed since Creation - divide by 360 or by 30, take the whole quotient, advance the weekday by 3 or by 2 per period, and the lord of the resulting weekday takes the bala.',
+   'Reading those two as solar periods is the easy mistake, and this site made it: it computed the Sun''s ingress into Aries and into its current sign, which sounds like the same quantity and is not. It gave the wrong lord in 86% of charts for each, worth 15 and 30 virupas.',
+   'And two that are not clocks at all. Paksha bala reads the elongation of the Moon from the Sun, and ayana bala reads declination. Both are positions rather than times, which is worth noticing, because a calculator can have every clock right and still differ here for quite separate reasons.',
+   'The practical upshot: two programs that agree on every planetary position to the arcsecond can still differ by more than a rupa on kala bala alone, purely on which clock each part is read by. If your kala bala disagrees with this page, check the clocks before checking the arithmetic.'
+ ],
+ 'Yuddha bala joins this group as a ninth part when there is a war, and is set out separately.',
+ 'B. V. Raman, Graha and Bhava Balas: section 47 and 48 for nata-unnata and its clock, 52 to 55 for paksha, 56 and 57 for tribhaga, 58 to 67 for the ahargana and the year, month and weekday lords, 68 to 70 for the hora, 71 to 75 for ayana. Brihat Parashara Hora Shastra ch.27 vv.6-13, tr. R. Santhanam.',
+ 710),
+
+('strength', 'Shadbala', 'traps',
+ 'Five ways to get it wrong that have nothing to do with the texts',
+ array[
+   'Everything under Where the teachings differ is a disagreement between authorities, and a calculator on either side of one is defensible. What follows is a different kind of thing: plain errors, where no text supports the result and the answer is simply wrong. They are set out because each is easy to make, hard to see, and produces figures that look like a school rather than a bug. Every one of them was in this site''s own code first.',
+   'The sunrise that belongs to another day. Finding which day a moment falls in means converting universal time to local time, and the longitude term that does it is easy to sign backwards. The search window then lands twice the longitude away and returns a neighbouring day''s sunrise. Here it meant that at Delhi every birth between dawn and about half past ten got the previous day''s; at New York, where the error pushes the other way, most of the day was wrong; and at Sydney more than half of all charts changed when it was corrected. It corrupts tribhaga bala, which then scores a mid-morning birth as the third part of the night, and hora bala, which counts hours from it. To catch it: walk a whole local day and check the sunrise never sits more than twenty-four hours from the moment asked about, and never takes more than two distinct values. Asserting only that sunrise precedes sunset will not do it, because when the window is wrong they are both wrong together and the order between them survives.',
+   'The vara that begins at midnight. Taking the weekday from the civil date rather than from the sunrise that opened the day. It is wrong for about a quarter of all births, and it is expensive: vara bala''s 45 virupas go to the wrong graha, and because the hora sequence starts from the weekday lord, hora bala''s 60 follow them. Correcting it here moved roughly 30% of charts by 8 virupas on average. To catch it: step through a day and check the vara turns over exactly once, at sunrise, rather than at midnight or at any fixed hour.',
+   'Half of one method joined to half of another. Ayana bala has two complete readings: Raman''s, which divides by 48 because his kranti is read off a longitude and so tops out at 24, and Parashara''s, which uses 23.45 and 46.9 and sends the reader to a modern ephemeris for a true declination. Either is coherent. This site ran Raman''s constants against a true declination that included the Moon''s ecliptic latitude, which is neither, and cost her about 3.9 virupas. The tell is that a constant and the quantity it scales are a matched pair: 24 is not a rounding of 23.44, it is what a declination reaches when you compute it from a longitude alone. To catch it: ask what quantity the book''s own worked example puts into the formula, not merely what number it divides by.',
+   'A proxy standing in for a defined quantity. Cheshta bala is defined from the chesta kendra, the graha''s distance from its seeghrocha. Reading its speed instead seems equivalent, because both are about motion and both peak near retrogression, and for the outer three it very nearly is. It fails completely for the inner two, which turn retrograde at inferior conjunction where a speed reading calls them fast and direct. On one chart the proxy gave Venus 3.9 where the kendra gives 28.7. To catch it: test the case the proxy is least like the thing, not the case it resembles most.',
+   'A period that sounds astronomical and is not. Abda and masa bala go to the lords of the weekdays the astrological year and month opened on, and both are counted arithmetically from the ahargana, on a year of 360 days and a month of 30. Computing an actual solar ingress instead is a reasonable guess from the names, produces plausible-looking weekdays, and is wrong: here it misassigned the year lord in 86% of charts and the month lord in 86%, and one or the other in 98%. To catch it: both Raman and Santhanam work examples, 66 years apart and from different epochs, and the ahargana carries its own check - taken modulo 7 it must land on the weekday the birth actually fell on.',
+   'What all five have in common is the reason they survived: none was visible in a total. Each was smaller than the tolerance of every figure it fed into, or wrong only for some birth times and not the ones anybody checked. A constant taken from a book should be tested against that book''s own worked example, at the level it is stated, rather than against a sum four steps downstream of it.'
+ ],
+ 'Two of these were found only by asking which text supports each figure, one at a time.',
+ 'The failures are this site''s own and the corrections are in its history; the rules they failed to follow are B. V. Raman, Graha and Bhava Balas §§69, 75 and 105-107. The percentages were measured on this engine over thousands of charts at Delhi, New York and Sydney, and are properties of this implementation.',
+ 715),
+
+('strength', 'Shadbala', 'checking',
+ 'If your figures disagree with ours, in the order worth checking',
+ array[
+   'Shadbala figures from two programs rarely match, and the reason is almost never that one of them cannot add up. It is that a dozen decisions sit between a birth moment and a total, and the two made different ones. This is the order to check them in, largest cause first, which is not the order anyone naturally guesses.',
+   'The ayanamsa, before anything else. It shifts every longitude, and between Lahiri and Raman''s the gap is 1.44 degrees: 19 shashtiamsas on the average total, as much as three rupas, 7% of strong-or-weak verdicts turned over, and a graha in a different sign in 9% of readings. It is larger than every doctrinal difference below put together. If you are checking against Raman''s own book, his ayanamsa is the one to set, not Lahiri.',
+   'Then the saptavargaja ladder, worth about 5 shashtiamsas and one verdict in forty. Raman halves at each step down from an own sign; Parashara''s verse does not. Neither is a mistake.',
+   'Then cheshta bala, where a speed proxy and the chesta kendra agree closely on Jupiter and Saturn and not at all on Venus. If the outer grahas match and Venus is wildly out, this is the reason and no further search is needed.',
+   'Then the Moon''s nature, which decides her group for paksha bala and her sign for drik bala, and so shows up twice. A boundary at opposition and a boundary at the eighth day disagree in half of all charts.',
+   'Then Mercury''s, where a same-sign test against the Sun and a combustion test disagree in 41% of charts, in both directions.',
+   'Then the clock behind nata-unnata, worth three virupas at Delhi and fourteen at the western edge of a wide timezone. Then drik bala, where one translation adds a clause for Mercury and Jupiter worth about 41 virupas and another does not - and where, before assuming a difference of reading, it is worth computing the ceiling the definition allows, since a figure above it cannot be drik bala at all. Then, in the one chart in twelve that holds a planetary war, yuddha bala, where the raw difference and Raman''s division by disc diameters are not remotely the same correction.',
+   'Only after all of those is it worth suspecting arithmetic. And if it does come to that, the first places to look are not the formulae but the clocks: which day a sunrise belongs to, and whether the vara turns at sunrise or at midnight. Both were wrong here, both were invisible in the totals, and both are set out under Five ways to get it wrong.',
+   'One consequence of all this is worth stating plainly. A figure quoted without the ayanamsa and the authority it was computed under cannot be checked by anybody, including the person who produced it.'
+ ],
+ null,
+ 'The readings being chosen between are Parashara''s, in R. Santhanam''s translation, against B. V. Raman''s in Graha and Bhava Balas, with Mantreswara''s Phaladeepika as a third witness on the Sun''s requirement; each is set out under Where the teachings differ. The ayanamsa is chosen in Chart settings and the implementation errors are under Five ways to get it wrong. Every figure quoted was measured on this site''s own engine.',
+ 716)
 
 on conflict (topic, subject, condition) do update set
   heading = excluded.heading,
   points = excluded.points,
   note = excluded.note,
+  source = excluded.source,
   sort_order = excluded.sort_order,
   updated_at = now();
