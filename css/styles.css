@@ -1131,6 +1131,10 @@ td.vimsopaka-poor { color: var(--retro); }
 .chart-value { font-size: 10px; font-variant-numeric: tabular-nums; }
 .series-vimsopaka rect { fill: var(--chart-vimsopaka); }
 .series-good rect { fill: var(--chart-good); }
+/* The score's own bar in the per-graha charts, in the colour it wears wherever
+   else it is drawn: it is the one bar read against the left axis, and keeping
+   its colour is half of what tells it from the six beside it. */
+.chart-bar.mark-bala rect { fill: var(--chart-good); }
 .series-vargottama rect { fill: var(--chart-vargottama); }
 .chart-legend { display: flex; gap: 1rem; margin-top: 0.4rem; font-size: 0.8rem;
   color: var(--ink-soft); }
@@ -1141,6 +1145,22 @@ td.vimsopaka-poor { color: var(--retro); }
 /* A facet carries one series, so its title is the identity and the fill has
    nothing to tell apart. One colour for all five. */
 .series-mark rect { fill: var(--chart-vimsopaka); }
+
+/* The second scale: its numbers sit outside the plot on the right, and the rule
+   between the two halves is drawn over the bars rather than under them. Both are
+   recessive - they are furniture telling the reader which figures belong to
+   which side, not marks carrying data. */
+.chart-tick-right { fill: var(--ink-faint); }
+.chart-axis-name {
+  font-size: 9px;
+  fill: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+.chart-divide {
+  stroke: var(--line);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+}
 /* Each bar in a graha's profile is a mark, so it wears that mark's own colour -
    the hue its letter wears in the grid above, so a reader crossing from table to
    chart carries one vocabulary rather than two. The fill steps are the chart-
@@ -1160,7 +1180,9 @@ td.vimsopaka-poor { color: var(--retro); }
    min-width: 0 lets each shrink to its own rather than holding the row open. */
 .varga-facets {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  /* Seven bars and two axes where there were six bars and one, so each facet
+     wants a little more room before the grid wraps it. */
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
   gap: 0.9rem 1.2rem;
   grid-column: 1 / -1;
 }

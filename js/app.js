@@ -2173,11 +2173,36 @@
      * others do.
      */
     var W = opts.compact ? 300 : 500, H = opts.compact ? 165 : 215;
-    var left = opts.compact ? 22 : 28, right = 8, top = 18;
+    var left = opts.compact ? 22 : 28, top = 18;
+    // A second scale needs its numbers outside the plot on the right, and a
+    // line of headroom above for the two axis names.
+    var right = opts.rightMax !== undefined ? 22 : 8;
+    if (opts.rightMax !== undefined) top = 26;
     var bottom = opts.compact ? 30 : 34;
     var plotW = W - left - right, plotH = H - top - bottom;
     var svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H, class: 'varga-chart',
                              role: 'img', 'aria-label': opts.title });
+
+    /*
+     * A second scale, where a chart has been given one.
+     *
+     * This is the thing the dataviz guidance names as the single worst mistake
+     * a chart can make, and the reason is worth keeping in front of whoever
+     * edits this: with two scales a bar of a given height means one thing on
+     * the left and another on the right, and the ratio between the two is
+     * whichever the author picked. It is used here because a graha's profile
+     * was asked for on one chart and its score and its counts are different
+     * measures - twenty points against sixteen divisions.
+     *
+     * What is done to make it readable: the left bar is one bar and the right
+     * six, they are separated by a rule rather than merely spaced, each axis is
+     * labelled in its own units, and the first bar keeps the colour the score
+     * wears everywhere else while the rest keep their marks'.
+     */
+    var rightMax = opts.rightMax;
+    var maxFor = function (row) {
+      return rightMax !== undefined && row.right ? rightMax : opts.max;
+    };
 
     // Whole numbers on a count axis: four ticks over a max of 5 would label 1.25.
     var ticks = Math.min(4, Math.max(1, Math.round(opts.max))), step = opts.max / ticks;
@@ -2188,6 +2213,12 @@
                                       class: t === 0 ? 'chart-base' : 'chart-grid' }));
       svg.appendChild(svgEl('text', { x: left - 6, y: y + 3.5, class: 'chart-tick',
                                       'text-anchor': 'end' }, String(Math.round(value))));
+      if (rightMax !== undefined) {
+        svg.appendChild(svgEl('text', { x: W - right + 5, y: y + 3.5,
+                                        class: 'chart-tick chart-tick-right',
+                                        'text-anchor': 'start' },
+                              String(Math.round(t * (rightMax / ticks)))));
+      }
     }
 
     var band = plotW / opts.rows.length;
@@ -2201,7 +2232,7 @@
 
       series.forEach(function (s, j) {
         var value = s.value(row);
-        var h = Math.max(0, (value / opts.max) * plotH);
+        var h = Math.max(0, (value / maxFor(row)) * plotH);
         var x = x0 + j * (barW + gap);
         var y = top + plotH - h;
         /*
@@ -2226,8 +2257,10 @@
          * chart of [V] [X] [S] [P] [D] [N] wants that on hover rather than a
          * legend repeating the flag key.
          */
+        var outOf = row.right && opts.rightOutOf !== undefined ? opts.rightOutOf
+          : opts.outOf;
         g.appendChild(svgEl('title', {}, (row.name || row.graha) + ' — ' + s.label +
-          ': ' + s.readout(row) + (opts.outOf ? ' of ' + opts.outOf : '')));
+          ': ' + s.readout(row) + (outOf ? ' of ' + outOf : '')));
         svg.appendChild(g);
 
         // Values wear text tokens, never the series colour; the bar carries identity.
@@ -2246,6 +2279,26 @@
                             row.axis || Astro.grahaAbbr(row.graha)));
     });
 
+    /*
+     * The rule between the two scales, drawn after the bars so it sits over
+     * them. Without it the leftmost bar looks like the first of a set rather
+     * than the one thing measured differently.
+     */
+    if (rightMax !== undefined) {
+      var firstRight = 0;
+      while (firstRight < opts.rows.length && !opts.rows[firstRight].right) firstRight++;
+      if (firstRight > 0 && firstRight < opts.rows.length) {
+        var xRule = left + band * firstRight;
+        svg.appendChild(svgEl('line', { x1: xRule, y1: top - 4, x2: xRule,
+                                        y2: top + plotH, class: 'chart-divide' }));
+      }
+      svg.appendChild(svgEl('text', { x: left - 6, y: top - 7, class: 'chart-axis-name',
+                                      'text-anchor': 'end' }, opts.leftName || ''));
+      svg.appendChild(svgEl('text', { x: W - right + 5, y: top - 7,
+                                      class: 'chart-axis-name chart-tick-right',
+                                      'text-anchor': 'start' }, opts.rightName || ''));
+    }
+
     var figure = el('figure', 'varga-figure');
     figure.appendChild(el('figcaption', 'chart-title', opts.title));
     figure.appendChild(svg);
@@ -2263,80 +2316,54 @@
     return figure;
   }
 
+  /*
+   * The five that help, then the one that harms. Papa kartari is the only mark
+   * here that reports an affliction, so it closes the row rather than sitting
+   * third among the rest, and it wears the red its letter wears in the grid.
+   * Every bar takes the colour of its own mark for the same reason: a reader
+   * coming from the table already knows what the purple and the blue mean.
+   */
+  var MARKS = [
+    { key: 'V', label: '[V]', name: 'Vargottama' },
+    { key: 'X', label: '[X]', name: 'Exchange of signs' },
+    { key: 'S', label: '[S]', name: 'Shubha kartari' },
+    { key: 'D', label: '[D]', name: 'Directional strength' },
+    { key: 'N', label: '[N]', name: 'Neecha bhanga raja yoga' },
+    { key: 'P', label: '[P]', name: 'Papa kartari' }
+  ];
+
+  /**
+   * One chart a graha: its vimsopaka score and its marks together.
+   *
+   * The score and the counts are different measures - twenty points against
+   * however many divisions the scheme has - so the chart carries two scales,
+   * the score on the left and the counts on the right.
+   *
+   * That is the thing the dataviz guidance calls the worst mistake a chart can
+   * make, and the objection is real: with two scales the height of a bar means
+   * one thing on the left of the rule and another on the right, and the ratio
+   * between them is whichever the author chose. It was three charts before -
+   * the score, the well-placed count, and a facet of marks each - which put
+   * everything about one graha in three places.
+   *
+   * What is done about it: the score is one bar and the marks are six, a rule
+   * divides them, each axis carries its own name and its own numbers, and the
+   * score keeps the colour it wears in every other chart on the page. Nothing
+   * makes a dual axis safe; this makes it legible.
+   */
   function renderVargaCharts(state, scheme) {
     var host = document.getElementById('vargas-charts');
     host.innerHTML = '';
     var rows = vargaSummary(state, scheme);
     if (!rows.length) return;
 
-    // A score out of twenty. One series, so the title names it and no legend is drawn.
-    host.appendChild(barChart({
-      title: 'Vimsopaka bala',
-      rows: rows, max: 20, outOf: 20,
-      series: [{ label: 'Vimsopaka', cls: 'series-vimsopaka',
-                 value: function (r) { return r.vimsopaka; },
-                 readout: function (r) { return r.vimsopaka.toFixed(1); } }],
-      note: 'Out of twenty, and the floor is five rather than nothing: a graha in a great ' +
-        'enemy’s sign in every division still scores five. Strength, not benefit.'
-    }));
-
     /*
-     * One count out of the division total, on its own because it is the only
-     * one that runs the length of the axis. The marks below run nought to about
-     * five, and a shared scale would flatten them into the baseline.
+     * One scale across all seven charts on each side, so a tall bar is tall
+     * against the other grahas and not only against the rest of its own chart.
+     * The right one is taken from the largest count any graha reaches on any
+     * mark rather than from the scheme's division count, which would flatten
+     * every mark into the baseline.
      */
-    host.appendChild(barChart({
-      title: 'Well placed, of ' + scheme.count + ' divisions',
-      rows: rows, max: scheme.count, outOf: scheme.count,
-      series: [{ label: 'Well placed', cls: 'series-good',
-                 value: function (r) { return r.good; },
-                 readout: function (r) { return String(r.good); } }],
-      note: 'Exaltation, moolatrikona, own sign and a friend\u2019s or great friend\u2019s ' +
-        'sign, and nothing below.'
-    }));
-
-    /*
-     * The five cell marks, one small chart each rather than five series in one.
-     *
-     * Five series is where colour runs out. The palette validator cannot
-     * separate five hues inside this page's lightness band: purple against blue
-     * comes to 1.6 under deutan and 10.5 to normal vision, and red against amber
-     * to 11.3, both under the floor of fifteen. The skill's answer for that is
-     * to cut series or to facet, and facetting loses nothing here - each chart
-     * carries one series, so its title is the identity and no colour has to tell
-     * anything apart.
-     *
-     * One scale across all five, taken from the largest count any of them
-     * reaches, so the heights can be read against each other.
-     */
-    /*
-     * One chart per graha, its marks along the bottom.
-     *
-     * It was one chart per mark with the grahas along the bottom, which answers
-     * "who has the most vargottama" - a question nobody arrives with. A reader
-     * comes to this panel about a graha: they have just read Saturn's column in
-     * the grid and want to know what Saturn has. Turned, each chart is that
-     * graha's profile and the whole set reads as seven of them side by side.
-     *
-     * One scale across all seven, taken from the largest count any graha reaches
-     * on any mark, so a tall bar is tall against the other grahas and not only
-     * against the rest of its own chart.
-     */
-    /*
-     * The five that help, then the one that harms. Papa kartari is the only mark
-     * here that reports an affliction, so it closes the row rather than sitting
-     * third among the rest, and it wears the red its letter wears in the grid.
-     * Every bar takes the colour of its own mark for the same reason: a reader
-     * coming from the table already knows what the purple and the blue mean.
-     */
-    var MARKS = [
-      { key: 'V', label: '[V]', name: 'Vargottama' },
-      { key: 'X', label: '[X]', name: 'Exchange of signs' },
-      { key: 'S', label: '[S]', name: 'Shubha kartari' },
-      { key: 'D', label: '[D]', name: 'Directional strength' },
-      { key: 'N', label: '[N]', name: 'Neecha bhanga raja yoga' },
-      { key: 'P', label: '[P]', name: 'Papa kartari' }
-    ];
     var ceiling = 1;
     rows.forEach(function (r) {
       MARKS.forEach(function (m) { ceiling = Math.max(ceiling, r.marks[m.key]); });
@@ -2344,25 +2371,36 @@
 
     var facets = el('div', 'varga-facets');
     rows.forEach(function (row) {
+      var bars = [{ graha: 'Vimsopaka', axis: 'Bala', name: 'Vimsopaka bala',
+                    cls: 'mark-bala', value: row.vimsopaka,
+                    readout: row.vimsopaka.toFixed(1) }]
+        .concat(MARKS.map(function (m) {
+          return { graha: m.label, axis: m.label, name: m.name, right: true,
+                   cls: 'mark-' + m.key.toLowerCase(), value: row.marks[m.key],
+                   readout: String(row.marks[m.key]) };
+        }));
       facets.appendChild(barChart({
         title: row.graha,
-        // barChart labels a bar by row.graha, so here the mark plays that part.
-        rows: MARKS.map(function (m) {
-          return { graha: m.label, axis: m.label, name: m.name,
-                   cls: 'mark-' + m.key.toLowerCase(), count: row.marks[m.key] };
-        }),
-        max: ceiling, outOf: scheme.count, compact: true,
+        rows: bars,
+        max: 20, outOf: 20,
+        rightMax: ceiling, rightOutOf: scheme.count,
+        leftName: '/20', rightName: '/' + scheme.count,
+        compact: true,
         series: [{ label: row.graha, cls: 'series-mark',
-                   value: function (r) { return r.count; },
-                   readout: function (r) { return String(r.count); } }]
+                   value: function (r) { return r.value; },
+                   readout: function (r) { return r.readout; } }]
       }));
     });
     host.appendChild(facets);
     host.appendChild(el('p', 'chart-note varga-facet-note',
-      'One chart a graha: how many of the ' + scheme.count + ' divisions carry each of its ' +
-      'marks. One scale across the seven, so a tall bar is tall against the other grahas ' +
-      'and not only against the rest of its own chart. The grid above says which divisions ' +
-      'they are.'));
+      'One chart a graha. The first bar is its vimsopaka bala, read against the left ' +
+      'axis and out of twenty; the six after the rule are how many of the ' +
+      scheme.count + ' divisions carry each of its marks, read against the right. Two ' +
+      'scales on one chart means a bar of a given height says one thing on the left of ' +
+      'the rule and another on the right, so the two sides are compared within ' +
+      'themselves and not across. One scale across all seven charts on each side, so a ' +
+      'tall bar is tall against the other grahas too. The grid above says which ' +
+      'divisions they are.'));
   }
 
   /* --------------------------------------------------------------- yogas */

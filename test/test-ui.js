@@ -3590,47 +3590,72 @@ ok('the score is centred with the rest, no longer ranged right', (function () {
 
 console.log('\nVarga charts');
 /*
- * Two plots, not three. Vimsopaka is a score out of twenty; the other two are
- * counts of divisions. The counts share a unit and a denominator with each other
- * and with nothing else, so they group on one axis and the score is plotted
- * apart. Putting all three together would make a bar of the same height mean two
- * different things, which is the dual-scale mistake in a single-axis disguise.
+ * One chart a graha, carrying two scales: the score on the left out of twenty
+ * and the mark counts on the right out of the scheme's divisions.
+ *
+ * This is the thing the dataviz guidance names as the worst mistake a chart can
+ * make, and the objection holds - with two scales a bar of a given height means
+ * one thing on the left of the rule and another on the right, and the ratio
+ * between them is whichever the author chose. It was three plots before, which
+ * put everything about one graha in three places. What is done about it is
+ * checked below: a rule between the two halves, a name and a set of numbers on
+ * each axis, the score keeping its own colour, and a note saying outright that
+ * the sides are not comparable.
  */
-ok('the score and the counts are on separate plots', (function () {
+ok('each graha gets one chart carrying both scales', (function () {
   var at = appSrc.indexOf('function renderVargaCharts');
-  var block = appSrc.slice(at, appSrc.indexOf('function svgEl', at));
-  return /max: 20, outOf: 20/.test(block) &&
-    /max: scheme\.count, outOf: scheme\.count/.test(block) &&
-    /max: ceiling, outOf: scheme\.count/.test(block);
+  var block = appSrc.slice(at, appSrc.indexOf('function passageBlock', at));
+  return /max: 20, outOf: 20,/.test(block) &&
+    /rightMax: ceiling, rightOutOf: scheme\.count,/.test(block) &&
+    /leftName: '\/20', rightName: '\/' \+ scheme\.count,/.test(block) &&
+    // and no separate score or well-placed chart survives
+    !/title: 'Vimsopaka bala',/.test(block) &&
+    !/Well placed, of/.test(block);
 })());
 /*
- * Five marks is where colour runs out. The validator cannot separate five hues
- * in this page's lightness band - purple against blue is 1.6 under deutan and
- * 10.5 to normal vision, red against amber 11.3, both under the floor of
- * fifteen - and the skill's answer for that is to cut series or facet. Facetting
- * costs nothing here: one series a chart, so the title is the identity.
+ * A bar says which scale it belongs to, and the chart draws it against that
+ * one. Without this every bar would be drawn against the left max and the six
+ * counts would sit on the floor of a twenty-point axis.
  */
-ok('the five marks are facetted rather than crowded onto one axis', (function () {
-  var at = appSrc.indexOf('function renderVargaCharts');
-  var block = appSrc.slice(at, appSrc.indexOf('function svgEl', at));
-  var marks = (block.match(/\{ key: '[VXSPDN]', label: '\[[VXSPDN]\]/g) || []);
-  return marks.length === 6 && /compact: true/.test(block) &&
-    /cls: 'series-mark'/.test(block);
-})());
-ok('and every facet carries exactly one series', (function () {
-  var at = appSrc.indexOf('var MARKS = [');
-  var block = appSrc.slice(at, appSrc.indexOf('host.appendChild(facets)', at));
-  return (block.match(/series: \[\{/g) || []).length === 1 &&
-    (block.match(/cls: 'series-/g) || []).length === 1;
+ok('and a bar is drawn against the scale it names', (function () {
+  return /var maxFor = function \(row\) \{/.test(appSrc) &&
+    /return rightMax !== undefined && row\.right \? rightMax : opts\.max;/.test(appSrc) &&
+    /var h = Math\.max\(0, \(value \/ maxFor\(row\)\) \* plotH\);/.test(appSrc) &&
+    /right: true,/.test(appSrc);
 })());
 /*
- * One scale across the five, taken from the largest count any reaches, so a tall
- * bar is tall against the others and not only against its own chart.
+ * And the two halves are divided by something a reader can see. Spacing alone
+ * would leave the leftmost bar looking like the first of a set rather than the
+ * one thing measured differently.
  */
-ok('the facets share one scale, read off the data', (function () {
+ok('and a rule divides the two scales, each axis named and numbered', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  return /class: 'chart-divide'/.test(appSrc) &&
+    /while \(firstRight < opts\.rows\.length && !opts\.rows\[firstRight\]\.right\) firstRight\+\+;/
+      .test(appSrc) &&
+    /class: 'chart-axis-name'/.test(appSrc) &&
+    /class: 'chart-tick chart-tick-right'/.test(appSrc) &&
+    /\.chart-divide \{/.test(css) && /\.chart-tick-right \{/.test(css);
+})());
+/*
+ * The score keeps the colour it wears elsewhere on the page, which is the other
+ * half of telling it from the six beside it.
+ */
+ok('and the score keeps its own colour', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  return /cls: 'mark-bala'/.test(appSrc) &&
+    /\.chart-bar\.mark-bala rect \{ fill: var\(--chart-good\); \}/.test(css);
+})());
+/*
+ * One scale across all seven charts on each side, so a tall bar is tall against
+ * the other grahas and not only against the rest of its own chart. The right one
+ * is taken from the largest count reached rather than from the division total,
+ * which would flatten every mark into the baseline.
+ */
+ok('the facets share one scale on each side, read off the data', (function () {
   var block = appSrc.slice(appSrc.indexOf('var ceiling = 1;'));
   return /ceiling = Math\.max\(ceiling, r\.marks\[m\.key\]\)/.test(block) &&
-    /max: ceiling/.test(block);
+    /rightMax: ceiling/.test(block);
 })());
 ok('and a count axis is labelled in whole numbers', (function () {
   return /var ticks = Math\.min\(4, Math\.max\(1, Math\.round\(opts\.max\)\)\)/.test(appSrc);
@@ -4039,19 +4064,14 @@ ok('the table is drawn once from both slots, not once per slot',
  * chart title repeating it was a third statement of the same thing in the same
  * view. The other title keeps its count, that being the bars' denominator.
  */
-ok('the vimsopaka chart is titled by what it measures, not by the scheme',
-   /title: 'Vimsopaka bala',/.test(appSrc) &&
-   !/Vimsopaka bala over the/.test(appSrc) &&
-   /title: 'Well placed, of ' \+ scheme\.count \+ ' divisions'/.test(appSrc));
 /*
- * The second title names the unit and the denominator and leaves the two counts
- * to the legend, which is where a reader looks for which bar is which.
+ * A chart is titled by its graha, the scheme being named in the picker above and
+ * in the note beside it. The units are on the axes rather than in the title.
  */
-ok('and the second by what it counts, out of how many', (function () {
-  var at = appSrc.indexOf('function renderVargaCharts');
-  var block = appSrc.slice(at, appSrc.indexOf('function svgEl', at));
-  return /title: 'Well placed, of ' \+ scheme\.count \+ ' divisions'/.test(block);
-})());
+ok('a chart is titled by its graha, the units living on the axes',
+   /title: row\.graha,/.test(appSrc) &&
+   !/Vimsopaka bala over the/.test(appSrc) &&
+   /leftName: '\/20'/.test(appSrc));
 /*
  * And it is called Vargottama, the name it has everywhere else on the page: [V]
  * on the chart, [V] in the graha table, [V] in the grid, Vargottama in the flag
@@ -4072,11 +4092,12 @@ ok('the vargottama mark is named, not described',
  * the grahas along the bottom, which answers "who has the most vargottama" - a
  * question nobody arrives with. A reader comes to this panel about a graha.
  */
-ok('and every facet is titled by its graha, the marks running along the bottom',
+ok('and every facet is titled by its graha, the score then the marks along the bottom',
    /title: row\.graha,/.test(appSrc) &&
-   /rows: MARKS\.map\(function \(m\) \{/.test(appSrc) &&
-   /return \{ graha: m\.label, axis: m\.label, name: m\.name,/.test(appSrc) &&
-   /count: row\.marks\[m\.key\] \};/.test(appSrc));
+   /var bars = \[\{ graha: 'Vimsopaka', axis: 'Bala', name: 'Vimsopaka bala',/
+     .test(appSrc) &&
+   /\.concat\(MARKS\.map\(function \(m\) \{/.test(appSrc) &&
+   /return \{ graha: m\.label, axis: m\.label, name: m\.name, right: true,/.test(appSrc));
 /*
  * "[V" was what the chart showed. The axis label ran through grahaAbbr, which
  * takes two letters because a graha's name is long and a mark's is three
@@ -4139,14 +4160,24 @@ ok('and every mark has a letter for the axis and a word for the hover',
  * The facets carry one note between them rather than one each: five repetitions
  * of "how many divisions carry this" is the same sentence five times.
  */
-ok('the facets share one note, and it says what they count',
-   /One chart a graha: how many of the ' \+ scheme\.count \+ ' divisions carry each of its marks/
-     .test(appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ')) &&
-   /One scale across the seven, so a tall bar is tall against the other grahas/
-     .test(appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ')) &&
-   !/strictly the word is the D9 case/.test(appSrc) &&
-   /never on D1, where every graha would qualify\. In D9 it is vargottama proper/
-     .test(html.replace(/\s+/g, ' ')));
+/*
+ * One note between the seven, and it says the thing a dual axis obliges a chart
+ * to say: that the two sides are not comparable. A reader who takes the score
+ * bar and a count bar as the same measure is exactly who the guidance is
+ * protecting, so the note tells them not to.
+ */
+ok('the facets share one note, and it warns that the sides do not compare',
+   (function () {
+     var flat = appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
+     return /The first bar is its vimsopaka bala, read against the left axis and out of twenty/
+       .test(flat) &&
+       /a bar of a given height says one thing on the left of the rule and another on the right, so the two sides are compared within themselves and not across/
+         .test(flat) &&
+       /One scale across all seven charts on each side/.test(flat) &&
+       !/strictly the word is the D9 case/.test(appSrc) &&
+       /never on D1, where every graha would qualify\. In D9 it is vargottama proper/
+         .test(html.replace(/\s+/g, ' '));
+   })());
 ok('the titles are centred over their own plots',
    (function () {
      var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
