@@ -3828,6 +3828,71 @@ ok('and carries the ahargana the year and month lords need', (function () {
   return /ahargana: ahargana,/.test(copy) && /AHARGANA_EPOCH/.test(copy);
 })());
 
+console.log('\nThe doubled rows can be shown halved');
+/*
+ * The Sun's ayana bala and the Moon's paksha bala are doubled before they are
+ * counted, and nothing about that is disputed - Parashara, Raman and Charak
+ * all say so. Some software prints the two rows undoubled anyway, which makes
+ * a row-by-row comparison awkward because they differ by a factor rather than
+ * by a figure.
+ *
+ * So this halves the DISPLAY and nothing else. The arithmetic must stay where
+ * the texts put it, which is the whole reason it is a display switch rather
+ * than an option on compute().
+ */
+ok('the switch is offered in settings', (function () {
+  var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  var at = html.indexOf('id="panel-settings"');
+  var panel = html.slice(at, html.indexOf('</section>', at));
+  return /<select id="doubled-rows">/.test(panel) &&
+    /<option value="undoubled" selected>/.test(panel) &&
+    /<option value="doubled">/.test(panel);
+})());
+/*
+ * Only the two named grahas are halved, and only in their own row. Halving a
+ * whole row would take the other six with it.
+ */
+ok('only the Sun\u2019s ayana and the Moon\u2019s paksha are halved',
+  /var DOUBLED = \{ ayana: 'Sun', paksha: 'Moon' \};/.test(appSrc) &&
+  /var doubled = DOUBLED\[part\.key\] === graha;/.test(appSrc) &&
+  /halved && doubled \? raw \/ 2 : raw/.test(appSrc));
+/*
+ * The totals must not move. If this ever reaches compute() the setting has
+ * stopped being cosmetic and started disagreeing with three authorities.
+ */
+ok('the arithmetic is untouched', (function () {
+  return !/moonPaksha: .*doubled/.test(appSrc) &&
+    !/kala\.total \/ 2/.test(appSrc) && !/rupas \/ 2/.test(appSrc) &&
+    !/\.ayana \/ 2;/.test(appSrc);
+})());
+/*
+ * A halved cell will not appear to add up to the Kala bala above it, so it has
+ * to say what the total is really counting.
+ */
+ok('and a halved cell names the figure the total uses', (function () {
+  var at = appSrc.indexOf('if (halved && doubled) {');
+  if (at < 0) return false;
+  var block = appSrc.slice(at, at + 400);
+  return /td\.title =/.test(block) && /doubled, which is what Kala bala/.test(block);
+})());
+/*
+ * The row ceiling has to follow the display, or the header would promise 120
+ * on a row that now tops out at 60.
+ */
+ok('the ceiling follows what is shown',
+  /halved && DOUBLED\[part\.key\] \? 60 : part\.max/.test(appSrc) &&
+  /halved && DOUBLED\[part\.key\] \? '60' : part\.shows/.test(appSrc));
+/*
+ * Nothing is recomputed: not the chart, not even the strengths.
+ */
+ok('changing it only redraws', (function () {
+  var at = appSrc.indexOf("getElementById('doubled-rows').addEventListener");
+  if (at < 0) return false;
+  var block = appSrc.slice(at, appSrc.indexOf('});\n\n', at));
+  return /render\(lastChart\);/.test(block) && !/computeChart\(/.test(block) &&
+    !/shadbala = null/.test(block);
+})());
+
 console.log('\nThe Moon\u2019s paksha bala is a setting');
 /*
  * Two authorities on each side, so the page offers both rather than picking.

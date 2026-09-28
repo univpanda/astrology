@@ -1535,6 +1535,26 @@
     return state.chart.planets.filter(function (p) { return p.name === name; })[0];
   }
 
+  /*
+   * The two balas the texts double, and whose graha carries the doubling.
+   * Parashara: "The Sun's Ayana Bala is again multiplied by 2 whereas for
+   * others the product arrived in Virupas are considered as it is." Raman
+   * section 75: "And double the Ayanabala in the case of the Sun", and rule
+   * (c) of section 55 for the Moon's paksha.
+   *
+   * Nothing here is in dispute. Some software prints these rows undoubled,
+   * which agrees with no authority, and comparing against one of those is
+   * awkward when a row differs by a factor rather than a figure. So the
+   * setting halves what is SHOWN and leaves the arithmetic alone: the doubled
+   * value is what Kala bala and every total still count.
+   */
+  var DOUBLED = { ayana: 'Sun', paksha: 'Moon' };
+
+  function halvingDoubled() {
+    var select = document.getElementById('doubled-rows');
+    return !!select && select.value === 'undoubled';
+  }
+
   function renderShadbala(state) {
     var table = document.getElementById('shadbala-table');
     var tbody = table.querySelector('tbody');
@@ -1587,15 +1607,30 @@
         if (part.onlyWhenSet && grahas.every(function (graha) {
           return !result.grahas[graha][bala.key][part.key];
         })) return;
-        row(part.label, part.en, part.max, part.says, grahas.map(function (graha) {
+        var halved = halvingDoubled();
+        var shows = halved && DOUBLED[part.key] ? '60' : part.shows;
+        row(part.label, part.en, halved && DOUBLED[part.key] ? 60 : part.max,
+          part.says, grahas.map(function (graha) {
           var x = result.grahas[graha];
-          var td = el('td', 'numeric', n(x[bala.key][part.key]));
+          var raw = x[bala.key][part.key];
+          var doubled = DOUBLED[part.key] === graha;
+          var td = el('td', 'numeric', n(halved && doubled ? raw / 2 : raw));
+          /*
+           * The figure is halved for display only. The total above it still
+           * carries the doubled value, because that is what the texts compute
+           * with, so the row would not appear to add up without saying so.
+           */
+          if (halved && doubled) {
+            td.title = graha + '\u2019s ' + part.label.toLowerCase() + ' is ' +
+              n(raw) + ' doubled, which is what Kala bala above counts. Shown ' +
+              'here halved because this setting asks for it.';
+          }
           // The seven divisions behind the figure, which have no row of their own.
           if (part.key === 'saptavargaja') td.title = saptavargajaTitle(x);
           // Who the war was with, which no figure in the row can say.
           if (part.key === 'yuddha' && x.war) td.title = yuddhaTitle(x);
           return td;
-        }), 'bala-part', part.shows);
+        }), 'bala-part', shows);
       });
     });
 
@@ -3401,6 +3436,20 @@
           (wanted ? 'true' : 'mean') + ' node.'
         : 'Recomputed with the ' + (wanted ? 'true' : 'mean') + ' node.';
     });
+  });
+
+  document.getElementById('doubled-rows').addEventListener('change', function () {
+    var status = document.getElementById('settings-status');
+    var halved = this.value === 'undoubled';
+    if (!lastChart) {
+      status.textContent = 'Saved. The next chart will use it.';
+      return;
+    }
+    // Display only, so there is nothing to recompute - not even the strengths.
+    render(lastChart);
+    status.textContent = halved
+      ? 'The Sun\u2019s ayana and the Moon\u2019s paksha are shown halved. The totals still count them doubled.'
+      : 'The Sun\u2019s ayana and the Moon\u2019s paksha are shown as the texts compute them, doubled.';
   });
 
   /*
