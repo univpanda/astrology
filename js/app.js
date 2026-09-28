@@ -911,11 +911,27 @@
   }
 
   function wireGrahaCard(container) {
+    /*
+     * The renderer empties the container on every draw, which takes the card
+     * with it - so the card has to be put back, not just built once. It was
+     * built once, and the guard below then refused to rebuild it, so the card
+     * worked until the first redraw and never again: rotating the chart onto
+     * the Moon, switching division or changing a setting all killed it, and
+     * the hover went quietly dead with nothing to show it had.
+     *
+     * The same element is kept and re-appended rather than made afresh, so the
+     * closures below keep pointing at the card that is actually in the page.
+     * The listeners go on the container, which survives the wipe, so those are
+     * still attached once.
+     */
+    var card = container.grahaCard;
+    if (!card) {
+      card = container.grahaCard = el('div', 'graha-card');
+      card.hidden = true;
+    }
+    if (card.parentNode !== container) container.appendChild(card);
     if (container.dataset && container.dataset.carded) return;
     if (container.dataset) container.dataset.carded = '1';
-    var card = el('div', 'graha-card');
-    card.hidden = true;
-    container.appendChild(card);
 
     var REC = '\u001e', FLD = '\u001f';
     var split = function (raw) {

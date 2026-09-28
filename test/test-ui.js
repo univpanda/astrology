@@ -18,14 +18,52 @@ function ok(name, cond, detail) {
 /* ------------------------------------------------------------- DOM stub */
 
 function makeNode(tag) {
-  return {
-    tag: tag, attrs: {}, children: [], textContent: null,
+  var node = {
+    tag: tag, attrs: {}, children: [], textContent: null, parentNode: null,
     setAttribute: function (k, v) { this.attrs[k] = String(v); },
     getAttribute: function (k) { return this.attrs[k]; },
-    appendChild: function (child) { this.children.push(child); return child; },
-    set innerHTML(v) { if (v === '') this.children = []; },
-    get innerHTML() { return ''; }
+    /*
+     * Parentage is modelled because the code depends on it: the chart renderer
+     * empties its container on every draw, and whether a node survived that is
+     * exactly the question a stub that ignores parentNode cannot be asked.
+     * appendChild moves rather than copies, as the real one does.
+     */
+    appendChild: function (child) {
+      if (child.parentNode) {
+        var at = child.parentNode.children.indexOf(child);
+        if (at >= 0) child.parentNode.children.splice(at, 1);
+      }
+      child.parentNode = this;
+      this.children.push(child);
+      return child;
+    },
+    set innerHTML(v) {
+      if (v !== '') return;
+      this.children.forEach(function (c) { c.parentNode = null; });
+      this.children = [];
+    },
+    get innerHTML() { return ''; },
+    /*
+     * Enough of an element to hover over. The card positions itself from the
+     * rendered box and measures its own width, so those have to answer
+     * something; the numbers do not matter, only that asking does not throw.
+     */
+    dataset: {}, style: {}, hidden: false, offsetWidth: 0,
+    getBoundingClientRect: function () {
+      return { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 };
+    },
+    listeners: {},
+    addEventListener: function (type, fn) {
+      (this.listeners[type] || (this.listeners[type] = [])).push(fn);
+    },
+    fire: function (type, event) {
+      (this.listeners[type] || []).forEach(function (fn) { fn(event); });
+    }
   };
+  node.dataset = {};
+  node.style = {};
+  node.listeners = {};
+  return node;
 }
 function serialise(node) {
   var attrs = Object.keys(node.attrs).map(function (k) { return ' ' + k + '="' + node.attrs[k] + '"'; }).join('');
@@ -35,7 +73,11 @@ function serialise(node) {
 }
 var document = {
   createElementNS: function (ns, tag) { return makeNode(tag); },
-  createElement: function (tag) { return makeNode(tag); }
+  createElement: function (tag) { return makeNode(tag); },
+  // A text node is a child like any other here; only its text is ever read.
+  createTextNode: function (text) {
+    var n = makeNode('#text'); n.textContent = text; return n;
+  }
 };
 
 /* ------------------------------------------------- load the real modules */
@@ -2897,6 +2939,10 @@ ok('every script the page loads parses', (function () {
     document: {
       createElement: loose,
       createElementNS: function (ns, tag) { return loose(tag); },
+      // The card sets a flag and its name as siblings inside one line.
+      createTextNode: function (text) {
+        var n = loose('#text'); n.textContent = text; return n;
+      },
       getElementById: function (id) { return byId[id] || (byId[id] = loose('div')); },
       querySelector: function () { return loose('div'); },
       querySelectorAll: function () { return []; },
@@ -2922,6 +2968,7 @@ ok('every script the page loads parses', (function () {
   var wired = appSrc.slice(0, close) +
     '  __out.render = render; __out.renderVargas = renderVargas;\n' +
     '  __out.renderGrahaTable = renderGrahaTable;\n' +
+    '  __out.wireGrahaCard = wireGrahaCard;\n' +
     '  __out.renderShadbala = renderShadbala; __out.renderYogas = renderYogas;\n' +
     '  __out.renderAspects = renderAspects;\n' +
     appSrc.slice(close);
@@ -2941,6 +2988,9 @@ ok('every script the page loads parses', (function () {
     why = e.message;
   }
   ok('app.js loads against a document without throwing', loaded, why);
+  // Kept for the later tests that drive the app's own functions rather than
+  // reading its source.
+  global.appExports = out;
 
   if (!loaded) return;
   var chart = Astro.chart({ jdUT: Astro.julianDay(1946, 7, 6, 19 + 20 / 60 + 4),
@@ -5932,6 +5982,97 @@ console.log('\nEvery member of a family defines itself');
     });
   ok('no passage in the library uses an em-dash', dashed.length === 0,
     dashed.join(', '));
+})();
+
+console.log('\nThe graha card survives the chart being redrawn');
+/*
+ * It did not. The renderer empties its container on every draw and the card
+ * lives in that container, so each redraw threw the card away - while the
+ * guard that stops the listeners being attached twice also stopped the card
+ * being rebuilt. The result was a card that worked once and then went quietly
+ * dead: rotating onto the Moon, changing division, or changing any setting
+ * left the hover doing nothing, with no error to say why.
+ *
+ * Drawn twice here, because drawing once was always fine and is what the old
+ * tests did.
+ */
+(function () {
+  var out = global.appExports || {};
+  if (!out.wireGrahaCard) { ok('the card wiring is reachable from the tests', false); return; }
+  var chart = Astro.chart({ jdUT: Astro.julianDay(1964, 10, 7, 21.5 - 5.5),
+    latitude: 28.6139, longitude: 77.209, tzOffsetMinutes: 330 });
+  var box = makeNode('div');
+  var draw = function (reference) {
+    Charts.render(box, { style: 'north', planets: chart.planets,
+      ascendant: chart.ascendant.longitude, division: 1, reference: reference,
+      yogas: {} });
+    out.wireGrahaCard(box);
+  };
+  var cardIn = function () {
+    return box.children.filter(function (c) { return c.className === 'graha-card'; });
+  };
+
+  draw('Ascendant');
+  ok('the card is there on the first draw', cardIn().length === 1,
+    cardIn().length + ' found');
+
+  draw('Moon');                                    // the rotation that broke it
+  ok('and still there after the chart is rotated onto the Moon',
+    cardIn().length === 1, cardIn().length + ' found');
+  draw('Moon');
+  draw('Ascendant');
+  ok('and after several more draws, without piling up copies',
+    cardIn().length === 1, cardIn().length + ' found');
+
+  /*
+   * Present in the document is not the same as working: the listeners were
+   * attached to the container on the first draw and must still reach the card
+   * that is in the page now, rather than the one the first draw created.
+   */
+  var found = null;
+  (function walk(n) {
+    if (found || !n.children) return;
+    n.children.forEach(function (c) {
+      if (!found && c.attrs && c.attrs['data-graha'] &&
+          c.attrs['data-graha'] !== 'Ascendant') found = c;
+      walk(c);
+    });
+  })(box);
+  ok('a rotated chart still labels its grahas for the hover to find',
+    !!found, found ? found.attrs['data-graha'] : 'none');
+
+  if (found) {
+    var card = cardIn()[0];
+    card.children = [];
+    box.fire('mouseover', { target: found });
+    ok('and hovering one fills the card that is actually on the page',
+      card.children.length > 0 && card.hidden === false,
+      card.children.length + ' lines, hidden=' + card.hidden);
+    box.fire('mouseout', {});
+    ok('leaving hides it again', card.hidden === true);
+  }
+
+  /*
+   * The lagna is drawn as an occupant too and carries the same attributes, so
+   * it is hoverable. It has no states and no yogas - it is a point, not a
+   * graha - and the card must still say where it is rather than opening blank.
+   */
+  var asc = null;
+  (function walk(n) {
+    if (asc || !n.children) return;
+    n.children.forEach(function (c) {
+      if (!asc && c.attrs && c.attrs['data-graha'] === 'Ascendant') asc = c;
+      walk(c);
+    });
+  })(box);
+  if (asc) {
+    var card2 = cardIn()[0];
+    card2.children = [];
+    box.fire('mouseover', { target: asc });
+    ok('hovering the lagna opens a card that says where it is, not an empty one',
+      card2.children.length >= 2 && !!asc.attrs['data-where'],
+      card2.children.length + ' lines, where="' + asc.attrs['data-where'] + '"');
+  }
 })();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
