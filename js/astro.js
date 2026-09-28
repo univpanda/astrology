@@ -1291,7 +1291,19 @@ var Astro = (function () {
 
     var relation = null;
     if (ownsIt) {
-      relation = own === 'Mooltrikona' ? 'moolatrikona' : 'own';
+      /*
+       * Moolatrikona is claimed in the rashi and nowhere else. It is a span of
+       * degrees inside a sign, and vargaPosition stretches a position within a
+       * division back across the whole thirty, so the degree a varga reports is
+       * not a degree of any sign the graha stands in: reading moolatrikona off
+       * it is meaningless. It was read off it in 2.7% of varga cells.
+       *
+       * Numerically inert, since varga viswa scores moolatrikona and own alike
+       * at twenty - which is why it went unnoticed. It was a false label on the
+       * grid rather than a wrong figure, and a false label is still worth not
+       * printing.
+       */
+      relation = division === 1 && own === 'Mooltrikona' ? 'moolatrikona' : 'own';
     } else if (positionsD1 && positionsD1[lord] && positionsD1[graha]) {
       var apart = ((positionsD1[lord].sign - positionsD1[graha].sign) % 12 + 12) % 12 + 1;
       relation = compoundRelation(graha, lord, apart);

@@ -1954,8 +1954,15 @@ ok('and no short form has a key the full list does not',
        };
        var cancer = find(3), leo = find(4);
        var read = function (g, lon) { return A.vargaDignity(g, lon, 2, pos).key; };
+       /*
+        * The Sun reads 'own' in his Leo hora, not 'moolatrikona'. Moolatrikona
+        * is a span of degrees inside a sign, and a varga position is a place
+        * within a division stretched back across the whole thirty, so the
+        * degree a hora reports is not a degree of Leo. It is claimed in the
+        * rashi and nowhere else.
+        */
        return read('Jupiter', cancer) === 'exalted' && read('Mars', cancer) === 'debilitated' &&
-         read('Moon', cancer) === 'own' && read('Sun', leo) === 'moolatrikona' &&
+         read('Moon', cancer) === 'own' && read('Sun', leo) === 'own' &&
          // and nobody else can reach those three rungs in a hora
          Shadbala.GRAHAS.filter(function (g) {
            return ['exalted', 'debilitated', 'own', 'moolatrikona'].indexOf(read(g, cancer)) >= 0 ||
