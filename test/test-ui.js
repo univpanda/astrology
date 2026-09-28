@@ -1644,6 +1644,41 @@ ok('each graha is judged against its own minimum',
    /x\.strong \? 'Strong' : 'Weak'/.test(appSrc) &&
    /String\(result\.grahas\[graha\]\.required\)/.test(appSrc));
 /*
+ * And the comparison is shown as well as made. Rupas cannot be read across
+ * grahas - Mercury is asked for seven and the Sun for five, so the same 6.5 is
+ * a failure for one and half as much again as the other needs - but rupas over
+ * the minimum can, which is why the module ranks on it. A hundred per cent is
+ * exactly enough, and the verdict is that row read as a yes or a no.
+ */
+ok('and the margin is shown, not only the verdict', (function () {
+  var at = appSrc.indexOf("row('Of its minimum'");
+  if (at < 0) return false;
+  var block = appSrc.slice(at, appSrc.indexOf('row(\'Verdict\'', at));
+  return /Math\.round\(x\.ratio \* 100\) \+ '%'/.test(block) &&
+    /The only row here that compares across grahas/.test(appSrc) &&
+    // and it sits between the minimum it divides by and the verdict it decides
+    appSrc.indexOf("row('Needs'") < at;
+})());
+/*
+ * The percentage and the verdict must not be able to disagree: both are the
+ * same comparison, one with the margin left in.
+ */
+ok('and the two cannot disagree, being one comparison', (function () {
+  var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+  for (var y = 1950; y < 2000; y++) {
+    var c = Astro.chart({ jdUT: Astro.julianDay(y, 1 + y % 12, 15, 6.5),
+                          latitude: place.latitude, longitude: place.longitude,
+                          tzOffsetMinutes: place.tzOffsetMinutes });
+    var r = Shadbala.compute(c, place);
+    for (var i = 0; i < Shadbala.GRAHAS.length; i++) {
+      var x = r.grahas[Shadbala.GRAHAS[i]];
+      if ((x.ratio >= 1) !== x.strong) return false;
+      if (Math.abs(x.ratio - x.rupas / x.required) > 1e-12) return false;
+    }
+  }
+  return true;
+})());
+/*
  * And the verdict is stated once, in the Verdict row, in words. It also tinted
  * the graha's heading red, which is the same fact in two places and in a colour
  * that is spoken for: red is retrograde and debilitated everywhere else on this

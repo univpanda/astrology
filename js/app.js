@@ -1610,6 +1610,23 @@
       'other grahas.', grahas.map(function (graha) {
       return el('td', 'numeric', String(result.grahas[graha].required));
     }));
+    /*
+     * The one figure in the table that can be read across grahas.
+     *
+     * Rupas cannot: Mercury is asked for seven and the Sun for five, so the
+     * same 6.5 is a failure for one and half as much again as the other needs.
+     * Dividing each by its own minimum takes the yardstick out, which is why
+     * the module ranks on this and not on the total - and it is the same
+     * comparison the verdict makes, with the margin left in.
+     */
+    row('Of its minimum', null, null, 'Rupas as a share of what this graha is ' +
+      'asked for. The only row here that compares across grahas, the minimums ' +
+      'differing; a hundred per cent is exactly enough and the verdict below ' +
+      'is this row read as a yes or a no.',
+      grahas.map(function (graha) {
+        var x = result.grahas[graha];
+        return el('td', 'numeric', Math.round(x.ratio * 100) + '%');
+      }));
     row('Verdict', null, null, 'Strong where the rupas meet what the graha needs.',
       grahas.map(function (graha) {
         var x = result.grahas[graha];
