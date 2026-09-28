@@ -5953,15 +5953,17 @@ console.log('\nThe card prints the figure beside the finding');
 (function () {
   var src = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
   ok('the card asks the table for both kinds of line',
-    /rarity\(head, 'state', t\.getAttribute\('data-graha'\) \+ '\/' \+ item\.term\)/
-      .test(src) &&
-    /rarity\(head, 'yoga', item\.subject \+ '\|' \+ item\.condition\)/.test(src));
+    /chanceOf\('state', key\)/.test(src) && /rarity\(head, 'state', key\)/.test(src) &&
+    /chanceOf\('yoga', key\)/.test(src) && /rarity\(head, 'yoga', key\)/.test(src) &&
+    /var key = t\.getAttribute\('data-graha'\) \+ '\/' \+ item\.term;/.test(src) &&
+    /var key = item\.subject \+ '\|' \+ item\.condition;/.test(src));
 
   /*
    * Run the renderer rather than trust the source: pull the formatter out of
    * app.js and check both ends of the scale read as English.
    */
-  var body = src.match(/var rarity = function \(head, kind, key\) \{[\s\S]*?\n    \};/)[0];
+  /* The formatter reads the table through chanceOf, so both come out together. */
+  var body = src.match(/var chanceOf = function \(kind, key\) \{[\s\S]*?var rarity = function \(head, kind, key\) \{[\s\S]*?\n    \};/)[0];
   var said = [];
   var fake = { appendChild: function (n) { said.push(n); } };
   // The formatter consults the Budha-Aditya setting, so it needs a page to ask.
@@ -6513,6 +6515,97 @@ console.log('\nThe card is wide enough to read and stays on screen');
     box, { w: 544, h: 2000 }, view);
   ok('a card taller than the window keeps its head on screen',
     huge.top === 400 - box.top + 8, huge.top);
+})();
+
+
+console.log('\nThe card leads with what is rare');
+/*
+ * The list ran states then yogas, which is the order the data arrives in and
+ * says nothing about the chart. Sorted by how often the thing is true at all,
+ * the top of the card is what distinguishes this chart rather than what two
+ * charts in three share.
+ */
+(function () {
+  var out = global.appExports || {};
+  var src = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
+  var F = global.FREQUENCIES;
+
+  ok('the findings are gathered before any are drawn, then ordered',
+    /var found = \[\];/.test(src) && /found\.sort\(function \(a, b\)/.test(src) &&
+    /found\.forEach\(function \(item\) \{ list\.appendChild\(item\.build\(\)\); \}\);/.test(src));
+  ok('and an unmeasured finding sorts last, not first',
+    /typeof a\.chance === 'number' \? a\.chance : Infinity/.test(src) &&
+    /typeof b\.chance === 'number' \? b\.chance : Infinity/.test(src));
+  ok('dignity is left out of the ordering, being part of the placement',
+    src.indexOf("el('p', 'graha-card-dignity', dignity)") <
+      src.indexOf('var found = [];'));
+
+  if (!out.wireGrahaCard) { ok('the card wiring is reachable', false); return; }
+
+  /*
+   * Drive the real card. Venus on this chart carries several findings of very
+   * different rarity, which is the case the ordering exists for.
+   */
+  var chart = Astro.chart({ jdUT: Astro.julianDay(1977, 8, 20, 3), latitude: 28.61,
+    longitude: 77.21, tzOffsetMinutes: 330 });
+  var strengths = Shadbala.compute(chart,
+    { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 });
+
+  var byGraha = {};
+  Yogas.detect(chart, strengths).forEach(function (f) {
+    (f.grahas || []).forEach(function (name) {
+      var list = byGraha[name] || (byGraha[name] = []);
+      if (!list.some(function (y) { return y.title === f.title; })) {
+        list.push({ title: f.title, summary: f.summary || '',
+                    subject: f.subject || '', condition: f.condition || '' });
+      }
+    });
+  });
+
+  var box = makeNode('div');
+  Charts.render(box, { style: 'north', planets: chart.planets,
+    ascendant: chart.ascendant.longitude, division: 1, reference: 'Ascendant',
+    yogas: byGraha, dignities: {}, hemming: {} });
+  out.wireGrahaCard(box);
+
+  var labels = [];
+  (function walk(n) {
+    (n.children || []).forEach(function (c) {
+      if (c.attrs && c.attrs['data-graha']) labels.push(c);
+      walk(c);
+    });
+  })(box);
+
+  /* Whichever graha carries the most findings is the one worth checking. */
+  var busiest = null, most = 0;
+  labels.forEach(function (n) {
+    var count = (byGraha[n.attrs['data-graha']] || []).length;
+    if (count > most) { most = count; busiest = n; }
+  });
+  ok('a graha with several findings is available to check', most >= 3,
+    busiest ? busiest.attrs['data-graha'] + ' with ' + most : 'none');
+
+  box.fire('mouseover', { target: busiest });
+  var card = box.children.filter(function (c) {
+    return c.className === 'graha-card';
+  })[0];
+  var ul = card.children.filter(function (c) { return c.className === 'graha-card-list'; })[0];
+
+  /* The figure printed on each row, read back in the order they were drawn. */
+  var shown = ul.children.map(function (li) {
+    var head = li.children[0];
+    var badge = head.children.filter(function (n) {
+      return n.className === 'graha-card-freq';
+    })[0];
+    return badge ? parseFloat(badge.textContent) : null;
+  }).filter(function (v) { return v !== null && !isNaN(v); });
+
+  ok('every row on the card carries a figure', shown.length === ul.children.length,
+    shown.length + ' of ' + ul.children.length);
+
+  var ordered = shown.every(function (v, i) { return i === 0 || shown[i - 1] <= v; });
+  ok('and they run from rarest to commonest down the card', ordered,
+    shown.join('% then ') + '%');
 })();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');

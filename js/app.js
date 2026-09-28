@@ -1086,7 +1086,7 @@
      * the same reason: a node is retrograde in every chart, so the figure is
      * how a reader learns that mark separates nobody from anybody.
      */
-    var rarity = function (head, kind, key) {
+    var chanceOf = function (kind, key) {
       var table = typeof FREQUENCIES === 'undefined' ? null : FREQUENCIES[kind];
       var pct = table ? table[key] : undefined;
       /*
@@ -1101,6 +1101,11 @@
           typeof FREQUENCIES.yogaNoFloor[key] === 'number') {
         pct = FREQUENCIES.yogaNoFloor[key];
       }
+      return pct;
+    };
+
+    var rarity = function (head, kind, key) {
+      var pct = chanceOf(kind, key);
       if (typeof pct !== 'number') return;
       /* Whole numbers once they are big enough to survive rounding, a decimal
          below that, where the difference between 0.3 and 1.2 is the point. */
@@ -1126,30 +1131,61 @@
        * says a thing is true and leaves the reader to take it on trust.
        */
       var list = el('ul', 'graha-card-list');
+      var found = [];
+
       split(t.getAttribute('data-states')).forEach(function (item) {
-        var li = el('li', 'graha-card-state');
-        var head = el('p', 'graha-card-term');
-        var label = el('span', 'graha-card-label');
-        label.appendChild(el('span', 'flag flag-' + item.term.toLowerCase(),
-          '[' + item.term + ']'));
-        label.appendChild(document.createTextNode(' ' + STATE_NAMES[item.term]));
-        head.appendChild(label);
-        rarity(head, 'state', t.getAttribute('data-graha') + '/' + item.term);
-        li.appendChild(head);
-        if (item.why) li.appendChild(el('p', 'graha-card-why', item.why));
-        list.appendChild(li);
+        var key = t.getAttribute('data-graha') + '/' + item.term;
+        found.push({ chance: chanceOf('state', key), build: function () {
+          var li = el('li', 'graha-card-state');
+          var head = el('p', 'graha-card-term');
+          var label = el('span', 'graha-card-label');
+          label.appendChild(el('span', 'flag flag-' + item.term.toLowerCase(),
+            '[' + item.term + ']'));
+          label.appendChild(document.createTextNode(' ' + STATE_NAMES[item.term]));
+          head.appendChild(label);
+          rarity(head, 'state', key);
+          li.appendChild(head);
+          if (item.why) li.appendChild(el('p', 'graha-card-why', item.why));
+          return li;
+        } });
       });
+
       split(t.getAttribute('data-yogas')).forEach(function (item) {
-        var li = el('li', 'graha-card-yoga');
-        var head = el('p', 'graha-card-term');
-        head.appendChild(el('span', 'graha-card-label', item.term));
-        rarity(head, 'yoga', item.subject + '|' + item.condition);
-        li.appendChild(head);
-        var means = meaningOf(item);
-        if (means) li.appendChild(el('p', 'graha-card-means', means));
-        if (item.why) li.appendChild(el('p', 'graha-card-why', item.why));
-        list.appendChild(li);
+        var key = item.subject + '|' + item.condition;
+        found.push({ chance: chanceOf('yoga', key), build: function () {
+          var li = el('li', 'graha-card-yoga');
+          var head = el('p', 'graha-card-term');
+          head.appendChild(el('span', 'graha-card-label', item.term));
+          rarity(head, 'yoga', key);
+          li.appendChild(head);
+          var means = meaningOf(item);
+          if (means) li.appendChild(el('p', 'graha-card-means', means));
+          if (item.why) li.appendChild(el('p', 'graha-card-why', item.why));
+          return li;
+        } });
       });
+
+      /*
+       * Rarest first, states and yogas together in one order.
+       *
+       * The list used to run states then yogas, which is the order the data
+       * arrives in and says nothing about the chart. Sorting by how often the
+       * thing is true at all puts what distinguishes this chart at the top: a
+       * Malavya yoga at 9.8 per cent above an angle-trine raja yoga at 69,
+       * where reading down the card would otherwise open on the finding two
+       * charts in three share.
+       *
+       * Anything unmeasured sorts last rather than first. A missing figure is
+       * not evidence of rarity, and putting it at the top would claim exactly
+       * that. The sort is stable, so items of equal chance keep the order they
+       * came in.
+       */
+      found.sort(function (a, b) {
+        var one = typeof a.chance === 'number' ? a.chance : Infinity;
+        var two = typeof b.chance === 'number' ? b.chance : Infinity;
+        return one - two;
+      });
+      found.forEach(function (item) { list.appendChild(item.build()); });
       if (list.children.length) card.appendChild(list);
       /*
        * Placed from the rendered box rather than from SVG coordinates, because
