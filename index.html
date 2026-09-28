@@ -26,6 +26,8 @@
             aria-controls="panel-chart" aria-selected="false" tabindex="-1">Kundali</button>
     <button type="button" class="tab" role="tab" id="tab-lesson"
             aria-controls="panel-lesson" aria-selected="false" tabindex="-1">Lesson</button>
+    <button type="button" class="tab" role="tab" id="tab-settings"
+            aria-controls="panel-settings" aria-selected="false" tabindex="-1">Chart settings</button>
   </div>
 
   <section class="panel" id="panel-saved" role="tabpanel" aria-labelledby="tab-saved" hidden>
@@ -173,13 +175,6 @@
         <div class="field">
           <label for="ayanamsa">Ayanamsa</label>
           <select id="ayanamsa"></select>
-        </div>
-        <div class="field">
-          <label for="node-type">Rahu / Ketu</label>
-          <select id="node-type">
-            <option value="mean" selected>Mean node (panchang standard)</option>
-            <option value="true">True node</option>
-          </select>
         </div>
         <div class="field">
           <label for="time-standard">Time standard</label>
@@ -452,6 +447,32 @@
       </div>
       <div class="lesson-filters" id="lesson-filters"></div>
       <div id="lesson-results"></div>
+    </div>
+  </section>
+
+  <!-- Settings that change how a chart is reckoned rather than what chart it is,
+       so they belong to the app and not to the form that creates one. A change
+       here recomputes whatever chart is open. One so far; more will follow. -->
+  <section class="panel" id="panel-settings" role="tabpanel" aria-labelledby="tab-settings" hidden>
+    <div class="card">
+      <h3>Chart settings</h3>
+      <div class="field">
+        <label for="node-type">Rahu and Ketu</label>
+        <select id="node-type">
+          <option value="mean" selected>Mean node (panchang standard)</option>
+          <option value="true">True node</option>
+        </select>
+        <p class="field-note">The nodes are where the Moon&rsquo;s orbit crosses the
+          ecliptic, and there is no single answer to where that is. The mean node
+          regresses smoothly, a little over three arcminutes a day, every day. The true
+          node is where the orbit actually crosses at that instant: it oscillates around
+          the mean by up to about 1.9&deg;, on a cycle of some 132 days, and it goes
+          forward about a quarter of the time. The two part by a median of roughly one
+          degree, which moves Rahu into a different sign in about one chart in thirty-six
+          and reassigns a chara karaka in one in five. Shadbala is reckoned for the seven
+          grahas only and does not change at all.</p>
+      </div>
+      <p class="field-note" id="settings-status"></p>
     </div>
   </section>
 

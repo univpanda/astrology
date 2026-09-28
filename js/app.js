@@ -3349,10 +3349,45 @@
   var emptyChart = document.getElementById('empty-chart');
   var savedCount = document.getElementById('saved-count');
 
-  var sections = setupTabs(['saved', 'add', 'chart', 'lesson'],
+  var sections = setupTabs(['saved', 'add', 'chart', 'lesson', 'settings'],
     document.querySelector('.tabs:not(.subtabs)'), { scrollToTop: true, onChange: function (name) {
       if (name === 'lesson') loadLessons();
     } });
+
+  /*
+   * A setting changes how the open chart is reckoned, so changing one recomputes
+   * it rather than waiting for the next chart to be generated. It goes back
+   * through computeChart - the service may answer differently - and everything
+   * downstream redraws from the result.
+   *
+   * Nothing happens where no chart is open: there is nothing to recompute, and
+   * the choice is picked up when one is.
+   */
+  document.getElementById('node-type').addEventListener('change', function () {
+    var status = document.getElementById('settings-status');
+    if (!lastChart) {
+      status.textContent = 'Saved. The next chart will use it.';
+      return;
+    }
+    var wanted = this.value === 'true';
+    status.textContent = 'Recomputing\u2026';
+    computeChart({
+      jdUT: lastChart.chart.julianDay,
+      latitude: lastChart.place.lat, longitude: lastChart.place.lon,
+      tzOffsetMinutes: lastChart.offset,
+      ayanamsa: lastChart.ayanamsa, trueNode: wanted
+    }, function (chart, source) {
+      lastChart.chart = chart;
+      lastChart.trueNode = wanted;
+      lastChart.source = source;
+      render(lastChart);
+      writeHash(lastChart);
+      status.textContent = lastChart.name
+        ? 'Recomputed ' + lastChart.name + '\u2019s chart with the ' +
+          (wanted ? 'true' : 'mean') + ' node.'
+        : 'Recomputed with the ' + (wanted ? 'true' : 'mean') + ' node.';
+    });
+  });
 
   /*
    * The two graha tables share one strip, labelled from whichever divisions the

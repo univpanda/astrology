@@ -739,9 +739,9 @@ function stripHtml(label) {
   return at < 0 ? '' : html.slice(at, html.indexOf('</div>', at));
 }
 (function () {
-  var names = ['saved', 'add', 'chart', 'lesson'];
+  var names = ['saved', 'add', 'chart', 'lesson', 'settings'];
   var strip = stripHtml('Sections');
-  ok('the section strip holds four tabs', (strip.match(/role="tab"/g) || []).length === 4);
+  ok('the section strip holds five tabs', (strip.match(/role="tab"/g) || []).length === 5);
   ok('each tab has a panel, and each panel names its tab', names.every(function (n) {
     return new RegExp('id="tab-' + n + '"').test(html) &&
            new RegExp('id="panel-' + n + '"[^>]*aria-labelledby="tab-' + n + '"').test(html);
@@ -754,9 +754,10 @@ function stripHtml(label) {
      (strip.match(/aria-selected="true"/g) || []).length === 1);
   ok('every panel but the form starts hidden',
      /id="panel-saved"[^>]*hidden/.test(html) && /id="panel-chart"[^>]*hidden/.test(html) &&
-     /id="panel-lesson"[^>]*hidden/.test(html) && !/id="panel-add"[^>]*hidden/.test(html));
+     /id="panel-lesson"[^>]*hidden/.test(html) &&
+     /id="panel-settings"[^>]*hidden/.test(html) && !/id="panel-add"[^>]*hidden/.test(html));
   ok('only the selected section tab is reachable by tab key',
-     (strip.match(/tabindex="-1"/g) || []).length === 3);
+     (strip.match(/tabindex="-1"/g) || []).length === 4);
   ok('the tab strip is keyboard navigable',
      /ArrowRight/.test(appSrc) && /ArrowLeft/.test(appSrc) && /'Home'/.test(appSrc) && /'End'/.test(appSrc));
   ok('the chart tab has something to say when empty', /id="empty-chart"/.test(html));
@@ -764,6 +765,31 @@ function stripHtml(label) {
      /showChart\(\);\s*\n[\s\S]{0,200}blankForm\(\);/.test(appSrc));
   ok('opening a saved chart lands on the chart tab',
      /reopeningSaved = true;\s*\n\s*activateTab\('chart'\)/.test(appSrc));
+  /*
+   * The node choice left the form. It is not a fact about the person the way a
+   * birth time is: it is how the nodes are reckoned, and it applies to whatever
+   * chart is open rather than to the next one created.
+   */
+  ok('the node choice is a setting, not a form field', (function () {
+    var form = html.slice(html.indexOf('id="panel-add"'), html.indexOf('id="panel-chart"'));
+    var panel = html.slice(html.indexOf('id="panel-settings"'), html.indexOf('</main>'));
+    return !/node-type/.test(form) && /id="node-type"/.test(panel) &&
+      (html.match(/id="node-type"/g) || []).length === 1;
+  })());
+  /*
+   * And changing it recomputes the open chart rather than waiting for the next
+   * one: it goes back through computeChart, since the service may answer
+   * differently, and everything downstream redraws from the result.
+   */
+  ok('and changing it recomputes whatever chart is open',
+     /document\.getElementById\('node-type'\)\.addEventListener\('change'/.test(appSrc) &&
+     /computeChart\(\{\s*\n\s*jdUT: lastChart\.chart\.julianDay,/.test(appSrc) &&
+     /lastChart\.trueNode = wanted;/.test(appSrc) &&
+     /render\(lastChart\);\s*\n\s*writeHash\(lastChart\);/.test(appSrc));
+  ok('and says so, including when there is no chart to recompute',
+     /if \(!lastChart\) \{/.test(appSrc) &&
+     /'Saved\. The next chart will use it\.'/.test(appSrc) &&
+     /id="settings-status"/.test(html));
 })();
 
 // Two charts at once, each with its own division and its own first house.
