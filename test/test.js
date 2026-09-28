@@ -35,6 +35,64 @@ var rt = A.calendarDate(2436116.31);
 ok('calendarDate round-trip', rt.y === 1957 && rt.m === 10 && rt.d === 4 &&
    Math.abs(rt.hours - 19.44) < 0.01, rt.y + '-' + rt.m + '-' + rt.d + ' ' + rt.hours.toFixed(3) + 'h');
 
+console.log('\nCheshta bala by the eight motions');
+/*
+ * Parashara gives both methods in consecutive verses: ch.27 vv.21-23 name the
+ * eight motions and allot them 60, 30, 15, 30, 15, 7.5, 45 and 30, and vv.24-25
+ * give the chesta kendra arithmetic. Raman follows the arithmetic, Charak gives
+ * only the motions. The arithmetic is the default here because it is the verse
+ * that states a computation.
+ *
+ * Four of the eight boundaries are this site's and not any text's, which the
+ * setting says out loud. Vakra, Vikala and Anuvakra come from the ephemeris;
+ * where slow becomes slower is a choice.
+ */
+(function () {
+  var S = require('../js/shadbala.js');
+  var place = { latitude: 21.3069, longitude: -157.8583, tzOffsetMinutes: -600 };
+  var chart = A.chart({ jdUT: A.julianDay(1961, 8, 4, 19 + 24 / 60 + 10),
+    latitude: place.latitude, longitude: place.longitude,
+    tzOffsetMinutes: place.tzOffsetMinutes });
+  var kendra = S.compute(chart, place);
+  var motion = S.compute(chart, place, { cheshtaMethod: S.CHESHTA.MOTION });
+
+  // Every figure the table can produce is one of its seven values.
+  var allowed = Object.keys(S.MOTION_VALUE).map(function (k) {
+    return S.MOTION_VALUE[k];
+  });
+  ok('the five starry grahas take one of the allotted values',
+    ['Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'].every(function (g) {
+      return allowed.indexOf(motion.grahas[g].cheshta) >= 0;
+    }));
+  /*
+   * Obama's Jupiter and Saturn are retrograde, which is Vakra and the full 60.
+   * That is the one state the verse fixes beyond argument.
+   */
+  ok('a retrograde graha takes Vakra\u2019s sixty',
+    motion.grahas.Jupiter.cheshta === 60 && motion.grahas.Saturn.cheshta === 60);
+  /*
+   * The luminaries keep their borrowings under either method: v.18 gives the
+   * Sun his ayana and the Moon her paksha, and vv.21-23 are headed "MARS TO
+   * SATURN".
+   */
+  ok('the Sun and Moon are untouched by the choice',
+    motion.grahas.Sun.cheshta === kendra.grahas.Sun.cheshta &&
+    motion.grahas.Moon.cheshta === kendra.grahas.Moon.cheshta);
+  ok('an unknown method falls back to the kendra',
+    S.compute(chart, place, { cheshtaMethod: 'gati-ish' }).grahas.Mars.cheshta ===
+      kendra.grahas.Mars.cheshta);
+  /*
+   * And nothing else moves: cheshta is one of the six, not an input to the
+   * others.
+   */
+  ok('no other share reads the method', S.GRAHAS.every(function (g) {
+    var x = kendra.grahas[g], y = motion.grahas[g];
+    return Math.abs(x.sthana.total - y.sthana.total) < 1e-9 &&
+      Math.abs(x.kala.total - y.kala.total) < 1e-9 &&
+      Math.abs(x.drik - y.drik) < 1e-9;
+  }));
+})();
+
 console.log('\nMercury\u2019s nature, with its qualifier and without');
 /*
  * Parashara gives Mercury one qualifier - "Mercury, however, is a malefic if

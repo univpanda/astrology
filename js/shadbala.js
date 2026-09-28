@@ -349,10 +349,65 @@ var Shadbala = (function () {
       : chestaKendraFrom(sunMean, own, longitude);
   }
 
-  function cheshtaBala(graha, longitude, T, ayanamsa, ayana, paksha) {
+  /*
+   * The eight motions, Brihat Parashara Hora Shastra ch.27 vv.21-23, which the
+   * verse heads "PLANETARY MOTIONS (MARS TO SATURN)" and Charak repeats as the
+   * whole of his cheshta bala. The Sun and Moon keep their borrowings either
+   * way, v.18 being silent about motion for them.
+   *
+   * The naming below is Charak's, which runs in order - Madhya middling,
+   * Manda slow, Mandatara slower. Santhanam's gloss slides the words by one
+   * slot against the same sequence of values, so his "Manda" is this "Madhya",
+   * and his "Sama" takes 7.5, which is a strange thing to allot a middling
+   * speed. The values are identical in both; only the labels move.
+   *
+   * Four states come straight out of the ephemeris. Vakra is retrograde,
+   * Vikala is stationary, and Anuvakra is retrograde across a sign boundary.
+   * THE OTHER FOUR BOUNDARIES ARE NOT IN ANY TEXT. Neither Parashara nor
+   * Charak says where slow becomes slower or fast becomes very fast, so the
+   * ratios below are a choice, and the only honest thing to do is say so here
+   * rather than let them pass as received.
+   */
+  var MOTION_VALUE = { vakra: 60, anuvakra: 30, vikala: 15, madhya: 30,
+    manda: 15, mandatara: 7.5, sheeghra: 45, atisheeghra: 30 };
+
+  /*
+   * Mean geocentric daily motion. The inner two take the Sun's, not their own
+   * heliocentric figure: against its own 4.09 a day, Mercury's apparent motion
+   * never reaches even a tenth over half of mean, so it could never be counted
+   * fast at all. This is the same substitution the seeghrocha makes.
+   */
+  var MEAN_MOTION = { Mars: 0.524033, Mercury: 0.985609, Jupiter: 0.083091,
+    Venus: 0.985609, Saturn: 0.033460 };
+
+  var MOTION_BANDS = [[0.05, 'vikala'], [0.40, 'mandatara'], [0.75, 'manda'],
+    [1.25, 'madhya'], [1.75, 'sheeghra']];
+
+  function motionState(graha, longitude, speed) {
+    var mean = MEAN_MOTION[graha];
+    if (!mean) return null;
+    if (speed < 0) {
+      // Anuvakra is retrogression that carries the graha back over a sign
+      // boundary; a day's travel either side settles it.
+      var here = Math.floor(Astro.norm360(longitude) / 30);
+      var soon = Math.floor(Astro.norm360(longitude + speed) / 30);
+      return here === soon ? 'vakra' : 'anuvakra';
+    }
+    var ratio = speed / mean;
+    for (var i = 0; i < MOTION_BANDS.length; i++) {
+      if (ratio < MOTION_BANDS[i][0]) return MOTION_BANDS[i][1];
+    }
+    return 'atisheeghra';
+  }
+
+  function cheshtaBala(graha, longitude, T, ayanamsa, ayana, paksha, method, speed) {
     // The luminaries never retrograde, so they borrow another strength.
     if (graha === 'Sun') return ayana;
     if (graha === 'Moon') return paksha;
+    if (method === CHESHTA.MOTION) {
+      var state = motionState(graha, longitude, speed);
+      return state ? MOTION_VALUE[state] : 0;
+    }
     return chestaKendra(graha, longitude, T, ayanamsa) / 3;
   }
 
@@ -567,6 +622,8 @@ var Shadbala = (function () {
    */
   var KRANTI = { LONGITUDE: 'longitude', TRUE: 'true' };
 
+  var CHESHTA = { KENDRA: 'kendra', MOTION: 'motion' };
+
   var NAT_CLOCK = { APPARENT: 'apparent', MEAN: 'mean', ZONE: 'zone' };
 
   function natHours(clock, jd, place) {
@@ -586,6 +643,8 @@ var Shadbala = (function () {
   function compute(chart, place, options) {
     var moonPaksha = (options && options.moonPaksha) === MOON_PAKSHA.BENEFIC
       ? MOON_PAKSHA.BENEFIC : MOON_PAKSHA.GROUP;
+    var cheshtaMethod = (options && options.cheshtaMethod) === CHESHTA.MOTION
+      ? CHESHTA.MOTION : CHESHTA.KENDRA;
     var mercuryNature = (options && options.mercuryNature) === 'benefic'
       ? 'benefic' : 'qualified';
     var kranti = (options && options.kranti) === KRANTI.TRUE
@@ -710,7 +769,8 @@ var Shadbala = (function () {
         kala.masa + kala.vara + kala.hora + kala.ayana;
 
       var dig = digBala(graha, p.longitude, chart.ascendant.longitude, chart.midheaven.longitude);
-      var cheshta = cheshtaBala(graha, p.longitude, T, chart.ayanamsa, ayana, paksha);
+      var cheshta = cheshtaBala(graha, p.longitude, T, chart.ayanamsa, ayana,
+        paksha, cheshtaMethod, p.speed);
       var naisargika = NAISARGIKA[graha];
       var drik = drikBala(graha, positions, benefics);
 
@@ -860,6 +920,7 @@ var Shadbala = (function () {
     NAT_CLOCK: NAT_CLOCK,
     HORA_LENGTH: HORA_LENGTH,
     KRANTI: KRANTI,
+    CHESHTA: CHESHTA, MOTION_VALUE: MOTION_VALUE,
     // Exported for the worked examples in Raman s60-61 and BPHS ch.27 v.13.
     abdaLord: abdaLord, masaLord: masaLord,
     GRAHAS: GRAHAS,

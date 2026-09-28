@@ -632,6 +632,34 @@
           the same sign. It reaches paksha bala, drik bala, the kartari marks and
           every yoga that asks whether a graha is benefic.</p>
       </div>
+      <div class="field">
+        <label for="cheshta-method">Cheshta bala</label>
+        <select id="cheshta-method">
+          <option value="kendra" selected>From the chesta kendra (Parashara 27.24-25, Raman)</option>
+          <option value="motion">From the eight motions (Parashara 27.21-23, Charak)</option>
+        </select>
+        <p class="field-note">Parashara gives both, in consecutive verses. At
+          21-23 he names eight motions and allots them 60, 30, 15, 30, 15, 7.5,
+          45 and 30; at 24-25 he gives the arithmetic &mdash; &ldquo;Add together
+          the mean and true longitudes ... Reduce this sum from the Seeghrocha
+          ... divided by 3 which will denote the motional strength.&rdquo; Raman
+          follows the second, Charak gives only the first. The default here is
+          the arithmetic, since that is the verse that states a computation.
+          <br><br>
+          Be aware of what the second option costs. Vakra is retrograde, Vikala
+          is stationary and Anuvakra is retrogression across a sign boundary, all
+          of which the ephemeris settles. But neither Parashara nor Charak says
+          where slow becomes slower or fast becomes very fast, so four of the
+          eight boundaries are this site&rsquo;s choice and not anybody&rsquo;s
+          text. They are set at 0.05, 0.40, 0.75, 1.25 and 1.75 of a
+          graha&rsquo;s mean daily motion, the inner two measured against the
+          Sun&rsquo;s.
+          <br><br>
+          The two measures correlate at only 0.32, so this is a different
+          quantity rather than a rounding of the other. Checked against two
+          outside calculators on three charts, the eight-motion table is further
+          from both than the kendra is.</p>
+      </div>
       <p class="field-note" id="settings-status"></p>
     </div>
   </section>

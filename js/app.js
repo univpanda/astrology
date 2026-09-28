@@ -1390,7 +1390,8 @@
            natClock: document.getElementById('nat-clock').value,
            horaLength: document.getElementById('hora-length').value,
            kranti: document.getElementById('kranti').value,
-           mercuryNature: document.getElementById('mercury-nature').value });
+           mercuryNature: document.getElementById('mercury-nature').value,
+           cheshtaMethod: document.getElementById('cheshta-method').value });
     }
     return state.shadbala;
   }
@@ -3461,6 +3462,20 @@
     status.textContent = halved
       ? 'The Sun\u2019s ayana and the Moon\u2019s paksha are shown halved. The totals still count them doubled.'
       : 'The Sun\u2019s ayana and the Moon\u2019s paksha are shown as the texts compute them, doubled.';
+  });
+
+  document.getElementById('cheshta-method').addEventListener('change', function () {
+    var status = document.getElementById('settings-status');
+    var motion = this.value === 'motion';
+    if (!lastChart) {
+      status.textContent = 'Saved. The next chart will use it.';
+      return;
+    }
+    lastChart.shadbala = null;
+    render(lastChart);
+    status.textContent = motion
+      ? 'Cheshta bala now reads the eight motions. Four of their boundaries are this site\u2019s, not a text\u2019s.'
+      : 'Cheshta bala now reads the chesta kendra, which is the verse that states a computation.';
   });
 
   document.getElementById('mercury-nature').addEventListener('change', function () {
