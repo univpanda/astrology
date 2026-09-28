@@ -3973,6 +3973,70 @@ ok('and the choice reaches the engine', (function () {
     .test(appSrc);
 })());
 
+console.log('\nHovering a graha describes it');
+/*
+ * The chart used to put a tooltip on the house, naming its sign - which told a
+ * reader what the chart already showed and nothing about the graha they were
+ * pointing at. Now the label carries everything true of that graha in that
+ * chart and that rotation, and a card renders it: name, sign and house, the
+ * states as the marks they are written with, and the yogas as a list.
+ */
+(function () {
+  var chartsSrc = fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8');
+  ok('the house no longer explains itself',
+    !/House ' \+ \(h \+ 1\)/.test(chartsSrc) &&
+    !/' \(' \+ Astro\.SIGNS_SA\[i\] \+ '\) - house '/.test(chartsSrc));
+
+  // Render a real chart through the stub and read what the labels carry.
+  var container = makeNode('div');
+  var chart = Astro.chart({ jdUT: Astro.julianDay(1961, 8, 4, 19 + 24 / 60 + 10),
+    latitude: 21.3069, longitude: -157.8583, tzOffsetMinutes: -600 });
+  var yogas = { Saturn: ['Sasa yoga', 'Raja yoga'] };
+  Charts.render(container, { style: 'north', planets: chart.planets,
+    ascendant: chart.ascendant.longitude, division: 1, reference: 'Ascendant',
+    yogas: yogas });
+  var labels = [];
+  (function walk(n) {
+    if (n.attrs && n.attrs['data-graha']) labels.push(n.attrs);
+    (n.children || []).forEach(walk);
+  })(container);
+
+  ok('every graha and the lagna carries card data', labels.length === 10,
+    labels.length + ' labels');
+  var sat = labels.filter(function (a) { return a['data-graha'] === 'Saturn'; })[0];
+  ok('the card data names the sign and house',
+    /^Capricorn \(Makara\), house \d+$/.test(sat['data-where']), sat['data-where']);
+  ok('and the states it is in', sat['data-states'].indexOf('R') >= 0,
+    sat['data-states']);
+  ok('and the yogas it takes part in',
+    sat['data-yogas'] === 'Sasa yoga|Raja yoga', sat['data-yogas']);
+  /*
+   * The ascendant is a point, not a graha: it has a sign but no house of its
+   * own to be in, and owns nothing to be yogakaraka of.
+   */
+  var asc = labels.filter(function (a) { return a['data-graha'] === 'Ascendant'; })[0];
+  ok('the ascendant gets a sign but no house', asc['data-where'].indexOf('house') < 0,
+    asc['data-where']);
+
+  /*
+   * Reachable without a mouse, and legible to a reader who cannot see the card
+   * at all.
+   */
+  ok('the label is focusable and carries a spoken description',
+    sat['tabindex'] === '0' && /Saturn in Capricorn/.test(sat['aria-label']),
+    sat['aria-label']);
+
+  /*
+   * The card must not sit under the pointer it was opened by, or hovering it
+   * would close it.
+   */
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  ok('the card never steals the hover that opened it',
+    /\.graha-card \{[^}]*pointer-events: none/.test(css));
+  ok('and the chart box is a positioning context for it',
+    /#chart-a, #chart-b \{ position: relative; \}/.test(css));
+})();
+
 console.log('\nThe tab strip opens where it starts');
 /*
  * "Add a kundali" was the tab selected on load but sat second in the strip,

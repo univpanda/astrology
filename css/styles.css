@@ -528,6 +528,59 @@ input::placeholder { color: #a9bdb2; }
    line, rather than a control and an essay. */
 #panel-settings .field + .field { margin-top: 1.4rem; }
 
+/*
+ * The hover card for a graha in a chart. The label can only carry initials and
+ * a bracket or two, so everything else about that graha in that chart - its
+ * sign and house, the states it is in, the yogas it takes part in - lives here
+ * and appears on hover or focus.
+ */
+#chart-a, #chart-b { position: relative; }
+
+.graha-card {
+  position: absolute;
+  transform: translateX(-50%);
+  z-index: 5;
+  min-width: 11rem;
+  max-width: 17rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+  pointer-events: none;   /* never steals the hover it was opened by */
+  text-align: left;
+}
+.graha-card[hidden] { display: none; }
+.graha-card-name {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--green-deep);
+  font-weight: 700;
+}
+.graha-card-where {
+  margin: 0.1rem 0 0;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+.graha-card-states {
+  margin: 0.4rem 0 0;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  line-height: 1.7;
+}
+.graha-card-yogas {
+  margin: 0.45rem 0 0;
+  padding-left: 1rem;
+  font-size: 0.8rem;
+  color: var(--ink);
+}
+.graha-card-yogas li { margin-top: 0.15rem; }
+
+/* The label is hoverable and reachable, so it needs a focus ring of its own -
+   SVG text takes none by default. */
+svg.kundli .planet { cursor: default; }
+svg.kundli .planet:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+
 /* The mark legend. Nine entries of prose under every chart is a lot of page to
    scroll past once you know them, and they are the kind of thing read twice and
    then never again - so it is closed until asked for. */

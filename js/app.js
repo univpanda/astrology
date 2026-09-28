@@ -842,6 +842,93 @@
     };
   }
 
+  /**
+   * Which yogas each graha takes part in, read in one division's own chart.
+   *
+   * Keyed by graha name, which survives the recast: a division moves a graha
+   * to another sign but does not rename it. Uses the same detect() pass and the
+   * same strengths as the Yogas tab, so the chart and the tab cannot disagree
+   * about what a division holds.
+   */
+  function yogasByGraha(state, division) {
+    var chart = division === 1 ? state.chart
+      : Astro.chartInDivision(state.chart, division);
+    var map = {};
+    Yogas.detect(chart, strengthsFor(state)).forEach(function (yoga) {
+      (yoga.grahas || []).forEach(function (name) {
+        var list = map[name] || (map[name] = []);
+        if (list.indexOf(yoga.title) < 0) list.push(yoga.title);
+      });
+    });
+    return map;
+  }
+
+  /*
+   * The hover card for a graha in a chart.
+   *
+   * Name as the heading, its sign and house under it, the states it is in as
+   * the marks they are written with, and the yogas it takes part in as a list.
+   * All of it read off data attributes the chart put on the label, so this
+   * knows nothing about how a chart is drawn and the chart nothing about how a
+   * card looks.
+   *
+   * One card per chart container, moved and refilled rather than rebuilt, so
+   * pointing along a row of grahas does not churn the DOM.
+   */
+  var STATE_NAMES = { R: 'Retrograde', C: 'Combust', V: 'Vargottama',
+    Y: 'Yogakaraka' };
+
+  function wireGrahaCard(container) {
+    if (container.dataset && container.dataset.carded) return;
+    if (container.dataset) container.dataset.carded = '1';
+    var card = el('div', 'graha-card');
+    card.hidden = true;
+    container.appendChild(card);
+
+    var fill = function (t) {
+      card.innerHTML = '';
+      card.appendChild(el('h4', 'graha-card-name', t.getAttribute('data-graha')));
+      card.appendChild(el('p', 'graha-card-where', t.getAttribute('data-where')));
+      var states = (t.getAttribute('data-states') || '').split(',').filter(Boolean);
+      if (states.length) {
+        var line = el('p', 'graha-card-states');
+        states.forEach(function (k) {
+          line.appendChild(el('span', 'flag flag-' + k.toLowerCase(), '[' + k + ']'));
+          line.appendChild(document.createTextNode(' ' + STATE_NAMES[k] + ' '));
+        });
+        card.appendChild(line);
+      }
+      var yogas = (t.getAttribute('data-yogas') || '').split('|').filter(Boolean);
+      if (yogas.length) {
+        var ul = el('ul', 'graha-card-yogas');
+        yogas.forEach(function (y) { ul.appendChild(el('li', null, y)); });
+        card.appendChild(ul);
+      }
+      /*
+       * Placed from the rendered box rather than from SVG coordinates, because
+       * the chart scales with the column and the two stop agreeing the moment
+       * it does.
+       */
+      var r = t.getBoundingClientRect(), c = container.getBoundingClientRect();
+      card.hidden = false;
+      var half = card.offsetWidth / 2;
+      var x = r.left - c.left + r.width / 2;
+      card.style.left = Math.max(half + 2, Math.min(c.width - half - 2, x)) + 'px';
+      card.style.top = (r.bottom - c.top + 8) + 'px';
+    };
+
+    var show = function (e) {
+      var t = e.target;
+      if (!t || !t.getAttribute || !t.getAttribute('data-graha')) return;
+      fill(t);
+    };
+    var hide = function () { card.hidden = true; };
+    container.addEventListener('mouseover', show);
+    container.addEventListener('mouseout', hide);
+    container.addEventListener('focusin', show);
+    container.addEventListener('focusout', hide);
+  }
+
   /** Draw one slot: its chart, its caption and its table. */
   function drawSlot(slot) {
     var state = lastChart;
@@ -853,8 +940,10 @@
       planets: state.chart.planets,
       ascendant: state.chart.ascendant.longitude,
       division: set.division,
-      reference: set.reference
+      reference: set.reference,
+      yogas: yogasByGraha(state, set.division)
     });
+    wireGrahaCard(document.getElementById('chart-' + slot));
 
     var from = set.reference === 'Ascendant' ? 'from the ascendant' : 'from the ' + set.reference;
     document.getElementById('caption-' + slot).textContent =

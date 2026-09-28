@@ -75,12 +75,45 @@ var Charts = (function () {
    * Stack a house's occupants around an anchor point. Two columns are used once
    * there are more than three, so a stellium still fits inside its triangle.
    */
+  /*
+   * Everything true of this graha in this chart and this rotation, handed to
+   * the hover card as data rather than rendered here. The label can only carry
+   * initials and a bracket or two; the card has room for the sign, the states
+   * spelled out and the yogas as a list.
+   *
+   * There was a tooltip on the house instead, naming the sign - which told a
+   * reader what the chart already showed and nothing about the graha they were
+   * pointing at.
+   */
+  var STATE_NAMES = { R: 'Retrograde', C: 'Combust', V: 'Vargottama',
+    Y: 'Yogakaraka' };
+
+  function describeOccupant(p, sign, house, yogas) {
+    var states = [];
+    if (p.retrograde) states.push('R');
+    if (p.combust) states.push('C');
+    if (p.vargottama) states.push('V');
+    if (p.yogakaraka) states.push('Y');
+    var where = Astro.SIGNS[sign] + ' (' + Astro.SIGNS_SA[sign] + ')' +
+      (p.name === 'Ascendant' ? '' : ', house ' + house);
+    return {
+      graha: p.name,
+      where: where,
+      states: states,
+      yogas: (yogas && yogas[p.name]) || [],
+      /* One flat sentence, for anyone reading by ear rather than by hover. */
+      label: p.name + ' in ' + where +
+        (states.length ? '. ' + states.map(function (k) { return STATE_NAMES[k]; }).join(', ') : '') +
+        ((yogas && yogas[p.name] || []).length ? '. ' + yogas[p.name].join(', ') : '')
+    };
+  }
+
   var LINE_HEIGHT = 17;
 
   /**
    * Returns the y of the first row, so a caller can keep something clear of it.
    */
-  function drawOccupants(group, occupants, cx, cy, maxWidth) {
+  function drawOccupants(group, occupants, cx, cy, maxWidth, ctx) {
     var lineHeight = LINE_HEIGHT;
     var perRow = occupants.length > 3 ? 2 : 1;
     var rows = [];
@@ -95,6 +128,16 @@ var Charts = (function () {
           class: 'planet graha-' + (SLUG[p.name] || 'other'),
           'text-anchor': 'middle'
         }, planetText(p));
+        if (ctx) {
+          var d = describeOccupant(p, ctx.sign, ctx.house, ctx.yogas);
+          t.setAttribute('data-graha', d.graha);
+          t.setAttribute('data-where', d.where);
+          t.setAttribute('data-states', d.states.join(','));
+          t.setAttribute('data-yogas', d.yogas.join('|'));
+          // Hoverable by mouse, reachable by keyboard, legible to a reader.
+          t.setAttribute('tabindex', '0');
+          t.setAttribute('aria-label', d.label);
+        }
         group.appendChild(t);
       });
     });
@@ -171,7 +214,7 @@ var Charts = (function () {
     return { bySign: bySign, ascSign: ascSign, firstSign: firstSign };
   }
 
-  function renderNorth(container, planets, ascLongitude, division, reference) {
+  function renderNorth(container, planets, ascLongitude, division, reference, yogas) {
     var data = occupantsBySign(planets, ascLongitude, division, reference);
     var svg = svgRoot('north');
     var m = 4, s = SIZE - 2 * m;
@@ -231,19 +274,18 @@ var Charts = (function () {
        */
       var shortfall = Math.max(0, (m + 12) - numY);
       numY += shortfall;
-      drawOccupants(g, occ, cx, cy + 4 + shortfall, 0.20 * s);
+      drawOccupants(g, occ, cx, cy + 4 + shortfall, 0.20 * s,
+        { sign: sign, house: h + 1, yogas: yogas });
       g.appendChild(el('text', {
         x: cx, y: numY.toFixed(1), class: 'sign-num', 'text-anchor': 'middle'
       }, String(sign + 1)));
-      g.appendChild(el('title', {}, 'House ' + (h + 1) + ' - ' + Astro.SIGNS[sign] +
-        ' (' + Astro.SIGNS_SA[sign] + ')'));
       svg.appendChild(g);
     }
     container.innerHTML = '';
     container.appendChild(svg);
   }
 
-  function renderSouth(container, planets, ascLongitude, division, reference) {
+  function renderSouth(container, planets, ascLongitude, division, reference, yogas) {
     var data = occupantsBySign(planets, ascLongitude, division, reference);
     var svg = svgRoot('south');
     var m = 4, cell = (SIZE - 2 * m) / 4;
@@ -266,8 +308,8 @@ var Charts = (function () {
       }
       g.appendChild(el('text', { x: x + cell - 6, y: y + 14, class: 'sign-num', 'text-anchor': 'end' },
         Astro.SIGN_ABBR[i] + ' · ' + house));
-      drawOccupants(g, data.bySign[i], x + cell / 2, y + cell / 2 + 6, cell * 0.82);
-      g.appendChild(el('title', {}, Astro.SIGNS[i] + ' (' + Astro.SIGNS_SA[i] + ') - house ' + house));
+      drawOccupants(g, data.bySign[i], x + cell / 2, y + cell / 2 + 6, cell * 0.82,
+        { sign: i, house: house, yogas: yogas });
       svg.appendChild(g);
     }
     // The blank 2x2 middle, left open as convention has it.
@@ -278,7 +320,8 @@ var Charts = (function () {
 
   function render(container, opts) {
     var fn = opts.style === 'south' ? renderSouth : renderNorth;
-    fn(container, opts.planets, opts.ascendant, opts.division || 1, opts.reference);
+    fn(container, opts.planets, opts.ascendant, opts.division || 1, opts.reference,
+       opts.yogas);
   }
 
   return { render: render };
