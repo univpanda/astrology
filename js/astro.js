@@ -1428,7 +1428,29 @@ var Astro = (function () {
    * Shared rather than written twice: Shadbala weighs every aspect by this and a
    * second copy would drift from it.
    */
-  function naturalBenefics(chart) {
+  /*
+   * Whether Mercury's benefic nature is read with its qualifier or without.
+   *
+   * 'qualified' is Parashara's verse plus the authorities' gloss on it, and is
+   * what this reads by default. Raman's footnote to his drik bala table:
+   * "Mercury is a malefic as he is very closely associated with Sun or
+   * combusted." K. S. Charak: "well-associated Mercury" is a natural benefic
+   * and "afflicted Mercury" a natural malefic, since Mercury "behaves as a
+   * benefic under benefic influence and as a malefic under malefic influence".
+   * K. N. Rao makes Mercury a malefic in a worked chart "as he is associated
+   * with two malefics Sun and Ketu", and says of combustion generally that
+   * planets so placed "become evil".
+   *
+   * 'benefic' is the same authors' unqualified opening list - Charak's "Natural
+   * benefics: Moon, Mercury, Jupiter, Venus", Rao's "Natural Benefics: Jupiter,
+   * Venus, Mercury and Moon" - taken without the sentence that follows it.
+   * Nobody defends it as the whole rule, but software does compute it, and Drik
+   * Panchang reads Mercury benefic on a chart where he sits 10 degrees from the
+   * Sun in the same sign.
+   */
+  var MERCURY_NATURE = { QUALIFIED: 'qualified', BENEFIC: 'benefic' };
+
+  function naturalBenefics(chart, options) {
     var positions = {};
     chart.planets.forEach(function (p) { positions[p.name] = p; });
     if (!positions.Sun || !positions.Moon) return {};
@@ -1497,7 +1519,16 @@ var Astro = (function () {
         return positions[g] && positions[g].sign === mercury.sign;
       });
     };
-    benefics.Mercury = !mercury || !badCompany();
+    /*
+     * Taken from the chart when the caller passes nothing, so the choice does
+     * not have to be threaded through nine call sites. Mercury's nature is read
+     * by the yogas, the kartari marks and the strength table alike, and a
+     * setting that reached only one of them would have the same chart calling
+     * him benefic on one tab and malefic on another.
+     */
+    var nature = (options && options.mercuryNature) || chart.mercuryNature;
+    benefics.Mercury = nature === MERCURY_NATURE.BENEFIC
+      ? true : (!mercury || !badCompany());
     return benefics;
   }
 
@@ -1917,6 +1948,7 @@ var Astro = (function () {
     COMBUSTION: COMBUSTION,
     isCombust: isCombust,
     naturalBenefics: naturalBenefics,
+    MERCURY_NATURE: MERCURY_NATURE,
     aspects: aspects,
     FULL_ASPECTS: FULL_ASPECTS,
     DIG_BALA_HOUSE: DIG_BALA_HOUSE,

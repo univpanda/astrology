@@ -35,6 +35,69 @@ var rt = A.calendarDate(2436116.31);
 ok('calendarDate round-trip', rt.y === 1957 && rt.m === 10 && rt.d === 4 &&
    Math.abs(rt.hours - 19.44) < 0.01, rt.y + '-' + rt.m + '-' + rt.d + ' ' + rt.hours.toFixed(3) + 'h');
 
+console.log('\nMercury\u2019s nature, with its qualifier and without');
+/*
+ * Parashara gives Mercury one qualifier - "Mercury, however, is a malefic if
+ * he joins a malefic" - and the authorities keep it. Raman footnotes his drik
+ * bala table: "Mercury is a malefic as he is very closely associated with Sun
+ * or combusted." Charak: "well-associated Mercury" benefic, "afflicted
+ * Mercury" malefic. K. N. Rao calls Mercury malefic in a worked chart "as he
+ * is associated with two malefics Sun and Ketu".
+ *
+ * The other reading is the same authors' opening list taken without the
+ * sentence after it. Nobody defends it whole, but Drik Panchang computes it -
+ * on Obama's chart it reads Mercury benefic with him ten degrees from the Sun
+ * in the same sign - so it is offered and the qualified reading is default.
+ */
+(function () {
+  var S = require('../js/shadbala.js');
+  var place = { latitude: 21.3069, longitude: -157.8583, tzOffsetMinutes: -600 };
+  var chart = A.chart({ jdUT: A.julianDay(1961, 8, 4, 19 + 24 / 60 + 10),
+    latitude: place.latitude, longitude: place.longitude,
+    tzOffsetMinutes: place.tzOffsetMinutes });
+  ok('Obama\u2019s Mercury is malefic by the qualifier, being combust',
+    A.naturalBenefics(chart).Mercury === false);
+  ok('and benefic without it',
+    A.naturalBenefics(chart, { mercuryNature: A.MERCURY_NATURE.BENEFIC })
+      .Mercury === true);
+
+  /*
+   * The choice can also ride on the chart, which is how the page carries it:
+   * the yogas, the kartari marks and the strength table each ask astro.js
+   * separately, and a setting honoured by only one of them would have the same
+   * chart answering differently tab by tab.
+   */
+  var stamped = A.chart({ jdUT: A.julianDay(1961, 8, 4, 19 + 24 / 60 + 10),
+    latitude: place.latitude, longitude: place.longitude,
+    tzOffsetMinutes: place.tzOffsetMinutes });
+  stamped.mercuryNature = A.MERCURY_NATURE.BENEFIC;
+  ok('a chart can carry the reading for every caller',
+    A.naturalBenefics(stamped).Mercury === true);
+  ok('and an explicit option still wins over it',
+    A.naturalBenefics(stamped,
+      { mercuryNature: A.MERCURY_NATURE.QUALIFIED }).Mercury === false);
+
+  /*
+   * It reaches paksha bala, and Drik Panchang's figure follows from it: their
+   * Mercury takes the benefic share of the fortnight where ours takes the
+   * malefic one.
+   */
+  var q = S.compute(chart, place, { moonPaksha: 'benefic' });
+  var b = S.compute(chart, place,
+    { moonPaksha: 'benefic', mercuryNature: 'benefic' });
+  check('Mercury\u2019s paksha bala, qualified', q.grahas.Mercury.kala.paksha,
+    36.94, 0.05, 'virupas');
+  check('and unqualified, which is what Drik Panchang prints',
+    b.grahas.Mercury.kala.paksha, 23.06, 0.05, 'virupas');
+  /*
+   * Only Mercury's own standing changes, so the six others keep their share.
+   */
+  ok('no other graha\u2019s paksha moves', S.GRAHAS.every(function (g) {
+    return g === 'Mercury' ||
+      Math.abs(q.grahas[g].kala.paksha - b.grahas[g].kala.paksha) < 1e-9;
+  }));
+})();
+
 console.log('\nThe Moon reaches her moolatrikona, which is not her own sign');
 /*
  * Six of the seven have their moolatrikona inside a sign they own, so testing

@@ -586,6 +586,8 @@ var Shadbala = (function () {
   function compute(chart, place, options) {
     var moonPaksha = (options && options.moonPaksha) === MOON_PAKSHA.BENEFIC
       ? MOON_PAKSHA.BENEFIC : MOON_PAKSHA.GROUP;
+    var mercuryNature = (options && options.mercuryNature) === 'benefic'
+      ? 'benefic' : 'qualified';
     var kranti = (options && options.kranti) === KRANTI.TRUE
       ? KRANTI.TRUE : KRANTI.LONGITUDE;
     var horaLength = (options && options.horaLength) === HORA_LENGTH.SEASONAL
@@ -610,7 +612,7 @@ var Shadbala = (function () {
 
     // Benefic or malefic, which decides the sign of every aspect below. Shared
     // with the yoga detectors rather than computed twice and left to drift.
-    var benefics = Astro.naturalBenefics(chart);
+    var benefics = Astro.naturalBenefics(chart, { mercuryNature: mercuryNature });
 
     /*
      * Sundial time at the birthplace, not clock time. Raman section 48 asks for

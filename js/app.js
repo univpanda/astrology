@@ -739,6 +739,13 @@
 
   function render(state) {
     var c = state.chart, place = state.place;
+    /*
+     * Stamp Mercury's reading onto the chart before anything reads it. The
+     * yogas, the kartari marks and the strength table each ask astro.js
+     * independently whether he is benefic, and a setting honoured by only one
+     * of them would have the same chart answering differently tab by tab.
+     */
+    if (c) c.mercuryNature = document.getElementById('mercury-nature').value;
 
     // Just the name. The page is a chart; saying so in the heading of one adds
     // nothing, and a long name plus a possessive wraps on a phone.
@@ -1382,7 +1389,8 @@
       }, { moonPaksha: document.getElementById('moon-paksha').value,
            natClock: document.getElementById('nat-clock').value,
            horaLength: document.getElementById('hora-length').value,
-           kranti: document.getElementById('kranti').value });
+           kranti: document.getElementById('kranti').value,
+           mercuryNature: document.getElementById('mercury-nature').value });
     }
     return state.shadbala;
   }
@@ -3453,6 +3461,20 @@
     status.textContent = halved
       ? 'The Sun\u2019s ayana and the Moon\u2019s paksha are shown halved. The totals still count them doubled.'
       : 'The Sun\u2019s ayana and the Moon\u2019s paksha are shown as the texts compute them, doubled.';
+  });
+
+  document.getElementById('mercury-nature').addEventListener('change', function () {
+    var status = document.getElementById('settings-status');
+    var always = this.value === 'benefic';
+    if (!lastChart) {
+      status.textContent = 'Saved. The next chart will use it.';
+      return;
+    }
+    lastChart.shadbala = null;
+    render(lastChart);
+    status.textContent = always
+      ? 'Mercury is now read a benefic whatever company he keeps.'
+      : 'Mercury is now read a malefic when combust or joined to one.';
   });
 
   document.getElementById('kranti').addEventListener('change', function () {
