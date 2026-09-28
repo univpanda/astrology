@@ -1645,6 +1645,52 @@ console.log('\nShadbala');
   })());
 
   /*
+   * The Moon rides with whichever group it is in, and its own figure is doubled
+   * either way. Both halves of that are easy to get backwards and BPHS settles
+   * both in its notes to verses 10-11: "The Moon in dark half is a malefic",
+   * and "Whether the Moon is in a group of benefices or otherwise, her Paksha
+   * Bala is always doubled just as the Sun's Ayana Bala."
+   *
+   * The second is the counter-intuitive one. A dark Moon is a malefic, so it
+   * takes sixty less the brightness - which is more than a half-lit Moon gets,
+   * and reads as though darkness made the Moon strong. It does not: paksha bala
+   * measures what the fortnight gives each group, and the Moon is in a group
+   * like any other graha. Software that gives the Moon its brightness outright
+   * is answering a different question.
+   */
+  ok('the Moon takes its group\'s paksha bala, doubled either way', (function () {
+    var at = function (elongation) {
+      var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+      // Walk a lunar month and pick the sample nearest the elongation wanted.
+      var best = null;
+      for (var h = 0; h < 30 * 24; h += 2) {
+        var c = A.chart({ jdUT: A.julianDay(2000, 1, 1, h), latitude: place.latitude,
+                          longitude: place.longitude,
+                          tzOffsetMinutes: place.tzOffsetMinutes });
+        var by = {};
+        c.planets.forEach(function (p) { by[p.name] = p; });
+        var e = A.norm360(by.Moon.longitude - by.Sun.longitude);
+        var off = Math.abs(e - elongation);
+        if (!best || off < best.off) {
+          best = { off: off, e: e, r: Shadbala.compute(c, place), benefic: A.naturalBenefics(c) };
+        }
+      }
+      return best;
+    };
+    var bright = at(150);                         // full-ish, benefic
+    var dark = at(300);                           // thin, malefic
+    var check = function (s) {
+      var e = s.e, brightness = (e > 180 ? 360 - e : e) / 3;
+      var base = s.benefic.Moon ? brightness : 60 - brightness;
+      return Math.abs(s.r.grahas.Moon.kala.paksha - base * 2) < 1e-9;
+    };
+    return bright.benefic.Moon === true && dark.benefic.Moon === false &&
+      check(bright) && check(dark) &&
+      // and the doubling really takes it past the sixty the others cap at
+      dark.r.grahas.Moon.kala.paksha > 60;
+  })());
+
+  /*
    * Cheshta bala from the chesta kendra, Raman sections 105-107: nothing where
    * the kendra is nothing and sixty where it is a half circle, the kendra over
    * three in between.
