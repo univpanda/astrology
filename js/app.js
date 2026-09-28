@@ -1440,10 +1440,19 @@
         entity: r,
         cells: [
           { text: Astro.SIGNS[v.sign],
+            /*
+             * Hemming is the one mark the ascendant should carry. Dignity and
+             * ownership are about a graha and the ascendant is a point, so it
+             * is excluded from those - but kartari is defined on the lagna
+             * first and on grahas only by extension, and this row was the one
+             * place the mark was withheld. Phaladeepika ch.6 sloka 8 puts the
+             * 2nd and 12th "from the Lagna"; Charak and Raman are what license
+             * reading the same shape around a graha.
+             */
             flags: [view.division !== 1 && v.sign === Astro.signOf(r.longitude) ? 'V' : null,
-              !r.isAscendant && Astro.hemmedByBenefics(r.name, v.sign, divisionChart,
+              Astro.hemmedByBenefics(r.name, v.sign, divisionChart,
                 benefics) ? 'S' : null,
-              !r.isAscendant && Astro.hemmedByMalefics(r.name, v.sign, divisionChart,
+              Astro.hemmedByMalefics(r.name, v.sign, divisionChart,
                 benefics) ? 'P' : null] },
           { text: (r.isAscendant ? '' : Astro.dignityOf(r.name, v.sign, v.degreeInSign)) || '–',
             stack: true, star: !r.isAscendant && cancelledHere[r.name] },

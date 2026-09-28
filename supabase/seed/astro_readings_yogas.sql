@@ -493,9 +493,12 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'It is read as constraint: the affairs of the first house are pressed from both sides, and what the chart otherwise promises there is harder to come by.',
    'Nothing in the texts asks the flanking signs to hold malefics and nothing else. This site asked for that and reported no yoga wherever a benefic shared one of the two signs, which lost nearly half of all cases: the figure went from 6.9 per cent of charts to 13 once the requirement was dropped. Charak''s "occupied only by benefics" for Parvata, and Mantreswara''s "unaspected by malefics" for Susubha, are both the qualifier being used elsewhere and withheld here.',
    'A consequence worth stating: both kartaris can hold at once, where each flanking sign carries one graha of each kind. That happens in about one chart in a hundred and fifty, and both are reported. The first house is flanked by protection and by harm together, which is a thing charts do.',
-   'Commoner than the benefic form, there being more malefics to go round - a thin Moon and a badly kept Mercury each count as one, and the nodes always do.'
+   'Commoner than the benefic form, there being more malefics to go round - a thin Moon and a badly kept Mercury each count as one, and the nodes always do.',
+   'The yoga proper is counted from the lagna and nowhere else. Phaladeepika ch.6 sloka 8 says "the 12th and the 2nd Bhavas from the Lagna"; Charak says "houses 2 and 12 from the lagna". That is what the Yogas tab reports.',
+   'Reading the same shape around a graha is an extension, and it is a sourced one. Charak: "When malefics surround the lagna or the lagna lord, health suffers." Raman, working a chart in Hindu Predictive Astrology: "In the navamsa, Saturn has Shubhakarthari Yoga." So the [P] and [S] marks in the graha table are legitimate, and they appear beside the ascendant too, that being the case the texts define first.',
+   'Reading it around any house - papakartari on the 4th, on the 7th - is common in modern practice and is not in any of the texts this site follows. Sanjay Rath does it freely; Parashara, Mantreswara, Raman and Charak do not. So this site does not, and a reader who wants it should know that is a choice made against the sources rather than from them.'
  ],
- 'The [P] mark beside a graha reports the same shape around that graha rather than around the lagna.', 975)
+ 'What the yoga is defined on, and what it is extended to, are different questions - see the last point above.', 975)
 
 on conflict (topic, subject, condition) do update set
   heading = excluded.heading,

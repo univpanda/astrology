@@ -2377,8 +2377,26 @@ ok('and directional strength from the house, which the row already computes',
 ok('[N] reaches the graha table\u2019s dignity, not the grid alone',
    /star: !r\.isAscendant && cancelledHere\[r\.name\]/.test(appSrc) &&
    /td\.appendChild\(el\('span', 'flag flag-n', ' \[N\]'\)\)/.test(appSrc));
-ok('and the ascendant takes none of the four that are about a graha',
-   (appSrc.match(/!r\.isAscendant && Astro\./g) || []).length >= 3);
+/*
+ * The ascendant is a point, so what is about a graha is withheld from it:
+ * ownership, dignity, the neecha-bhanga star, dig bala.
+ *
+ * Hemming is not on that list and used to be. Kartari is defined on the lagna
+ * first - Phaladeepika ch.6 sloka 8 puts the 2nd and 12th "from the Lagna" -
+ * and reading the same shape around a graha is the extension, licensed by
+ * Charak's "the lagna or the lagna lord" and Raman's "in the navamsa, Saturn
+ * has Shubhakarthari Yoga". So the one row the texts actually define it on was
+ * the only row not showing it.
+ */
+ok('the ascendant takes none of what is about a graha',
+   /star: !r\.isAscendant && cancelledHere\[r\.name\]/.test(appSrc) &&
+   /!r\.isAscendant && Astro\.hasDigBala/.test(appSrc) &&
+   /var owned = r\.isAscendant \? \[\] : Astro\.housesOwned/.test(appSrc) &&
+   /r\.isAscendant \? '' : Astro\.dignityOf/.test(appSrc));
+ok('but it does take the hemming marks, which are defined on it first',
+   !/!r\.isAscendant && Astro\.hemmedBy/.test(appSrc) &&
+   /Astro\.hemmedByBenefics\(r\.name, v\.sign, divisionChart/.test(appSrc) &&
+   /Astro\.hemmedByMalefics\(r\.name, v\.sign, divisionChart/.test(appSrc));
 ok('each carries its flag in its own colour, and names it',
    ['r Retrograde', 'v Vargottama', 'y Yogakaraka', 'c Combust'].every(function (pair) {
      var parts = pair.split(' ');
