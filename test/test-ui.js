@@ -4140,12 +4140,12 @@ ok('and the page never leans on the engine default',
  * The note has to name who holds each reading, or the choice is just a
  * preference with no way to decide it.
  */
-ok('and the note cites both sides', (function () {
+ok('and the note cites both sides from the classical texts', (function () {
   var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   var at = html.indexOf('id="moon-paksha"');
   var block = html.slice(at, html.indexOf('</div>', at));
   return /Santhanam/.test(block) && /Raman/.test(block) &&
-    /Charak/.test(block) && /Phaladeepika/.test(block);
+    /Phaladeepika IV\.21/.test(block) && /Phaladeepika IV\.5|And IV\.5/.test(block);
 })());
 /*
  * It changes no position, so the chart is not recast - the cached Shadbala is
@@ -4438,8 +4438,8 @@ console.log('\nSettings show the choice and fold the argument');
    * division of a short note and a long one.
    */
   ok('and the arguments survived the wrapping',
-    /Krishnamurti Paddhati|Kesava|Aryabhata|Charak/.test(panel) &&
-    /Parashara|Phaladeepika|Santhanam/.test(panel));
+    /Parashara/.test(panel) && /Phaladeepika/.test(panel) &&
+    /Santhanam/.test(panel) && /Raman/.test(panel));
 })();
 
 console.log('\nThe mark legend folds away');
@@ -7017,8 +7017,8 @@ console.log('\nEvery citation in the settings names its book');
    * being made twice, which is how two statements of the same thing drift.
    */
   ok('the doubling is argued once, under the setting that controls it',
-    /None of it is disputed/.test(panel) &&
-    !/The doubling is not in dispute/.test(panel));
+    /None of it is disputed/.test(panel.replace(/\s+/g, ' ')) &&
+    !/The doubling is not in dispute/.test(panel.replace(/\s+/g, ' ')));
 })();
 
 
@@ -7053,6 +7053,38 @@ console.log('\nThe notes name facts, not marks that move between surfaces');
   var letters = (panel.match(/\[[A-Z]\]/g) || []);
   ok('no settings note points at a mark by its letter',
     letters.length === 0, letters.join(', ') || 'none');
+})();
+
+
+console.log('\nThe settings argue from the classical texts');
+/*
+ * A settings note has one job: say which reading a control chooses between and
+ * on whose authority. That authority should be the text the rule comes from,
+ * not a modern compendium restating it - Charak is a good compendium and every
+ * point he carried here traced back to Parashara, Mantreswara or Santhanam
+ * once looked for. He keeps his place in the lessons, which are where a
+ * secondary summary is worth having.
+ */
+(function () {
+  var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  var panel = page.slice(page.indexOf('id="panel-settings"'),
+                         page.indexOf('</section>', page.indexOf('id="panel-settings"')));
+  var seed = fs.readFileSync(path.join(root,
+    'supabase/seed/astro_readings_strength.sql'), 'utf8');
+
+  ok('no settings note argues from a modern compendium',
+    panel.indexOf('Charak') < 0);
+  ok('and the classical texts carry the arguments instead',
+    /Brihat Parashara Hora Shastra/.test(panel) && /Phaladeepika/.test(panel) &&
+    /Mantreswara/.test(panel) && /Santhanam/.test(panel));
+  /*
+   * The two moderns the site does follow are still named where they are the
+   * ones with a position: Raman throughout, Rao on the yogas.
+   */
+  ok('while Raman and Rao are still named where the reading is theirs',
+    /Raman/.test(panel) && /Rao/.test(panel));
+  ok('and the compendium keeps its place in the lessons',
+    /Charak/.test(seed));
 })();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
