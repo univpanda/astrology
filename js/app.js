@@ -3584,8 +3584,8 @@
   var editButton = document.getElementById('edit-button');
 
   /*
-   * Six charts ship with the app, so the saved list is not empty before anyone
-   * has typed a birth time in. All six are picked for being checkable rather
+   * Seven charts ship with the app, so the saved list is not empty before anyone
+   * has typed a birth time in. All seven are picked for being checkable rather
    * than for being famous, and between them they show the three things that
    * decide whether a chart can be trusted: the time, the clock it is read on,
    * and the place. The last of them is here for what it asks of the drawing
@@ -3631,6 +3631,13 @@
    * is AA from the birth certificate, and its dasha turns where the biography
    * does: Mercury, one of the four, opens in November 1970, and both the
    * break-in and the resignation fall inside it.
+   *
+   * Tony Blair's is Kareem Abdul-Jabbar's lesson from the other side, and the
+   * sharper of the two. That birth falls in the gap before summer time started;
+   * this one falls inside it, so the clock reads +01:00 and an hour taken off it
+   * moves the lagna from 11 Taurus to 0 Gemini 02. Not a sign out, but two
+   * arcminutes into the next sign, which is the state a chart is in when an hour
+   * of doubt decides every house in it.
    */
   var STUDY_CHARTS = [{
     name: 'Donald Trump',
@@ -3712,6 +3719,19 @@
     zone: 'America/Los_Angeles',
     date: '1913-01-09',
     time: '21:35:00',
+    standard: 'zone',
+    ayanamsa: 'lahiri',
+    trueNode: false,
+    gender: 'male',
+    celebrity: true
+  }, {
+    name: 'Tony Blair',
+    placeLabel: 'Edinburgh, Scotland, United Kingdom',
+    latitude: 55.9521,
+    longitude: -3.1965,
+    zone: 'Europe/London',
+    date: '1953-05-06',
+    time: '06:10:00',
     standard: 'zone',
     ayanamsa: 'lahiri',
     trueNode: false,

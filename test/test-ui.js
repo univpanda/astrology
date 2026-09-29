@@ -320,7 +320,7 @@ console.log('\nStudy charts that ship with the app');
   ok('STUDY_CHARTS is still a literal this test can read', !!literal);
   if (!literal) return;
   var charts = new Function('return ' + literal[1])();
-  ok('six charts ship', charts.length === 6, charts.map(function (c) { return c.name; }).join(', '));
+  ok('seven charts ship', charts.length === 7, charts.map(function (c) { return c.name; }).join(', '));
 
   function cast(entry, offsetMinutes) {
     var t = entry.time.split(':').map(Number);
@@ -377,9 +377,10 @@ console.log('\nStudy charts that ship with the app');
   var trump = named('Donald Trump'), kareem = named('Kareem Abdul-Jabbar');
   var ava = named('Ava Gardner'), obama = named('Barack Obama');
   var ratzinger = named('Pope Benedict XVI'), nixon = named('Richard Nixon');
+  var blair = named('Tony Blair');
   ok('each chart checked below is still in the list',
-     !!trump && !!kareem && !!ava && !!obama && !!ratzinger && !!nixon);
-  if (!trump || !kareem || !ava || !obama || !ratzinger || !nixon) return;
+     !!trump && !!kareem && !!ava && !!obama && !!ratzinger && !!nixon && !!blair);
+  if (!trump || !kareem || !ava || !obama || !ratzinger || !nixon || !blair) return;
 
   var tc = cast(trump);
   ok('Trump: 6 Leo rises in Magha, as the note says',
@@ -637,6 +638,58 @@ console.log('\nStudy charts that ship with the app');
   ok('Nixon: Mercury dasha runs November 1970 to November 1987',
      nmer && nmer.y === 1970 && nmer.m === 11 && nket && nket.y === 1987 && nket.m === 11,
      (nmer ? nmer.y + '-' + nmer.m : '?') + ' to ' + (nket ? nket.y + '-' + nket.m : '?'));
+
+  var bc = cast(blair);
+  ok('Blair: 11 Taurus rises in Rohini',
+     bc.ascendant.signName === 'Taurus' && Math.floor(bc.ascendant.longitude % 30) === 11 &&
+     bc.ascendant.nakshatra.name === 'Rohini',
+     bc.ascendant.signName + ' ' + (bc.ascendant.longitude % 30).toFixed(2) +
+     ' ' + bc.ascendant.nakshatra.name);
+  var bTropical = (bc.ascendant.longitude + bc.ayanamsa) % 30;
+  ok('Blair: the tropical ascendant agrees with the references to three arcminutes',
+     Astro.SIGNS[Math.floor(((bc.ascendant.longitude + bc.ayanamsa) % 360) / 30)] === 'Gemini' &&
+     Math.abs(bTropical - (4 + 50 / 60)) < 3 / 60,
+     bTropical.toFixed(4) + ' of Gemini, references give ' + (4 + 50 / 60).toFixed(4));
+  /*
+   * May is inside British Summer Time, so this clock is an hour ahead of GMT.
+   * The zone lookup has to know that, and has to know that January is not.
+   */
+  ok('Blair: May 1953 in Britain is summer time, and January is not',
+     Geo.offsetMinutes(blair.zone, 1953, 5, 6, 6, 10) === 60 &&
+     Geo.offsetMinutes(blair.zone, 1953, 1, 6, 6, 10) === 0,
+     Geo.formatOffset(Geo.offsetMinutes(blair.zone, 1953, 5, 6, 6, 10)));
+  /*
+   * Taking the clock as GMT does not merely move the lagna a sign, it drops it
+   * two arcminutes inside the next one. This is the sharpest case in the set for
+   * why the reading of a clock time is a question worth asking.
+   */
+  var asGmt = cast(blair, 0);
+  ok('Blair: read as GMT the lagna lands two arcminutes into Gemini',
+     asGmt.ascendant.signName === 'Gemini' && asGmt.ascendant.longitude % 30 < 3 / 60,
+     asGmt.ascendant.signName + ' ' + ((asGmt.ascendant.longitude % 30) * 60).toFixed(1) +
+     ' arcminutes in');
+  var bp = {};
+  bc.planets.forEach(function (planet) { bp[planet.name] = planet; });
+  ok('Blair: the Sun exalted in Aries and Venus exalted in Pisces',
+     bp.Sun.signName === 'Aries' && bp.Sun.dignity === 'Exalted' &&
+     bp.Venus.signName === 'Pisces' && bp.Venus.dignity === 'Exalted');
+  ok('Blair: Mars with Jupiter in Taurus in the lagna',
+     bp.Mars.signName === 'Taurus' && bp.Jupiter.signName === 'Taurus' &&
+     bp.Mars.house === 1 && bp.Jupiter.house === 1);
+  ok('Blair: Moon with Rahu in Capricorn in the 9th',
+     bp.Moon.signName === 'Capricorn' && bp.Rahu.signName === 'Capricorn' &&
+     bp.Moon.house === 9);
+  ok('Blair: Shravana birth nakshatra leaves under four years of Moon dasha',
+     bc.dashas.birthNakshatra.name === 'Shravana' && bc.dashas.balanceYears < 4,
+     bc.dashas.birthNakshatra.name + ', ' + bc.dashas.balanceYears.toFixed(2) + ' years');
+  /*
+   * Jupiter to February 1998, so the seat in 1983, the leadership in 1994 and
+   * the election of May 1997 all fall in it, with Saturn taking the premiership.
+   */
+  var bjup = dashaStart(bc, 'Jupiter'), bsat = dashaStart(bc, 'Saturn');
+  ok('Blair: Jupiter dasha runs February 1982 to February 1998',
+     bjup && bjup.y === 1982 && bjup.m === 2 && bsat && bsat.y === 1998 && bsat.m === 2,
+     (bjup ? bjup.y + '-' + bjup.m : '?') + ' to ' + (bsat ? bsat.y + '-' + bsat.m : '?'));
 })();
 
 /*
