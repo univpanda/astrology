@@ -6332,8 +6332,29 @@ console.log('\nMahabhagya needs two things the sky does not supply');
     /<select id="mahabhagya-day"/.test(page) &&
     /<option value="phaladeepika" selected>/.test(page) &&
     /<option value="raman">/.test(page));
-  ok('and the page shows the worked chart that settles which Raman meant',
-    /8-15 p\.m\./.test(page) && /Phaladeepika/.test(page));
+  /*
+   * The note used to say Raman drops the day test for men. He does not: his
+   * definition at combination 25 of Three Hundred Important Combinations reads
+   * "In the case of a man, when the birth is during daytime", the same rule
+   * Mantreswara gives. What an earlier reading almost certainly took for the
+   * definition is the summary at the back of the book, which compresses the
+   * rule and drops the condition.
+   *
+   * So the disagreement is not between two authors but inside one: his worked
+   * chart 25 is a man born at 8-35 p.m., night, read as having the yoga fully
+   * present. The note now says that, and the time is his - it was printed here
+   * as 8-15 for a long while.
+   */
+  ok('the note quotes Raman’s definition, which keeps the day test',
+    /when\s+the birth is during daytime the Sun, the Moon and the Lagna should be\s+in odd signs/
+      .test(page.replace(/\s+/g, ' ')) ||
+    /during daytime the Sun, the Moon and the Lagna should be in odd signs/
+      .test(page.replace(/\s+/g, ' ')));
+  ok('and cites his chart 25 at the hour he actually prints',
+    /8-35 p\.m\./.test(page) && !/8-15 p\.m\./.test(page));
+  ok('and still names Phaladeepika as the only classical statement',
+    /only classical statement of it/.test(page.replace(/\s+/g, ' ')) &&
+    /Phaladeepika/.test(page));
 
   /*
    * The sex comes off the form and the day comes off the real sunrise for the
