@@ -294,9 +294,6 @@ console.log('\nWhat a chart slot recomputes when it is rotated');
   ok('and yogasByGraha rotates the chart before detecting',
      /function yogasByGraha\(state, division, reference\)/.test(src) &&
      /rotatedOnto\(division === 1 \? state\.chart/.test(src));
-  ok('rotating moves the ascendant onto the graha and records which one',
-     /turned\.ascendant\.longitude = anchor\.longitude;/.test(src) &&
-     /turned\.reference = reference;/.test(src));
   /*
    * Dignity, friendship and hemming are facts about a graha and its neighbours,
    * not about where the houses are counted from, so they take the division only.
@@ -3219,6 +3216,7 @@ ok('every script the page loads parses', (function () {
     '  __out.wireGrahaCard = wireGrahaCard;\n' +
     '  __out.renderShadbala = renderShadbala; __out.renderYogas = renderYogas;\n' +
     '  __out.renderAspects = renderAspects;\n' +
+    '  __out.rotatedOnto = rotatedOnto;\n' +
     appSrc.slice(close);
 
   var out = {};
@@ -3295,6 +3293,98 @@ ok('every script the page loads parses', (function () {
     return names.length > 0 &&
       !names.some(function (label) { return /^Yuddha/.test(label); });
   })());
+
+  /*
+   * Driven rather than read off the source, which is what the old form of this
+   * did: it matched the one assignment that moved the ascendant, and so went on
+   * passing when the function was doing half a rotation.
+   *
+   * Moving the ascendant is not by itself the rotation. Every graha carries a
+   * house number worked out from the real lagna when the chart was cast, and a
+   * detector is as likely to read that as to count signs - vipareeta raja yoga
+   * asks which house the 6th, 8th or 12th lord is placed in and reads it
+   * straight off the graha. Leaving the numbers alone left the chart holding
+   * two frames at once.
+   */
+  ok('rotating puts the graha in the first house and counts the rest from it',
+     (function () {
+       var c = Astro.chart({ jdUT: Astro.julianDay(1977, 11, 15, 3),
+         latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 });
+       var moon = out.rotatedOnto(c, 'Moon');
+       if (!moon || moon.reference !== 'Moon') return false;
+       var lagna = Astro.signOf(moon.ascendant.longitude);
+       return moon.planets.every(function (p) {
+         return p.house === ((p.sign - lagna) % 12 + 12) % 12 + 1;
+       }) && moon.planets.filter(function (p) {
+         return p.name === 'Moon';
+       })[0].house === 1;
+     })());
+  /*
+   * And it really is a different set of house numbers, or the check above would
+   * pass on a chart that happened to rise in the Moon's own sign.
+   */
+  ok('and those numbers differ from the ones the lagna gave',
+     (function () {
+       var c = Astro.chart({ jdUT: Astro.julianDay(1977, 11, 15, 3),
+         latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 });
+       var moon = out.rotatedOnto(c, 'Moon');
+       return c.planets.some(function (p, i) {
+         return p.house !== moon.planets[i].house;
+       });
+     })());
+  /*
+   * The original is left alone. It is the chart every other panel is reading.
+   */
+  ok('and the chart it was made from is not touched',
+     (function () {
+       var c = Astro.chart({ jdUT: Astro.julianDay(1977, 11, 15, 3),
+         latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 });
+       var before = c.planets.map(function (p) { return p.house; }).join(',');
+       var ascBefore = c.ascendant.longitude;
+       out.rotatedOnto(c, 'Moon');
+       return c.planets.map(function (p) { return p.house; }).join(',') === before &&
+         c.ascendant.longitude === ascBefore;
+     })());
+  /*
+   * Rotating onto the ascendant is not a rotation, and rotating onto a graha
+   * the chart does not carry has to be a no-op rather than a half-built chart.
+   */
+  ok('and a rotation onto nothing hands back the chart it was given',
+     (function () {
+       var c = Astro.chart({ jdUT: Astro.julianDay(1977, 11, 15, 3),
+         latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 });
+       return out.rotatedOnto(c, 'Ascendant') === c &&
+         out.rotatedOnto(c, '') === c && out.rotatedOnto(c, 'Pluto') === c;
+     })());
+  /*
+   * And the point of all of it: the same chart read from somewhere else is a
+   * different reading. Houses move, so the yogas that turn on houses move with
+   * them. Swept rather than sampled, because a single chart that happened to
+   * give the same set would look like proof of the opposite.
+   */
+  ok('reading a chart from the Moon finds a different set of yogas',
+    (function () {
+      var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+      var differed = 0, tried = 0, gained = 0, lost = 0;
+      for (var y = 1950; y < 2000; y += 5) {
+        for (var m = 1; m <= 12; m += 4) {
+          var c = Astro.chart({ jdUT: Astro.julianDay(y, m, 15, 3),
+            latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 });
+          var st = Shadbala.compute(c, place);
+          var titles = function (chart) {
+            return Yogas.detect(chart, st).map(function (f) { return f.title; });
+          };
+          var from = titles(c), moon = titles(out.rotatedOnto(c, 'Moon'));
+          tried++;
+          gained += moon.filter(function (t) { return from.indexOf(t) < 0; }).length;
+          lost += from.filter(function (t) { return moon.indexOf(t) < 0; }).length;
+          if (from.slice().sort().join('|') !== moon.slice().sort().join('|')) differed++;
+        }
+      }
+      // Not every chart: one rising in the Moon's own sign is not rotated at
+      // all, and a few hold only yogas that no house decides.
+      return tried > 20 && differed > tried * 0.8 && gained > 0 && lost > 0;
+    })());
 
   /*
    * The four lords of the birth, above the table rather than in it. Each hands
