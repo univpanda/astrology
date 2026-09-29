@@ -5881,5 +5881,53 @@ console.log('\nThe eight motions, driven rather than read');
     wrong.length === 0, wrong.slice(0, 4).join(', ') || 'all agree');
 })();
 
+
+console.log('\nThe saptavargaja ladder is the one three texts print');
+/*
+ * Two ladders are on record for the lower five steps. Parashara's verses give
+ * 20, 15, 10, 4, 2; Raman's section 30 gives 22.5, 15, 7.5, 3.75, 1.875. This
+ * site has used Raman's all along on the narrow ground that his own worked
+ * table cannot be reconciled with anything else.
+ *
+ * Two further witnesses turned up on reading around. Uttara Kalamrita prints
+ * the whole ladder as a table at slokas 3.5-5 and it is Raman's to the last
+ * decimal. Sripatipaddhati works its example in rupas - three-eighths for a
+ * great friend's varga, a quarter for a friend's, an eighth for a neutral's -
+ * and reaches the same figures, recording Parashara's as a commentator's
+ * reading rather than its own.
+ */
+(function () {
+  var UTTARA_KALAMRITA = { moolatrikona: 45, own: 30, adhimitra: 22.5,
+    mitra: 15, sama: 7.5, shatru: 3.75, adhishatru: 1.875 };
+  var ours = Shadbala.SAPTAVARGAJA_VALUES;
+  ok('every step is the figure Uttara Kalamrita tabulates',
+    Object.keys(UTTARA_KALAMRITA).every(function (k) {
+      return ours[k] === UTTARA_KALAMRITA[k];
+    }) && Object.keys(ours).length === Object.keys(UTTARA_KALAMRITA).length,
+    JSON.stringify(ours));
+
+  /*
+   * And Sripati's rupa fractions are the same ladder in another unit, sixty
+   * shashtiamsas to the rupa. Checked rather than asserted, because that is
+   * the whole of why his example is worth citing.
+   */
+  var SRIPATI_RUPAS = { moolatrikona: 0.75, own: 0.5, adhimitra: 0.375,
+    mitra: 0.25, sama: 0.125 };
+  ok('and matches the fractions Sripatipaddhati works its example in',
+    Object.keys(SRIPATI_RUPAS).every(function (k) {
+      return Math.abs(ours[k] / 60 - SRIPATI_RUPAS[k]) < 1e-9;
+    }));
+
+  /*
+   * Parashara's ladder is the one not taken, and it has to stay distinct from
+   * ours or the choice above would be describing a difference that is not there.
+   */
+  ok('Parashara’s lower five really are a different ladder',
+    [20, 10, 4, 2].every(function (v) {
+      return [ours.adhimitra, ours.sama, ours.shatru, ours.adhishatru]
+        .indexOf(v) < 0;
+    }));
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
