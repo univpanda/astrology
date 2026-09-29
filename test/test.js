@@ -2499,12 +2499,34 @@ console.log('\nShadbala');
      /be\s*\n?\s*\* seen in the Rashi chart only/.test(
        require('fs').readFileSync(require('path').join(__dirname, '../js/shadbala.js'), 'utf8')));
 
-  // Every component reports separately and they add to the total.
+  /*
+   * Every component reports separately and they add to the total - with the
+   * one documented exception, the luminaries' cheshta bala, which is shown but
+   * not summed because the Sun's ayana bala and the Moon's paksha bala are
+   * already inside their kala bala. cheshtaCounted says which rows are in.
+   */
   ok('the components sum to the total', Shadbala.GRAHAS.every(function (g) {
     var x = result.grahas[g];
-    var sum = x.sthana.total + x.dig + x.kala.total + x.cheshta + x.naisargika + x.drik;
+    var sum = x.sthana.total + x.dig + x.kala.total +
+      (x.cheshtaCounted ? x.cheshta : 0) + x.naisargika + x.drik;
     return Math.abs(sum - x.totalShashtiamsa) < 1e-9;
   }));
+  ok('and only the luminaries are ever left out of that sum',
+    Shadbala.GRAHAS.every(function (g) {
+      return result.grahas[g].cheshtaCounted === (g !== 'Sun' && g !== 'Moon');
+    }));
+  ok('while opting in puts them back and nothing else moves',
+    (function () {
+      var on = Shadbala.compute(chart, place, { luminaryCheshta: 'counted' }).grahas;
+      return Shadbala.GRAHAS.every(function (g) {
+        var x = on[g];
+        var sum = x.sthana.total + x.dig + x.kala.total + x.cheshta +
+          x.naisargika + x.drik;
+        return x.cheshtaCounted === true &&
+          Math.abs(sum - x.totalShashtiamsa) < 1e-9 &&
+          x.cheshta === result.grahas[g].cheshta;
+      });
+    })());
   ok('sthana sums from its five parts', Shadbala.GRAHAS.every(function (g) {
     var s = result.grahas[g].sthana;
     return Math.abs((s.uchcha + s.saptavargaja + s.ojhayugma + s.kendradi + s.drekkana) - s.total) < 1e-9;

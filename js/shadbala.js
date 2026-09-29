@@ -348,18 +348,22 @@ var Shadbala = (function () {
   /*
    * Whether the luminaries' cheshta bala is added to the shadbala total.
    *
-   * Parashara gives them one - 27.18 - and lists cheshta among the six at
-   * 27.24-25, which is the reading followed by default. Raman does not add it:
-   * Example 56 leaves both rows of his table empty, and the totals he prints
-   * are the sums without them, Chandra's 389.80 to the hundredth. His reason
-   * is at section 136, that the figure is "necessary to ascertain the Ishta
-   * and Kashta Phalas" - the subject of chapter 28, where Parashara's own
-   * second rule for them appears.
+   * It is not, by default, because adding it counts the same figure twice. The
+   * Sun's ayana bala already sits inside his kala bala, doubled; adding it
+   * again as cheshta puts it in at three times its base where the text's
+   * doubling asks for twice. The same for the Moon's paksha bala. That is
+   * worth about a rupa on each.
    *
-   * It is not a small thing either way. The Sun's ayana bala is already inside
-   * his kala bala, doubled, so counting it again as cheshta puts it in at
-   * three times its base rather than twice; the same for the Moon's paksha.
-   * That is worth about a rupa on each.
+   * Raman does not add it either. Example 56 leaves both rows of his table
+   * empty, and the totals he prints are the sums without them - Chandra's
+   * 389.80 to the hundredth, Budha's and Sukra's likewise. His reason is at
+   * section 136, that the figure is "necessary to ascertain the Ishta and
+   * Kashta Phalas", which is the subject of chapter 28, where Parashara's own
+   * second rule for the two appears.
+   *
+   * The other reading is offered because Parashara does give them a cheshta
+   * bala at 27.18 and does list cheshta among the six at 27.24-25, so someone
+   * reading that chapter alone would sum all six for all seven.
    */
   var LUMINARY_CHESHTA = { COUNTED: 'counted', OMITTED: 'omitted' };
 
@@ -762,8 +766,8 @@ var Shadbala = (function () {
       ? MEAN_SOURCE.MODERN : MEAN_SOURCE.CLASSICAL;
     var moonCheshta = (options && options.moonCheshta) === MOON_CHESHTA.ELONGATION
       ? MOON_CHESHTA.ELONGATION : MOON_CHESHTA.PAKSHA;
-    var luminaryCheshta = (options && options.luminaryCheshta) === LUMINARY_CHESHTA.OMITTED
-      ? LUMINARY_CHESHTA.OMITTED : LUMINARY_CHESHTA.COUNTED;
+    var luminaryCheshta = (options && options.luminaryCheshta) === LUMINARY_CHESHTA.COUNTED
+      ? LUMINARY_CHESHTA.COUNTED : LUMINARY_CHESHTA.OMITTED;
     var mercuryNature = (options && options.mercuryNature) === 'benefic'
       ? 'benefic' : 'qualified';
     var kranti = (options && options.kranti) === KRANTI.TRUE
@@ -936,11 +940,9 @@ var Shadbala = (function () {
       var x = results[graha];
       x.kala.total += x.kala.yuddha;
       /*
-       * Raman's table has no cheshta row for the luminaries, and his printed
-       * totals are the sums without one. Under that reading the figure is
-       * still computed and still shown - chapter 28 wants it - but it is not
-       * added here, where it would count the Sun's ayana bala or the Moon's
-       * paksha bala for a second time.
+       * The figure is still computed and still shown for the luminaries, since
+       * chapter 28 wants it. It is only kept out of this sum, where it would
+       * count the Sun's ayana bala or the Moon's paksha bala a second time.
        */
       var counted = luminaryCheshta === LUMINARY_CHESHTA.COUNTED ||
         (graha !== 'Sun' && graha !== 'Moon');

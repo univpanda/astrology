@@ -7401,5 +7401,40 @@ console.log('\nThe eight motions carry the values the texts pair them with');
     /return crossesSign\(longitude, speed\) \? 'anuvakra' : 'vakra';/.test(src));
 })();
 
+
+console.log('\nA figure the total leaves out says so on the cell');
+/*
+ * The luminaries' cheshta bala is shown and not summed, so anyone adding the
+ * Sun's column will come up a rupa over the printed total. A table that does
+ * not explain that is a table a reader stops trusting, so the cell carries the
+ * reason and wears the soft ink the uncounted parts already use.
+ */
+(function () {
+  var src = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  ok('the uncounted cheshta cells are marked from the engine, not guessed at',
+    /if \(bala\.key === 'cheshta' && !x\.cheshtaCounted\) \{/.test(src) &&
+    /td\.className = 'numeric not-counted';/.test(src));
+  ok('and each says which strength already counts it',
+    /the total below does not include it/.test(src) &&
+    /graha === 'Sun' \? 'his ayana bala' : 'her paksha bala'/.test(src) &&
+    /which kala bala already counts/.test(src));
+  ok('and the mark is visible rather than hover-only',
+    /#shadbala-table td\.not-counted \{ color: var\(--ink-soft\); cursor: help; \}/
+      .test(css));
+
+  /*
+   * The default is the reading that does not double count. Parashara's other
+   * reading stays on offer, second.
+   */
+  var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  var sel = page.slice(page.indexOf('<select id="luminary-cheshta"'));
+  sel = sel.slice(0, sel.indexOf('</select>'));
+  ok('the setting defaults to leaving it out of the total',
+    /<option value="omitted" selected>/.test(sel) &&
+    /<option value="counted">/.test(sel) &&
+    sel.indexOf('value="omitted"') < sel.indexOf('value="counted"'));
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

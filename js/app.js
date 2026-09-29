@@ -2131,7 +2131,20 @@
     BALA_ROWS.forEach(function (bala) {
       row(bala.label, bala.en, bala.max, bala.says, grahas.map(function (graha) {
         var x = result.grahas[graha];
-        return el('td', 'numeric', n(bala.parts ? x[bala.key].total : x[bala.key]));
+        var td = el('td', 'numeric', n(bala.parts ? x[bala.key].total : x[bala.key]));
+        /*
+         * The luminaries' cheshta bala is shown and not summed, so the column
+         * will not add up for them. Say so on the cell rather than leaving a
+         * reader to find the discrepancy and distrust the table.
+         */
+        if (bala.key === 'cheshta' && !x.cheshtaCounted) {
+          td.className = 'numeric not-counted';
+          td.title = graha + '\u2019s cheshta bala is ' + n(x.cheshta) +
+            ', and the total below does not include it: it is ' +
+            (graha === 'Sun' ? 'his ayana bala' : 'her paksha bala') +
+            ', which kala bala already counts. Raman leaves this row blank.';
+        }
+        return td;
       }), bala.parts ? 'bala-head' : null, bala.shows);
       (bala.parts || []).forEach(function (part) {
         if (part.onlyWhenSet && grahas.every(function (graha) {

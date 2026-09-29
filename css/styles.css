@@ -1230,6 +1230,13 @@ td .retro-flag, td.retro-flag, th .retro-flag { color: var(--retro); }
    the parts to --ink-soft, which keeps the ordering and keeps both above 4.5:1
    in either mode, where --ink-faint is 2.8:1 on white. */
 #shadbala-table tr.bala-part td { color: var(--ink-soft); }
+/*
+ * A figure the total below it does not include: the Sun's and Moon's cheshta
+ * bala, which kala bala already counts. Shown in the soft ink the parts use,
+ * with the help cursor the rest of the table gives a cell that explains itself
+ * on hover, so it reads as deliberate rather than as a column that will not add.
+ */
+#shadbala-table td.not-counted { color: var(--ink-soft); cursor: help; }
 #shadbala-table tr.bala-part th[scope="row"] {
   padding-left: 1.1rem;
   color: var(--ink-soft);
