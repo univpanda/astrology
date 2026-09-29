@@ -2467,10 +2467,18 @@ ok('the chart and the table both flag combustion',
  * and a planet in bad Avasthas like Sayana be all ignored to be auspicious."
  * A combust graha has divisions; the divisions do not each have a combustion.
  */
-ok('the default measures in the rashi and carries the mark into every division',
+ok('the default measures inside the division, against the texts and knowingly so',
    /<select id="combustion"/.test(html) &&
-   /<option value="rashi" selected>/.test(html) &&
+   /<option value="division" selected>/.test(html) &&
    /combustion: document\.getElementById\('combustion'\)\.value/.test(appSrc));
+/*
+ * A default chosen against the sources has to say so where the choice is made,
+ * or the page is quietly asserting that the texts back it.
+ */
+ok('and the note says plainly that the texts ask for the other reading',
+   /That is a choice against the texts/.test(html) &&
+   /divisions of a combust planet/.test(html) &&
+   /the reading the texts ask for/.test(html));
 ok('and the column head on the two strength grids stays a rashi fact either way',
    /Astro\.isCombust\(planet\.name, planet\.longitude, sun\.longitude,/.test(appSrc));
 /*

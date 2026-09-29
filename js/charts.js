@@ -62,9 +62,10 @@ var Charts = (function () {
    * [V] means this division has landed the graha back in the sign it holds in the
    * rashi, so it belongs to the division on screen and never appears on D1, where
    * every graha would qualify. [Y] is yogakaraka, lordship counted from house 1,
-   * so it follows the rotation. [C] is combustion, measured in the rashi and
-   * carried into every division by default, since Parashara speaks of "the
-   * divisions of a combust planet" rather than of a combustion per division.
+   * so it follows the rotation. [C] is combustion, measured by default inside
+   * whichever division is drawn, so that every mark on a chart is a fact about
+   * that chart; the setting offers the rashi distance carried in, which is what
+   * the texts ask for.
    */
   function planetText(p) {
     var flags = (p.retrograde ? '[R]' : '') + (p.vargottama ? '[V]' : '') +
@@ -233,21 +234,25 @@ var Charts = (function () {
      * Where the distance from the Sun is measured. Both longitudes come from
      * the same frame or the figure means nothing, so this returns a pair.
      *
-     * Parashara's own phrase settles the default. Chapter 6, on the vargas:
-     * "The divisions of a combust planet, defeated planet, weak planet and a
-     * planet in bad Avasthas like Sayana be all ignored to be auspicious, for
-     * these destroy the good yogas." A combust graha has divisions; the
-     * divisions do not each have a combustion. So the rashi distance is
-     * measured and the mark carried in, and the arithmetic agrees: a varga
+     * The default is to measure inside whichever division is drawn, so that
+     * every mark on a chart is a fact about that chart. A graha marked burnt
+     * beside a Sun twelve signs away reads as a fault in the page, and the
+     * rashi answer is one setting away for anyone who wants it.
+     *
+     * It is a choice against the texts rather than out of them, and the note on
+     * the setting says so rather than leaving it to be discovered. Parashara,
+     * ch.6: "The divisions of a combust planet ... be all ignored to be
+     * auspicious" - a combust graha has divisions, where the divisions do not
+     * each have a combustion. The arithmetic pulls the same way: a varga
      * longitude is a rashi position stretched nine or ten times and wrapped, so
      * two of them land near each other about as often as two unrelated numbers
-     * would. Measured over 720 charts, every graha comes out combust in 5 to 9
-     * per cent of divisions whatever its orb or its orbit, and Mercury - which
-     * is really within 14 degrees of the Sun in 42 per cent of charts, never
-     * straying further than about 28 - drops to 5.
+     * would. Over 720 charts every graha comes out combust in 5 to 9 per cent
+     * of divisions whatever its orb or its orbit, and Mercury - really within
+     * 14 degrees of the Sun in 42 per cent of charts, never straying much past
+     * 28 - drops to 5.
      */
     var burnAt = function (longitude) {
-      return combustion === 'division' && division && division !== 1
+      return combustion !== 'rashi' && division && division !== 1
         ? Astro.vargaPosition(longitude, division).longitude
         : longitude;
     };
@@ -299,7 +304,7 @@ var Charts = (function () {
         combust: !!sun && Astro.isCombust(p.name, burnAt(p.longitude), sunBurn,
           p.retrograde),
         combustGap: sun ? gapFrom(p.longitude) : null,
-        combustIn: combustion === 'division' && division && division !== 1
+        combustIn: combustion !== 'rashi' && division && division !== 1
           ? 'D' + division : 'the rashi'
       });
     });
