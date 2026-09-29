@@ -252,75 +252,6 @@
       </figure>
     </div>
 
-    <details class="flag-legend">
-      <summary>What the marks mean</summary>
-      <p class="flag-note">Hovering a graha in either chart names every mark it
-        carries in words, with the reason underneath. The letters here are the
-        short form, and each one says below where it is drawn.</p>
-      <dl class="flag-key">
-      <div>
-        <dt><span class="flag flag-r">[R]</span> Retrograde</dt>
-        <dd>Moving backwards against the signs. True of the graha whichever chart is read,
-          so in the table it sits on the name, and it follows the graha into every
-          division.</dd>
-      </div>
-      <div>
-        <dt><span class="flag flag-v">[V]</span> Vargottama</dt>
-        <dd>The division has landed the graha back in the sign it holds in the rashi. True of
-          that division alone, so it sits on the sign the table gives, and never on D1, where
-          every graha would qualify. In D9 it is vargottama proper.</dd>
-      </div>
-      <div>
-        <dt><span class="flag flag-s">[S]</span> Shubha kartari</dt>
-        <dd>A benefic in the sign on either side of the graha, the 2nd and the 12th counted
-          from it. Nothing to do with house 1, so it reads the same however the chart is
-          rotated, but everything to do with the division, which rearranges who its
-          neighbours are. Drawn on the Vimsopaka Bala grid, and named on the graha's card,
-          which has room to say which grahas are doing the hemming. The yoga proper hems the
-          lagna rather than a graha, and the Yogas tab reports that one.</dd>
-      </div>
-      <div>
-        <dt><span class="flag flag-p">[P]</span> Papa kartari</dt>
-        <dd>The same scissors with the other blades: a malefic either side, the nodes
-          counted among them, and drawn in the same two places as [S] - the Vimsopaka Bala
-          grid, and the graha's card. Commoner than [S], there being more malefics to go
-          round, and it takes the page's red because it is the one mark here that reports
-          harm.</dd>
-      </div>
-      <div>
-        <dt><span class="flag flag-y">[Y]</span> Yogakaraka</dt>
-        <dd>A graha owning both an angle and a trine counted from house 1. Counted from that
-          chart's own house 1, so it follows the chart when it is rotated onto another graha.
-          Drawn beside the graha in the chart itself.</dd>
-      </div>
-      <div>
-        <dt><span class="flag flag-x">[X]</span> Exchange of signs</dt>
-        <dd>The graha and the lord of the sign it stands in occupy each other's signs, which
-          is parivartana yoga. About a pair, and about one division, so in the Vimsopaka Bala
-          grid it sits on the sign that division gives.</dd>
-      </div>
-      <div>
-        <dt><span class="flag flag-d">[D]</span> Directional strength</dt>
-        <dd>The graha stands in the house it is strongest in by direction: Jupiter and
-          Mercury in the 1st, the Sun and Mars in the 10th, Saturn in the 7th, the Moon and
-          Venus in the 4th. A house, so it moves with the rotation as [Y] does. Shares the
-          green with [S], both being the graha's surroundings helping it. Drawn on the
-          Vimsopaka Bala grid; Shadbala scores the same thing as an arc, out of sixty, in
-          its Dig column.</dd>
-      </div>
-      <div>
-        <dt><span class="flag flag-c">[C]</span> Combust</dt>
-        <dd>Burnt by being too near the Sun, within the orb Parashara gives for that graha. A
-          real distance, so like [R] it sits on the name.</dd>
-      </div>
-      <div>
-        <dt><span class="flag flag-n">[N]</span> Neecha bhanga raja yoga</dt>
-        <dd>On a dignity, not on a graha or a chart: the debilitation it sits beside is
-          cancelled and the graha stands in an angle or a trine. Drawn on the Vimsopaka Bala
-          grid, beside the dignity it overturns.</dd>
-        </div>
-      </dl>
-    </details>
     <div class="card">
       <div class="tabs subtabs" role="tablist" aria-label="Graha tables">
         <button type="button" class="tab" role="tab" id="tab-grahas"
@@ -383,7 +314,28 @@
                     aria-pressed="false">Charts</button>
           </div>
         </div>
-        <div id="vargas-charts" hidden></div>
+        <!--
+          The key sits with the grid it explains. It used to be a nine-entry block
+          under the charts, covering marks drawn in three places; the graha card
+          names every mark a chart carries in words now, with the reason beneath,
+          so all that was left for a key was the grid - which draws its marks as
+          bare letters on purpose and has no hover to fall back on.
+        -->
+        <p class="varga-key">
+          <span class="flag flag-v">[V]</span> vargottama: the division has landed the
+          graha back in the sign it holds in the rashi. Never on D1, where every graha
+          would qualify. In D9 it is vargottama proper.
+          <span class="flag flag-x">[X]</span> the graha and the lord of the sign it
+          stands in occupy each other's signs, which is parivartana yoga.
+          <span class="flag flag-s">[S]</span> hemmed by benefics either side,
+          <span class="flag flag-p">[P]</span> hemmed by malefics.
+          <span class="flag flag-d">[D]</span> directional strength, the house this
+          graha is strongest in.
+          <span class="flag flag-n">[N]</span> the debilitation beside it is cancelled
+          and the graha stands in an angle or a trine.
+          Hovering a graha in either chart above names every mark it carries in words,
+          with the reason beneath.
+        </p>        <div id="vargas-charts" hidden></div>
         <div class="table-scroll" id="vargas-table-scroll">
           <table id="vargas-table">
             <thead><tr></tr></thead>

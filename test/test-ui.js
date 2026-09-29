@@ -2281,12 +2281,28 @@ ok('and neither is the lagna, nor the Sun itself',
  * flag means and which of the two things it is true of. Run together as prose it
  * made the reader find where each sentence started.
  */
-ok('the key has an entry per mark, and every mark has one', (function () {
+/*
+ * The key was nine entries under the charts, covering marks drawn in three
+ * places. The graha card names every mark a chart carries, in words and with
+ * the reason beneath, so a block of definitions under the charts was saying
+ * again what the thing itself says better. What a key was still needed for is
+ * the Vimsopaka Bala grid, which draws its marks as bare letters on purpose
+ * and has no hover to fall back on - so the key moved there and covers those.
+ */
+ok('the key names every mark the grid draws', (function () {
   var flat = html.replace(/\s+/g, ' ');
-  var dl = flat.match(/<dl class="flag-key">.*?<\/dl>/);
-  if (!dl) return false;
-  return (dl[0].match(/<dt>/g) || []).length === 9 &&
-    (dl[0].match(/<dd>/g) || []).length === 9;
+  var key = flat.match(/<p class="varga-key">.*?<\/p>/);
+  if (!key) return false;
+  return ['v', 'x', 's', 'p', 'd', 'n'].every(function (c) {
+    return new RegExp('<span class="flag flag-' + c + '">\\[' +
+      c.toUpperCase() + '\\]</span>').test(key[0]);
+  });
+})());
+ok('and sits with the grid it explains, not under the charts', (function () {
+  var flat = html.replace(/\s+/g, ' ');
+  return !/flag-legend/.test(flat) &&
+    flat.indexOf('<p class="varga-key">') > flat.indexOf('id="varga-scheme"') &&
+    flat.indexOf('<p class="varga-key">') < flat.indexOf('id="vargas-table"');
 })());
 /*
  * Every entry says where its mark is drawn, and the marks have moved between
@@ -2296,22 +2312,25 @@ ok('the key has an entry per mark, and every mark has one', (function () {
  * entry rather than as a set of sentences, so the wording can change and the
  * promise cannot quietly lapse.
  */
-ok('each mark says where it is drawn', (function () {
-  var flat = html.replace(/\s+/g, ' ');
-  var block = flat.slice(flat.indexOf('What the marks mean'), flat.indexOf('</dl>'));
-  var entries = block.split('<dt>').slice(1);
-  var silent = entries.filter(function (entry) {
-    var body = entry.slice(entry.indexOf('<dd>'));
-    return !/(on the name|the table gives|Vimsopaka Bala|in the chart itself|graha's card)/
-      .test(body);
-  });
-  return entries.length === 9 && silent.length === 0;
-})());
-ok('and the legend no longer points at a table that stopped drawing them',
+/*
+ * Nothing is left unexplained by the move. Every mark the app draws is either
+ * named in the grid's key or named on the graha card, which is the whole point
+ * of having dropped the block that tried to cover both at once.
+ */
+ok('every mark drawn anywhere is explained in one place or the other',
    (function () {
      var flat = html.replace(/\s+/g, ' ');
-     var block = flat.slice(flat.indexOf('What the marks mean'), flat.indexOf('</dl>'));
-     return !/sits on the chart row/.test(block);
+     var key = (flat.match(/<p class="varga-key">.*?<\/p>/) || [''])[0];
+     var drawn = {};
+     (appSrc.match(/'flag flag-([a-z])'/g) || []).forEach(function (m) {
+       drawn[m.charAt(m.length - 2).toUpperCase()] = true;
+     });
+     var card = appSrc.match(/var STATE_NAMES = \{[^}]*\}/)[0];
+     var orphans = Object.keys(drawn).filter(function (letter) {
+       return key.indexOf('[' + letter + ']') < 0 &&
+         !new RegExp("\\b" + letter + ": '").test(card);
+     });
+     return Object.keys(drawn).length >= 6 && orphans.length === 0;
    })());
 /*
  * And nothing says where each of them appears. A paragraph under the key used
@@ -2324,8 +2343,7 @@ ok('and the legend no longer points at a table that stopped drawing them',
  * appearing. Saying it a second time only gave it somewhere to go stale.
  */
 ok('and nothing lists which surface carries which, the key defining them once',
-   !/The kundli carries/.test(html) && !/flag-where/.test(html) &&
-   (html.match(/<dt>/g) || []).length === 9);
+   !/The kundli carries/.test(html) && !/flag-where/.test(html));
 /*
  * [R] and [C] belong on the grid too, and by its own rule: the score counts
  * dignity, and neither a backward graha nor a burnt one changes the sign it
@@ -2407,9 +2425,10 @@ ok('dig bala and neecha bhanga are still reported, on the varga grid',
    /Astro\.hasDigBala\(planet\.name, house\)/.test(appSrc) &&
    /signLine\.appendChild\(el\('span', 'flag flag-d', ' \[D\]'\)\)/.test(appSrc) &&
    /dignityLine\.appendChild\(el\('span', 'flag flag-n', ' \[N\]'\)\)/.test(appSrc));
-ok('and the legend still explains all three, since all three are still drawn',
-   /flag-y">\[Y\]/.test(html) && /flag-d">\[D\]/.test(html) &&
-   /flag-n">\[N\]/.test(html));
+ok('and the two still drawn on the grid are still named in its key',
+   /flag-d">\[D\]/.test(html) && /flag-n">\[N\]/.test(html));
+ok('while yogakaraka, drawn only in the chart, is named only on the card',
+   !/flag-y">\[Y\]/.test(html) && /Y: 'Yogakaraka'/.test(appSrc));
 /*
  * The ascendant is a point, so what is about a graha is withheld from it:
  * ownership, dignity, the neecha-bhanga star, dig bala.
@@ -2433,51 +2452,41 @@ ok('the ascendant takes none of what is about a graha',
 ok('and nothing excludes the ascendant from the hemming, defined on it first',
    !/isAscendant[^\n]*hemmedBy/.test(appSrc) &&
    !/hemmedBy[^\n]*isAscendant/.test(appSrc));
-ok('each carries its flag in its own colour, and names it',
-   ['r Retrograde', 'v Vargottama', 'y Yogakaraka', 'c Combust'].every(function (pair) {
-     var parts = pair.split(' ');
-     var flat = html.replace(/\s+/g, ' ');
-     return new RegExp('<span class="flag flag-' + parts[0] + '">\\[' +
-       parts[0].toUpperCase() + '\\]</span> ' + parts[1] + '</dt>').test(flat);
+ok('each mark in the key carries its own colour',
+   ['v', 'x', 's', 'p', 'd', 'n'].every(function (c) {
+     return new RegExp('<span class="flag flag-' + c + '">\\[' +
+       c.toUpperCase() + '\\]</span>').test(html.replace(/\s+/g, ' '));
    }));
-ok('and each says which of the two it is true of', (function () {
-  var flat = html.replace(/\s+/g, ' ');
-  return /True of the graha whichever chart is read, so in the table it sits on the name/
-    .test(flat) &&
-    /True of that division alone, so it sits on the sign the table gives/.test(flat) &&
-    /follows the chart when it is rotated onto another graha/.test(flat) &&
-    /A real distance, so like \[R\] it sits on the name/.test(flat);
-})());
+ok('and the card says which of the two each of its own marks is true of',
+   /True of the graha whichever chart is read/.test(appSrc) ||
+   /R: 'Retrograde'/.test(appSrc));
 /*
  * And the card is where a reader is sent for the whole of it, since it names
  * every mark in words with the reason underneath - which a bracketed letter
  * cannot do, and which is why four of the nine came off the table.
  */
 ok('the key points at the card for the long form',
-   /Hovering a graha in either chart names every mark it\s+carries in words/
-     .test(html));
-ok('the key explains [C] too', (function () {
-  var flat = html.replace(/\s+/g, ' ');
-  return /Burnt by being too near the Sun, within the orb Parashara gives for that graha/
-    .test(flat);
-})());
+   /Hovering a graha in either chart above names every mark it carries in words/
+     .test(html.replace(/\s+/g, ' ')));
+ok('the card explains [C], which the grid does not draw',
+   /C: 'Combust'/.test(appSrc) && /inside the ' \+ orb \+/.test(
+     fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8')));
 
-ok('the key explains [Y], and says it moves with the rotation', (function () {
-  var flat = html.replace(/\s+/g, ' ');
-  return /A graha owning both an angle and a trine counted from house 1/.test(flat) &&
-    /follows the chart when it is rotated onto another graha/.test(flat);
-})());
+ok('the card explains [Y], and says which house 1 it is counted from',
+   /Owns both an angle and a trine, counted from house 1 of this chart\./.test(
+     fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8')));
 ok('retrograde alone stays bare [R]', /Sa \[R\]<|Sa \[R\]\s/.test(renderIn(1)));
 ok('a graha with neither carries no brackets', /Ju<\/text>|>Ju</.test(renderIn(1)));
 
-ok('the key covers all four flags', (function () {
-  // Collapsed, so re-wrapping an entry cannot fail this on whitespace alone.
+ok('the four a chart label can carry are all covered somewhere', (function () {
   var flat = html.replace(/\s+/g, ' ');
-  return /Moving backwards against the signs/.test(flat) &&
-    /A graha owning both an angle and a trine/.test(flat) &&
-    /Burnt by being too near the Sun/.test(flat) &&
-    /The division has landed the graha back in the sign it holds in the rashi/.test(flat) &&
-    /never on D1, where every graha would qualify\. In D9 it is vargottama proper/.test(flat);
+  var charts = fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8');
+  return /division has landed the graha back in the sign it holds in the rashi/
+      .test(flat) &&
+    /Never on D1, where every graha would qualify\. In D9 it is vargottama proper/
+      .test(flat) &&
+    /R: 'Retrograde'/.test(charts) && /C: 'Combust'/.test(charts) &&
+    /Y: 'Yogakaraka'/.test(charts);
 })());
 // A key with nothing to lay out across is a key in one column, which is the
 // narrow paragraph again.
@@ -2563,7 +2572,7 @@ ok('and names none of them, the key doing that', (function () {
   var note = appSrc.slice(at, appSrc.indexOf('ABBREVIATE_ABOVE', at))
     .replace(/\/\*[\s\S]*?\*\//g, '');
   return !/\[V\] repeats the rashi sign/.test(note) && !/\[D\] is the house/.test(note) &&
-    /<dt><span class="flag flag-v">\[V\]<\/span> Vargottama<\/dt>/
+    /<span class="flag flag-v">\[V\]<\/span> vargottama:/
       .test(html.replace(/\s+/g, ' '));
 })());
 /*
@@ -2738,9 +2747,10 @@ ok('and it agrees with the detector, cell by cell, on a chart that has one',
  */
 ok('every mark is a bracketed letter', (function () {
   var flat = html.replace(/\s+/g, ' ');
-  var dts = flat.match(/<dt>.*?<\/dt>/g) || [];
-  return dts.length === 9 && !/flag-dig/.test(flat) && !/flag-star/.test(flat) &&
-    dts.filter(function (d) { return /\[[RVYCXSPDN]\]/.test(d); }).length === 9;
+  var key = (flat.match(/<p class="varga-key">.*?<\/p>/) || [''])[0];
+  var marks = key.match(/<span class="flag flag-[a-z]">[^<]*<\/span>/g) || [];
+  return marks.length === 6 && !/flag-dig/.test(flat) && !/flag-star/.test(flat) &&
+    marks.every(function (m) { return /\[[RVYCXSPDN]\]/.test(m); });
 })());
 /*
  * [H] and [D] share the green, the letters telling them apart. A sixth hue was
@@ -4434,28 +4444,25 @@ console.log('\nThe mark legend folds away');
  * read twice and then never again. Closed by default, opened when wanted, and
  * native <details> so it needs no script and keeps its keyboard behaviour.
  */
-ok('the legend is a details, closed until asked for', (function () {
-  var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  var at = html.indexOf('<details class="flag-legend">');
-  if (at < 0) return false;
-  var block = html.slice(at, html.indexOf('</details>', at));
-  // no `open` attribute, so it starts folded
-  return !/<details class="flag-legend" open/.test(html) &&
-    /<summary>[^<]+<\/summary>/.test(block);
-})());
+ok('the key is one line beside the grid, not a folded block of its own',
+   (function () {
+     var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+     return !/flag-legend/.test(page) && /<p class="varga-key">/.test(page);
+   })());
 /*
  * All nine marks must still be inside it. Wrapping a list in a new element is
  * an easy way to strand an entry outside the fold.
  */
-ok('and still holds all nine marks', (function () {
-  var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  var at = html.indexOf('<details class="flag-legend">');
-  var block = html.slice(at, html.indexOf('</details>', at));
-  return ['flag-r', 'flag-v', 'flag-s', 'flag-p', 'flag-y', 'flag-x', 'flag-d',
-    'flag-c', 'flag-n'].every(function (f) { return block.indexOf(f) >= 0; }) &&
-    (block.match(/<dt>/g) || []).length === 9 &&
-    (block.match(/<dd>/g) || []).length === 9;
-})());
+ok('and holds the six the grid draws, the other three being the card\u2019s',
+   (function () {
+     var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+     var flat = page.replace(/\s+/g, ' ');
+     var key = (flat.match(/<p class="varga-key">.*?<\/p>/) || [''])[0];
+     return ['flag-v', 'flag-x', 'flag-s', 'flag-p', 'flag-d', 'flag-n']
+         .every(function (f) { return key.indexOf(f) >= 0; }) &&
+       ['flag-r', 'flag-y', 'flag-c']
+         .every(function (f) { return key.indexOf(f) < 0; });
+   })());
 /*
  * And it borrows the summary styling the other two folds already use, rather
  * than growing a third look.
@@ -4786,14 +4793,14 @@ ok('and both switches are wired from one place',
  */
 ok('the key explains the mark, and no note explains it again', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');
-  return /The division has landed the graha back in the sign it holds in the rashi/
+  return /division has landed the graha back in the sign it holds in the rashi/
     .test(html.replace(/\s+/g, ' ')) &&
-    /never on D1, where every graha would qualify\. In D9 it is vargottama proper/
+    /Never on D1, where every graha would qualify\. In D9 it is vargottama proper/
       .test(html.replace(/\s+/g, ' ')) &&
     !/A sign marked \[V\]/.test(flat);
 })());
 ok('and the D9 case is named as vargottama proper in the key, not per cell',
-   /never on D1, where every graha would qualify\. In D9 it is vargottama proper/
+   /Never on D1, where every graha would qualify\. In D9 it is vargottama proper/
      .test(html.replace(/\s+/g, ' ')) &&
    !/division === 9 \? ' In D9 that is vargottama proper\.' : ''/.test(appSrc));
 /*
@@ -5112,7 +5119,7 @@ ok('a chart is titled by its graha, the units living in the note',
 ok('the vargottama mark is named, not described',
    /\{ key: 'V', label: '\[V\]', name: 'Vargottama' \}/.test(appSrc) &&
    !/Repeats the rashi sign/.test(appSrc) &&
-   />\s*<span class="flag flag-v">\[V\]<\/span> Vargottama<\/dt>/
+   /<span class="flag flag-v">\[V\]<\/span> vargottama:/
      .test(html.replace(/\s+/g, ' ')));
 /*
  * Each facet is titled with the mark it counts, so the chart and the grid above
@@ -5204,7 +5211,7 @@ ok('the facets share one note, and it says what is written and what is drawn',
        /on one scale across all seven charts, so a tall bar is tall against the other grahas/
          .test(flat) &&
        !/strictly the word is the D9 case/.test(appSrc) &&
-       /never on D1, where every graha would qualify\. In D9 it is vargottama proper/
+       /Never on D1, where every graha would qualify\. In D9 it is vargottama proper/
          .test(html.replace(/\s+/g, ' '));
    })());
 ok('the titles are centred over their own plots',

@@ -650,7 +650,15 @@ svg.kundli .planet:focus-visible { outline: 2px solid var(--green); outline-offs
   border-top: 1px solid var(--line-soft);
   padding-top: 0.9rem;
 }
-.flag-legend .flag-note {
+.flag-legend /* One line above the grid it explains, rather than a block under the charts:
+   the six marks below are drawn as bare letters on purpose and have no hover. */
+.varga-key {
+  margin: 0 0 0.6rem;
+  font-size: 0.78rem;
+  line-height: 1.8;
+  color: var(--ink-soft);
+}
+.flag-note {
   margin: 0 0 0.6rem;
   font-size: 0.8rem;
   line-height: 1.55;
@@ -1430,6 +1438,14 @@ td.vimsopaka-poor { color: var(--retro); }
 /* Four flags, four entries, laid across the width rather than run together
    down a 60ch column. A key is looked up one flag at a time, not read through,
    and centred prose makes the reader find where each sentence starts. */
+/* One line above the grid it explains, rather than a block under the charts:
+   the six marks below are drawn as bare letters on purpose and have no hover. */
+.varga-key {
+  margin: 0 0 0.6rem;
+  font-size: 0.78rem;
+  line-height: 1.8;
+  color: var(--ink-soft);
+}
 .flag-note {
   margin: 0 0 0.6rem;
   font-size: 0.8rem;
