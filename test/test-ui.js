@@ -2289,25 +2289,30 @@ ok('the key has an entry per mark, and every mark has one', (function () {
     (dl[0].match(/<dd>/g) || []).length === 9;
 })());
 /*
- * Seven marks on three surfaces, and each entry says which surface it is on.
- * [R] and [C] are true of the graha wherever it is read, so they ride its name;
- * [V] and [H] turn on the division alone and [Y] and + on the division and the
- * reference, so all four ride the chart row; * qualifies a dignity, so it rides
- * the dignity wherever one is printed.
+ * Every entry says where its mark is drawn, and the marks have moved between
+ * surfaces more than once: [N], [D], [Y] and then [S] and [P] all came off the
+ * graha table, and a legend still pointing at the table would send a reader
+ * looking for a letter that is not there. Asserted as a property of every
+ * entry rather than as a set of sentences, so the wording can change and the
+ * promise cannot quietly lapse.
  */
-ok('each mark says which of the three surfaces it sits on', (function () {
+ok('each mark says where it is drawn', (function () {
   var flat = html.replace(/\s+/g, ' ');
-  return /True of the graha whichever chart is read, so in the table it sits on the name/
-    .test(flat) &&
-    /A real distance, so like \[R\] it sits on the name/.test(flat) &&
-    /True of that division alone, so it sits on the chart row/.test(flat) &&
-    /Nothing to do with house 1, so it reads the same however the chart is rotated/
-      .test(flat) &&
-    /so it sits on the chart row and follows the chart when it is rotated onto another graha/
-      .test(flat) &&
-    /A house, so it moves with the rotation as \[Y\] does/.test(flat) &&
-    /On a dignity, not on a graha or a chart/.test(flat);
+  var block = flat.slice(flat.indexOf('What the marks mean'), flat.indexOf('</dl>'));
+  var entries = block.split('<dt>').slice(1);
+  var silent = entries.filter(function (entry) {
+    var body = entry.slice(entry.indexOf('<dd>'));
+    return !/(on the name|the table gives|Vimsopaka Bala|in the chart itself|graha's card)/
+      .test(body);
+  });
+  return entries.length === 9 && silent.length === 0;
 })());
+ok('and the legend no longer points at a table that stopped drawing them',
+   (function () {
+     var flat = html.replace(/\s+/g, ' ');
+     var block = flat.slice(flat.indexOf('What the marks mean'), flat.indexOf('</dl>'));
+     return !/sits on the chart row/.test(block);
+   })());
 /*
  * And nothing says where each of them appears. A paragraph under the key used
  * to, naming the kundli and the Vimsopaka grid and what each carried, and it
@@ -2439,11 +2444,18 @@ ok('and each says which of the two it is true of', (function () {
   var flat = html.replace(/\s+/g, ' ');
   return /True of the graha whichever chart is read, so in the table it sits on the name/
     .test(flat) &&
-    /True of that division alone, so it sits on the chart row/.test(flat) &&
-    /so it sits on the chart row and follows the chart when it is rotated onto another graha/
-      .test(flat) &&
+    /True of that division alone, so it sits on the sign the table gives/.test(flat) &&
+    /follows the chart when it is rotated onto another graha/.test(flat) &&
     /A real distance, so like \[R\] it sits on the name/.test(flat);
 })());
+/*
+ * And the card is where a reader is sent for the whole of it, since it names
+ * every mark in words with the reason underneath - which a bracketed letter
+ * cannot do, and which is why four of the nine came off the table.
+ */
+ok('the key points at the card for the long form',
+   /Hovering a graha in either chart names every mark it\s+carries in words/
+     .test(html));
 ok('the key explains [C] too', (function () {
   var flat = html.replace(/\s+/g, ' ');
   return /Burnt by being too near the Sun, within the orb Parashara gives for that graha/

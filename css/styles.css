@@ -650,7 +650,13 @@ svg.kundli .planet:focus-visible { outline: 2px solid var(--green); outline-offs
   border-top: 1px solid var(--line-soft);
   padding-top: 0.9rem;
 }
-.flag-legend .flag-key { margin-top: 0.9rem; }
+.flag-legend .flag-note {
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+.flag-key { margin-top: 0.9rem; }
 .options-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
@@ -1424,6 +1430,12 @@ td.vimsopaka-poor { color: var(--retro); }
 /* Four flags, four entries, laid across the width rather than run together
    down a 60ch column. A key is looked up one flag at a time, not read through,
    and centred prose makes the reader find where each sentence starts. */
+.flag-note {
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
 .flag-key {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
