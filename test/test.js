@@ -3244,7 +3244,7 @@ ok('ordinals read correctly', Yogas.ordinal(1) === '1st' && Yogas.ordinal(2) ===
                    Yogas.vanchanachorabheethi, Yogas.kahala, Yogas.pushkala,
                    Yogas.gauri, Yogas.bharathi, Yogas.kusuma, Yogas.chapa,
                    Yogas.sreenatha, Yogas.sankha, Yogas.bheri, Yogas.matsya,
-                   Yogas.mridanga];
+                   Yogas.mridanga, Yogas.saraswati, Yogas.mahaRaja];
   ok('every detector is covered by this test', detectors.length === Yogas.DETECTOR_COUNT,
      detectors.length + ' named, ' + Yogas.DETECTOR_COUNT + ' in the module');
 
@@ -5152,10 +5152,15 @@ console.log('\nEverything Raman numbers up to 50');
   /*
    * And the count: everything the book numbers up to 50 that can be verified
    * from the scans, which is all but 49 and 50 themselves.
+   *
+   * Detectors from other books are named and subtracted rather than letting
+   * this figure drift upwards with every addition, which would quietly stop it
+   * saying anything about Raman's fifty at all.
    */
-  var detectors = Yogas.DETECTOR_COUNT;
+  var NOT_RAMANS = [Yogas.saraswati, Yogas.mahaRaja];
+  var detectors = Yogas.DETECTOR_COUNT - NOT_RAMANS.length;
   ok('the module carries a detector for each of them', detectors === 34,
-    detectors + ' detectors');
+    detectors + ' from the book, ' + Yogas.DETECTOR_COUNT + ' in all');
 })();
 
 
@@ -6857,6 +6862,148 @@ console.log('\nDrik bala on all three of the textbook’s worked charts');
   ok('and the signs follow the split, positive only where benefics outweigh',
     CASES[2].want.Moon > 0 && CASES[2].want.Saturn > 0 &&
     GRAHAS.every(function (g) { return CASES[0].want[g] < 0; }));
+})();
+
+
+console.log('\nSaraswati, Maha Raja, and the Sun’s company named by its form');
+(function () {
+  var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+  var at = function (y, m, h) {
+    return A.chart({ jdUT: A.julianDay(y, m, 15, h === undefined ? 3 : h),
+      latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 });
+  };
+
+  /*
+   * Saraswati, Phaladeepika ch.6 sloka 26: "If Venus, Jupiter and Mercury
+   * occupy a Kendra, a Trikona or the second house, and Jupiter be also in his
+   * exaltation, his own or a friendly house and possess strength, the resulting
+   * Yoga is termed Saraswati."
+   *
+   * Built rather than hunted, so all four clauses can be turned off one at a
+   * time. Jupiter exalted in Cancer in the 4th, Venus in the 2nd, Mercury in
+   * the 10th, and a strength reading that says Jupiter is strong.
+   */
+  var strongJupiter = { Jupiter: { strong: true } };
+  var base = function () {
+    return { ascendant: { longitude: 10 },                 // Aries rising
+      planets: [
+        { name: 'Venus', sign: 1, longitude: 1 * 30 + 5, house: 2 },
+        { name: 'Jupiter', sign: 3, longitude: 3 * 30 + 5, house: 4 },
+        { name: 'Mercury', sign: 9, longitude: 9 * 30 + 5, house: 10 }
+      ] };
+  };
+  ok('Saraswati forms on the three grahas, Jupiter exalted and strong',
+    Yogas.saraswati(base(), strongJupiter).length === 1);
+  ok('and not without a strength reading to test the last clause against',
+    Yogas.saraswati(base(), null).length === 0);
+  ok('and not when Jupiter is not strong',
+    Yogas.saraswati(base(), { Jupiter: { strong: false } }).length === 0);
+
+  var moved = base();
+  moved.planets[0].sign = 2;                               // Venus to the 3rd
+  moved.planets[0].longitude = 2 * 30 + 5;
+  moved.planets[0].house = 3;
+  ok('and not when one of the three falls outside the seven houses allowed',
+    Yogas.saraswati(moved, strongJupiter).length === 0);
+
+  /*
+   * The seat clause is three steps of one ladder rather than the dignity
+   * column's two, so the friendly case has to work and the fall has to fail.
+   * Jupiter in Leo is in the sign of the Sun, a natural friend; in Capricorn he
+   * is debilitated, and Saturn being no friend of his that is a fall twice over.
+   */
+  var friendly = base();
+  friendly.planets[1].sign = 4;                            // Leo, the Sun's
+  friendly.planets[1].longitude = 4 * 30 + 5;
+  friendly.planets[1].house = 5;
+  ok('a friendly sign satisfies the seat clause, the dignity column being blank',
+    Yogas.saraswati(friendly, strongJupiter).length === 1 &&
+    A.dignityOf('Jupiter', 4, 5) === '');
+
+  var fallen = base();
+  fallen.planets[1].sign = 9;                              // Capricorn
+  fallen.planets[1].longitude = 9 * 30 + 5;
+  fallen.planets[1].house = 10;
+  ok('and a fall does not, however well placed by house',
+    Yogas.saraswati(fallen, strongJupiter).length === 0);
+
+  /*
+   * Maha Raja, Parashara's Raja Yogas chapter slokas 6-7. The first clause is
+   * an exchange between the lords of the ascendant and the 5th, which is one of
+   * the sixty-six exchanges and the only one he names.
+   */
+  var swap = { ascendant: { longitude: 280 },              // Capricorn rising
+    planets: [
+      // Saturn rules the 1st and sits in Taurus, the 5th; Venus rules the 5th
+      // and sits in Capricorn, the 1st.
+      { name: 'Saturn', sign: 1, longitude: 1 * 30 + 5, house: 5 },
+      { name: 'Venus', sign: 9, longitude: 9 * 30 + 5, house: 1 }
+    ] };
+  var got = Yogas.mahaRaja(swap);
+  ok('Maha Raja forms on an exchange between the 1st and 5th lords',
+    got.length === 1 && got[0].reasons.join(' ').indexOf('exchanged signs') > -1,
+    got.length ? got[0].summary : 'nothing found');
+
+  /*
+   * And not on any other exchange. Parashara names this pair and no other, so a
+   * 2nd-and-11th swap has to fall through to the ordinary parivartana.
+   */
+  var elsewhere = { ascendant: { longitude: 280 },
+    planets: [
+      { name: 'Saturn', sign: 10, longitude: 10 * 30 + 5, house: 2 },
+      { name: 'Jupiter', sign: 9, longitude: 9 * 30 + 5, house: 1 }
+    ] };
+  ok('and not on an exchange between any other pair of lords',
+    Yogas.mahaRaja(elsewhere).length === 0);
+
+  /*
+   * The second clause is the karaka one, and it is checked on real charts
+   * rather than built: it needs the chara karakas, which are an ordering of
+   * eight grahas by degrees into their signs and cannot be faked in two lines.
+   * What matters is that both clauses reach the detector and that the finding
+   * says which one made it.
+   */
+  var byClause = { exchange: 0, karaka: 0 };
+  for (var y = 1950; y < 2010; y++) {
+    for (var m = 1; m <= 12; m++) {
+      Yogas.mahaRaja(at(y, m)).forEach(function (f) {
+        var said = f.reasons.join(' ');
+        if (said.indexOf('exchanged signs') > -1) byClause.exchange++;
+        else if (said.indexOf('Atmakaraka') > -1) byClause.karaka++;
+      });
+    }
+  }
+  ok('both of the sloka’s clauses reach real charts, and each says which it was',
+    byClause.exchange > 0 && byClause.karaka > 0,
+    byClause.exchange + ' by exchange, ' + byClause.karaka + ' by karaka');
+
+  /*
+   * The Sun's company is named for its form now. Raman writes the results for
+   * the benefic one and reverses them for the malefic, so the word is part of
+   * the finding: "If malefics occupy the second from the Sun, papavesi is
+   * caused while subhavesi is given rise to by the presence of benefic
+   * planets." The library key stays the bare name, all three being one
+   * combination read three ways.
+   */
+  var forms = {}, keys = {};
+  for (y = 1950; y < 2010; y++) {
+    for (var mm = 1; mm <= 12; mm++) {
+      Yogas.sunCompany(at(y, mm)).forEach(function (f) {
+        forms[f.title] = (forms[f.title] || 0) + 1;
+        keys[f.subject] = 1;
+      });
+    }
+  }
+  var titles = Object.keys(forms);
+  ok('the Sun’s company names the benefic and malefic forms apart',
+    titles.some(function (t) { return /^Shubha /.test(t); }) &&
+    titles.some(function (t) { return /^Papa /.test(t); }),
+    titles.sort().join(', '));
+  ok('and a mixed one is named neither, Raman writing results for neither',
+    titles.some(function (t) { return /^(Vesi|Vasi|Ubhayachari) yoga$/.test(t); }));
+  ok('while the library key stays the bare name, all three being one combination',
+    Object.keys(keys).sort().join(' ') === 'Ubhayachari Yoga Vasi Yoga Vesi Yoga',
+    Object.keys(keys).sort().join(', '));
 })();
 
 

@@ -1785,3 +1785,15 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
 }
 .lords-strip:empty { display: none; }
 .lords-strip b { color: var(--ink); font-weight: 600; }
+
+/*
+ * What a graha rules and what looks at it, on its hover card. A label that
+ * recedes and a value that does not, so the two read as a pair rather than as
+ * another sentence.
+ */
+.graha-card-fact {
+  margin: 0.15rem 0 0;
+  font-size: 0.82rem;
+  color: var(--ink);
+}
+.graha-card-fact-label { color: var(--ink-soft); }

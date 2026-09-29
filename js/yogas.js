@@ -1325,6 +1325,205 @@ var Yogas = (function () {
   }
 
 
+  /* ----------------------------------------------------- Saraswati */
+
+  /*
+   * Phaladeepika ch.6 sloka 26: "If Venus, Jupiter and Mercury occupy a Kendra,
+   * a Trikona or the second house, and Jupiter be also in his exaltation, his
+   * own or a friendly house and possess strength, the resulting Yoga is termed
+   * Saraswati."
+   *
+   * So seven houses are open to the three - 1, 2, 4, 5, 7, 9 and 10 - and the
+   * whole weight of the combination is on Jupiter, who has to be both well
+   * placed by sign and strong. Mantreswara's sloka 27 is all learning: a native
+   * "highly intelligent, clever, in dramaturgy, in prose composition,
+   * versifying, accounts and poetics".
+   *
+   * "Possess strength" is read as it is everywhere else here, as meeting the
+   * minimum Parashara sets for that graha in the shadbala reading. Without a
+   * strength reading there is nothing to test it against, and reporting on
+   * three conditions out of four would be worse than silence.
+   */
+  var SARASWATI_HOUSES = [1, 2, 4, 5, 7, 9, 10];
+  var SARASWATI_GRAHAS = ['Venus', 'Jupiter', 'Mercury'];
+
+  function saraswati(chart, strengths) {
+    var c = lordship(chart);
+    var where = {};
+    var allPlaced = SARASWATI_GRAHAS.every(function (g) {
+      var house = c.houseOf(g);
+      if (house === null || SARASWATI_HOUSES.indexOf(house) < 0) return false;
+      where[g] = house;
+      return true;
+    });
+    if (!allPlaced) return [];
+
+    /*
+     * Mantreswara asks for exaltation, an own house or a friendly one, which is
+     * three steps of one ladder and not the dignity column's two. The friendly
+     * case is Jupiter's natural relation to the lord of the sign he stands in,
+     * that being the relation the sloka is about; debilitation is ruled out
+     * first so that a fall in a friend's sign cannot pass as a friendly house.
+     */
+    var seat = c.dignity('Jupiter');
+    if (seat === 'Debilitated') return [];
+    var signLord = Astro.SIGN_LORDS[c.at.Jupiter.sign];
+    var friendly = Astro.naturalRelation('Jupiter', signLord) === 1;
+    var dignified = DIGNIFIED.indexOf(seat) >= 0;
+    if (!dignified && !friendly) return [];
+    if (!isStrong(strengths, 'Jupiter')) return [];
+
+    var seatSaid = seat === 'Exalted' ? 'exalted'
+      : seat === 'Mooltrikona' ? 'in his moolatrikona'
+      : seat === 'Own Sign' ? 'in his own sign'
+      : 'in the sign of ' + signLord + ', a natural friend';
+    var placed = SARASWATI_GRAHAS.map(function (g) {
+      return g + ' in the ' + ordinal(where[g]);
+    });
+
+    return finding('Saraswati Yoga', 'Saraswati yoga', [
+      listOf(placed) + ', all of them in an angle, a trine or the 2nd, which ' +
+        'is the whole of the ground Mantreswara allows them',
+      'Jupiter is ' + seatSaid + ', which is what the sloka asks of him beyond ' +
+        'his placement',
+      'and Jupiter is strong, meeting the minimum his shadbala is measured ' +
+        'against, the sloka asking that he "possess strength" as well',
+      'the combination is named for the goddess of learning, and Mantreswara ' +
+        'reads it as eloquence rather than fortune'
+    ],
+    'Venus, Jupiter and Mercury hold the ' + ordinal(where.Venus) + ', the ' +
+      ordinal(where.Jupiter) + ' and the ' + ordinal(where.Mercury) +
+      ', and Jupiter is ' + seatSaid + ', strong enough to carry them. ' +
+      'That is Saraswati yoga.',
+    SARASWATI_GRAHAS.slice(),
+    SARASWATI_GRAHAS.map(function (g) { return where[g]; }));
+  }
+
+
+  /* ----------------------------------------------------- Maha Raja */
+
+  /*
+   * Parashara's Raja Yogas chapter, slokas 6-7: "Should the ascendant lord and
+   * the 5th lord exchange their signs or if Atmakaraka and Putra Karaka (Chara)
+   * are in the ascendant, the 5th, exaltation sign, own sign or own Navamsha in
+   * aspect to a benefic, Maha Raja yoga is produced. The native so born will be
+   * famous and happy."
+   *
+   * Two clauses joined by "or", and both are tested. The first is one exchange
+   * out of the sixty-six the parivartana detector already finds, and Parashara
+   * gives that one a name of its own: Santhanam's note is that an exchange
+   * between these two lords "will bestow a supreme Raja yoga".
+   *
+   * The second reaches for the chara karakas, which are read in the rashi here
+   * as they are everywhere on this site - a karaka is assigned by degrees into
+   * a sign, and a varga longitude is a position stretched back across thirty,
+   * so recomputing them inside a division would be answering a different
+   * question. The houses in the clause still move with the chart.
+   *
+   * "In aspect to a benefic" is read as aspect and not as company. A graha in
+   * the same sign is associated rather than aspected in every other rule here,
+   * and Santhanam's note says "be related to a benefice by aspect" in as many
+   * words, so a chart that meets everything else with a benefic sitting beside
+   * the karaka rather than looking at it is reported as not having the yoga.
+   */
+  function charaKarakasOf(chart) {
+    return Astro.charaKarakas({ planets: chart.planets.map(function (p) {
+      return { name: p.name,
+        longitude: p.rashiLongitude === undefined ? p.longitude : p.rashiLongitude };
+    }) });
+  }
+
+  function mahaRaja(chart) {
+    var c = lordship(chart);
+    var reasons = [], grahas = [], houses = [];
+    var first = c.lordOf(1), fifth = c.lordOf(5);
+
+    var exchanged = c.at[first] && c.at[fifth] &&
+      c.houseOf(first) === 5 && c.houseOf(fifth) === 1;
+    if (exchanged) {
+      reasons.push(first + ' rules ' + firstHouse(chart, 'the ascendant') +
+        ' and stands in the 5th, while ' + fifth + ' rules the 5th and stands ' +
+        'in ' + firstHouse(chart, 'the ascendant') + ': the two have exchanged signs');
+      grahas.push(first, fifth);
+      houses.push(1, 5);
+    }
+
+    /*
+     * The karaka clause. Each of the two has to be in one of the five places
+     * the sloka names, and each has to be looked at by a benefic.
+     */
+    var karakas = charaKarakasOf(chart), byRole = {};
+    Object.keys(karakas).forEach(function (g) { byRole[karakas[g]] = g; });
+    var atma = byRole.Atmakaraka, putra = byRole.Putrakaraka;
+    var benefics = Astro.naturalBenefics(chart);
+
+    var seatOf = function (g) {
+      var house = c.houseOf(g);
+      if (house === 1) return 'in ' + firstHouse(chart, 'the ascendant');
+      if (house === 5) return 'in the 5th';
+      var d = c.dignity(g);
+      if (d === 'Exalted') return 'exalted';
+      if (d === 'Own Sign' || d === 'Mooltrikona') return 'in his own sign';
+      if (c.navamsaLord(g) === g) return 'in his own navamsa';
+      return null;
+    };
+    var seenBy = function (g) {
+      if (!c.at[g]) return [];
+      return GRAHAS.filter(function (b) {
+        return b !== g && benefics[b] && c.at[b] &&
+          Astro.aspects(b, c.at[b].sign, c.at[g].sign);
+      });
+    };
+
+    var karakaClause = false;
+    if (atma && putra && atma !== putra) {
+      var atmaSeat = seatOf(atma), putraSeat = seatOf(putra);
+      var atmaSeen = seenBy(atma), putraSeen = seenBy(putra);
+      if (atmaSeat && putraSeat && atmaSeen.length && putraSeen.length) {
+        karakaClause = true;
+        reasons.push('the Atmakaraka is ' + named(atma) + ', ' + atmaSeat +
+          ', and the Putrakaraka is ' + named(putra) + ', ' + putraSeat +
+          ', which are two of the five placements the sloka names');
+        reasons.push(listOf(atmaSeen) + ' aspects ' + named(atma) + ' and ' +
+          listOf(putraSeen) + ' aspects ' + named(putra) + ', the clause ' +
+          'asking that both be in aspect to a benefic');
+        [atma, putra].forEach(function (g) {
+          if (grahas.indexOf(g) < 0) grahas.push(g);
+        });
+      }
+    }
+
+    if (!exchanged && !karakaClause) return [];
+
+    reasons.push('Parashara joins the two clauses with "or", so either makes ' +
+      'the combination; the native "will be famous and happy"');
+    if (!karakaClause) {
+      reasons.push('the karaka clause does not hold here, and it would have ' +
+        'made the same yoga on its own');
+    }
+
+    var summary = exchanged
+      ? named(first) + ' and ' + named(fifth) + ', the lords of ' +
+        firstHouse(chart, 'the ascendant') + ' and the 5th, have exchanged ' +
+        signs(chart, first, fifth) + '. That is Maha Raja yoga.'
+      : 'The Atmakaraka ' + named(atma) + ' and the Putrakaraka ' +
+        named(putra) + ' are both well placed and aspected by a benefic. ' +
+        'That is Maha Raja yoga.';
+
+    return finding('Maha Raja Yoga', 'Maha Raja yoga', reasons, summary,
+      grahas, houses);
+  }
+
+  /* The pair of signs an exchange runs between, named rather than numbered. */
+  function signs(chart, a, b) {
+    var at = {};
+    chart.planets.forEach(function (p) { at[p.name] = p; });
+    return at[a] && at[b]
+      ? 'signs, ' + Astro.SIGNS[at[b].sign] + ' for ' + Astro.SIGNS[at[a].sign]
+      : 'signs';
+  }
+
+
   /* ------------------------------------------------- the Sun's company */
 
   /*
@@ -1398,18 +1597,28 @@ var Yogas = (function () {
       'her, so the Sun can be flanked by them and still have no company by ' +
       'this rule');
 
+    /*
+     * The title carries the form and the library key does not. Raman names the
+     * two apart - "If malefics occupy the second from the Sun, papavesi is
+     * caused while subhavesi is given rise to by the presence of benefic
+     * planets" - and a reader wants that word, the results being written for
+     * one form and reversed for the other. The subject stays the bare name
+     * because it is what astro_readings is keyed by, and all three forms are
+     * the same combination read three ways rather than three combinations.
+     */
+    var prefix = kind === 'subha' ? 'Shubha ' : kind === 'papa' ? 'Papa ' : '';
     return [{
       yoga: name + ' Yoga',
       kind: kind,
       subject: name + ' Yoga',
       condition: 'general',
-      title: name + ' yoga',
+      title: prefix + name + ' yoga',
       family: 'The Sun’s company',
       grahas: ['Sun'].concat(all),
       houses: [],
       reasons: reasons,
       summary: where.charAt(0).toUpperCase() + where.slice(1) + ', which is ' +
-        name + ' yoga.'
+        prefix.toLowerCase() + name + ' yoga.'
     }];
   }
 
@@ -2400,7 +2609,7 @@ var Yogas = (function () {
     vanchanachorabheethi, kahala, pushkala, gauri, bharathi, kusuma,
     chapa, sreenatha, sankha, bheri, matsya, mridanga,
     chandraMangala, adhiYoga, sakata, amala, budhaAditya,
-                   gajaKesari, kartari];
+                   gajaKesari, kartari, saraswati, mahaRaja];
 
   /**
    * Every yoga this module knows how to look for, in one pass.
@@ -2460,6 +2669,8 @@ var Yogas = (function () {
     MOON_COMPANY: MOON_COMPANY,
     vipareeta: vipareeta, lakshmi: lakshmi, mahapurusha: mahapurusha,
     rajaYoga: rajaYoga, gajaKesari: gajaKesari,
+    saraswati: saraswati, mahaRaja: mahaRaja,
+    SARASWATI_HOUSES: SARASWATI_HOUSES, SARASWATI_GRAHAS: SARASWATI_GRAHAS,
     VISHNU_HOUSES: VISHNU_HOUSES, LAKSHMI_HOUSES: LAKSHMI_HOUSES,
     VIPAREETA_NAMES: VIPAREETA_NAMES, MAHAPURUSHA: MAHAPURUSHA,
     KENDRAS: KENDRAS,

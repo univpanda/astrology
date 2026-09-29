@@ -1458,9 +1458,9 @@ ok('the page says which yogas it looks for, and the list is current', (function 
                'Mahabhagya', 'Chatussagara', 'Rajalakshana', 'Malika', 'Parvata',
                'Vasumathi', 'Vanchanachorabheethi', 'Kahala', 'Pushkala',
                'Gauri', 'Bharathi', 'Kusuma', 'Chapa', 'Sreenatha', 'Sankha',
-               'Bheri', 'Matsya', 'Mridanga'];
+               'Bheri', 'Matsya', 'Mridanga', 'Saraswati', 'Maha Raja'];
   return named.every(function (n) { return flat.indexOf(n) >= 0; }) &&
-    /Raja yoga, parivartana, neecha bhanga, vipareeta raja, Lakshmi, Gaja Kesari, kartari, the five Mahapurusha yogas, the Moon’s own four - Sunapha, Anapha, Durudhura and Kemadruma - the Sun’s three - Vesi, Vasi and Ubhayachari - the Moon read from the Sun as Adhama, Sama or Varishtha, Chandra Mangala, Adhi, Sakata, Amala, Budha-Aditya, Mahabhagya, Chatussagara, Rajalakshana, Malika, Parvata, Vasumathi, Vanchanachorabheethi, Kahala, Pushkala, Gauri, Bharathi, Kusuma, Chapa, Sreenatha, Sankha, Bheri, Matsya and Mridanga are checked/
+    /Raja yoga, parivartana, neecha bhanga, vipareeta raja, Lakshmi, Gaja Kesari, kartari, the five Mahapurusha yogas, the Moon’s own four - Sunapha, Anapha, Durudhura and Kemadruma - the Sun’s three - Vesi, Vasi and Ubhayachari - the Moon read from the Sun as Adhama, Sama or Varishtha, Chandra Mangala, Adhi, Sakata, Amala, Budha-Aditya, Mahabhagya, Chatussagara, Rajalakshana, Malika, Parvata, Vasumathi, Vanchanachorabheethi, Kahala, Pushkala, Gauri, Bharathi, Kusuma, Chapa, Sreenatha, Sankha, Bheri, Matsya, Mridanga, Saraswati and Maha Raja are checked/
       .test(flat) &&
     named.length === Yogas.DETECTOR_COUNT;
 })(), Yogas.DETECTOR_COUNT + ' detectors');
@@ -3270,6 +3270,7 @@ ok('every script the page loads parses', (function () {
     '  __out.renderShadbala = renderShadbala; __out.renderYogas = renderYogas;\n' +
     '  __out.renderAspects = renderAspects;\n' +
     '  __out.rotatedOnto = rotatedOnto;\n' +
+    '  __out.rulingAndAspects = rulingAndAspects;\n' +
     appSrc.slice(close);
 
   var out = {};
@@ -6785,13 +6786,77 @@ console.log('\nThe card says how the graha stands in its sign');
   var src = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
   var chartsSrc = fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8');
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  // The wired copy of app.js, built where the harness is put together above.
+  var out = global.appExports || {};
 
   ok('the map is built and handed to the renderer with the yogas',
     /function dignitiesByGraha\(state, division\)/.test(src) &&
     /dignities: dignitiesByGraha\(state, set\.division\)/.test(src));
   ok('and the renderer carries it onto the graha',
-    /ctx\.division, ctx\.dignities, ctx\.hemming\)/.test(chartsSrc) &&
+    /ctx\.division, ctx\.dignities, ctx\.hemming, ctx\.ruling\)/.test(chartsSrc) &&
     /t\.setAttribute\('data-dignity', d\.dignity\)/.test(chartsSrc));
+  /*
+   * What a graha rules and what looks at it, both on the card. Lordship is a
+   * row in the graha table and aspects are a tab of their own, and neither is
+   * where the eye is when it is on a graha in a kundli.
+   *
+   * Both are counted from house 1 of the chart on screen, so both move with the
+   * division and with the rotation, which is why they are worked out in app.js
+   * beside the dignities rather than in the renderer.
+   */
+  ok('what a graha rules and what aspects it are built beside the dignities',
+    /function rulingAndAspects\(state, division, reference\)/.test(src) &&
+    /ruling: rulingAndAspects\(state, set\.division, set\.reference\)/.test(src));
+  ok('and the renderer carries both onto the graha',
+    /t\.setAttribute\('data-rules', d\.rules\)/.test(chartsSrc) &&
+    /t\.setAttribute\('data-seen-by', d\.seenBy\)/.test(chartsSrc));
+  ok('and the card prints them as a label and a value, not as prose',
+    /\['data-rules', 'Rules'\], \['data-seen-by', 'Aspected by'\]/.test(src) &&
+    /\.graha-card-fact \{/.test(css) && /\.graha-card-fact-label \{/.test(css));
+
+  /*
+   * And the figures are real. Driven through the same function the page calls,
+   * on a chart rotated onto the Moon, because the houses a graha rules are the
+   * half of this that a rotation moves.
+   */
+  ok('the houses named are the ones the graha really rules, from this house 1',
+    (function () {
+      var state = { chart: Astro.chart({ jdUT: Astro.julianDay(1977, 11, 15, 3),
+        latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 }) };
+      var fromLagna = out.rulingAndAspects(state, 1, 'Ascendant');
+      var fromMoon = out.rulingAndAspects(state, 1, 'Moon');
+      var lagna = Astro.signOf(state.chart.ascendant.longitude);
+      var moonSign = state.chart.planets.filter(function (p) {
+        return p.name === 'Moon';
+      })[0].sign;
+      var said = function (map, graha, reference) {
+        return Astro.housesOwned(graha, reference)
+          .map(function (h) { return Yogas.ordinal(h); }).join(', ') ===
+          map[graha].rules;
+      };
+      return said(fromLagna, 'Saturn', lagna) && said(fromMoon, 'Saturn', moonSign) &&
+        fromLagna.Saturn.rules !== fromMoon.Saturn.rules &&
+        fromLagna.Rahu.rules === '' && fromLagna.Ketu.rules === '';
+    })());
+  ok('and the grahas named as aspecting really do aspect it, by the full rule',
+    (function () {
+      var state = { chart: Astro.chart({ jdUT: Astro.julianDay(1977, 11, 15, 3),
+        latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 }) };
+      var map = out.rulingAndAspects(state, 1, 'Ascendant');
+      var at = {};
+      state.chart.planets.forEach(function (p) { at[p.name] = p; });
+      var wrong = [], any = 0;
+      Object.keys(map).forEach(function (name) {
+        if (!map[name].seenBy) return;
+        map[name].seenBy.split(', ').forEach(function (entry) {
+          any++;
+          var who = entry.split(' ')[0];
+          if (!Astro.aspects(who, at[who].sign, at[name].sign)) wrong.push(entry);
+        });
+      });
+      return any > 0 && wrong.length === 0;
+    })());
+
   ok('the card prints it under the placement, not in the list of findings',
     /var dignity = t\.getAttribute\('data-dignity'\)/.test(src) &&
     /el\('p', 'graha-card-dignity', dignity\)/.test(src) &&

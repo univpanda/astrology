@@ -103,7 +103,7 @@ var Charts = (function () {
   var REC = '\u001e', FLD = '\u001f';
 
   function describeOccupant(p, sign, house, yogas, sun, division, dignities,
-                            hemming) {
+                            hemming, ruling) {
     var states = [];
     /*
      * Each state says why it applies here, not merely that it does. The chart
@@ -155,6 +155,12 @@ var Charts = (function () {
        * screen, so it cannot be derived from the recast chart here.
        */
       dignity: (dignities && dignities[p.name]) || '',
+      /*
+       * Which houses it rules and which grahas look at it, both counted from
+       * this chart's house 1. Worked out in app.js, which knows the rotation.
+       */
+      rules: (ruling && ruling[p.name] && ruling[p.name].rules) || '',
+      seenBy: (ruling && ruling[p.name] && ruling[p.name].seenBy) || '',
       states: states.map(function (k) { return k + FLD + (why[k] || ''); }).join(REC),
       yogas: mine.map(function (y) {
         // title, why it holds here, and the pair that names its passage
@@ -190,10 +196,12 @@ var Charts = (function () {
         }, planetText(p));
         if (ctx) {
           var d = describeOccupant(p, ctx.sign, ctx.house, ctx.yogas, ctx.sun,
-            ctx.division, ctx.dignities, ctx.hemming);
+            ctx.division, ctx.dignities, ctx.hemming, ctx.ruling);
           t.setAttribute('data-graha', d.graha);
           t.setAttribute('data-where', d.where);
           if (d.dignity) t.setAttribute('data-dignity', d.dignity);
+          if (d.rules) t.setAttribute('data-rules', d.rules);
+          if (d.seenBy) t.setAttribute('data-seen-by', d.seenBy);
           t.setAttribute('data-states', d.states);
           t.setAttribute('data-yogas', d.yogas);
           // Hoverable by mouse, reachable by keyboard, legible to a reader.
@@ -277,7 +285,7 @@ var Charts = (function () {
   }
 
   function renderNorth(container, planets, ascLongitude, division, reference, yogas,
-                       dignities, hemming) {
+                       dignities, hemming, ruling) {
     var data = occupantsBySign(planets, ascLongitude, division, reference);
     var svg = svgRoot('north');
     var m = 4, s = SIZE - 2 * m;
@@ -340,7 +348,7 @@ var Charts = (function () {
       drawOccupants(g, occ, cx, cy + 4 + shortfall, 0.20 * s,
         { sign: sign, house: h + 1, yogas: yogas, sun: sunOf(planets),
           dignities: dignities,
-          hemming: hemming });
+          hemming: hemming, ruling: ruling });
       g.appendChild(el('text', {
         x: cx, y: numY.toFixed(1), class: 'sign-num', 'text-anchor': 'middle'
       }, String(sign + 1)));
@@ -351,7 +359,7 @@ var Charts = (function () {
   }
 
   function renderSouth(container, planets, ascLongitude, division, reference, yogas,
-                       dignities, hemming) {
+                       dignities, hemming, ruling) {
     var data = occupantsBySign(planets, ascLongitude, division, reference);
     var svg = svgRoot('south');
     var m = 4, cell = (SIZE - 2 * m) / 4;
@@ -377,7 +385,7 @@ var Charts = (function () {
       drawOccupants(g, data.bySign[i], x + cell / 2, y + cell / 2 + 6, cell * 0.82,
         { sign: i, house: house, yogas: yogas, sun: sunOf(planets),
           dignities: dignities,
-          hemming: hemming });
+          hemming: hemming, ruling: ruling });
       svg.appendChild(g);
     }
     // The blank 2x2 middle, left open as convention has it.
@@ -389,7 +397,7 @@ var Charts = (function () {
   function render(container, opts) {
     var fn = opts.style === 'south' ? renderSouth : renderNorth;
     fn(container, opts.planets, opts.ascendant, opts.division || 1, opts.reference,
-       opts.yogas, opts.dignities, opts.hemming);
+       opts.yogas, opts.dignities, opts.hemming, opts.ruling);
   }
 
   return { render: render };

@@ -755,7 +755,31 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'Raman says the wording is unclear and then reads it out: "The definition of the Yoga is somewhat confusing. Some planet is exalted and he occupies some Navamsa. The lord of the said ..." The scan breaks there, but the reading he begins is the one implemented - take any exalted graha, find the ruler of the navamsa it occupies, and ask where that ruler stands.',
    'Read for influence and for being well regarded by those in charge.'
  ],
- 'Where several grahas are exalted, the first that satisfies the rest of the rule is the one reported.', 999)
+ 'Where several grahas are exalted, the first that satisfies the rest of the rule is the one reported.', 999),
+
+('yoga', 'Saraswati Yoga', 'general',
+ 'Saraswati - the three gentle grahas well placed, on Jupiter''s strength',
+ array[
+   'Mantreswara names it for the goddess of learning, and reads it for learning rather than for fortune. Phaladeepika ch.6 sloka 27: the native is "highly intelligent, clever, in dramaturgy, in prose composition, versifying, accounts and poetics", skilled "in poetry, in narrative composition and in the exposition of sacred texts".',
+   'The rule is sloka 26: "If Venus, Jupiter and Mercury occupy a Kendra, a Trikona or the second house, and Jupiter be also in his exaltation, his own or a friendly house and possess strength, the resulting Yoga is termed Saraswati."',
+   'So seven houses are open to the three - the 1st, 2nd, 4th, 5th, 7th, 9th and 10th - and they may share one or stand apart. The three are the natural significators of speech, wisdom and intellect, which is why these three and not any others.',
+   'The weight is all on Jupiter, who has to satisfy two further conditions that the other two do not. He must be exalted, in his own sign or in a friendly one, which is read here as his natural relation to the lord of the sign he stands in; and he must "possess strength", read as meeting the minimum his shadbala is measured against, the same test Lakshmi yoga makes.',
+   'That second condition is why the combination is not common. The three gentle grahas are often well placed together, Mercury and Venus never straying far from the Sun; a Jupiter that is both well seated and strong is the scarce part. Measured on this site''s sample it holds in about one chart in twelve.',
+   'Because a strength reading is required, this is one of the few yogas that cannot be settled from positions alone. Where no strength reading is available nothing is reported, rather than reporting on three conditions out of four.'
+ ],
+ 'Jupiter''s strength is read from the Shadbala tab, so the settings that move his total can move this yoga.', 943),
+
+('yoga', 'Maha Raja Yoga', 'general',
+ 'Maha Raja - the ascendant and the 5th, or the two karakas',
+ array[
+   'Parashara gives this one a name of its own inside the Raja Yogas chapter, at slokas 6 and 7: "Should the ascendant lord and the 5th lord exchange their signs or if Atmakaraka and Putra Karaka (Chara) are in the ascendant, the 5th, exaltation sign, own sign or own Navamsha in aspect to a benefic, Maha Raja yoga is produced. The native so born will be famous and happy."',
+   'Two clauses joined by "or", so either one makes it, and both are tested here.',
+   'The first is a single exchange out of the sixty-six the parivartana detector already finds, and Parashara singles it out: Santhanam''s note is that an exchange between these two lords "will bestow a supreme Raja yoga on the native". The ascendant is the self and the 5th is intelligence and merit carried from before, which is the pairing the name is about.',
+   'The second reaches for the Jaimini chara karakas. The Atmakaraka is the graha furthest into its sign and the Putrakaraka the sixth in that order, and each has to be in one of five places - the ascendant, the 5th, its exaltation sign, its own sign or its own navamsa - and each has to be aspected by a benefic.',
+   'Two readings had to be fixed to implement the second clause, and both are stated rather than hidden. The karakas are assigned in the rashi, as they are everywhere on this site, so reading a division does not reshuffle them; and "in aspect to a benefic" is read as aspect and not as company, Santhanam''s note saying "related to a benefice by aspect" in as many words. A chart that meets everything else with a benefic sitting beside a karaka rather than looking at it is reported as not having the yoga.',
+   'It is uncommon on either clause, holding in about one chart in forty on this site''s sample. The finding says which clause made it, and says so when the other would have made it too.'
+ ],
+ 'The exchange clause is also reported on its own as a parivartana, the two being the same fact read at two levels of detail.', 922)
 
 on conflict (topic, subject, condition) do update set
   heading = excluded.heading,

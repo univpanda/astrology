@@ -944,6 +944,41 @@
     return marks;
   }
 
+  /*
+   * What each graha rules and what looks at it, for the hover card.
+   *
+   * Both are facts about the chart being drawn rather than about the graha, so
+   * both move with the division and with the rotation: a graha rules the same
+   * signs wherever the chart is read from, but which houses those signs are is
+   * counted from house 1, and house 1 is what a rotation moves. The nodes rule
+   * nothing, so their line is simply absent rather than empty.
+   *
+   * The aspects are the full ones. Mars looks at the 4th, 7th and 8th, Jupiter
+   * at the 5th, 7th and 9th, Saturn at the 3rd, 7th and 10th, everything else
+   * at the 7th alone; partial aspects are not used anywhere on this site,
+   * because where the texts speak of a graha being aspected they mean fully.
+   */
+  function rulingAndAspects(state, division, reference) {
+    var chart = rotatedOnto(division === 1 ? state.chart
+      : Astro.chartInDivision(state.chart, division), reference);
+    var lagna = Astro.signOf(chart.ascendant.longitude);
+    var out = {};
+    chart.planets.forEach(function (p) {
+      var owned = Astro.housesOwned(p.name, lagna);
+      var seenBy = chart.planets.filter(function (q) {
+        return q.name !== p.name && Astro.aspects(q.name, q.sign, p.sign);
+      }).map(function (q) {
+        return q.name + ' (' +
+          Yogas.ordinal(((p.sign - q.sign) % 12 + 12) % 12 + 1) + ')';
+      });
+      out[p.name] = {
+        rules: owned.map(function (h) { return Yogas.ordinal(h); }).join(', '),
+        seenBy: seenBy.join(', ')
+      };
+    });
+    return out;
+  }
+
   /** "Mars", "Mars and Ketu", "Mars, Saturn and Ketu". */
   function listOfNames(names) {
     if (names.length < 2) return names[0] || '';
@@ -1314,6 +1349,21 @@
       var dignity = t.getAttribute('data-dignity');
       if (dignity) card.appendChild(el('p', 'graha-card-dignity', dignity));
       /*
+       * What it rules and what looks at it. Two facts a reader would otherwise
+       * have to leave the chart for: lordship is a row in the graha table and
+       * aspects are a tab of their own, and neither is where the eye is when it
+       * is on a graha in a kundli. Both are counted from house 1 of the chart
+       * on screen, so they move with the division and with the rotation.
+       */
+      [['data-rules', 'Rules'], ['data-seen-by', 'Aspected by']].forEach(function (pair) {
+        var value = t.getAttribute(pair[0]);
+        if (!value) return;
+        var line = el('p', 'graha-card-fact');
+        line.appendChild(el('span', 'graha-card-fact-label', pair[1]));
+        line.appendChild(document.createTextNode(' ' + value));
+        card.appendChild(line);
+      });
+      /*
        * Every item is a statement with its reason beneath it: the state or the
        * yoga on one line, why it holds in this chart on the next. A name alone
        * says a thing is true and leaves the reader to take it on trust.
@@ -1410,7 +1460,8 @@
       reference: set.reference,
       yogas: yogasByGraha(state, set.division, set.reference),
       dignities: dignitiesByGraha(state, set.division),
-      hemming: hemmingByGraha(state, set.division)
+      hemming: hemmingByGraha(state, set.division),
+      ruling: rulingAndAspects(state, set.division, set.reference)
     });
     wireGrahaCard(document.getElementById('chart-' + slot));
     ensureLibrary();
@@ -3269,7 +3320,8 @@
         'the Moon read from the Sun as Adhama, Sama or Varishtha, Chandra Mangala, ' +
         'Adhi, Sakata, Amala, Budha-Aditya, Mahabhagya, Chatussagara, Rajalakshana, ' +
         'Malika, Parvata, Vasumathi, Vanchanachorabheethi, Kahala, Pushkala, Gauri, ' +
-        'Bharathi, Kusuma, Chapa, Sreenatha, Sankha, Bheri, Matsya and Mridanga ' +
+        'Bharathi, Kusuma, Chapa, Sreenatha, Sankha, Bheri, Matsya, Mridanga, ' +
+        'Saraswati and Maha Raja ' +
         'are checked' + ' so far; the Lesson tab ' +
         'explains each.';
       return;
@@ -3280,7 +3332,8 @@
       'the Moon read from the Sun as Adhama, Sama or Varishtha, Chandra Mangala, ' +
       'Adhi, Sakata, Amala, Budha-Aditya, Mahabhagya, Chatussagara, Rajalakshana, ' +
       'Malika, Parvata, Vasumathi, Vanchanachorabheethi, Kahala, Pushkala, Gauri, ' +
-      'Bharathi, Kusuma, Chapa, Sreenatha, Sankha, Bheri, Matsya and Mridanga ' +
+      'Bharathi, Kusuma, Chapa, Sreenatha, Sankha, Bheri, Matsya, Mridanga, ' +
+        'Saraswati and Maha Raja ' +
       'are checked' + ' so far; more will follow. An angle-trine raja yoga ' +
       'is common, present in roughly three charts in four, so it is read alongside the ' +
       'strength of the grahas forming it rather than on its own. The Lesson tab explains ' +
