@@ -706,8 +706,13 @@ ok('and the rule is not written for one table, both grids spanning a name',
  *
  * [R] and [C] are facts about the graha, so they stay on the name. [V] is about
  * the sign the division gives and [S] and [P] about the two beside it, so all
- * three go on the sign. [Y] is a fact about lordship and [D] about the house,
- * so each goes on its own column. [N] was already on the dignity it cancels.
+ * three go on the sign.
+ *
+ * [Y], [D] and [N] used to hang off the lordship, house and dignity cells. Four
+ * rows each carrying a bracketed letter is a lot of punctuation to scan past
+ * for signs and house numbers, and all three are now said in full on the
+ * graha's card, where there is room for the reason. What is left here is what
+ * is about the sign the cell names.
  */
 ok('every flag rides on the value it qualifies', (function () {
   var at = appSrc.indexOf('function grahaTableFor');
@@ -718,15 +723,18 @@ ok('every flag rides on the value it qualifies', (function () {
     return cells.slice(i, cells.indexOf('{ text:', i + 10));
   };
   return /headRow\.appendChild\(grahaColumnHead\(col\.entity, sun\)\);/.test(block) &&
-    !/'Y' : null/.test(block.slice(block.indexOf('headRow.appendChild(grahaColumnHead'),
-                                   block.indexOf('thead.appendChild'))) &&
     /'V' : null/.test(after('Astro.SIGNS[v.sign]')) &&
     /'S' : null/.test(after('Astro.SIGNS[v.sign]')) &&
     /'P' : null/.test(after('Astro.SIGNS[v.sign]')) &&
-    /'D' : null/.test(after('text: String(house)')) &&
-    /Astro\.isYogakaraka\(r\.name, firstSign\) \? 'Y' : null/.test(after('owned.join')) &&
     !/graha-chart/.test(block);
 })());
+ok('and the three that qualified a graha rather than a sign are gone from it',
+   (function () {
+     var at = appSrc.indexOf('function grahaTableFor');
+     var block = appSrc.slice(at, appSrc.indexOf('function renderShadbala', at));
+     return !/'Y' : null/.test(block) && !/'D' : null/.test(block) &&
+       !/cell\.star/.test(appSrc) && !/star: /.test(block);
+   })());
 /*
  * Three tokens sitting together have to read as three different facts, so each
  * takes its own colour rather than retrogression being the only one picked out.
@@ -768,18 +776,19 @@ ok('the two new hues are defined in both palettes, not only the light one', (fun
  * and a flag disagreeing with the column beside it would be answering about a
  * chart nobody is looking at.
  */
-ok('yogakaraka follows house 1',
-   /Astro\.isYogakaraka\(r\.name, firstSign\)/.test(appSrc) && !/rashiLagna/.test(appSrc));
+ok('yogakaraka follows house 1 of the chart being drawn',
+   /yogakaraka: Astro\.isYogakaraka\(p\.name, firstSign\)/.test(
+     fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8')) &&
+   !/rashiLagna/.test(appSrc));
 /*
  * The lagna owns nothing, so it never reaches the lordship cell that carries
  * the flag: without houses owned the cell is a dash and the flag has nowhere
  * to sit.
  */
-ok('and the lagna is never flagged one, owning nothing',
+ok('and the lagna owns nothing, so its lordship cell is a dash',
    /var owned = r\.isAscendant \? \[\] : Astro\.housesOwned\(r\.name, firstSign\);/
      .test(appSrc) &&
-   /owned\.length\s*\n\s*\? \{ text: owned\.join\(', '\), cls: 'numeric',\s*\n\s*flags: \[Astro\.isYogakaraka/
-     .test(appSrc));
+   /: \{ text: '–', cls: 'numeric' \}/.test(appSrc));
 ok('and the flag alone takes the colour, not the name', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
   return /th \.retro-flag \{ color: var\(--retro\)/.test(css) ||
@@ -2105,7 +2114,7 @@ ok('and a two-word label stacks, as the nakshatra does', (function () {
     /function karakaLines\(name\)/.test(appSrc) &&
     /return name\.replace\(\/karaka\$\/, ' Karaka'\);/.test(appSrc) &&
     Astro.CHARA_KARAKAS.every(function (k) { return /karaka$/.test(k); }) &&
-    /Astro\.dignityOf\(r\.name, v\.sign, v\.degreeInSign\)\) \|\| '–',\s*\n\s*stack: true,/
+    /Astro\.dignityOf\(r\.name, v\.sign, v\.degreeInSign\)\) \|\| '–',\s*\n\s*stack: true \}/
       .test(block) &&
     /cls: 'dispositor', stack: true,/.test(block);
 })());
@@ -2384,12 +2393,19 @@ ok('hemming reads its neighbours from the division and its benefics from the ras
      .test(appSrc) &&
    /var benefics = Astro\.naturalBenefics\(c\);/.test(appSrc) &&
    /var divisionChart = Astro\.chartInDivision\(c, view\.division\);/.test(appSrc));
-ok('and directional strength from the house, which the row already computes',
-   /Astro\.hasDigBala\(r\.name, house\)/.test(appSrc) &&
-   /var house = \(\(v\.sign - firstSign\) % 12 \+ 12\) % 12 \+ 1;/.test(appSrc));
-ok('[N] reaches the graha table\u2019s dignity, not the grid alone',
-   /star: !r\.isAscendant && cancelledHere\[r\.name\]/.test(appSrc) &&
-   /td\.appendChild\(el\('span', 'flag flag-n', ' \[N\]'\)\)/.test(appSrc));
+/*
+ * Dig bala and neecha bhanga came off the graha table with the yogakaraka mark.
+ * Both still have somewhere to be said: the varga grid marks them per division,
+ * and the card says them in words. Dropping a mark from one surface should not
+ * mean losing the fact.
+ */
+ok('dig bala and neecha bhanga are still reported, on the varga grid',
+   /Astro\.hasDigBala\(planet\.name, house\)/.test(appSrc) &&
+   /signLine\.appendChild\(el\('span', 'flag flag-d', ' \[D\]'\)\)/.test(appSrc) &&
+   /dignityLine\.appendChild\(el\('span', 'flag flag-n', ' \[N\]'\)\)/.test(appSrc));
+ok('and the legend still explains all three, since all three are still drawn',
+   /flag-y">\[Y\]/.test(html) && /flag-d">\[D\]/.test(html) &&
+   /flag-n">\[N\]/.test(html));
 /*
  * The ascendant is a point, so what is about a graha is withheld from it:
  * ownership, dignity, the neecha-bhanga star, dig bala.
@@ -2402,8 +2418,6 @@ ok('[N] reaches the graha table\u2019s dignity, not the grid alone',
  * the only row not showing it.
  */
 ok('the ascendant takes none of what is about a graha',
-   /star: !r\.isAscendant && cancelledHere\[r\.name\]/.test(appSrc) &&
-   /!r\.isAscendant && Astro\.hasDigBala/.test(appSrc) &&
    /var owned = r\.isAscendant \? \[\] : Astro\.housesOwned/.test(appSrc) &&
    /r\.isAscendant \? '' : Astro\.dignityOf/.test(appSrc));
 ok('but it does take the hemming marks, which are defined on it first',

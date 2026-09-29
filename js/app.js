@@ -1611,13 +1611,20 @@
                 benefics) ? 'S' : null,
               Astro.hemmedByMalefics(r.name, v.sign, divisionChart,
                 benefics) ? 'P' : null] },
+          /*
+           * [N], [D] and [Y] used to hang off these three cells - neecha
+           * bhanga on the dignity, dig bala on the house, yogakaraka on the
+           * lordship. Four rows of a wide table each carrying a bracketed
+           * letter is a lot of punctuation for a reader scanning signs and
+           * house numbers, and every one of the three is now said in full on
+           * the graha's card, where there is room for the reason. The marks
+           * that remain here are about the sign the cell names.
+           */
           { text: (r.isAscendant ? '' : Astro.dignityOf(r.name, v.sign, v.degreeInSign)) || '–',
-            stack: true, star: !r.isAscendant && cancelledHere[r.name] },
-          { text: String(house), cls: 'numeric',
-            flags: [!r.isAscendant && Astro.hasDigBala(r.name, house) ? 'D' : null] },
+            stack: true },
+          { text: String(house), cls: 'numeric' },
           owned.length
             ? { text: owned.join(', '), cls: 'numeric',
-                flags: [Astro.isYogakaraka(r.name, firstSign) ? 'Y' : null],
                 title: r.name + ' rules ' + owned.map(function (h) {
                   return Astro.SIGNS[(firstSign + h - 1) % 12] + ', the ' + Yogas.ordinal(h);
                 }).join(' and ') + '.' }
@@ -1758,15 +1765,6 @@
           });
         }
         if (cell.title) td.title = cell.title;
-        /*
-         * The star qualifies a dignity, so it goes wherever a dignity is
-         * printed rather than only in the grid that scores them.
-         */
-        if (cell.star) {
-          td.appendChild(el('span', 'flag flag-n', ' [N]'));
-          td.title = col.entity.name + '’s debilitation is cancelled and the graha ' +
-            'stands in an angle or a trine, which is neecha bhanga raja yoga.';
-        }
         if (cell.flags) flag(td, cell.flags);
         tr.appendChild(td);
       });
