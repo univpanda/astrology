@@ -3270,7 +3270,7 @@ ok('ordinals read correctly', Yogas.ordinal(1) === '1st' && Yogas.ordinal(2) ===
                    Yogas.gauri, Yogas.bharathi, Yogas.kusuma, Yogas.chapa,
                    Yogas.sreenatha, Yogas.sankha, Yogas.bheri, Yogas.matsya,
                    Yogas.mridanga, Yogas.saraswati, Yogas.mahaRaja,
-                   Yogas.nabhasa];
+                   Yogas.nabhasa, Yogas.dhana, Yogas.daridra];
   ok('every detector is covered by this test', detectors.length === Yogas.DETECTOR_COUNT,
      detectors.length + ' named, ' + Yogas.DETECTOR_COUNT + ' in the module');
 
@@ -5183,7 +5183,8 @@ console.log('\nEverything Raman numbers up to 50');
    * this figure drift upwards with every addition, which would quietly stop it
    * saying anything about Raman's fifty at all.
    */
-  var NOT_RAMANS = [Yogas.saraswati, Yogas.mahaRaja, Yogas.nabhasa];
+  var NOT_RAMANS = [Yogas.saraswati, Yogas.mahaRaja, Yogas.nabhasa,
+    Yogas.dhana, Yogas.daridra];
   var detectors = Yogas.DETECTOR_COUNT - NOT_RAMANS.length;
   ok('the module carries a detector for each of them', detectors === 34,
     detectors + ' from the book, ' + Yogas.DETECTOR_COUNT + ' in all');
@@ -7030,6 +7031,119 @@ console.log('\nSaraswati, Maha Raja, and the Sun’s company named by its form')
   ok('while the library key stays the bare name, all three being one combination',
     Object.keys(keys).sort().join(' ') === 'Ubhayachari Yoga Vasi Yoga Vesi Yoga',
     Object.keys(keys).sort().join(', '));
+})();
+
+
+console.log('\nWealth and want, Parashara’s chapters 41 and 42');
+(function () {
+  var SEVEN = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+  /*
+   * Aries rising throughout, so house n is sign n-1 and the lords are fixed:
+   * Mars the 1st and 8th, Venus the 2nd and 7th, Mercury the 3rd and 6th, the
+   * Moon the 4th, the Sun the 5th, Jupiter the 9th and 12th, Saturn the 10th
+   * and 11th.
+   */
+  var chartOf = function (where, extra) {
+    var planets = SEVEN.map(function (g) {
+      var at = where[g] === undefined ? 10 : where[g];
+      var sign = typeof at === 'number' ? at : at.sign;
+      var lon = typeof at === 'number' ? sign * 30 + 5 : at.lon;
+      return { name: g, sign: sign, longitude: lon, house: sign + 1 };
+    });
+    (extra || []).forEach(function (p) { planets.push(p); });
+    return { ascendant: { longitude: 5 }, planets: planets };
+  };
+
+  /*
+   * Dhana, verses 2 to 8, in the form Santhanam draws from them: the 5th lord
+   * in the 5th and the 11th lord in the 11th. For Aries that is the Sun in Leo
+   * and Saturn in Aquarius, which is verse 4 word for word.
+   */
+  var rich = chartOf({ Sun: 4, Saturn: 10, Moon: 10, Jupiter: 10,
+    Mars: 2, Mercury: 2, Venus: 2 });
+  var got = Yogas.dhana(rich);
+  ok('Dhana forms when the 5th lord holds the 5th and the 11th lord the 11th',
+    got.length === 1 && /rules the 5th and stands in it/.test(got[0].reasons[0]),
+    got.length ? got[0].summary : 'nothing found');
+  ok('and it notices the extra grahas three of the seven verses ask for',
+    got.length === 1 && got[0].reasons.join(' ').indexOf('stand in the 11th besides') > -1,
+    got.length ? got[0].reasons[2] || '' : '');
+
+  var moved = chartOf({ Sun: 4, Saturn: 9, Moon: 10, Jupiter: 10,
+    Mars: 2, Mercury: 2, Venus: 2 });
+  ok('and not when the 11th lord steps out of the 11th',
+    Yogas.dhana(moved).length === 0);
+
+  /*
+   * Verses 9 to 15: the ascendant lord in the ascendant with named company, and
+   * the company is not interchangeable. Mars rules Aries, and verse 11 asks for
+   * Mercury, Venus and Saturn.
+   */
+  var lagna = chartOf({ Mars: 0, Mercury: 0, Venus: 0, Saturn: 0,
+    Sun: 3, Moon: 5, Jupiter: 7 });
+  ok('Dhana forms on the ascendant lord in the ascendant with its own company',
+    Yogas.dhana(lagna).length === 1, Yogas.dhana(lagna).map(function (f) {
+      return f.summary; }).join(' '));
+  var wrongCompany = chartOf({ Mars: 0, Jupiter: 0, Sun: 0, Moon: 5,
+    Mercury: 7, Venus: 7, Saturn: 7 });
+  ok('and not on company the verse does not name',
+    Yogas.dhana(wrongCompany).length === 0);
+
+  /*
+   * Daridra. Chapter 42 verse 2: the ascendant lord in the 12th and the 12th
+   * lord in the ascendant, reached by a maraka. For Aries both are covered by
+   * Mars in Pisces and Jupiter in Aries, and Venus rules the 2nd and the 7th,
+   * so a Venus that aspects either is the maraka the verse wants.
+   */
+  var poor = chartOf({ Mars: 11, Jupiter: 0, Venus: 6, Sun: 4, Moon: 4,
+    Mercury: 4, Saturn: 4 });
+  var found = Yogas.daridra(poor);
+  ok('Daridra forms on the exchange between the ascendant and the 12th',
+    found.length === 1 &&
+    found[0].reasons.join(' ').indexOf('the two have exchanged') > -1,
+    found.length ? found[0].summary : 'nothing found');
+  ok('and the maraka is named by the rule chapter 44 gives',
+    found.length === 1 && found[0].reasons.join(' ').indexOf('is a maraka') > -1);
+
+  /*
+   * The clauses are gathered rather than reported as several cards of the same
+   * name, so a chart answering to more than one gives one finding with the
+   * reasons stacked.
+   */
+  var doubly = Yogas.daridra(chartOf({ Mars: 11, Jupiter: 0, Venus: 6,
+    Sun: 5, Moon: 5, Mercury: 5, Saturn: 5 }));
+  ok('several clauses at once make one finding, not several of the same name',
+    doubly.length <= 1);
+
+  /*
+   * And the finding says what is not tested. Parashara gives fifteen verses and
+   * seven are implemented; silence about the other eight would read as absence.
+   */
+  ok('and it admits that eight of the fifteen verses are not tested',
+    found.length === 1 &&
+    found[0].reasons.join(' ').indexOf('Parashara gives fifteen of these') > -1);
+
+  /*
+   * The maraka rule itself, from chapter 44: "The lords of the 2nd and the 7th,
+   * malefic in the 2nd and the 7th and malefic accompanying the 2nd and the 7th
+   * lords are all known as Maraka." All three kinds, not only the two lords.
+   */
+  var c = Astro.chart({ jdUT: Astro.julianDay(1977, 11, 15, 3), latitude: 28.61,
+    longitude: 77.21, tzOffsetMinutes: 330 });
+  var ship = Yogas.marakasOf((function () {
+    // the same view of the chart the detectors use
+    var at = {};
+    c.planets.forEach(function (p) { at[p.name] = p; });
+    var lagna = Astro.signOf(c.ascendant.longitude);
+    return { at: at, lagna: lagna,
+      lordOf: function (h) { return Astro.SIGN_LORDS[(lagna + h - 1) % 12]; },
+      houseOf: function (n) {
+        return at[n] ? ((at[n].sign - lagna) % 12 + 12) % 12 + 1 : null;
+      },
+      together: function (a, b) { return at[a] && at[b] && at[a].sign === at[b].sign; } };
+  })(), Astro.naturalBenefics(c));
+  ok('the marakas are the two lords at least, and may be more',
+    ship.length >= 1 && ship.length <= 7, ship.join(', '));
 })();
 
 

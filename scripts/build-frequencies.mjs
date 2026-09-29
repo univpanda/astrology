@@ -30,6 +30,13 @@ const PLACES = [
 
 let charts = 0;
 const yoga = {}, state = {}, yogaNoFloor = {};
+/*
+ * By the name the card prints, as well as by the pair the library is keyed on.
+ * A family sharing one passage shares one subject, so Nabhasa's thirty-two
+ * figures would all carry the family's figure - one of them holds in every
+ * chart - where Chakra is one in thousands and Pasa is two in five.
+ */
+const byTitle = {};
 
 for (let y = 1930; y < 2030; y++) {
   for (let m = 1; m <= 12; m++) {
@@ -82,14 +89,17 @@ for (let y = 1930; y < 2030; y++) {
       const strengths = Shadbala.compute(chart, {
         latitude: place[0], longitude: place[1], tzOffsetMinutes: place[2]
       });
-      const sweep = function (into) {
-        const seen = {};
+      const sweep = function (into, titles) {
+        const seen = {}, seenTitle = {};
         Yogas.detect(chart, strengths).forEach(function (f) {
           const k = (f.subject || '?') + '|' + (f.condition || '?');
           if (!seen[k]) { seen[k] = 1; into[k] = (into[k] || 0) + 1; }
+          if (!titles || !f.title || seenTitle[f.title]) return;
+          seenTitle[f.title] = 1;
+          titles[f.title] = (titles[f.title] || 0) + 1;
         });
       };
-      sweep(yoga);
+      sweep(yoga, byTitle);
       /*
        * Again with Raman's floor dropped, because a setting that changes what
        * forms changes how often it forms, and the card would otherwise print a
@@ -138,6 +148,13 @@ ${dump(state)}
    */
   yogaNoFloor: {
 ${dump(moved)}
+  },
+  /*
+   * By the name printed on the card. Preferred over the pair above, so a family
+   * sharing one passage still reports each figure at its own rate.
+   */
+  yogaTitle: {
+${dump(byTitle)}
   }
 };
 

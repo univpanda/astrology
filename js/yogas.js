@@ -1325,6 +1325,315 @@ var Yogas = (function () {
   }
 
 
+  /* --------------------------------------------- Dhana and Daridra */
+
+  /*
+   * Wealth and want, Parashara's chapters 41 and 42. Between them they are the
+   * most consulted question in the book and this site had nothing from either.
+   *
+   * Both lean on the marakas, which chapter 44 defines: "the 2nd and 7th are
+   * Maraka houses ... The lords of the 2nd and the 7th, malefic in the 2nd and
+   * the 7th and malefic accompanying the 2nd and the 7th lords are all known as
+   * Maraka." All three kinds are counted here.
+   */
+  function marakasOf(c, benefics) {
+    var out = [];
+    var add = function (g) { if (g && c.at[g] && out.indexOf(g) < 0) out.push(g); };
+    var second = c.lordOf(2), seventh = c.lordOf(7);
+    add(second); add(seventh);
+    GRAHAS.forEach(function (g) {
+      if (benefics[g] === true) return;
+      var h = c.houseOf(g);
+      if (h === 2 || h === 7) add(g);                  // a malefic in either house
+      if (c.together(g, second) || c.together(g, seventh)) add(g);   // or beside a lord
+    });
+    return out;
+  }
+
+  /* Who aspects this graha, by the full aspects used everywhere here. */
+  function aspectingOf(c, graha) {
+    if (!c.at[graha]) return [];
+    return GRAHAS.filter(function (g) {
+      return g !== graha && c.at[g] &&
+        Astro.aspects(g, c.at[g].sign, c.at[graha].sign);
+    });
+  }
+
+  /* "Conjunct or aspected by", which is how chapter 41 words every clause. */
+  function touches(c, graha, other) {
+    return c.together(graha, other) ||
+      (c.at[other] && c.at[graha] &&
+        Astro.aspects(other, c.at[other].sign, c.at[graha].sign));
+  }
+
+  /*
+   * Chapter 41 verses 9 to 15: the lord of the ascendant standing in it, with
+   * named company. Parashara gives one verse per graha and the companions
+   * differ, so they are listed rather than generalised.
+   */
+  var DHANA_COMPANY = {
+    Sun: ['Mars', 'Jupiter'], Moon: ['Mercury', 'Jupiter'],
+    Mars: ['Mercury', 'Venus', 'Saturn'], Mercury: ['Saturn', 'Jupiter'],
+    Jupiter: ['Mercury', 'Mars'], Venus: ['Saturn', 'Mercury'],
+    Saturn: ['Mars', 'Jupiter']
+  };
+
+  /*
+   * Both chapters give many separate verses for one idea, and a chart can
+   * answer to several at once. They are gathered into one finding rather than
+   * reported as three or four cards saying the same name, with every clause
+   * that held kept as its own reason - which is what a reader wants: not that
+   * the chart is poor four times, but which four ways.
+   */
+  function gather(subject, title, parts) {
+    if (!parts.length) return [];
+    var grahas = [], houses = [], reasons = [];
+    parts.forEach(function (p) {
+      (p.grahas || []).forEach(function (g) { if (grahas.indexOf(g) < 0) grahas.push(g); });
+      (p.houses || []).forEach(function (h) { if (houses.indexOf(h) < 0) houses.push(h); });
+      p.reasons.forEach(function (r) { reasons.push(r); });
+    });
+    return [{
+      yoga: subject, kind: 'general', subject: subject, condition: 'general',
+      title: title, family: 'Wealth and want', grahas: grahas, houses: houses,
+      reasons: reasons,
+      summary: parts.length === 1 ? parts[0].summary
+        : parts[0].summary + ' And ' + parts.slice(1).map(function (p) {
+            return p.summary.charAt(0).toLowerCase() + p.summary.slice(1);
+          }).join(' And ')
+    }];
+  }
+
+  function dhana(chart) {
+    var c = lordship(chart);
+    if (!c.at.Sun) return [];
+    var out = [];
+
+    /*
+     * Verses 2 to 8. Parashara writes seven verses, one pair of ascendants at a
+     * time - Venus in the 5th with Mars in the 11th, Mercury in the 5th with
+     * the Moon, Mars and Jupiter in the 11th, and so on - and Santhanam draws
+     * the thread: "from shlokas 2 to 8, the formula that stands for basic
+     * consideration is that the 5th lord should be in the 5th while the 11th
+     * lord is in the 11th itself." Between them the seven cover all twelve
+     * ascendants, so the general form is what is tested and the extra grahas
+     * three of the verses ask for in the 11th are reported when they are there.
+     */
+    var fifth = c.lordOf(5), eleventh = c.lordOf(11);
+    if (c.at[fifth] && c.at[eleventh] &&
+        c.houseOf(fifth) === 5 && c.houseOf(eleventh) === 11) {
+      var alsoEleventh = GRAHAS.filter(function (g) {
+        return g !== eleventh && c.houseOf(g) === 11;
+      });
+      var reasons = [
+        named(fifth) + ' rules the 5th and stands in it, while ' +
+          named(eleventh) + ' rules the 11th and stands in that',
+        'the 5th is the house of merit carried from before and the 11th of ' +
+          'gain, and Parashara gives a verse to each of the seven ways this ' +
+          'can fall, covering all twelve ascendants between them'
+      ];
+      if (alsoEleventh.length) {
+        reasons.push(listOf(alsoEleventh) + ' stand in the 11th besides, which ' +
+          'three of the seven verses ask for by name');
+      }
+      out.push({ reasons: reasons, grahas: [fifth, eleventh].concat(alsoEleventh),
+        houses: [5, 11],
+        summary: named(fifth) + ' holds the 5th it rules and ' + named(eleventh) +
+          ' the 11th, which Parashara reads for great affluence.' });
+    }
+
+    /* Verses 9 to 15. */
+    var lord = c.lordOf(1);
+    var wanted = DHANA_COMPANY[lord] || [];
+    if (c.at[lord] && c.houseOf(lord) === 1 && wanted.length &&
+        wanted.every(function (g) { return touches(c, lord, g); })) {
+      var how = wanted.map(function (g) {
+        return named(g) + (c.together(lord, g) ? ' with him' : ' aspecting');
+      });
+      out.push({ grahas: [lord].concat(wanted), houses: [1],
+        reasons: [
+          named(lord) + ' rules ' + firstHouse(chart, 'the ascendant') +
+            ' and stands in it, which is his own sign by definition',
+          'and the company the verse asks for is there: ' + listOf(how),
+          'Parashara names different companions for each of the seven, so the ' +
+            'rule is not that any two grahas will do'
+        ],
+        summary: named(lord) + ' rules ' + firstHouse(chart, 'the ascendant') +
+          ' and stands in it with ' + listOf(wanted) +
+          ', which Parashara reads for wealth.' });
+    }
+    return gather('Dhana Yoga', 'Dhana yoga', out);
+  }
+
+  /*
+   * Chapter 42, the other side of it. Fifteen verses; the seven tested here are
+   * 2 to 8, which need nothing beyond houses, lords and aspects. The rest want
+   * dispositor chains, the navamsa ascendant and the Atmakaraka, and a finding
+   * has to say so rather than let a reader take silence for absence.
+   */
+  var DARIDRA = [
+    { key: 'exchange-12', verse: 2 }, { key: 'exchange-6', verse: 3 },
+    { key: 'ketu', verse: 4 }, { key: 'dusthana', verse: 5 },
+    { key: 'evil-company', verse: 6 }, { key: 'trine-lords', verse: 7 },
+    { key: 'malefic-lagna', verse: 8 }
+  ];
+  var DUSTHANAS = [6, 8, 12];
+
+  function daridra(chart) {
+    var c = lordship(chart);
+    if (!c.at.Sun) return [];
+    var benefics = Astro.naturalBenefics(chart);
+    var marakas = marakasOf(c, benefics);
+    var lord = c.lordOf(1);
+    if (!c.at[lord]) return [];
+    var out = [];
+    var struckBy = function (graha) {
+      return marakas.filter(function (m) { return m !== graha && touches(c, graha, m); });
+    };
+    var say = function (key, reasons, summary, grahas, houses) {
+      out.push({ reasons: reasons, summary: summary, grahas: grahas,
+        houses: houses || [] });
+    };
+
+    /* 2 and 3: the ascendant lord exchanged with the 12th or the 6th. */
+    [[12, 'exchange-12'], [6, 'exchange-6']].forEach(function (pair) {
+      var house = pair[0], other = c.lordOf(house);
+      if (!c.at[other] || c.houseOf(lord) !== house || c.houseOf(other) !== 1) return;
+      var hit = struckBy(lord).concat(struckBy(other).filter(function (m) {
+        return struckBy(lord).indexOf(m) < 0;
+      }));
+      if (!hit.length) return;
+      say(pair[1], [
+        named(lord) + ' rules ' + firstHouse(chart, 'the ascendant') + ' and sits in the ' +
+          ordinal(house) + ', while ' + named(other) + ' rules the ' + ordinal(house) +
+          ' and sits in ' + firstHouse(chart, 'the ascendant') + ': the two have exchanged',
+        listOf(hit) + ' is a maraka and reaches them, which the verse asks for; ' +
+          'the marakas are the lords of the 2nd and the 7th, malefics standing ' +
+          'in those houses, and malefics keeping their company'
+      ], named(lord) + ' and ' + named(other) + ' have exchanged ' +
+        firstHouse(chart, 'the ascendant') + ' and the ' + ordinal(house) +
+        ', with ' + listOf(hit) + ' upon them.', [lord, other].concat(hit), [1, house]);
+    });
+
+    /* 4: the ascendant or the Moon with Ketu, the ascendant lord in the 8th. */
+    if (c.houseOf(lord) === 8 && c.at.Ketu) {
+      var withKetu = c.at.Ketu.sign === c.lagna ? firstHouse(chart, 'the ascendant')
+        : (c.at.Moon && c.at.Moon.sign === c.at.Ketu.sign ? 'the Moon' : null);
+      if (withKetu) {
+        say('ketu', [
+          'Ketu stands with ' + withKetu,
+          named(lord) + ', who rules ' + firstHouse(chart, 'the ascendant') +
+            ', is in the 8th'
+        ], 'Ketu is with ' + withKetu + ' while ' + named(lord) + ', the lord of ' +
+          firstHouse(chart, 'the ascendant') + ', is in the 8th.',
+        ['Ketu', lord], [8]);
+      }
+    }
+
+    /* 5: the ascendant lord with a malefic in a dusthana, the 2nd lord fallen. */
+    var lordHouse = c.houseOf(lord);
+    if (DUSTHANAS.indexOf(lordHouse) >= 0) {
+      var beside = GRAHAS.filter(function (g) {
+        return g !== lord && benefics[g] !== true && c.together(lord, g);
+      });
+      var second = c.lordOf(2);
+      var seat = c.at[second] ? c.dignity(second) : null;
+      var signLord = c.at[second] ? Astro.SIGN_LORDS[c.at[second].sign] : null;
+      var fallen = seat === 'Debilitated' ||
+        (signLord && Astro.naturalRelation(second, signLord) === -1);
+      if (beside.length && fallen) {
+        say('dusthana', [
+          named(lord) + ' rules ' + firstHouse(chart, 'the ascendant') +
+            ' and stands in the ' + ordinal(lordHouse) + ' with ' + listOf(beside) +
+            ', a malefic',
+          named(second) + ' rules the 2nd, the house of what is held, and is ' +
+            (seat === 'Debilitated' ? 'debilitated'
+              : 'in the sign of ' + signLord + ', a natural enemy'),
+          'the verse says this reduces even a royal scion to pennilessness'
+        ], named(lord) + ' is in the ' + ordinal(lordHouse) + ' with ' +
+          listOf(beside) + ' while ' + named(second) + ', the 2nd lord, is ' +
+          (seat === 'Debilitated' ? 'debilitated.' : 'in an enemy’s sign.'),
+        [lord, second].concat(beside), [lordHouse, 2]);
+      }
+    }
+
+    /* 6: the ascendant lord with an evil lord or Saturn and no benefic looking on. */
+    var evilLords = DUSTHANAS.map(function (h) { return c.lordOf(h); });
+    var bad = GRAHAS.filter(function (g) {
+      return g !== lord && c.together(lord, g) &&
+        (evilLords.indexOf(g) >= 0 || g === 'Saturn');
+    });
+    if (bad.length) {
+      var helped = aspectingOf(c, lord).filter(function (g) {
+        return benefics[g] === true;
+      });
+      if (!helped.length) {
+        say('evil-company', [
+          named(lord) + ' rules ' + firstHouse(chart, 'the ascendant') +
+            ' and keeps company with ' + listOf(bad) +
+            (bad.indexOf('Saturn') >= 0 && evilLords.indexOf('Saturn') < 0
+              ? ', Saturn being named in the verse whatever he rules'
+              : ', who rules one of the 6th, 8th and 12th'),
+          'and no benefic aspects him, which is the clause that would have ' +
+            'saved it'
+        ], named(lord) + ' stands with ' + listOf(bad) +
+          ' and no benefic looks on.', [lord].concat(bad), [c.houseOf(lord)]);
+      }
+    }
+
+    /* 7: the 5th lord in the 6th and the 9th lord in the 12th, marakas on them. */
+    var fifthLord = c.lordOf(5), ninthLord = c.lordOf(9);
+    if (c.at[fifthLord] && c.at[ninthLord] &&
+        c.houseOf(fifthLord) === 6 && c.houseOf(ninthLord) === 12) {
+      var struck = struckBy(fifthLord).concat(struckBy(ninthLord)
+        .filter(function (m) { return struckBy(fifthLord).indexOf(m) < 0; }));
+      if (struck.length) {
+        say('trine-lords', [
+          named(fifthLord) + ' rules the 5th and is in the 6th, while ' +
+            named(ninthLord) + ' rules the 9th and is in the 12th',
+          'the two trine lords are the wealth-givers of the chapter before this ' +
+            'one, and here both are in houses of loss',
+          listOf(struck) + ' is a maraka and reaches them'
+        ], 'The lords of the 5th and the 9th are in the 6th and the 12th with ' +
+          listOf(struck) + ' upon them.',
+        [fifthLord, ninthLord].concat(struck), [6, 12]);
+      }
+    }
+
+    /* 8: malefics other than the 9th and 10th lords in the ascendant. */
+    var spared = [c.lordOf(9), c.lordOf(10)];
+    var inLagna = GRAHAS.filter(function (g) {
+      return benefics[g] !== true && c.houseOf(g) === 1 && spared.indexOf(g) < 0;
+    });
+    if (inLagna.length) {
+      var reached = [];
+      inLagna.forEach(function (g) {
+        struckBy(g).forEach(function (m) {
+          if (reached.indexOf(m) < 0 && inLagna.indexOf(m) < 0) reached.push(m);
+        });
+      });
+      if (reached.length) {
+        say('malefic-lagna', [
+          listOf(inLagna) + ' stands in ' + firstHouse(chart, 'the ascendant') +
+            ', a malefic ruling neither the 9th nor the 10th, which the verse ' +
+            'excepts',
+          listOf(reached) + ' is a maraka and reaches ' +
+            (inLagna.length > 1 ? 'them' : 'him')
+        ], listOf(inLagna) + ' holds ' + firstHouse(chart, 'the ascendant') +
+          ' with ' + listOf(reached) + ' upon it.',
+        inLagna.concat(reached), [1]);
+      }
+    }
+    if (out.length) {
+      out[out.length - 1].reasons = out[out.length - 1].reasons.concat([
+        'Parashara gives fifteen of these; seven are tested here, the rest ' +
+          'needing the navamsa ascendant, the Atmakaraka or a chain of ' +
+          'dispositors, so a chart can carry one that is not reported']);
+    }
+    return gather('Daridra Yoga', 'Daridra yoga', out);
+  }
+
+
   /* ------------------------------------------------------- Nabhasa */
 
   /*
@@ -1444,7 +1753,15 @@ var Yogas = (function () {
       yoga: 'Nabhasa Yoga',
       kind: name.toLowerCase(),
       subject: 'Nabhasa Yoga',
-      condition: group,
+      /*
+       * One passage for the family rather than four. The group is still on the
+       * finding as `kind`, so the card can say which of the four a figure
+       * belongs to; splitting the library four ways as well only made the yoga
+       * topic heavier without telling a reader anything the one passage does
+       * not.
+       */
+      condition: 'general',
+      group: group,
       title: name + ' yoga' + (collides ? ' (Nabhasa)' : ''),
       family: 'Nabhasa',
       grahas: grahas,
@@ -2859,7 +3176,8 @@ var Yogas = (function () {
     vanchanachorabheethi, kahala, pushkala, gauri, bharathi, kusuma,
     chapa, sreenatha, sankha, bheri, matsya, mridanga,
     chandraMangala, adhiYoga, sakata, amala, budhaAditya,
-                   gajaKesari, kartari, saraswati, mahaRaja, nabhasa];
+                   gajaKesari, kartari, saraswati, mahaRaja, nabhasa,
+                   dhana, daridra];
 
   /**
    * Every yoga this module knows how to look for, in one pass.
@@ -2932,6 +3250,7 @@ var Yogas = (function () {
       'Gauri yoga', 'Bharathi yoga', 'Kusuma yoga', 'Chapa yoga',
       'Sreenatha yoga', 'Sankha yoga', 'Bheri yoga', 'Matsya yoga',
       'Mridanga yoga', 'Vanchanachorabheethi yoga'] },
+    { group: 'Wealth and want', names: ['Dhana yoga', 'Daridra yoga'] },
     { group: 'Nabhasa', names: ['Rajju yoga', 'Musala yoga', 'Nala yoga',
       'Mala yoga', 'Sarpa yoga', 'Gada yoga', 'Sakata yoga (Nabhasa)',
       'Vihaga yoga', 'Sringataka yoga', 'Hala yoga', 'Vajra yoga', 'Yava yoga',
@@ -2978,6 +3297,7 @@ var Yogas = (function () {
     vipareeta: vipareeta, lakshmi: lakshmi, mahapurusha: mahapurusha,
     rajaYoga: rajaYoga, gajaKesari: gajaKesari,
     saraswati: saraswati, mahaRaja: mahaRaja, nabhasa: nabhasa,
+    dhana: dhana, daridra: daridra, marakasOf: marakasOf,
     NABHASA_SAYS: NABHASA_SAYS,
     SARASWATI_HOUSES: SARASWATI_HOUSES, SARASWATI_GRAHAS: SARASWATI_GRAHAS,
     VISHNU_HOUSES: VISHNU_HOUSES, LAKSHMI_HOUSES: LAKSHMI_HOUSES,

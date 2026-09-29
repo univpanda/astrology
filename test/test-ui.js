@@ -6619,11 +6619,35 @@ console.log('\nHow rare a finding is, said out loud');
 console.log('\nThe card prints the figure beside the finding');
 (function () {
   var src = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
+  var F = global.FREQUENCIES;
   ok('the card asks the table for both kinds of line',
     /chanceOf\('state', key\)/.test(src) && /rarity\(head, 'state', key\)/.test(src) &&
-    /chanceOf\('yoga', key\)/.test(src) && /rarity\(head, 'yoga', key\)/.test(src) &&
-    /var key = t\.getAttribute\('data-graha'\) \+ '\/' \+ item\.term;/.test(src) &&
-    /var key = item\.subject \+ '\|' \+ item\.condition;/.test(src));
+    /chanceOf\(kind, key\)/.test(src) && /rarity\(head, kind, key\)/.test(src) &&
+    /var key = t\.getAttribute\('data-graha'\) \+ '\/' \+ item\.term;/.test(src));
+  /*
+   * A yoga asks by the name printed on it first and by the library key second.
+   * Nabhasa's thirty-two figures share one passage and so one subject, and one
+   * of them holds in every chart: keyed on the subject they would all have read
+   * "every chart", where Chakra is one in thousands and Pasa two in five.
+   */
+  ok('and a yoga is looked up by its own name before its family’s',
+    /chanceOf\('yogaTitle', item\.term\) !== undefined/.test(src) &&
+    typeof F.yogaTitle === 'object');
+  ok('and the two really do differ where a family shares a passage',
+    F.yoga['Nabhasa Yoga|general'] > 95 &&
+    F.yogaTitle['Rajju yoga'] < 2 && F.yogaTitle['Pasa yoga'] > 30,
+    'family ' + F.yoga['Nabhasa Yoga|general'] + '%, Rajju ' +
+      F.yogaTitle['Rajju yoga'] + '%, Pasa ' + F.yogaTitle['Pasa yoga'] + '%');
+  /*
+   * Eight of the thirty-two never appeared in the sample - Gada, Vihaga, Vajra,
+   * Yava, Kamala, Chakra, Samudra and Gola all need the slow grahas to gather -
+   * so they carry no figure at all, and the card drops the line rather than
+   * printing a nought. Absence from a sample of this size is not a measurement
+   * of nought, and saying so would be the one reading the number cannot bear.
+   */
+  ok('and a figure too rare for the sample carries no line rather than a nought',
+    F.yogaTitle['Chakra yoga'] === undefined &&
+    /if \(typeof pct !== 'number'\) return;/.test(src));
 
   /*
    * Run the renderer rather than trust the source: pull the formatter out of

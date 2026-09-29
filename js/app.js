@@ -1402,12 +1402,20 @@
       });
 
       split(t.getAttribute('data-yogas')).forEach(function (item) {
-        var key = item.subject + '|' + item.condition;
-        found.push({ chance: chanceOf('yoga', key), build: function () {
+        /*
+         * The name first, the library key second. A family that shares one
+         * passage shares one subject, so Nabhasa's thirty-two figures would all
+         * carry the family's figure - one of them holds in every chart - where
+         * Chakra is one in thousands and Pasa two in five.
+         */
+        var key = item.term && chanceOf('yogaTitle', item.term) !== undefined
+          ? item.term : item.subject + '|' + item.condition;
+        var kind = key === item.term ? 'yogaTitle' : 'yoga';
+        found.push({ chance: chanceOf(kind, key), build: function () {
           var li = el('li', 'graha-card-yoga');
           var head = el('p', 'graha-card-term');
           head.appendChild(el('span', 'graha-card-label', item.term));
-          rarity(head, 'yoga', key);
+          rarity(head, kind, key);
           li.appendChild(head);
           var means = meaningOf(item);
           if (means) li.appendChild(el('p', 'graha-card-means', means));

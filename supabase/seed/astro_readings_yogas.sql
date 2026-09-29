@@ -781,7 +781,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
  ],
  'The exchange clause is also reported on its own as a parivartana, the two being the same fact read at two levels of detail.', 922),
 
-('yoga', 'Nabhasa Yoga', 'asraya',
+('yoga', 'Nabhasa Yoga', 'general',
  'Nabhasa - thirty-two figures made of nothing but position',
  array[
    'Parashara gives a whole chapter to these, and they are unlike everything else on this page: no strength, no dignity, no aspect, no lordship. Which signs the seven grahas occupy, and nothing else. "O excellent of the Brahmins, explained below are 32 Nabhasa yogas which have a total of 1800 different varieties. These consist of 3 Asraya yogas, 2 Dala yogas, 20 Akriti yogas, and 7 Sankhya yogas."',
@@ -791,41 +791,40 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'Akriti means shape, and the twenty are figures: all seven confined to the 1st and 7th is a cart, to the four angles a lotus, to six alternate signs a wheel. Sankhya means number, and the last seven are the bare count of signs occupied, from all in one sign to all in seven.',
    'One reading had to be fixed to make the twenty work, and it is worth setting out. "All the planets should occupy the 1st, 2nd, 3rd and 4th houses" is satisfied by all seven sitting in the 1st, which would then be Yupa and Nauka and Gada and Sakata and Kamala at once. Jataka Parijata settles it: the Akriti yogas are "special instances" of the Sankhya ones by count. Sringataka and Hala are varieties of Sula, which is three signs; Vajra, Yava, Kamala, Vapi, Yupa, Ishu, Sakti and Danda of Kedara, which is four; Nauka, Koota, Chatra, Chapa and Ardhachandra of Veena, which is seven; Samudra and Chakra of Dama, which is six. So the figure must be filled and not merely contained, and every shape here is matched on the exact set of houses.',
    'That also decides when the counting yogas apply. Parashara: "None of these seven yogas will be operable, if another Nabhasa yoga explained earlier is derivable." Read here as the shapes only, which is what Jataka Parijata says and gives a reason for: a count reported beside its own special case says nothing. Asraya and Dala are not counts of anything and do not crowd it out.',
-   'Because the count covers every chart that makes no shape, one of these thirty-two is present in almost every chart. Pasa, five signs occupied, holds in 42 per cent; Kedara and Dama in about 25 each. They are a base classification rather than a distinction, and the figure beside each name on the card is the way to read them.',
+   'The twenty shapes, named for what the occupied houses look like: two successive angles is Gada the mace, the 1st and 7th Sakata the cart, the 4th and 10th Vihaga the bird, the 1st, 5th and 9th Sringataka. The four angles together is Kamala the lotus, unless the benefics and malefics have sorted themselves onto the two axes, which makes it Vajra the diamond or Yava the barleycorn. Four houses in a row from an angle gives Yupa, Sara, Sakthi and Danda; seven in a row from an angle gives Nauka the boat, Koota the peak, Chatra the umbrella and Chapa the bow; seven in a row from anywhere else is Ardhachandra, the half moon. Six alternate signs from the ascendant is Chakra the wheel, and from the 2nd, Samudra the ocean.',
+   'The readings are not all kind. Chakra is "an emperor at whose feet will be the prostrating kings'' heads"; Sakata is "afflicted by diseases ... poor and devoid of friends and relatives"; Danda loses sons and wife. They are figures rather than judgements, and Parashara gives each its own verse.',
+   'The last seven are arithmetic: how many signs the seven grahas occupy between them. All in one sign is Gola, two Yuga, three Sula, four Kedara, five Pasa, six Dama, seven Vallaki, also called Veena. Because the count covers every chart that makes no shape, one of these thirty-two is present in almost every chart. Pasa, five signs occupied, holds in 42 per cent; Kedara and Dama in about 25 each. They are a base classification rather than a distinction, and the figure beside each name on the card is the way to read them.',
    'Two of the names collide with combinations this site already reports on other rules, so both carry the family in the title. Sakata here is all seven grahas in the 1st and the 7th, where the other Sakata is Phaladeepika''s Moon in the 6th, 8th or 12th from Jupiter. Chapa here is a seven-house arc from the 10th, where the other is Raman''s exalted ascendant lord with the 4th and 10th lords exchanged.',
    'Houses are whole signs here as everywhere on this site. The commentary on Jataka Parijata notes that Maya, Yavana and Garga read these from the bhava chart rather than the rasi, which would let unequal houses make figures the signs do not. That is not the reading followed here, and at high latitudes the two can part.'
  ],
  'The effects quoted on each finding are Parashara''s own, from verses 18 to 50 of the same chapter.', 923),
 
-('yoga', 'Nabhasa Yoga', 'dala',
- 'Dala - the angles held by one nature',
- array[
-   'The two petal yogas ask who holds the four angles. Parashara: "If 3 angles are occupied by benefices Maala yoga is produced while malefic so placed will cause Bhujanga or Sarpa yoga."',
-   'Mala is read for a life of ease: "ever happy, endowed with conveyances, robes, food and pleasures". Sarpa is its opposite, "crooked, cruel, poor, miserable and will depend on others for food and drinks".',
-   'The line is short and the commentators fill it differently. Jataka Parijata''s commentator has the Moon left out of the benefic and malefic classification altogether for this purpose, and adds that the Dala yogas amount to the planets restricting themselves to the angles. This site reads Parashara plainly instead: three of the four angles occupied, and every graha standing in them of one nature.',
-   'Which grahas count as benefic follows the settings on the Chart tab, so the Moon''s nature and Mercury''s company can both move this one.'
- ],
- 'The full family is set out under Nabhasa.', 924),
 
-('yoga', 'Nabhasa Yoga', 'akriti',
- 'Akriti - the shape the grahas make',
- array[
-   'Twenty figures, each named for what the occupied houses look like. Two successive angles is Gada the mace; the 1st and 7th is Sakata the cart; the 4th and 10th is Vihaga the bird; the 1st, 5th and 9th is Sringataka. The four angles together is Kamala the lotus, unless the benefics and malefics have sorted themselves onto the two axes, which makes it Vajra the diamond or Yava the barleycorn.',
-   'Four houses in a row from an angle gives Yupa, Sara, Sakthi and Danda, in that order from the 1st, the 4th, the 7th and the 10th. Seven in a row from an angle gives Nauka the boat, Koota the peak, Chatra the umbrella and Chapa the bow; seven in a row from anywhere else is Ardhachandra, the half moon. Six alternate signs from the ascendant is Chakra the wheel, and from the 2nd, Samudra the ocean.',
-   'The readings are not all kind. Chakra is "an emperor at whose feet will be the prostrating kings'' heads"; Sakata is "afflicted by diseases ... poor and devoid of friends and relatives"; Danda loses sons and wife. They are figures rather than judgements, and Parashara gives each its own verse.',
-   'Every one is matched on the exact set of houses occupied, not on containment, which is what makes the twenty distinct from each other. The reason is set out under Nabhasa.'
- ],
- 'A chart makes at most one of these twenty, the sets being exclusive.', 925),
 
-('yoga', 'Nabhasa Yoga', 'sankhya',
- 'Sankhya - the bare count of signs',
+
+('yoga', 'Dhana Yoga', 'general',
+ 'Dhana - what Parashara gives a chapter to',
  array[
-   'The last seven are arithmetic: how many signs the seven grahas occupy between them. All in one sign is Gola, two Yuga, three Sula, four Kedara, five Pasa, six Dama, seven Vallaki, which is also called Veena.',
-   'They apply only when the chart makes no Akriti figure, Parashara saying that none of the seven "will be operable, if another Nabhasa yoga explained earlier is derivable". Jataka Parijata gives the reason: the shapes are special cases of these counts, so reporting a count beside its own special case says nothing.',
-   'Because every chart occupies between one and seven signs, one of these holds whenever no shape does, which is most of the time. Pasa is 42 per cent of charts on this site''s sample, Kedara and Dama about 25 each, and Gola - all seven grahas in a single sign - is vanishingly rare. Read them as a base classification and take the rarity figure on the card seriously.',
-   'The readings run from Vallaki, "fond of songs, dance and musical instruments, skilful, happy, wealthy, and be a leader of men", down to Gola, "strong, be devoid of wealth, learning and intelligence, be dirty, sorrowful, and miserable".'
+   'Chapter 41 opens without preamble: "I now tell you of special combinations giving wealth. One born in these yogas will surely become wealthy." Two groups of verses follow, and both are tested here.',
+   'The first is verses 2 to 8, which Parashara writes one pair of ascendants at a time. Venus in the 5th with Mars in the 11th; Mercury in the 5th with the Moon, Mars and Jupiter in the 11th; Leo as the 5th holding the Sun while Saturn, the Moon and Jupiter hold the 11th, and so on for seven verses. Santhanam draws the thread through them: "from shlokas 2 to 8, the formula that stands for basic consideration is that the 5th lord should be in the 5th while the 11th lord is in the 11th itself." Between them the seven cover all twelve ascendants, so that general form is what this site tests, and where a verse names extra grahas for the 11th they are reported when they are there.',
+   'Why those two houses. The 5th is merit carried from before and the 11th is gain, and a lord sitting in the house it rules is the strongest placement the system has. Neither house is about money on its own; together and self-ruled they are what the chapter calls great affluence.',
+   'The second group is verses 9 to 15: the lord of the ascendant standing in the ascendant, with named company. The companions differ by graha and are not interchangeable - Mars and Jupiter for the Sun, Mercury and Jupiter for the Moon, Mercury, Venus and Saturn for Mars, Saturn and Jupiter for Mercury, Mercury and Mars for Jupiter, Saturn and Mercury for Venus, Mars and Jupiter for Saturn - and each may be conjunct or aspecting.',
+   'It is genuinely uncommon: a little over one chart in a hundred on this site''s sample carries either group. That is the point of it. Parashara adds at verse 17 that these should be read "after knowing favourable unfavourable dispositions of the participant planets and their strength and weakness", so a Dhana yoga made by weak grahas is not the same finding as one made by strong ones, and the Shadbala tab is where that is settled.',
+   'What is not implemented: verses 18 to 34, which score the divisional dignities of the angular, 5th and 9th lords. That is a graded scheme rather than a yoga, and it belongs with vimsopaka bala rather than here.'
  ],
- 'The full family is set out under Nabhasa.', 926)
+ 'Verse 16 adds that the 5th and 9th lords, and anything joined to them, give wealth in their dashas; that is a dasha reading rather than a combination and is not reported as a yoga.', 927),
+
+('yoga', 'Daridra Yoga', 'general',
+ 'Daridra - the chapter that answers the one before it',
+ array[
+   'Chapter 42 begins with Maitreya asking for the reverse: "O Lord, you have stated many yogas related to acquisition of wealth. Please tell me such yogas causing utter poverty." Fifteen verses follow. Seven of them are tested here, and a chart can carry one of the other eight without this site saying so.',
+   'Most of them turn on the marakas, which chapter 44 defines and this site follows: "the 2nd and 7th are Maraka houses ... The lords of the 2nd and the 7th, malefic in the 2nd and the 7th and malefic accompanying the 2nd and the 7th lords are all known as Maraka." All three kinds count, not only the two lords.',
+   'The seven. Verse 2: the ascendant lord in the 12th and the 12th lord in the ascendant, with a maraka reaching them. Verse 3: the same exchange with the 6th. Verse 4: the ascendant or the Moon with Ketu while the ascendant lord is in the 8th. Verse 5: the ascendant lord with a malefic in the 6th, 8th or 12th while the 2nd lord is debilitated or in an enemy''s sign, which the verse says will reduce "even a native of royal scion". Verse 6: the ascendant lord joined to a lord of the 6th, 8th or 12th, or to Saturn, with no benefic aspect. Verse 7: the 5th lord in the 6th and the 9th lord in the 12th with marakas upon them, the two wealth-givers of the previous chapter both in houses of loss. Verse 8: a malefic in the ascendant that rules neither the 9th nor the 10th, reached by a maraka.',
+   'One of those seven is far commoner than the rest and should be weighted accordingly. Verse 6 holds in about a quarter of all charts, because Saturn is named in it outright whatever he rules, and the ascendant lord shares a sign with him or with one of three other lords often enough. Taken together the seven reach about a third of charts. This is a chapter of warnings rather than of verdicts, and the rarity figure on the card is the way to read each one.',
+   'Where several clauses hold at once they are gathered into a single finding with each kept as its own reason, since what a reader wants is not that the chart is poor four times over but which four ways.',
+   'Not implemented: verses 9 to 15, which need a chain of dispositors, the lord of the Moon''s navamsa, the navamsa ascendant, or the Atmakaraka and the houses counted from it. The finding says as much rather than letting silence be read as absence.'
+ ],
+ 'Which grahas count as malefic follows the settings on the Chart tab, so the Moon''s nature and Mercury''s company can both move these.', 928)
 
 on conflict (topic, subject, condition) do update set
   heading = excluded.heading,
