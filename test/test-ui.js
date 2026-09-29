@@ -6798,7 +6798,8 @@ console.log('\nThe settings sit three to a row, explaining themselves on hover')
    */
   ok('no setting folds out of the layout any more',
     !/<details class="field-why">/.test(panel) &&
-    (panel.match(/<div class="field-why" id="why-/g) || []).length === 11);
+    (panel.match(/<div class="field-why" id="why-/g) || []).length ===
+      (panel.match(/<div class="field">/g) || []).length);
 
   /*
    * Kept for the reader who cannot hover. The note stays in the document and
@@ -6808,7 +6809,8 @@ console.log('\nThe settings sit three to a row, explaining themselves on hover')
     (function () {
       var ids = (panel.match(/<select id="([a-z-]+)"/g) || [])
         .map(function (m) { return m.slice('<select id="'.length, -1); });
-      return ids.length === 11 && ids.every(function (id) {
+      return ids.length === (panel.match(/<div class="field">/g) || []).length &&
+        ids.every(function (id) {
         return panel.indexOf('aria-describedby="why-' + id + '"') >= 0 &&
           panel.indexOf('<div class="field-why" id="why-' + id + '"') >= 0;
       });
@@ -7112,9 +7114,12 @@ console.log('\nThe settings argue from the classical texts');
 
   ok('no settings note argues from a modern compendium',
     panel.indexOf('Charak') < 0);
+  /* Collapsed, since these names wrap across lines in the source. */
+  var flatPanel = panel.replace(/\s+/g, ' ');
   ok('and the classical texts carry the arguments instead',
-    /Brihat Parashara Hora Shastra/.test(panel) && /Phaladeepika/.test(panel) &&
-    /Mantreswara/.test(panel) && /Santhanam/.test(panel));
+    /Brihat Parashara Hora Shastra/.test(flatPanel) &&
+    /Phaladeepika/.test(flatPanel) && /Mantreswara/.test(flatPanel) &&
+    /Santhanam/.test(flatPanel));
   /*
    * The two moderns the site does follow are still named where they are the
    * ones with a position: Raman throughout, Rao on the yogas.

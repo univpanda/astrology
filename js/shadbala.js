@@ -257,10 +257,11 @@ var Shadbala = (function () {
    *
    * Also undoubled; see the note on paksha bala above.
    */
-  function ayanaBala(graha, dec) {
+  function ayanaBala(graha, dec, constant) {
+    var c = constant || AYANA_CONSTANT.PARASHARA;
     var north = NORTH_STRONG.indexOf(graha) >= 0;
     var effective = graha === 'Mercury' ? Math.abs(dec) : (north ? dec : -dec);
-    return 60 * (24 + effective) / 48;
+    return 60 * (c.max + effective) / c.divisor;
   }
 
   /* ------------------------------------------------------ cheshta bala */
@@ -622,6 +623,22 @@ var Shadbala = (function () {
    */
   var KRANTI = { LONGITUDE: 'longitude', TRUE: 'true' };
 
+  /*
+   * The two constants the scaling can use, and they are two authorities rather
+   * than a text and an invention. Parashara's is 23 deg 27' with a divisor of
+   * 46.9, which Santhanam gives as "(23 deg 27' + Kranti) x 1.2793" in his note
+   * to ch.27 vv.15-17, 1.2793 being 60/46.9 exactly. Raman's is 24 and 48,
+   * section 73.
+   *
+   * They differ by at most 0.70 virupas, doubled for the Sun. Parashara's is
+   * the default, being the older of the two and the one a reader checking
+   * against a panchang is likelier to meet.
+   */
+  var AYANA_CONSTANT = {
+    PARASHARA: { key: 'parashara', max: 23.45, divisor: 46.9 },
+    RAMAN: { key: 'raman', max: 24, divisor: 48 }
+  };
+
   var CHESHTA = { KENDRA: 'kendra', MOTION: 'motion' };
 
   var NAT_CLOCK = { APPARENT: 'apparent', MEAN: 'mean', ZONE: 'zone' };
@@ -649,6 +666,8 @@ var Shadbala = (function () {
       ? 'benefic' : 'qualified';
     var kranti = (options && options.kranti) === KRANTI.TRUE
       ? KRANTI.TRUE : KRANTI.LONGITUDE;
+    var ayanaConstant = (options && options.ayanaConstant) === AYANA_CONSTANT.RAMAN.key
+      ? AYANA_CONSTANT.RAMAN : AYANA_CONSTANT.PARASHARA;
     var horaLength = (options && options.horaLength) === HORA_LENGTH.SEASONAL
       ? HORA_LENGTH.SEASONAL : HORA_LENGTH.EQUAL;
     var wanted = options && options.natClock;
@@ -743,7 +762,7 @@ var Shadbala = (function () {
       var paksha = pakshaBala(elongation,
         graha === 'Moon' && moonPaksha === MOON_PAKSHA.BENEFIC
           ? true : benefics[graha]);
-      var ayana = ayanaBala(graha, dec);
+      var ayana = ayanaBala(graha, dec, ayanaConstant);
       var kala = {
         nathonnatha: nathonnathaBala(graha, localHours),
         paksha: graha === 'Moon' ? paksha * 2 : paksha,   // doubled for the Moon
@@ -919,7 +938,7 @@ var Shadbala = (function () {
     MOON_PAKSHA: MOON_PAKSHA,
     NAT_CLOCK: NAT_CLOCK,
     HORA_LENGTH: HORA_LENGTH,
-    KRANTI: KRANTI,
+    KRANTI: KRANTI, AYANA_CONSTANT: AYANA_CONSTANT,
     CHESHTA: CHESHTA, MOTION_VALUE: MOTION_VALUE,
     // Exported for the worked examples in Raman s60-61 and BPHS ch.27 v.13.
     abdaLord: abdaLord, masaLord: masaLord,

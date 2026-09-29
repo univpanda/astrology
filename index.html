@@ -491,7 +491,7 @@
         <label for="doubled-rows">Ayana and paksha rows</label>
         <select id="doubled-rows" aria-describedby="why-doubled-rows">
           <option value="doubled">Doubled</option>
-          <option value="undoubled" selected>Halved</option>
+          <option value="undoubled" selected>Undoubled</option>
         </select>
         <div class="field-why" id="why-doubled-rows">
           <p class="field-note">Two figures in the table are doubled before they
@@ -560,29 +560,42 @@
         </div>
       </div>
       <div class="field">
-        <label for="kranti">Kranti for ayana bala</label>
+        <label for="ayana-constant">Ayana bala constant</label>
+        <select id="ayana-constant" aria-describedby="why-ayana-constant">
+          <option value="parashara" selected>Parashara</option>
+          <option value="raman">Raman</option>
+        </select>
+        <div class="field-why" id="why-ayana-constant">
+          <p class="field-note">Ayana bala scales the declination against a
+          maximum and divides by twice it. Both figures are sourced.
+          Santhanam&rsquo;s note to chapter 27 verses 15-17 of the Brihat
+          Parashara Hora Shastra gives the formula as &ldquo;(23&deg;27&prime; +
+          Kranti) &times; 1.2793&rdquo;, where 23&deg;27&prime; is 23.45 and
+          1.2793 is 60/46.9 exactly. Raman uses 24 and 48 instead.
+          <br><br>
+          They part by at most 0.70 virupas on a graha, and twice that on the
+          Sun, whose figure is doubled. Parashara&rsquo;s is the default, being
+          the older of the two.</p>
+        </div>
+      </div>
+      <div class="field">
+        <label for="kranti">Kranti, the declination</label>
         <select id="kranti" aria-describedby="why-kranti">
-          <option value="longitude" selected>From the sayana longitude</option>
-          <option value="true">True declination, latitude and all</option>
+          <option value="longitude" selected>Without latitude</option>
+          <option value="true">With latitude</option>
         </select>
         <div class="field-why" id="why-kranti">
-          <p class="field-note">Ayana bala scales a graha&rsquo;s declination, and
-          there are two complete methods rather than one. Raman derives the
-          kranti in Graha and Bhava Balas at section 73 from the bhuja of the sayana longitude, through a
-          table of six fifteen-degree steps, and a longitude carries no
-          latitude; his Example 32 works all seven grahas that way, the Moon
-          included. That pairs with his divisor of 48, because 24 degrees is
-          what a declination read off a longitude reaches.
-          <br><br>
-          Parashara&rsquo;s is the other whole method. Santhanam&rsquo;s note to
-          chapter 27 of the Brihat Parashara Hora Shastra sends the reader
-          straight to a modern ephemeris -
+          <p class="field-note">A declination read off the sayana longitude
+          alone, or the true declination with the graha&rsquo;s latitude in it.
+          Santhanam&rsquo;s note to chapter 27 of the Brihat Parashara Hora
+          Shastra sends the reader to an ephemeris for the second:
           &ldquo;Krantis (or declinations) can be ascertained from standard
-          modern ephemeris&rdquo; - which gives the true declination,
-          ecliptic latitude and all.
+          modern ephemeris.&rdquo; Raman derives the first from the bhuja of the
+          sayana longitude, and a longitude carries no latitude.
           <br><br>
-          Worth up to 2.5 virupas on a planet and 6.6 on the Moon, who swings
-          furthest from the ecliptic. </p>
+          It is worth up to 2.5 virupas on a planet and 6.6 on the Moon, who
+          swings furthest from the ecliptic and is where the two readings part
+          most visibly.</p>
         </div>
       </div>
       <div class="field">

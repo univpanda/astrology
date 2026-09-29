@@ -290,12 +290,18 @@ console.log('\nWhich declination the kranti is');
   var ayana = function (g, opts) {
     return S.compute(chart, place, opts).grahas[g].kala.ayana;
   };
-  check('Raman\u2019s longitude-derived kranti is the default',
-    ayana('Mercury'), 58.94, 0.05, 'virupas');
-  check('and the true declination reproduces Drik Panchang',
-    ayana('Mercury', { kranti: S.KRANTI.TRUE }), 61.44, 0.05, 'virupas');
-  check('Venus too', ayana('Venus', { kranti: S.KRANTI.TRUE }), 58.53, 0.05,
-    'virupas');
+  /*
+   * The default is the declination without latitude, on Parashara's constant.
+   * Drik Panchang pairs the other way about - Raman's constant with the true
+   * declination - and on that pairing this reproduces it exactly, which is why
+   * both halves have to be named here rather than one.
+   */
+  var RAMAN_TRUE = { kranti: S.KRANTI.TRUE, ayanaConstant: S.AYANA_CONSTANT.RAMAN.key };
+  check('the declination without latitude is the default',
+    ayana('Mercury'), 59.62, 0.05, 'virupas');
+  check('and Raman\u2019s constant with the true declination reproduces Drik Panchang',
+    ayana('Mercury', RAMAN_TRUE), 61.44, 0.05, 'virupas');
+  check('Venus too', ayana('Venus', RAMAN_TRUE), 58.53, 0.05, 'virupas');
   /*
    * The Sun has no ecliptic latitude, so it must read the same either way. If
    * it ever moves, a latitude is being invented for it.
@@ -572,10 +578,11 @@ console.log('\nKranti comes from the longitude, not the true declination');
    * gives 20.8.
    */
   check('the Moon\u2019s ayana follows her longitude',
-    r.grahas.Moon.kala.ayana, 4.0, 0.2, 'virupas');
+    r.grahas.Moon.kala.ayana, 3.4, 0.2, 'virupas');
   /*
-   * Guard against the latitude creeping back: with it, the same chart gives
-   * 10.4, so anything near that is the old quantity returning.
+   * Guard against the latitude creeping back: with it the same chart gives 9.9
+   * on this constant and 10.4 on Raman's, so anything near either is the old
+   * quantity returning.
    */
   ok('and not her true declination', r.grahas.Moon.kala.ayana < 7,
     r.grahas.Moon.kala.ayana.toFixed(1));
@@ -824,16 +831,30 @@ console.log('\nAyana bala against Raman Example 33');
    ['Saturn', 13, 13.75, '24 - 13'],
    ['Moon', -10.75, 43.44, '24 + 10.75'],
    ['Sun', -8.75, 19.06, '24 - 8.75']].forEach(function (row) {
-    check(row[0] + ', ' + row[3], S.ayanaBala(row[0], row[1]), row[2], 0.01,
-      'virupas');
+    check(row[0] + ', ' + row[3],
+      S.ayanaBala(row[0], row[1], S.AYANA_CONSTANT.RAMAN), row[2], 0.01, 'virupas');
   });
-  // And the ceiling he states at section 73: the formula reaches sixty exactly
-  // at his maximum declination of 24, which is the whole reason the divisor is
-  // 48. A modern obliquity in either constant breaks this.
-  check('sixty at his maximum declination', S.ayanaBala('Sun', 24), 60, 1e-9,
-    'virupas');
-  check('and nothing at the opposite one', S.ayanaBala('Sun', -24), 0, 1e-9,
-    'virupas');
+  /*
+   * And the ceiling each constant states: the formula reaches sixty exactly at
+   * that authority's maximum declination, which is the whole reason for the
+   * divisor being twice it. Raman's 24 and 48 at section 73; Parashara's
+   * 23 deg 27' and 46.9, which Santhanam gives as a multiplier of 1.2793 and
+   * is 60/46.9. Mixing a maximum from one with a divisor from the other breaks
+   * both ceilings, which is what makes them a pair rather than two numbers.
+   */
+  [[S.AYANA_CONSTANT.RAMAN, 24, 'Raman'],
+   [S.AYANA_CONSTANT.PARASHARA, 23.45, 'Parashara']].forEach(function (c) {
+    check(c[2] + ': sixty at the maximum declination',
+      S.ayanaBala('Sun', c[1], c[0]), 60, 1e-9, 'virupas');
+    check(c[2] + ': and nothing at the opposite one',
+      S.ayanaBala('Sun', -c[1], c[0]), 0, 1e-9, 'virupas');
+  });
+  /*
+   * Parashara's is the default, so calling it with no constant must be calling
+   * it with his.
+   */
+  check('the default constant is Parashara\u2019s',
+    S.ayanaBala('Sun', 23.45), 60, 1e-9, 'virupas');
 })();
 
 console.log('\nNutation and obliquity (Meeus example 22.a, 1987 Apr 10.0 TD)');
@@ -5396,6 +5417,69 @@ console.log('\nHalving a row is a display choice, not a computation');
     adds('Sun') && adds('Moon'),
     'Sun ' + r.grahas.Sun.kala.total.toFixed(1) +
     ', Moon ' + r.grahas.Moon.kala.total.toFixed(1));
+})();
+
+
+console.log('\nThe two ayana choices are independent, and each comparator picks one of each');
+/*
+ * Ayana bala rests on two decisions that had been tangled together: which
+ * constant scales the declination, and whether the declination carries the
+ * graha's latitude. This site argued they belonged in pairs - Raman's 24/48
+ * with his longitude-only kranti, Parashara's 23.45/46.9 with the true
+ * declination his note sends the reader to an ephemeris for.
+ *
+ * Neither comparator pairs them that way, and they disagree with each other.
+ * Star Jyotish takes Parashara's constant with the longitude-only kranti; Drik
+ * Panchang takes Raman's constant with the true declination. So the two are
+ * settings now, and the four combinations are all reachable.
+ */
+(function () {
+  var place = { latitude: 21.3069, longitude: -157.8583, tzOffsetMinutes: -600 };
+  var chart = A.chart({ jdUT: A.julianDay(1961, 8, 4, 19 + 24 / 60 + 10),
+    latitude: place.latitude, longitude: place.longitude,
+    tzOffsetMinutes: place.tzOffsetMinutes, trueNode: true });
+  var GR = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+  var row = function (opts) {
+    var r = Shadbala.compute(chart, place, opts);
+    return GR.map(function (g) {
+      var v = r.grahas[g].kala.ayana;
+      return g === 'Sun' ? v / 2 : v;      // the Sun's is doubled inside kala bala
+    });
+  };
+  var near = function (got, want, tol) {
+    return got.every(function (v, i) { return Math.abs(v - want[i]) < tol; });
+  };
+
+  /*
+   * Star Jyotish prints integers, so half a virupa of tolerance is as tight as
+   * the comparison can be made. Every one of the seven rounds to their figure.
+   */
+  var sj = row({});
+  ok('the default reproduces Star Jyotish, which rounds to integers',
+    near(sj, [52, 3, 34, 55, 4, 60, 57], 0.55),
+    sj.map(function (v) { return v.toFixed(1); }).join(' '));
+
+  /*
+   * Drik Panchang prints two decimals, so this one can be held tight.
+   */
+  var drik = row({ ayanaConstant: 'raman', kranti: Shadbala.KRANTI.TRUE });
+  ok('and Raman with the true declination reproduces Drik Panchang to a tenth',
+    near(drik, [102.61 / 2, 10.41, 34.51, 55.87, 4.26, 57.04, 56.56], 0.1),
+    drik.map(function (v) { return v.toFixed(2); }).join(' '));
+
+  /*
+   * And the two decisions really are independent: changing one must not change
+   * what the other does. The Sun is the test for latitude, having none.
+   */
+  var a = row({ ayanaConstant: 'parashara' }), b = row({ ayanaConstant: 'raman' });
+  ok('the constant moves every graha, being a scaling',
+    GR.every(function (g, i) { return Math.abs(a[i] - b[i]) > 0.01; }));
+  var noLat = row({ kranti: Shadbala.KRANTI.LONGITUDE });
+  var withLat = row({ kranti: Shadbala.KRANTI.TRUE });
+  ok('while the latitude leaves the Sun alone, he having none',
+    Math.abs(noLat[0] - withLat[0]) < 1e-9 &&
+    Math.abs(noLat[1] - withLat[1]) > 1, 'Moon moves by ' +
+    Math.abs(noLat[1] - withLat[1]).toFixed(1));
 })();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');

@@ -1892,6 +1892,7 @@
            natClock: document.getElementById('nat-clock').value,
            horaLength: document.getElementById('hora-length').value,
            kranti: document.getElementById('kranti').value,
+           ayanaConstant: document.getElementById('ayana-constant').value,
            mercuryNature: document.getElementById('mercury-nature').value,
            cheshtaMethod: document.getElementById('cheshta-method').value });
     }
@@ -4037,6 +4038,20 @@
     status.textContent = always
       ? 'Mercury is now read a benefic whatever company he keeps.'
       : 'Mercury is now read a malefic when combust or joined to one.';
+  });
+
+  document.getElementById('ayana-constant').addEventListener('change', function () {
+    var status = document.getElementById('settings-status');
+    var raman = this.value === 'raman';
+    if (!lastChart) {
+      status.textContent = 'Saved. The next chart will use it.';
+      return;
+    }
+    lastChart.shadbala = null;
+    render(lastChart);
+    status.textContent = raman
+      ? 'Ayana bala now scales against Raman\u2019s 24 and 48.'
+      : 'Ayana bala now scales against Parashara\u2019s 23\u00b027\u2032 and 46.9.';
   });
 
   document.getElementById('kranti').addEventListener('change', function () {
