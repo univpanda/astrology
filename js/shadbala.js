@@ -493,6 +493,29 @@ var Shadbala = (function () {
    * Sripati's 1853 example his Sun's mean place is 4.2 degrees out, and using
    * it costs 0.8 of a virupa on figures otherwise good to 0.6.
    */
+  /*
+   * A chart may arrive without ayanamsaJ2000. The page computes most charts
+   * through the chart API, and a deployed copy of the engine older than that
+   * field returns one without it; charts saved to a reader's browser before it
+   * existed are the same. Subtracting undefined gave NaN for the five starry
+   * grahas while the luminaries, whose rule never touches it, came out fine -
+   * so the table showed five NaNs in a row and two good figures, and totalled
+   * to NaN.
+   *
+   * Recovered rather than defaulted: find the system whose ayanamsa at this
+   * moment is the chart's, and ask that system what it was at J2000. Guessing
+   * Lahiri would silently misplace a chart cast in any other.
+   */
+  function j2000Ayanamsa(chart, T) {
+    if (typeof chart.ayanamsaJ2000 === 'number') return chart.ayanamsaJ2000;
+    var systems = Object.keys(Astro.AYANAMSA), best = 'lahiri', gap = Infinity;
+    for (var i = 0; i < systems.length; i++) {
+      var d = Math.abs(Astro.ayanamsa(T, systems[i]) - chart.ayanamsa);
+      if (d < gap) { gap = d; best = systems[i]; }
+    }
+    return Astro.ayanamsa(0, best);
+  }
+
   function seeghraKendra(graha, sunTrue, T, ayanamsaJ2000) {
     var key = MEAN_KEY[graha];
     if (!key) return 0;
@@ -1032,7 +1055,7 @@ var Shadbala = (function () {
         moonLongitude: moon.longitude, meanSource: meanSource,
         luminaryRule: luminaryRule, elongation: elongation,
         kendraMethod: kendraMethod, sunTrue: sun.longitude,
-        ayanamsaJ2000: chart.ayanamsaJ2000,
+        ayanamsaJ2000: j2000Ayanamsa(chart, T),
         longitude: p.longitude
       });
       var naisargika = NAISARGIKA[graha];

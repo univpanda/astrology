@@ -6729,5 +6729,57 @@ console.log('\nOne chart end to end, from birth data to every bala');
     (r.Mars.sthana.saptavargaja - sapta.Mars).toFixed(2) + ' virupas');
 })();
 
+
+console.log('\nA chart missing a field the engine added later still computes');
+/*
+ * This shipped broken. The page computes most charts through the chart API,
+ * and the deployed copy of the engine was older than ayanamsaJ2000, so it
+ * returned charts without it. seeghraKendra subtracted undefined and the five
+ * starry grahas came out NaN while the luminaries, whose rule never touches
+ * that field, came out fine - five NaNs in a row, two good figures, and a NaN
+ * total. Charts saved in a reader's browser before the field existed have the
+ * same gap, and redeploying the API does nothing for those.
+ *
+ * So the engine recovers the value rather than depending on the caller: find
+ * the system whose ayanamsa at this moment is the chart's, and ask it what it
+ * was at J2000.
+ */
+(function () {
+  var GRAHAS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+  var place = { latitude: 21.3069, longitude: -157.8583, tzOffsetMinutes: -600 };
+  var bad = [];
+  ['lahiri', 'raman', 'kp', 'trueCitra', 'fagan'].forEach(function (system) {
+    var chart = Astro.chart({ jdUT: Astro.julianDay(1961, 8, 4, 29.4),
+      latitude: place.latitude, longitude: place.longitude,
+      tzOffsetMinutes: place.tzOffsetMinutes, ayanamsa: system });
+    var full = Shadbala.compute(chart, place).grahas;
+
+    var stripped = JSON.parse(JSON.stringify(chart));
+    delete stripped.ayanamsaJ2000;
+    var recovered = Shadbala.compute(stripped, place).grahas;
+
+    GRAHAS.forEach(function (g) {
+      if (!isFinite(recovered[g].cheshta)) bad.push(system + ' ' + g + ' NaN');
+      else if (Math.abs(recovered[g].cheshta - full[g].cheshta) > 1e-9) {
+        bad.push(system + ' ' + g + ' off by ' +
+          (recovered[g].cheshta - full[g].cheshta).toFixed(4));
+      }
+      if (!isFinite(recovered[g].totalShashtiamsa)) bad.push(system + ' ' + g + ' total NaN');
+    });
+  });
+  ok('the J2000 ayanamsa is recovered exactly, in every system offered',
+    bad.length === 0, bad.slice(0, 4).join(', ') || 'five systems, seven grahas each');
+
+  /*
+   * And it is recovered, not guessed. Defaulting to Lahiri would pass the NaN
+   * check while quietly misplacing a chart cast in another system, so this
+   * pins that a Raman chart does not come back with Lahiri's J2000 value.
+   */
+  ok('and not by assuming Lahiri',
+    Math.abs(Astro.ayanamsa(0, 'raman') - Astro.ayanamsa(0, 'lahiri')) > 1,
+    (Astro.ayanamsa(0, 'raman') - Astro.ayanamsa(0, 'lahiri')).toFixed(2) +
+      ' degrees apart at J2000');
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
