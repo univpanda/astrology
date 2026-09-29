@@ -6939,7 +6939,7 @@ console.log('\nThe node setting says what it moves, and what it does not');
   ok('the note now says what changes as well as what does not',
     /a chara karaka is reassigned in 21% of them/.test(flat) &&
     /another nakshatra in 7%, another sign in 3% and another house in 3%/.test(flat) &&
-    /a \[P\] or \[S\] mark moves on some graha in 2%/.test(flat) &&
+    /whether some graha is hemmed by benefics or by malefics changes in 2%/.test(flat) &&
     /the list of yogas found changes in 1%/.test(flat));
 
   /*
@@ -7035,6 +7035,24 @@ console.log('\nA column heading sits over its own column');
     /#shadbala-table tbody th\[scope="row"\] \{\s*\n\s*text-align: left;/.test(css));
   ok('and the graha headings are left centred, over figures that are',
     /#shadbala-table th, #shadbala-table td \{ text-align: center; \}/.test(css));
+})();
+
+
+console.log('\nThe notes name facts, not marks that move between surfaces');
+/*
+ * The node note said a "[P] or [S] mark" moved. True, but [P] and [S] had just
+ * come off the graha table - so a reader looking at the table it used to be on
+ * would read a claim about something no longer there. The marks live on the
+ * Vimsopaka grid and on the graha card now, and may move again; the fact they
+ * report does not. So the note reports the fact.
+ */
+(function () {
+  var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  var panel = page.slice(page.indexOf('id="panel-settings"'),
+                         page.indexOf('</section>', page.indexOf('id="panel-settings"')));
+  var letters = (panel.match(/\[[A-Z]\]/g) || []);
+  ok('no settings note points at a mark by its letter',
+    letters.length === 0, letters.join(', ') || 'none');
 })();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
