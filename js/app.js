@@ -1461,7 +1461,8 @@
       yogas: yogasByGraha(state, set.division, set.reference),
       dignities: dignitiesByGraha(state, set.division),
       hemming: hemmingByGraha(state, set.division),
-      ruling: rulingAndAspects(state, set.division, set.reference)
+      ruling: rulingAndAspects(state, set.division, set.reference),
+      combustion: document.getElementById('combustion').value
     });
     wireGrahaCard(document.getElementById('chart-' + slot));
     ensureLibrary();
@@ -4308,6 +4309,24 @@
     status.textContent = open
       ? 'Budha-Aditya now forms on any conjunction in one sign, as K. N. Rao reads it - about 52 per cent of charts.'
       : 'Budha-Aditya now needs Mercury more than 10\u00b0 from the Sun, as Raman states it - about 28 per cent of charts.';
+  });
+
+  /*
+   * Where a division's combustion is measured. The charts are redrawn and
+   * nothing is recomputed: the mark is a fact about a pair of longitudes, and
+   * both frames are already in hand.
+   */
+  document.getElementById('combustion').addEventListener('change', function () {
+    var status = document.getElementById('settings-status');
+    var inside = this.value === 'division';
+    if (!lastChart) {
+      status.textContent = 'Saved. The next chart will use it.';
+      return;
+    }
+    render(lastChart);
+    status.textContent = inside
+      ? 'Combustion is now measured inside whichever division is on screen.'
+      : 'Combustion is measured in the rashi and carried into every division.';
   });
 
   document.getElementById('mercury-nature').addEventListener('change', function () {

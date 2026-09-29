@@ -56,7 +56,20 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'Compound friendship adds the two. Friend and friend gives a great friend, friend and enemy gives neutral, enemy and enemy gives a great enemy. This five step scale is what is meant by great friend, friend, neutral, enemy and great enemy everywhere else in the library.',
    'Temporal friendship is judged in the rashi chart even when the sign being judged belongs to a divisional chart, which Santhanam states directly in the Shadbala chapter.'
  ],
- null, 304)
+ null, 304),
+
+('dignity', 'Combustion', 'general',
+ 'Burnt by the Sun, and which chart that is true in',
+ array[
+   'A graha too close to the Sun is astangata, burnt: near enough that its light is lost in the Sun''s and it cannot be seen rising or setting. Parashara gives an orb for each in Brihat Parashara Hora Shastra ch.4 and says the effect plainly: "If a planet is eclipsed in the Sun, it proves impotent."',
+   'The orbs differ by graha and by direction, a retrograde graha being burnt at a greater distance than a direct one. Mercury and Venus have the widest, which is also why they are burnt most often: neither ever strays far from the Sun to begin with. The nodes are exempt, Parashara being explicit that they are points and cannot be burnt.',
+   'The question a divisional chart raises is which pair of longitudes the distance is measured between. It is not idle: on the rashi, Mercury is burnt in about two charts in five, and that figure is most of what anyone knows about Mercury.',
+   'Parashara settles it by the way he speaks of it. Chapter 6, on the sixteen divisions: "The divisions of a combust planet, defeated planet, weak planet and a planet in bad Avasthas like Sayana be all ignored to be auspicious, for these destroy the good yogas." A combust graha has divisions; the divisions do not each have a combustion of their own. So by default this site measures the real distance and carries the mark into whatever division is drawn, exactly as retrogression is carried.',
+   'The other reading measures inside the division, and the arithmetic argues against it rather than for it. A varga longitude is a rashi position stretched nine or ten times and wrapped back into a sign, so two of them fall near each other about as often as two unrelated numbers would. Measured over 720 charts, every graha comes out combust in five to nine per cent of divisions whatever its orb and whatever its orbit, and Mercury drops from 42 per cent to 5. A figure that is the same for Saturn as for Mercury is not measuring the Sun''s rays.',
+   'Both readings are on the Chart tab, and the graha card names the frame the distance was measured in either way, so a mark is never ambiguous about which chart it is a fact of.',
+   'One place is unaffected by the choice. The combustion flag beside a graha''s name on the Vimsopaka and Shadbala grids is a rashi fact by construction: those grids run across all sixteen divisions at once, so a per-division mark would have nowhere to sit.'
+ ],
+ 'Combustion also decides Mercury''s nature for paksha bala, drik bala and the yogas, and that reading is taken in the rashi whatever this setting says.', 305)
 
 on conflict (topic, subject, condition) do update set
   heading = excluded.heading,

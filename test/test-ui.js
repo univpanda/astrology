@@ -2458,14 +2458,110 @@ ok('the chart and the table both flag combustion',
    /\(p\.combust \? '\[C\]' : ''\)/.test(fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8')) &&
    /Astro\.isCombust\(planet\.name, planet\.longitude/.test(appSrc));
 /*
- * A real distance from the Sun, so it is read off the rashi longitudes whichever
- * division a row is showing - which is also why it sits on the graha's name
- * rather than on any one chart row.
+ * Which pair of longitudes the distance is measured between is now a setting,
+ * so the claim this used to make about one line of source is made about the
+ * behaviour instead.
+ *
+ * The default is the rashi, and Parashara's phrasing is why. Chapter 6, on the
+ * divisions: "The divisions of a combust planet, defeated planet, weak planet
+ * and a planet in bad Avasthas like Sayana be all ignored to be auspicious."
+ * A combust graha has divisions; the divisions do not each have a combustion.
  */
-ok('measured from the Sun, and on the rashi longitudes',
-   /combust: !!sun && Astro\.isCombust\(p\.name, p\.longitude, sun\.longitude, p\.retrograde\)/
-     .test(fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8')) &&
+ok('the default measures in the rashi and carries the mark into every division',
+   /<select id="combustion"/.test(html) &&
+   /<option value="rashi" selected>/.test(html) &&
+   /combustion: document\.getElementById\('combustion'\)\.value/.test(appSrc));
+ok('and the column head on the two strength grids stays a rashi fact either way',
    /Astro\.isCombust\(planet\.name, planet\.longitude, sun\.longitude,/.test(appSrc));
+/*
+ * And the two readings really do differ, on the chart rather than in the source.
+ * Rendered twice, at D1 and at D9, with the setting the only thing changed.
+ *
+ * The rashi reading has to be identical at D1 and D9, that being what carrying
+ * the mark in means; the division reading has to differ at D9 and agree at D1,
+ * a division of one being the rashi.
+ */
+(function () {
+  /*
+   * Hunted rather than assumed: the two readings can only be compared on a
+   * chart that carries the mark at all, and most do not carry it on both.
+   */
+  var c = null;
+  for (var yy = 1950; yy < 2010 && !c; yy++) {
+    for (var mm = 1; mm <= 12 && !c; mm++) {
+      var k = Astro.chart({ jdUT: Astro.julianDay(yy, mm, 15, 3), latitude: 28.61,
+        longitude: 77.21, tzOffsetMinutes: 330 });
+      var pos = {};
+      k.planets.forEach(function (p) { pos[p.name] = p; });
+      var s9 = Astro.vargaPosition(pos.Sun.longitude, 9).longitude;
+      var differs = ['Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn']
+        .some(function (g) {
+          return Astro.isCombust(g, pos[g].longitude, pos.Sun.longitude, pos[g].retrograde) !==
+            Astro.isCombust(g, Astro.vargaPosition(pos[g].longitude, 9).longitude,
+              s9, pos[g].retrograde);
+        });
+      if (differs) c = k;
+    }
+  }
+  var burnt = function (division, combustion) {
+    var box = makeNode('div');
+    Charts.render(box, { style: 'north', division: division, combustion: combustion,
+      planets: c.planets, ascendant: c.ascendant.longitude });
+    return (serialise(box).match(/\S\S \[[A-Z\]\[]*\]/g) || [])
+      .filter(function (t) { return t.indexOf('[C]') >= 0; }).sort().join(' ');
+  };
+  ok('a chart was found where the two readings part, or nothing below means anything',
+    !!c && burnt(9, 'rashi') !== '' || (!!c && burnt(9, 'division') !== ''),
+    c ? 'rashi "' + burnt(9, 'rashi') + '" division "' + burnt(9, 'division') + '"'
+      : 'none found');
+  ok('carrying the mark in means the rashi reading is the same in every division',
+    burnt(1, 'rashi') === burnt(9, 'rashi') && burnt(9, 'rashi') === burnt(10, 'rashi'),
+    'D1 "' + burnt(1, 'rashi') + '" D9 "' + burnt(9, 'rashi') + '"');
+  ok('and a division of one is the rashi, so the two readings agree there',
+    burnt(1, 'rashi') === burnt(1, 'division'));
+  ok('while inside a division the second reading answers differently',
+    burnt(9, 'division') !== burnt(9, 'rashi'),
+    'rashi "' + burnt(9, 'rashi') + '" division "' + burnt(9, 'division') + '"');
+
+  /*
+   * The figures behind the default, measured rather than argued. A varga
+   * longitude is a rashi position stretched and wrapped, so two of them land
+   * near each other about as often as two unrelated numbers do: every graha
+   * comes out combust in a narrow band whatever its orb, and Mercury loses the
+   * one fact everybody knows about it, that it is never far from the Sun.
+   */
+  var GR = ['Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+  var rate = {}, charts = 0;
+  GR.forEach(function (g) { rate[g] = { rashi: 0, d9: 0 }; });
+  for (var y = 1950; y < 2010; y += 2) {
+    for (var m = 1; m <= 12; m += 2) {
+      var k = Astro.chart({ jdUT: Astro.julianDay(y, m, 15, 3), latitude: 28.61,
+        longitude: 77.21, tzOffsetMinutes: 330 });
+      var at = {};
+      k.planets.forEach(function (p) { at[p.name] = p; });
+      var sun9 = Astro.vargaPosition(at.Sun.longitude, 9).longitude;
+      charts++;
+      GR.forEach(function (g) {
+        if (Astro.isCombust(g, at[g].longitude, at.Sun.longitude, at[g].retrograde)) {
+          rate[g].rashi++;
+        }
+        if (Astro.isCombust(g, Astro.vargaPosition(at[g].longitude, 9).longitude,
+            sun9, at[g].retrograde)) rate[g].d9++;
+      });
+    }
+  }
+  var pct = function (g, which) { return 100 * rate[g][which] / charts; };
+  ok('Mercury is really burnt in two charts in five, and in D9 in about one in twenty',
+    pct('Mercury', 'rashi') > 35 && pct('Mercury', 'd9') < 12,
+    pct('Mercury', 'rashi').toFixed(0) + '% against ' + pct('Mercury', 'd9').toFixed(0) + '%');
+  ok('and inside D9 every graha lands in the same narrow band, orbits notwithstanding',
+    (function () {
+      var all = GR.map(function (g) { return pct(g, 'd9'); });
+      return Math.max.apply(null, all) - Math.min.apply(null, all) < 6;
+    })(),
+    GR.map(function (g) { return g + ' ' + pct(g, 'd9').toFixed(0) + '%'; }).join(', '));
+})();
+
 ok('the nodes are never flagged, being points', (function () {
   // Rahu sits 2.2 degrees from the Sun in one of the saved charts and must stay clean.
   return !Astro.isCombust('Rahu', 2, 0, true) && !Astro.isCombust('Ketu', 182, 0, true) &&

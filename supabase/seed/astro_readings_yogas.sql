@@ -413,7 +413,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'In that band this site reports the yoga and says it is discounted, which is the only reading that makes sense of both of Raman''s statements at once. Suppressing one of them to make the chart look tidy would mean overruling him with himself, and nothing in either book says which should give way.',
    'The floor itself is a setting on the Chart tab, and Raman''s ten degrees is the default. He states a rule where Rao only declines to use one, and the arithmetic favours him: with no floor the yoga is claimed for every chart that has the two in one sign, which is 51.7 per cent of charts against 27.5. A finding half the world has tells you little about any of them. Rao''s discount is kept on either setting, because it is a statement about what combustion does rather than about where the boundary sits.'
  ],
- 'Combustion is measured on the rashi longitudes even when a division is read. Rao''s illustration reproduces here to the arcminute, which is how it was identified: his Sun 21 03, Mercury 14 57, Moon 14 33, Jupiter (R) 1 54 and lagna 24 33 are this engine''s figures for that moment.', 968)
+ 'Combustion is measured on the rashi longitudes even when a division is read, which is the default and is set out under Combustion. Rao''s illustration reproduces here to the arcminute, which is how it was identified: his Sun 21 03, Mercury 14 57, Moon 14 33, Jupiter (R) 1 54 and lagna 24 33 are this engine''s figures for that moment.', 968)
 
 on conflict (topic, subject, condition) do update set
   heading = excluded.heading,

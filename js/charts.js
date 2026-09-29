@@ -62,8 +62,9 @@ var Charts = (function () {
    * [V] means this division has landed the graha back in the sign it holds in the
    * rashi, so it belongs to the division on screen and never appears on D1, where
    * every graha would qualify. [Y] is yogakaraka, lordship counted from house 1,
-   * so it follows the rotation. [C] is combustion, a real distance from the Sun
-   * and so fixed.
+   * so it follows the rotation. [C] is combustion, measured in the rashi and
+   * carried into every division by default, since Parashara speaks of "the
+   * divisions of a combust planet" rather than of a combustion per division.
    */
   function planetText(p) {
     var flags = (p.retrograde ? '[R]' : '') + (p.vargottama ? '[V]' : '') +
@@ -85,13 +86,6 @@ var Charts = (function () {
    * reader what the chart already showed and nothing about the graha they were
    * pointing at.
    */
-  /* Combustion is a real distance, so it is read from the rashi Sun whatever
-     division is on screen. */
-  function sunOf(planets) {
-    return planets.filter(function (p) { return p.name === 'Sun'; })[0] ||
-      { longitude: 0 };
-  }
-
   var STATE_NAMES = { R: 'Retrograde', C: 'Combust', V: 'Vargottama',
     Y: 'Yogakaraka', P: 'Papa kartari', S: 'Shubha kartari' };
 
@@ -102,7 +96,7 @@ var Charts = (function () {
    */
   var REC = '\u001e', FLD = '\u001f';
 
-  function describeOccupant(p, sign, house, yogas, sun, division, dignities,
+  function describeOccupant(p, sign, house, yogas, division, dignities,
                             hemming, ruling) {
     var states = [];
     /*
@@ -117,11 +111,15 @@ var Charts = (function () {
     if (p.combust) {
       states.push('C');
       var orb = (Astro.COMBUSTION[p.name] || {})[p.retrograde ? 'retrograde' : 'direct'];
-      var gap = Math.abs(Astro.norm360(p.longitude - sun.longitude) > 180
-        ? 360 - Astro.norm360(p.longitude - sun.longitude)
-        : Astro.norm360(p.longitude - sun.longitude));
-      why.C = gap.toFixed(1) + '\u00b0 from the Sun, inside the ' + orb +
-        '\u00b0 this graha is burnt within.';
+      /*
+       * The frame is named, not assumed. On the default the distance is the
+       * real one and the mark is carried into whatever division is drawn, so a
+       * card that said only "8 degrees from the Sun" beside a D9 where the Sun
+       * sits across the chart would be describing a chart nobody is looking at.
+       */
+      why.C = (typeof p.combustGap !== 'number' ? '' : p.combustGap.toFixed(1) +
+        '\u00b0 from the Sun in ' + p.combustIn + ', inside the ' + orb +
+        '\u00b0 this graha is burnt within.');
     }
     if (p.vargottama) {
       states.push('V');
@@ -195,7 +193,7 @@ var Charts = (function () {
           'text-anchor': 'middle'
         }, planetText(p));
         if (ctx) {
-          var d = describeOccupant(p, ctx.sign, ctx.house, ctx.yogas, ctx.sun,
+          var d = describeOccupant(p, ctx.sign, ctx.house, ctx.yogas,
             ctx.division, ctx.dignities, ctx.hemming, ctx.ruling);
           t.setAttribute('data-graha', d.graha);
           t.setAttribute('data-where', d.where);
@@ -222,16 +220,42 @@ var Charts = (function () {
    * from the Moon or from any other graha, and it is the sign in the chosen
    * division that counts, not the one in D1.
    */
-  function occupantsBySign(planets, ascLongitude, division, reference) {
+  function occupantsBySign(planets, ascLongitude, division, reference, combustion) {
     var bySign = [];
     for (var i = 0; i < 12; i++) bySign.push([]);
     var signOfBody = function (longitude) {
       return Astro.vargaPosition(longitude, division || 1).sign;
     };
     var ascSign = signOfBody(ascLongitude);
-    // Longitudes here are the rashi ones; the varga is applied for the picture
-    // only, so combustion is measured on the real distance from the Sun.
     var sun = planets.filter(function (p) { return p.name === 'Sun'; })[0];
+
+    /*
+     * Where the distance from the Sun is measured. Both longitudes come from
+     * the same frame or the figure means nothing, so this returns a pair.
+     *
+     * Parashara's own phrase settles the default. Chapter 6, on the vargas:
+     * "The divisions of a combust planet, defeated planet, weak planet and a
+     * planet in bad Avasthas like Sayana be all ignored to be auspicious, for
+     * these destroy the good yogas." A combust graha has divisions; the
+     * divisions do not each have a combustion. So the rashi distance is
+     * measured and the mark carried in, and the arithmetic agrees: a varga
+     * longitude is a rashi position stretched nine or ten times and wrapped, so
+     * two of them land near each other about as often as two unrelated numbers
+     * would. Measured over 720 charts, every graha comes out combust in 5 to 9
+     * per cent of divisions whatever its orb or its orbit, and Mercury - which
+     * is really within 14 degrees of the Sun in 42 per cent of charts, never
+     * straying further than about 28 - drops to 5.
+     */
+    var burnAt = function (longitude) {
+      return combustion === 'division' && division && division !== 1
+        ? Astro.vargaPosition(longitude, division).longitude
+        : longitude;
+    };
+    var sunBurn = sun ? burnAt(sun.longitude) : null;
+    var gapFrom = function (longitude) {
+      var apart = Math.abs(Astro.norm360(burnAt(longitude) - sunBurn));
+      return apart > 180 ? 360 - apart : apart;
+    };
     /*
      * Whether this division repeats the rashi sign is a question about the
      * division, so it is asked of whichever one is drawn and never of D1, where
@@ -272,7 +296,11 @@ var Charts = (function () {
         vargottama: repeatsRashi(p.longitude),
         yogakaraka: Astro.isYogakaraka(p.name, firstSign),
         // Burnt by the Sun, within the orb chapter 4 gives for that graha.
-        combust: !!sun && Astro.isCombust(p.name, p.longitude, sun.longitude, p.retrograde)
+        combust: !!sun && Astro.isCombust(p.name, burnAt(p.longitude), sunBurn,
+          p.retrograde),
+        combustGap: sun ? gapFrom(p.longitude) : null,
+        combustIn: combustion === 'division' && division && division !== 1
+          ? 'D' + division : 'the rashi'
       });
     });
     // The lagna is a point, not a graha, so it owns nothing and is never one.
@@ -285,8 +313,8 @@ var Charts = (function () {
   }
 
   function renderNorth(container, planets, ascLongitude, division, reference, yogas,
-                       dignities, hemming, ruling) {
-    var data = occupantsBySign(planets, ascLongitude, division, reference);
+                       dignities, hemming, ruling, combustion) {
+    var data = occupantsBySign(planets, ascLongitude, division, reference, combustion);
     var svg = svgRoot('north');
     var m = 4, s = SIZE - 2 * m;
     var P = function (fx, fy) { return (m + fx * s).toFixed(1) + ',' + (m + fy * s).toFixed(1); };
@@ -346,7 +374,7 @@ var Charts = (function () {
       var shortfall = Math.max(0, (m + 12) - numY);
       numY += shortfall;
       drawOccupants(g, occ, cx, cy + 4 + shortfall, 0.20 * s,
-        { sign: sign, house: h + 1, yogas: yogas, sun: sunOf(planets),
+        { sign: sign, house: h + 1, yogas: yogas,
           dignities: dignities,
           hemming: hemming, ruling: ruling });
       g.appendChild(el('text', {
@@ -359,8 +387,8 @@ var Charts = (function () {
   }
 
   function renderSouth(container, planets, ascLongitude, division, reference, yogas,
-                       dignities, hemming, ruling) {
-    var data = occupantsBySign(planets, ascLongitude, division, reference);
+                       dignities, hemming, ruling, combustion) {
+    var data = occupantsBySign(planets, ascLongitude, division, reference, combustion);
     var svg = svgRoot('south');
     var m = 4, cell = (SIZE - 2 * m) / 4;
 
@@ -383,7 +411,7 @@ var Charts = (function () {
       g.appendChild(el('text', { x: x + cell - 6, y: y + 14, class: 'sign-num', 'text-anchor': 'end' },
         Astro.SIGN_ABBR[i] + ' · ' + house));
       drawOccupants(g, data.bySign[i], x + cell / 2, y + cell / 2 + 6, cell * 0.82,
-        { sign: i, house: house, yogas: yogas, sun: sunOf(planets),
+        { sign: i, house: house, yogas: yogas,
           dignities: dignities,
           hemming: hemming, ruling: ruling });
       svg.appendChild(g);
@@ -397,7 +425,7 @@ var Charts = (function () {
   function render(container, opts) {
     var fn = opts.style === 'south' ? renderSouth : renderNorth;
     fn(container, opts.planets, opts.ascendant, opts.division || 1, opts.reference,
-       opts.yogas, opts.dignities, opts.hemming, opts.ruling);
+       opts.yogas, opts.dignities, opts.hemming, opts.ruling, opts.combustion);
   }
 
   return { render: render };
