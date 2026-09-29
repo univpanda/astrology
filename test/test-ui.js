@@ -4154,13 +4154,36 @@ ok('and the page never leans on the engine default',
  * The note has to name who holds each reading, or the choice is just a
  * preference with no way to decide it.
  */
-ok('and the note cites both sides from the classical texts', (function () {
+/*
+ * The note is for somebody meeting the setting, not for somebody auditing it:
+ * what the measure is, which way the texts go, what the other option costs.
+ * The argument in full - five texts, the IV.5 misreading, the arithmetic that
+ * settles it - is in the Lesson tab, which is where an argument belongs.
+ *
+ * Classical sources only. Raman and Santhanam carried this note while Uttara
+ * Kalamrita had not been found; it gives the same boundary, so the moderns are
+ * no longer needed to state it.
+ */
+ok('the note names the classical sources and not the moderns', (function () {
   var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   var at = html.indexOf('id="why-moon-paksha"');
   var block = html.slice(at, html.indexOf('</div>', at));
-  return /Santhanam/.test(block) && /Raman/.test(block) &&
-    /Brihat Jataka 21/.test(block) && /Phaladeepika IV\.1/.test(block) &&
-    /Uttara Kalamrita/.test(block) && /Phaladeepika IV\.5/.test(block);
+  return /Brihat Jataka 21/.test(block) && /Phaladeepika IV\.1/.test(block) &&
+    /Uttara Kalamrita/.test(block) &&
+    !/Raman/.test(block) && !/Santhanam/.test(block) && !/Charak/.test(block);
+})());
+ok('and stays short enough to read at a hover', (function () {
+  var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  var at = html.indexOf('id="why-moon-paksha"');
+  var block = html.slice(at, html.indexOf('</div>', at));
+  var words = block.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length;
+  return words < 220;
+})());
+ok('while the Lesson tab still carries the argument in full', (function () {
+  var seed = fs.readFileSync(path.join(root,
+    'supabase/seed/astro_readings_strength.sql'), 'utf8');
+  return /119\.5 of a possible 120/.test(seed) && /Charak/.test(seed) &&
+    /Brihat Jataka 21/.test(seed);
 })());
 /*
  * It changes no position, so the chart is not recast - the cached Shadbala is
@@ -7121,11 +7144,9 @@ console.log('\nUttara Kalamrita on the Moon in paksha bala');
   var flat = page.replace(/\s+/g, ' ');
 
   ok('the paksha note carries the classical statement of the group rule',
-    /Uttara Kalamrita is the plainest of them/.test(flat) &&
-    /waning Moon, badly associated Mercury, and Rahu are malefics/.test(flat));
+    /Uttara Kalamrita gives the boundary as the eighth day of the bright half to the eighth of the dark/
+      .test(flat));
   ok('and the boundary it gives is the one the engine uses',
-    /from the eighth lunar day of the bright fortnight to the eighth of the dark fortnight/
-      .test(flat) &&
     /elongation > 90 && elongation < 270/.test(
       fs.readFileSync(path.join(root, 'js/astro.js'), 'utf8')));
   ok('and the doubling note cites the verse that states it',
@@ -7143,9 +7164,8 @@ console.log('\nUttara Kalamrita on the Moon in paksha bala');
    * one place it is not explained.
    */
   var flat2 = page.replace(/\s+/g, ' ');
-  ok('and the note says which reading is the default, and on what grounds',
-    /That reading is the default here, on Raman's boundary/
-      .test(flat2.replace(/&rsquo;/g, "'")));
+  ok('and the note says which reading is the default',
+    /which is the reading used here/.test(flat2));
   ok('and the oldest of the texts frames the measure as one of groups',
     /Brihat Jataka 21/.test(page) &&
     /malefic and benefic planets have strength \(Pakshabala\) in the dark and bright halves/
@@ -7158,9 +7178,7 @@ console.log('\nUttara Kalamrita on the Moon in paksha bala');
    * of it rather than a difficulty for it. No text asks for the alternative.
    */
   ok('and does not credit the alternative to a text that does not hold it',
-    /No text asks for it/.test(flat2) &&
-    /under the group rule she reaches 119.5 of her possible 120 at the full Moon/
-      .test(flat2) &&
+    /No classical text asks for it/.test(flat2) &&
     /<option value="benefic">Always as a benefic<\/option>/.test(page));
   /*
    * The labels name the reading and nothing else. They used to carry their
