@@ -7161,8 +7161,21 @@ console.log('\nUttara Kalamrita on the Moon in paksha bala');
     /No text asks for it/.test(flat2) &&
     /under the group rule she reaches 119.5 of her possible 120 at the full Moon/
       .test(flat2) &&
-    /<option value="benefic">Always as a benefic \(no classical source\)<\/option>/
-      .test(page));
+    /<option value="benefic">Always as a benefic<\/option>/.test(page));
+  /*
+   * The labels name the reading and nothing else. They used to carry their
+   * authorities in brackets - "(Parashara, Raman)", "(no classical source)" -
+   * which is the note's job, and the note does it at length. A label repeating
+   * a citation in four words can only lose the qualifications that make the
+   * citation worth anything.
+   */
+  ok('and the labels name the reading, leaving the sourcing to the note',
+    (function () {
+      var panel = page.slice(page.indexOf('id="panel-settings"'),
+                             page.indexOf('</section>', page.indexOf('id="panel-settings"')));
+      var named = (panel.match(/<option[^>]*>[^<]*\((?:[^)]*)\)[^<]*<\/option>/g) || []);
+      return named.length === 0;
+    })());
 })();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');

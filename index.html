@@ -430,7 +430,7 @@
       <div class="field">
         <label for="node-type">Rahu and Ketu</label>
         <select id="node-type" aria-describedby="why-node-type">
-          <option value="mean">Mean node (panchang standard)</option>
+          <option value="mean">Mean node</option>
           <option value="true" selected>True node</option>
         </select>
         <div class="field-why" id="why-node-type">
@@ -441,6 +441,12 @@
           the mean by up to about 1.9&deg;, on a cycle of some 132 days, and it goes
           forward about a quarter of the time. The two part by about a degree on average,
           1.9&deg; at most.
+          <br><br>
+          The practical ground for the mean node is that it is what Indian
+          panchangs and the Lahiri ephemeris publish for Rahu and Ketu, so a
+          chart read against one of those will agree. The true node is the
+          default here because it is where the orbit actually crosses at the
+          moment asked about.
           <br><br>
           What that moves, measured over 4,800 charts: a chara karaka is reassigned in
           21% of them, the nodes taking part in that reckoning; Rahu and Ketu fall in
@@ -457,8 +463,8 @@
       <div class="field">
         <label for="moon-paksha">The Moon&rsquo;s paksha bala</label>
         <select id="moon-paksha" aria-describedby="why-moon-paksha">
-          <option value="group" selected>By her fortnight group (Parashara, Raman)</option>
-          <option value="benefic">Always as a benefic (no classical source)</option>
+          <option value="group" selected>By her fortnight group</option>
+          <option value="benefic">Always as a benefic</option>
         </select>
         <div class="field-why" id="why-moon-paksha">
           <p class="field-note">Paksha bala measures the fortnight, not the
@@ -528,7 +534,7 @@
       <div class="field">
         <label for="nat-clock">Nata-unnata clock</label>
         <select id="nat-clock" aria-describedby="why-nat-clock">
-          <option value="apparent" selected>Local apparent time, the sundial (Raman)</option>
+          <option value="apparent" selected>Local apparent time, the sundial</option>
           <option value="mean">Local mean time, longitude only</option>
           <option value="zone">Zone time, the clock on the wall</option>
         </select>
@@ -557,7 +563,7 @@
       <div class="field">
         <label for="hora-length">Hora length</label>
         <select id="hora-length" aria-describedby="why-hora-length">
-          <option value="equal" selected>Twenty-four equal horas (Parashara, Raman)</option>
+          <option value="equal" selected>Twenty-four equal horas</option>
           <option value="seasonal">Twelve by day and twelve by night</option>
         </select>
         <div class="field-why" id="why-hora-length">
@@ -581,8 +587,8 @@
       <div class="field">
         <label for="kranti">Kranti for ayana bala</label>
         <select id="kranti" aria-describedby="why-kranti">
-          <option value="longitude" selected>From the sayana longitude (Raman)</option>
-          <option value="true">True declination, latitude and all (Parashara&rsquo;s note)</option>
+          <option value="longitude" selected>From the sayana longitude</option>
+          <option value="true">True declination, latitude and all</option>
         </select>
         <div class="field-why" id="why-kranti">
           <p class="field-note">Ayana bala scales a graha&rsquo;s declination, and
@@ -608,8 +614,8 @@
       <div class="field">
         <label for="mahabhagya-day">Mahabhagya yoga</label>
         <select id="mahabhagya-day" aria-describedby="why-mahabhagya-day">
-          <option value="phaladeepika" selected>A man must be born by day (Phaladeepika)</option>
-          <option value="raman">No day test for a man (Raman)</option>
+          <option value="phaladeepika" selected>A man must be born by day</option>
+          <option value="raman">No day test for a man</option>
         </select>
         <div class="field-why" id="why-mahabhagya-day">
           <p class="field-note">Mantreswara states it symmetrically.
@@ -637,8 +643,8 @@
       <div class="field">
         <label for="budha-floor">Budha-Aditya yoga</label>
         <select id="budha-floor" aria-describedby="why-budha-floor">
-          <option value="raman" selected>Only outside 10&deg; of the Sun (Raman)</option>
-          <option value="none">Any conjunction in one sign (Rao)</option>
+          <option value="raman" selected>Only outside 10&deg; of the Sun</option>
+          <option value="none">Any conjunction in one sign</option>
         </select>
         <div class="field-why" id="why-budha-floor">
           <p class="field-note">Raman states a floor and most treatments drop it:
@@ -677,7 +683,7 @@
       <div class="field">
         <label for="mercury-nature">Mercury&rsquo;s nature</label>
         <select id="mercury-nature" aria-describedby="why-mercury-nature">
-          <option value="qualified" selected>Malefic in bad company (Parashara, Raman, Rao)</option>
+          <option value="qualified" selected>Malefic in bad company</option>
           <option value="benefic">Always a benefic</option>
         </select>
         <div class="field-why" id="why-mercury-nature">
@@ -703,8 +709,8 @@
       <div class="field">
         <label for="cheshta-method">Cheshta bala</label>
         <select id="cheshta-method" aria-describedby="why-cheshta-method">
-          <option value="kendra" selected>From the chesta kendra (Parashara 27.24-25, Raman)</option>
-          <option value="motion">From the eight motions (Parashara 27.21-23)</option>
+          <option value="kendra" selected>From the chesta kendra</option>
+          <option value="motion">From the eight motions</option>
         </select>
         <div class="field-why" id="why-cheshta-method">
           <p class="field-note">Parashara gives both, in consecutive verses. At
