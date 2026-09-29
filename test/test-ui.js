@@ -4431,11 +4431,15 @@ console.log('\nSettings show the choice and fold the argument');
     /<p class="field-note" id="settings-status"><\/p>/.test(panel) &&
     panel.indexOf('settings-status') > panel.lastIndexOf('</details>'));
   /*
-   * And the reasoning is still there to be opened - the ayanamsa note names the
-   * figure a reader would check Raman against.
+   * And the reasoning is still there: each note argues from a named authority
+   * rather than asserting. The ayanamsa note used to carry Raman's own figure
+   * too, which is now only in the Lesson tab - the settings note says which
+   * ayanamsa to use and the lesson says what it costs, which is the right
+   * division of a short note and a long one.
    */
   ok('and the arguments survived the wrapping',
-    /21&deg;11&prime;29&Prime;/.test(panel) && /Krishnamurti Paddhati|Kesava|Aryabhata|Charak/.test(panel));
+    /Krishnamurti Paddhati|Kesava|Aryabhata|Charak/.test(panel) &&
+    /Parashara|Phaladeepika|Santhanam/.test(panel));
 })();
 
 console.log('\nThe mark legend folds away');
@@ -4518,17 +4522,20 @@ ok('and a saved chart still carries and restores its own', (function () {
     /document\.getElementById\('ayanamsa'\)\.value = state\.ayanamsa;/.test(appSrc);
 })());
 /*
- * The note under it is the only place a reader is told that the Shadbala tab is
- * Raman's arithmetic on someone else's positions. That pairing is in no book,
- * so the page has to be the one to say it.
+ * That the Shadbala tab runs Raman's arithmetic on positions he did not use is
+ * a pairing in no book, so the site has to be the one to say it. It was said
+ * twice, in a long second paragraph under the ayanamsa setting and again in
+ * the lesson on checking a disagreement. The settings note is the wrong place
+ * for it: a reader there is choosing an ayanamsa, not auditing a total. The
+ * lesson keeps it, with the measurements and the order to check things in.
  */
-ok('and the note says whose positions Raman-method Shadbala is running on',
+ok('the lesson says whose positions Raman-method Shadbala is running on',
   (function () {
-    var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-    var at = html.indexOf('id="panel-settings"');
-    var panel = html.slice(at, html.indexOf('</section>', at));
-    return /Raman/.test(panel) && /own ayanamsa/.test(panel) &&
-      /21&deg;11&prime;29&Prime;/.test(panel);
+    var seed = fs.readFileSync(path.join(root,
+      'supabase/seed/astro_readings_strength.sql'), 'utf8');
+    return /If you are checking against Raman''s own book, his ayanamsa is the one to set, not Lahiri/
+      .test(seed) &&
+      /19 shashtiamsas on the average total, as much as three rupas/.test(seed);
   })());
 
 console.log('\nPassage sources');
@@ -6907,6 +6914,70 @@ console.log('\nThe notes claim only what was checked');
   ok('while giving the grounds it does have, named',
     /Charak/.test(flat) && /de Fouw and Svoboda/.test(flat) &&
     /the majority of Indian jyotishis use/.test(flat));
+})();
+
+
+console.log('\nThe node setting says what it moves, and what it does not');
+/*
+ * "Shadbala is reckoned for the seven grahas only and does not change at all"
+ * was true and was the whole of what the note said about consequences, which
+ * left a reader with no idea what the setting does change. Swept instead: the
+ * chart is built both ways and everything the page shows is compared.
+ *
+ * The claims are held to the code here, because a note giving figures is worth
+ * less than no note if the figures drift.
+ */
+(function () {
+  var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  var flat = page.replace(/\s+/g, ' ');
+  var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+
+  ok('the note now says what changes as well as what does not',
+    /a chara karaka is reassigned in 21% of them/.test(flat) &&
+    /another nakshatra in 7%, another sign in 3% and another house in 3%/.test(flat) &&
+    /a \[P\] or \[S\] mark moves on some graha in 2%/.test(flat) &&
+    /the list of yogas found changes in 1%/.test(flat));
+
+  /*
+   * The strong claim is the negative one, and it is the one worth testing
+   * rather than trusting: no Shadbala figure moves. A node takes no bala of its
+   * own and casts no aspect that counts toward one, so the six should be
+   * identical on charts that differ only in which node is used.
+   */
+  var GR = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+  var drifted = 0, sampled = 0, apart = 0;
+  for (var y = 1950; y < 2020; y += 2) {
+    var opts = { jdUT: Astro.julianDay(y, 5, 5, 5), latitude: 28.61,
+      longitude: 77.21, tzOffsetMinutes: 330 };
+    var mean = Astro.chart(Object.assign({}, opts, { trueNode: false }));
+    var tru = Astro.chart(Object.assign({}, opts, { trueNode: true }));
+    var m = {}, t = {};
+    mean.planets.forEach(function (p) { m[p.name] = p; });
+    tru.planets.forEach(function (p) { t[p.name] = p; });
+    if (Math.abs(m.Rahu.longitude - t.Rahu.longitude) > 1e-9) apart++;
+    var sm = Shadbala.compute(mean, place), st = Shadbala.compute(tru, place);
+    sampled++;
+    GR.forEach(function (g) {
+      if (Math.abs(sm.grahas[g].total - st.grahas[g].total) > 1e-9) drifted++;
+      if (Math.abs((sm.grahas[g].drik || 0) - (st.grahas[g].drik || 0)) > 1e-9) drifted++;
+    });
+    if (sm.ranking.join() !== st.ranking.join()) drifted++;
+  }
+  ok('the charts compared really do differ in where the nodes are',
+    apart === sampled, apart + ' of ' + sampled);
+  ok('and not one Shadbala figure moves between them, as the note claims',
+    drifted === 0 && sampled > 30, drifted + ' differences over ' + sampled + ' charts');
+
+  /*
+   * And the positive claims have to be reachable: the nodes are counted among
+   * the chara karakas and among the malefics that hem, which is why those two
+   * move at all.
+   */
+  ok('the nodes are in the karaka reckoning the note credits',
+    Astro.KARAKA_GRAHAS.indexOf('Rahu') >= 0);
+  ok('and count as malefics for the hemming, which is why a mark can move',
+    /NODES\.indexOf\(p\.name\) < 0 && benefics\[p\.name\] === true/.test(
+      fs.readFileSync(path.join(root, 'js/astro.js'), 'utf8')));
 })();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
