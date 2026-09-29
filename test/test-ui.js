@@ -7087,5 +7087,42 @@ console.log('\nThe settings argue from the classical texts');
     /Charak/.test(seed));
 })();
 
+
+console.log('\nUttara Kalamrita on the Moon in paksha bala');
+/*
+ * Surveying the classical compendia for this rule turned up one that states it
+ * outright, and states it the way this site computes it. Uttara Kalamrita:
+ * "Ravi, Kuja, Shani, waning Moon, badly associated Mercury, and Rahu are
+ * malefics. Guru, Shukra and the waxing Moon (from the eighth lunar day of the
+ * bright fortnight to the eighth of the dark fortnight) are benefics." That is
+ * the group reading, and the boundary is Raman's eighth-day rule, which the
+ * note had credited to Raman alone.
+ *
+ * The verse above the working also carries the doubling: "The paksha bala of
+ * the Moon is to be doubled."
+ */
+(function () {
+  var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  var flat = page.replace(/\s+/g, ' ');
+
+  ok('the paksha note carries the classical statement of the group rule',
+    /Uttara Kalamrita is the plainest on the group side/.test(flat) &&
+    /waning Moon, badly associated Mercury, and Rahu are malefics/.test(flat));
+  ok('and the boundary it gives is the one the engine uses',
+    /from the eighth lunar day of the bright fortnight to the eighth of the dark fortnight/
+      .test(flat) &&
+    /elongation > 90 && elongation < 270/.test(
+      fs.readFileSync(path.join(root, 'js/astro.js'), 'utf8')));
+  ok('and the doubling note cites the verse that states it',
+    /The paksha bala of the Moon is to be doubled/.test(flat));
+
+  /*
+   * Both readings are still offered, because Mantreswara does not put her in a
+   * group at all and that is a position, not an oversight.
+   */
+  ok('and both readings are still offered',
+    /<option value="group">/.test(page) && /<option value="benefic"/.test(page));
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
