@@ -849,9 +849,10 @@
         renderGrahaTable(lastChart);       // houses and [Y] are counted from house 1
       });
       /*
-       * Changing the division redraws the yogas and the aspects too, both being
-       * read from whatever is on screen. Rotation does not: which graha house 1
-       * is counted from changes the picture, not the division being read.
+       * Both selectors redraw the slot, and the yogas marked on it are read from
+       * whatever the slot now shows: the division says which chart, the rotation
+       * says where its houses start. Neither touches the Yogas tab, which reads
+       * the whole chart from the ascendant and carries its own division.
        */
       varga.addEventListener('change', function () {
         if (!lastChart) return;
@@ -964,9 +965,40 @@
    * same strengths as the Yogas tab, so the chart and the tab cannot disagree
    * about what a division holds.
    */
-  function yogasByGraha(state, division) {
-    var chart = division === 1 ? state.chart
-      : Astro.chartInDivision(state.chart, division);
+  /*
+   * The same chart counted from somewhere else. Rotating onto a graha makes its
+   * sign house 1, which is what reading a chart from the Moon means, and every
+   * detector takes house 1 from the ascendant - so the rotation is expressed by
+   * moving the ascendant onto the graha. The name is carried along because a
+   * yoga's reasons have to say which house they were counted from.
+   */
+  function rotatedOnto(chart, reference) {
+    if (!reference || reference === 'Ascendant') return chart;
+    var anchor = chart.planets.filter(function (p) { return p.name === reference; })[0];
+    if (!anchor) return chart;
+    var turned = {}, k;
+    for (k in chart) if (chart.hasOwnProperty(k)) turned[k] = chart[k];
+    turned.ascendant = {};
+    for (k in chart.ascendant) {
+      if (chart.ascendant.hasOwnProperty(k)) turned.ascendant[k] = chart.ascendant[k];
+    }
+    turned.ascendant.longitude = anchor.longitude;
+    turned.ascendant.sign = anchor.sign;
+    turned.ascendant.signName = anchor.signName;
+    turned.reference = reference;
+    return turned;
+  }
+
+  /*
+   * Which yogas to mark on each graha in a chart slot. Both of the slot's
+   * settings count: the division decides which chart is being read, and the
+   * rotation decides where its houses are counted from. A yoga left at the
+   * ascendant while the House column and the [Y] flag had moved was describing
+   * a chart that was not on screen.
+   */
+  function yogasByGraha(state, division, reference) {
+    var chart = rotatedOnto(division === 1 ? state.chart
+      : Astro.chartInDivision(state.chart, division), reference);
     var map = {};
     Yogas.detect(chart, strengthsFor(state)).forEach(function (yoga) {
       (yoga.grahas || []).forEach(function (name) {
@@ -1347,7 +1379,7 @@
       ascendant: state.chart.ascendant.longitude,
       division: set.division,
       reference: set.reference,
-      yogas: yogasByGraha(state, set.division),
+      yogas: yogasByGraha(state, set.division, set.reference),
       dignities: dignitiesByGraha(state, set.division),
       hemming: hemmingByGraha(state, set.division)
     });
@@ -1897,7 +1929,8 @@
            kendraMethod: document.getElementById('kendra-method').value,
            meanSource: document.getElementById('mean-source').value,
            luminaryRule: document.getElementById('luminary-rule').value,
-           luminaryCheshta: document.getElementById('luminary-cheshta').value });
+           luminaryCheshta: document.getElementById('luminary-cheshta').value,
+           ishtaKashta: document.getElementById('ishta-kashta').value });
     }
     return state.shadbala;
   }
@@ -2232,6 +2265,28 @@
           x.strong ? 'Strong' : 'Weak');
       }));
 
+    /*
+     * Below the verdict because they are not part of it. Ishta and kashta are
+     * not a seventh share and are in no total above: they are what the graha
+     * is disposed to do in its dasha, read off uchcha and cheshta bala alone.
+     * They are the reason the luminaries' cheshta row exists at all, so the
+     * two rows sit close enough for a reader to see where they come from.
+     */
+    var phalaSays = document.getElementById('ishta-kashta').value === 'parashara'
+      ? ' On this setting the two halve a fixed sixty between them.'
+      : ' On this setting a graha can be low in both at once, the two not summing to sixty.';
+    row('Ishta phala', 'Good', 60, 'The good a graha is disposed to do in its ' +
+      'dasha, from its uchcha and cheshta bala. Not a seventh share and not in ' +
+      'the total above.' + phalaSays,
+      grahas.map(function (graha) {
+        return el('td', 'numeric', n(result.grahas[graha].phala.ishta));
+      }), 'bala-head');
+    row('Kashta phala', 'Evil', 60, 'The harm, from the same two shares read ' +
+      'the other way round: how far each falls short of sixty.' + phalaSays,
+      grahas.map(function (graha) {
+        return el('td', 'numeric', n(result.grahas[graha].phala.kashta));
+      }));
+
     renderShadbalaChart(grahas, result);
 
     document.getElementById('shadbala-note').textContent =
@@ -2250,7 +2305,12 @@
       'their disc diameters. Saptavargaja uses Raman’s ladder, section 30 - 45 and ' +
       '30 at the top, then halving at every step down to 1.875 - where Santhanam ' +
       'and Saravali give 20, 15, 10, 4 and 2 for the lower five, which is why ' +
-      'totals here can differ from another calculator’s by a few virupas.';
+      'totals here can differ from another calculator’s by a few virupas. ' +
+      'The last two rows are below the verdict because they are in no total ' +
+      'above it: ishta and kashta phala are what the graha is disposed to do in ' +
+      'its dasha, good and ill, read off its uchcha and cheshta bala alone. ' +
+      'Compare a graha’s two against each other rather than against another ' +
+      'graha’s.';
   }
 
   /**
@@ -3477,8 +3537,8 @@
   var editButton = document.getElementById('edit-button');
 
   /*
-   * Four charts ship with the app, so the saved list is not empty before anyone
-   * has typed a birth time in. All four are picked for being checkable rather
+   * Five charts ship with the app, so the saved list is not empty before anyone
+   * has typed a birth time in. All five are picked for being checkable rather
    * than for being famous, and between them they show the three things that
    * decide whether a chart can be trusted: the time, the clock it is read on,
    * and the place.
@@ -3503,6 +3563,18 @@
    * there is no second reading of the clock to argue about. What is left is the
    * dasha: Jupiter from July 1996 to July 2012, which opens months before the
    * Illinois senate seat and closes between the two presidential terms.
+   *
+   * Pope Benedict XVI's answers the question Ava Gardner's raises. Joseph
+   * Ratzinger was born in Marktl am Inn, about two and a half thousand people
+   * and so under the gazetteer's floor as well, but this entry keeps the real
+   * coordinates and the real name instead of standing at the nearest town. Typing a place the
+   * combobox does not carry is a supported way to use this app, not a
+   * workaround, and a chart kept for checking against published ones should be
+   * cast from where the person was actually born. It costs nothing: the tropical
+   * ascendant comes out at 19 Pisces 10, and the references print 19 Pisces 12.
+   * His dasha is the one that needs no astrology to notice. Ketu, the graha of
+   * letting go, runs from November 2005 to November 2012, and the pontificate
+   * runs from April 2005 to February 2013.
    */
   var STUDY_CHARTS = [{
     name: 'Donald Trump',
@@ -3561,6 +3633,19 @@
     standard: 'zone',
     ayanamsa: 'lahiri',
     trueNode: true,
+    gender: 'male',
+    celebrity: true
+  }, {
+    name: 'Pope Benedict XVI',
+    placeLabel: 'Marktl am Inn, Bavaria, Germany',
+    latitude: 48.2556,
+    longitude: 12.8447,
+    zone: 'Europe/Berlin',
+    date: '1927-04-16',
+    time: '04:15:00',
+    standard: 'zone',
+    ayanamsa: 'lahiri',
+    trueNode: false,
     gender: 'male',
     celebrity: true
   }];
@@ -4039,7 +4124,9 @@
    ['luminary-rule', { kendra: 'The Sun and Moon now take their own cheshta kendras.',
                        borrowed: 'The Sun and Moon now borrow their ayana and paksha bala.' }],
    ['luminary-cheshta', { counted: 'The Sun\u2019s and Moon\u2019s cheshta bala now counts in the total.',
-                          omitted: 'The Sun\u2019s and Moon\u2019s cheshta bala is shown but not counted.' }]
+                          omitted: 'The Sun\u2019s and Moon\u2019s cheshta bala is shown but not counted.' }],
+   ['ishta-kashta', { sripati: 'Ishta and kashta are the square roots Sripatipaddhati asks for.',
+                      parashara: 'Ishta and kashta now halve a fixed sixty between them, as Parashara has it.' }]
   ].forEach(function (pair) {
     document.getElementById(pair[0]).addEventListener('change', function () {
       var status = document.getElementById('settings-status');

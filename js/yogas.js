@@ -24,6 +24,35 @@ var Yogas = (function () {
    * almost every parivartana a dainya, since five of the seven grahas rule a
    * dusthana somewhere.
    */
+  /*
+   * What house 1 is, in words.
+   *
+   * Rotating a chart counts its houses from a graha instead of from the
+   * ascendant, which is how a chart is read from the Moon. A reason that still
+   * said "the lagna" would then be naming a house nobody is looking at. The
+   * unrotated chart keeps whatever wording the passage already used, so these
+   * only ever change a sentence that would otherwise be wrong.
+   *
+   * Only the two luminaries take an article: "the Moon" and "the Sun", but
+   * "Venus" and "Saturn".
+   */
+  var FIRST_HOUSE_ARTICLE = { Sun: true, Moon: true };
+
+  function rotated(chart) {
+    return !!chart.reference && chart.reference !== 'Ascendant';
+  }
+
+  function firstHouse(chart, classical) {
+    if (!rotated(chart)) return classical || 'the lagna';
+    return (FIRST_HOUSE_ARTICLE[chart.reference] ? 'the ' : '') + chart.reference;
+  }
+
+  /* The same house when a sentence needs its lord rather than the house. */
+  function firstLord(chart, classical) {
+    return rotated(chart)
+      ? 'lord of the sign ' + firstHouse(chart) + ' stands in' : classical;
+  }
+
   function parivartana(chart) {
     var positions = {};
     chart.planets.forEach(function (p) { positions[p.name] = p; });
@@ -110,7 +139,7 @@ var Yogas = (function () {
      * cancelled itself in every chart, on a condition that is true by definition.
      */
     var inKendraFromEither = function (sign, whose) {
-      if (KENDRA_HOUSES.indexOf(houseFrom(sign, lagna)) >= 0) return 'the lagna';
+      if (KENDRA_HOUSES.indexOf(houseFrom(sign, lagna)) >= 0) return firstHouse(chart);
       if (whose !== 'Moon' && moonSign !== null &&
           KENDRA_HOUSES.indexOf(houseFrom(sign, moonSign)) >= 0) return 'the Moon';
       return null;
@@ -437,7 +466,8 @@ var Yogas = (function () {
     var reasons = [
       ninthLord + ' rules the 9th and stands in ' + Astro.SIGNS[placed.sign] + ', its ' +
         SEAT_PHRASE[dignity] + ', in the ' + house + ' - ' + seat,
-      lagnaLord + ', the lagna lord, carries ' + lord.rupas.toFixed(2) + ' rupas against the ' +
+      lagnaLord + ', ' + firstLord(chart, 'the lagna lord') + ', carries ' +
+        lord.rupas.toFixed(2) + ' rupas against the ' +
         lord.required + ' Parashara asks of it, so it is strong'
     ];
 
@@ -472,7 +502,7 @@ var Yogas = (function () {
       reasons: reasons,
       summary: Named(ninthLord) + ', lord of the 9th, is in the ' + house +
         ' in its ' + SEAT_PHRASE[dignity] + ', and ' + named(lagnaLord) +
-        ', the lagna lord, is strong by Shadbala.'
+        ', ' + firstLord(chart, 'the lagna lord') + ', is strong by Shadbala.'
     }];
   }
 
@@ -545,7 +575,8 @@ var Yogas = (function () {
         houses: [house],
         reasons: [
           p.name + ' stands in ' + Astro.SIGNS[p.sign] + ', ' + seat + ', and in the ' +
-            ordinal(house) + ' - a kendra from the lagna, which is what the rule asks',
+            ordinal(house) + ' - a kendra from ' + firstHouse(chart) +
+            ', which is what the rule asks',
           'the yoga takes its name from the graha: ' + p.name + ' gives ' + name +
             ', ' + MAHAPURUSHA_ABOUT[name]
         ],
@@ -744,8 +775,14 @@ var Yogas = (function () {
       sun.rashiLongitude !== undefined ? sun.rashiLongitude : sun.longitude,
       jupiter.retrograde);
 
-    var seat = fromLagna && fromMoon ? 'an angle from both the lagna and the Moon'
-      : fromLagna ? 'an angle from the lagna' : 'an angle from the Moon';
+    /*
+     * Read from the Moon, house 1 and the Moon are the same sign and the two
+     * angles are one angle, so the seat is named once instead of twice.
+     */
+    var first = firstHouse(chart);
+    var seat = chart.reference === 'Moon' ? 'an angle from the Moon'
+      : fromLagna && fromMoon ? 'an angle from both ' + first + ' and the Moon'
+      : fromLagna ? 'an angle from ' + first : 'an angle from the Moon';
     var where = 'Jupiter stands in ' + Astro.SIGNS[jupiter.sign] + ', ' + seat;
 
     var missing = [];
@@ -872,7 +909,8 @@ var Yogas = (function () {
       var against = reaching(second, !wanted).concat(reaching(twelfth, !wanted));
 
       var reasons = [(wanted ? 'benefics' : 'malefics') + ' stand in both the ' +
-        '12th and the 2nd, so the lagna is flanked on both sides at once'];
+        '12th and the 2nd, so ' + firstHouse(chart) +
+        ' is flanked on both sides at once'];
       if (mixed.length) {
         reasons.push(listOf(mixed) + ' ' + (mixed.length > 1 ? 'share' : 'shares') +
           ' one of the two signs, which does not undo the yoga: Phaladeepika ' +
@@ -903,8 +941,8 @@ var Yogas = (function () {
         reasons: reasons,
         summary: listOf(here.map(function (p) { return p.name; })) + ' in the 2nd and ' +
           listOf(there.map(function (p) { return p.name; })) + ' in the 12th ' +
-          (wanted ? 'flank the lagna, which is shubha kartari yoga.'
-                  : 'close the lagna in, which is papa kartari yoga.')
+          (wanted ? 'flank ' + firstHouse(chart) + ', which is shubha kartari yoga.'
+                  : 'close ' + firstHouse(chart) + ' in, which is papa kartari yoga.')
       });
     });
     return found;
@@ -992,7 +1030,8 @@ var Yogas = (function () {
       var escapes = [];
       if (withMoon.length) escapes.push(listOf(withMoon) + ' sits with the Moon');
       if (inKendra.length) escapes.push(listOf(inKendra) +
-        ' stands in an angle from the lagna or the Moon');
+        ' stands in an angle from ' + (chart.reference === 'Moon' ? 'the Moon'
+          : firstHouse(chart) + ' or the Moon'));
       if (escapes.length) {
         reasons.push('some authors cancel the yoga where ' + listOf(escapes) +
           ', which is the case here; Raman gives those cancellations and calls ' +
@@ -1151,8 +1190,10 @@ var Yogas = (function () {
     var benefics = Astro.naturalBenefics(chart);
 
     var seats = [];
-    [['the lagna', (lagna + 9) % 12], ['the Moon', (moon.sign + 9) % 12]]
-      .forEach(function (from) {
+    var references = [[firstHouse(chart), (lagna + 9) % 12]];
+    // Read from the Moon, the second reference is the first one again.
+    if (chart.reference !== 'Moon') references.push(['the Moon', (moon.sign + 9) % 12]);
+    references.forEach(function (from) {
         var here = GRAHAS.filter(function (g) {
           return positions[g] && positions[g].sign === from[1] && benefics[g] === true;
         });
@@ -1766,8 +1807,11 @@ var Yogas = (function () {
     if (!fromLagna.length && !fromMoon.length) return [];
 
     var seats = [];
-    if (fromLagna.length) seats.push(listOf(fromLagna) + ' in the upachayas from the ascendant');
-    if (fromMoon.length) seats.push(listOf(fromMoon) + ' in the upachayas from the Moon');
+    if (fromLagna.length) seats.push(listOf(fromLagna) + ' in the upachayas from ' +
+      firstHouse(chart, 'the ascendant'));
+    if (fromMoon.length && chart.reference !== 'Moon') {
+      seats.push(listOf(fromMoon) + ' in the upachayas from the Moon');
+    }
     var most = Math.max(fromLagna.length, fromMoon.length);
 
     return [{
@@ -1784,7 +1828,10 @@ var Yogas = (function () {
       reasons: [
         seats.join(', and '),
         fromLagna.length
-          ? 'Raman holds the form from the ascendant the stronger of the two'
+          ? (chart.reference === 'Moon'
+              ? 'this is the form from the Moon, which Raman holds the weaker of the two'
+              : 'Raman holds the form from ' + firstHouse(chart, 'the ascendant') +
+                ' the stronger of the two')
           : 'only the Moon gives it here, which Raman reads as the weaker form',
         'Raman reads the count and not just the fact - "two benefics will give ' +
           'less wealth while only one benefic will give ordinary wealth", so ' +
@@ -1880,7 +1927,8 @@ var Yogas = (function () {
     if (!with_.length) return [];
 
     return finding('Vanchanachorabheethi Yoga', 'Vanchanachorabheethi yoga', [
-      lord + ', lord of the ascendant, stands with ' + listOf(with_) + ' in ' +
+      lord + ', ' + firstLord(chart, 'lord of the ascendant') + ', stands with ' +
+        listOf(with_) + ' in ' +
         Astro.SIGNS[c.at[lord].sign],
       'read for a turn of mind rather than an event: a person who expects to ' +
         'be cheated or robbed, and is watchful about it',
@@ -1888,7 +1936,7 @@ var Yogas = (function () {
         'which is not computed here because no text available to this site ' +
         'states which of the competing rules for finding it to use - so a ' +
         'chart may hold this yoga by one of those and be reported without it'
-    ], lord + ', the ascendant lord, is joined by ' + listOf(with_) +
+    ], lord + ', ' + firstLord(chart, 'the ascendant lord') + ', is joined by ' + listOf(with_) +
        ', which is Vanchanachorabheethi yoga.', [lord].concat(with_), [1]);
   }
 
@@ -1911,7 +1959,8 @@ var Yogas = (function () {
     return finding('Kahala Yoga', 'Kahala yoga', [
       fourth + ' rules the 4th and ' + ninth + ' the 9th, and they stand in ' +
         'angles from each other',
-      lagnaLord + ', lord of the ascendant, is strong, which the rule asks ' +
+      lagnaLord + ', ' + firstLord(chart, 'lord of the ascendant') +
+        ', is strong, which the rule asks ' +
         'for and which is what keeps this from being common',
       'Raman warns against reading the old results literally: "No yogas ' +
         'should be interpreted verbatim if the results are to hold good to ' +
@@ -2373,16 +2422,28 @@ var Yogas = (function () {
    * it wrong again and a detector that starts reading strengths tomorrow does
    * not rediscover this.
    */
+  /*
+   * Detectors that read the ascendant as one of the bodies rather than as house
+   * 1. Rotating re-counts the houses; it cannot re-seat the ascendant itself, so
+   * these have no answer to give for a rotated chart and are not asked.
+   * Mahabhagya is the only one: its test is the parity of the lagna's own sign,
+   * beside the Sun's and the Moon's.
+   */
+  var ASCENDANT_ONLY = [mahabhagya];
+
   function detect(chart, strengths) {
     var byGraha = strengths && strengths.grahas ? strengths.grahas : strengths;
+    var turned = rotated(chart);
     var all = [];
     DETECTORS.forEach(function (detector) {
+      if (turned && ASCENDANT_ONLY.indexOf(detector) >= 0) return;
       detector(chart, byGraha).forEach(function (finding) { all.push(finding); });
     });
     return all;
   }
 
-  return { detect: detect, parivartana: parivartana, neechaBhanga: neechaBhanga,
+  return { detect: detect, firstHouse: firstHouse, firstLord: firstLord,
+    parivartana: parivartana, neechaBhanga: neechaBhanga,
     kartari: kartari,
     moonCompany: moonCompany, chandraMangala: chandraMangala, adhiYoga: adhiYoga,
     sakata: sakata, amala: amala, budhaAditya: budhaAditya,

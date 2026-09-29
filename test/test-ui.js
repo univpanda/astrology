@@ -293,7 +293,7 @@ console.log('\nStudy charts that ship with the app');
   ok('STUDY_CHARTS is still a literal this test can read', !!literal);
   if (!literal) return;
   var charts = new Function('return ' + literal[1])();
-  ok('four charts ship', charts.length === 4, charts.map(function (c) { return c.name; }).join(', '));
+  ok('five charts ship', charts.length === 5, charts.map(function (c) { return c.name; }).join(', '));
 
   function cast(entry, offsetMinutes) {
     var t = entry.time.split(':').map(Number);
@@ -317,13 +317,24 @@ console.log('\nStudy charts that ship with the app');
     var hit = Geo.search(town, 40).filter(function (c) {
       return Geo.label(c) === entry.placeLabel;
     })[0];
-    ok(entry.name + ': the place label is one the combobox offers', !!hit,
-       hit ? Geo.label(hit) : 'no such label for ' + town);
     if (hit) {
-      ok(entry.name + ': coordinates and zone match that place',
+      // A label the combobox offers has to carry that place's own numbers, or
+      // a digit lost out of a coordinate would never be noticed.
+      ok(entry.name + ': coordinates and zone match the place the combobox offers',
          Math.abs(hit.lat - entry.latitude) < 1e-4 &&
          Math.abs(hit.lon - entry.longitude) < 1e-4 && hit.zone === entry.zone,
          hit.lat + ', ' + hit.lon + ' / ' + hit.zone);
+    } else {
+      /*
+       * Villages below the gazetteer's floor are entered by coordinate, which is
+       * a supported way to use the app rather than a lapse. There is no row to
+       * check them against, so the test is that they land where they claim to:
+       * near a town this table does carry, in that town's zone.
+       */
+      var near = Geo.nearest(entry.latitude, entry.longitude);
+      ok(entry.name + ': the place is off the gazetteer but lands beside a town on it',
+         !!near && near.km < 25 && near.zone === entry.zone,
+         near ? Geo.label(near) + ' ' + near.km.toFixed(1) + ' km, ' + near.zone : 'nothing near');
     }
     // A note is optional. Where there is one it is prose the user reads, so it
     // stays inside the column limit and keeps em-dashes out.
@@ -338,8 +349,10 @@ console.log('\nStudy charts that ship with the app');
   }
   var trump = named('Donald Trump'), kareem = named('Kareem Abdul-Jabbar');
   var ava = named('Ava Gardner'), obama = named('Barack Obama');
-  ok('each chart checked below is still in the list', !!trump && !!kareem && !!ava && !!obama);
-  if (!trump || !kareem || !ava || !obama) return;
+  var ratzinger = named('Pope Benedict XVI');
+  ok('each chart checked below is still in the list',
+     !!trump && !!kareem && !!ava && !!obama && !!ratzinger);
+  if (!trump || !kareem || !ava || !obama || !ratzinger) return;
 
   var tc = cast(trump);
   ok('Trump: 6 Leo rises in Magha, as the note says',
@@ -498,6 +511,53 @@ console.log('\nStudy charts that ship with the app');
   ok('Obama: Jupiter dasha runs July 1996 to July 2012',
      ojup && ojup.y === 1996 && ojup.m === 7 && osat && osat.y === 2012 && osat.m === 7,
      (ojup ? ojup.y + '-' + ojup.m : '?') + ' to ' + (osat ? osat.y + '-' + osat.m : '?'));
+
+  var rc = cast(ratzinger);
+  ok('Benedict: 26 Aquarius rises in Purva Bhadrapada',
+     rc.ascendant.signName === 'Aquarius' && Math.floor(rc.ascendant.longitude % 30) === 26 &&
+     rc.ascendant.nakshatra.name === 'Purva Bhadrapada',
+     rc.ascendant.signName + ' ' + (rc.ascendant.longitude % 30).toFixed(2) +
+     ' ' + rc.ascendant.nakshatra.name);
+  /*
+   * Keeping the village rather than the nearest town is only worth the trouble
+   * if it is right, so it is checked the one way it can be: against what the
+   * published charts print. They give a tropical ascendant of 19 Pisces 12, and
+   * two arcminutes is the whole disagreement.
+   */
+  var rTropical = (rc.ascendant.longitude + rc.ayanamsa) % 30;
+  ok('Benedict: the tropical ascendant agrees with the references to two arcminutes',
+     Astro.SIGNS[Math.floor(((rc.ascendant.longitude + rc.ayanamsa) % 360) / 30)] === 'Pisces' &&
+     Math.abs(rTropical - (19 + 12 / 60)) < 2 / 60,
+     rTropical.toFixed(4) + ' of Pisces, references give ' + (19 + 12 / 60).toFixed(4));
+  ok('Benedict: 1927 Bavaria keeps Central European Time, with no summer time',
+     Geo.offsetMinutes(ratzinger.zone, 1927, 4, 16, 4, 15) === 60,
+     Geo.formatOffset(Geo.offsetMinutes(ratzinger.zone, 1927, 4, 16, 4, 15)));
+  var rp = {};
+  rc.planets.forEach(function (planet) { rp[planet.name] = planet; });
+  ok('Benedict: Jupiter in the lagna, a degree and a half above the rising point',
+     rp.Jupiter.signName === 'Aquarius' && rp.Jupiter.house === 1 &&
+     rp.Jupiter.longitude - rc.ascendant.longitude > 0 &&
+     rp.Jupiter.longitude - rc.ascendant.longitude < 2,
+     (rp.Jupiter.longitude - rc.ascendant.longitude).toFixed(2) + ' degrees');
+  ok('Benedict: Sun exalted in Aries, Venus in its own sign in Taurus',
+     rp.Sun.signName === 'Aries' && rp.Sun.dignity === 'Exalted' &&
+     rp.Venus.signName === 'Taurus' && rp.Venus.dignity === 'Own Sign');
+  ok('Benedict: Mercury debilitated in Pisces in the 2nd',
+     rp.Mercury.signName === 'Pisces' && rp.Mercury.dignity === 'Debilitated' &&
+     rp.Mercury.house === 2);
+  ok('Benedict: Saturn retrograde in Scorpio in the 10th',
+     rp.Saturn.signName === 'Scorpio' && rp.Saturn.house === 10 && rp.Saturn.retrograde === true);
+  ok('Benedict: Hasta birth nakshatra leaves under two years of Moon dasha',
+     rc.dashas.birthNakshatra.name === 'Hasta' && rc.dashas.balanceYears < 2,
+     rc.dashas.birthNakshatra.name + ', ' + rc.dashas.balanceYears.toFixed(2) + ' years');
+  /*
+   * Elected April 2005, resigned February 2013. The Ketu mahadasha sits inside
+   * that almost exactly, which is the reason this chart is worth shipping.
+   */
+  var rket = dashaStart(rc, 'Ketu'), rven = dashaStart(rc, 'Venus');
+  ok('Benedict: Ketu dasha runs November 2005 to November 2012',
+     rket && rket.y === 2005 && rket.m === 11 && rven && rven.y === 2012 && rven.m === 11,
+     (rket ? rket.y + '-' + rket.m : '?') + ' to ' + (rven ? rven.y + '-' + rven.m : '?'));
 })();
 
 /*
@@ -3153,6 +3213,59 @@ ok('every script the page loads parses', (function () {
     return names.length > 0 &&
       !names.some(function (label) { return /^Yuddha/.test(label); });
   })());
+
+  /*
+   * Ishta and kashta phala, the one pair of rows in the table that is in no
+   * total above it. They sit under the verdict rather than among the shares,
+   * because they are not a seventh share: they are what the graha is disposed
+   * to do in its dasha, read off uchcha and cheshta bala alone, and they are
+   * the reason the luminaries' cheshta row is computed at all.
+   */
+  var names = rowNames(peace);
+  ok('the table closes on the two phalas, below the verdict and not among the shares',
+    names.indexOf('Ishta phala') > names.indexOf('Verdict') &&
+    names.indexOf('Kashta phala') === names.indexOf('Ishta phala') + 1,
+    names.slice(-4).join(', '));
+
+  /*
+   * And the setting reaches the figures. Both readings are computed from the
+   * same two shares, so a chart where they agree would say nothing; this one is
+   * chosen for a graha where they are far apart.
+   */
+  var phalaOf = function (reading) {
+    byId['ishta-kashta'].value = reading;
+    var got = Shadbala.compute(peace.chart,
+      { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 },
+      { ishtaKashta: reading }).grahas;
+    return got;
+  };
+  var sri = phalaOf('sripati'), par = phalaOf('parashara');
+  byId['ishta-kashta'].value = 'sripati';
+  ok('the two readings really do give different figures',
+    Shadbala.GRAHAS.some(function (g) {
+      return Math.abs(sri[g].phala.ishta - par[g].phala.ishta) > 1;
+    }),
+    Shadbala.GRAHAS.map(function (g) {
+      return g + ' ' + sri[g].phala.ishta.toFixed(1) + '/' + par[g].phala.ishta.toFixed(1);
+    }).join(' '));
+  ok('and only Parashara’s halves a fixed sixty between them',
+    Shadbala.GRAHAS.every(function (g) {
+      return Math.abs(par[g].phala.ishta + par[g].phala.kashta - 60) < 1e-9;
+    }) &&
+    Shadbala.GRAHAS.some(function (g) {
+      return Math.abs(sri[g].phala.ishta + sri[g].phala.kashta - 60) > 1;
+    }));
+
+  /*
+   * The luminaries are the point. Their cheshta bala is shown and not counted,
+   * and this is the computation it is kept for, so an empty phala cell for the
+   * Sun or the Moon would be the bug that reading fixes.
+   */
+  ok('and the Sun and the Moon have both phalas, which is what their cheshta is for',
+    ['Sun', 'Moon'].every(function (g) {
+      return isFinite(sri[g].phala.ishta) && isFinite(sri[g].phala.kashta) &&
+        sri[g].phala.ishta + sri[g].phala.kashta > 0;
+    }));
 })();
 
 console.log('\nVargas panel');
@@ -4647,7 +4760,12 @@ ok('every strength passage in the seed names its sources', (function () {
   var sql = fs.readFileSync(path.join(root,
     'supabase/seed/astro_readings_strength.sql'), 'utf8');
   var rows = sql.split(/\n\('strength', /).slice(1);
-  if (rows.length !== 18) return false;
+  // Against the sort orders rather than against a number typed here: a row
+  // added later should be checked, not counted, and a literal only ever gets
+  // bumped to make the suite quiet again.
+  if (!rows.length || rows.length !== (sql.match(/\n \d{3}\)/g) || []).length) {
+    return false;
+  }
   return rows.every(function (row) {
     // the source is the literal between the note and the sort order
     var tail = row.slice(row.indexOf(' ],\n') + 4);

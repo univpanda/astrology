@@ -6762,6 +6762,40 @@ console.log('\nOne chart end to end, from birth data to every bala');
   ok('and the proportional ranking is the chapter’s, all seven places',
     full.ranking.join(' ') === 'Sun Saturn Jupiter Mars Mercury Venus Moon',
     full.ranking.join(' > '));
+
+  /*
+   * And chapter 9's ishta and kashta, which is the whole chain: birth data to
+   * uchcha and cheshta bala to the two phalas. Mars is left out and asserted
+   * separately below - its cheshta bala is 0.03 in the book and 0.21 here, a
+   * fifth of a virupa, and a square root near zero turns that into a whole
+   * virupa of ishta. Jupiter's ishta is the book's own slip, 36.41 x 3.49 being
+   * 127.07 where it prints the product of 3.59.
+   */
+  var phala = { Sun: [18.96, 37.65], Moon: [18.95, 37.47], Mercury: [41.31, 15.39],
+    Jupiter: [11.27, 36.51], Venus: [13.06, 41.34], Saturn: [34.58, 17.75] };
+  var worstPhala = 0, atPhala = '';
+  Object.keys(phala).forEach(function (g) {
+    [['ishta', 0], ['kashta', 1]].forEach(function (p) {
+      var d = Math.abs(r[g].phala[p[0]] - phala[g][p[1]]);
+      if (d > worstPhala) { worstPhala = d; atPhala = g + ' ' + p[0]; }
+    });
+  });
+  ok('ishta and kashta come out of the birth data, six of the seven',
+    worstPhala < 0.5, 'worst ' + worstPhala.toFixed(2) + ' on ' + atPhala);
+
+  /*
+   * The seventh is the reason ishta is quoted to two places and read to none.
+   * A graha all but stationary has a cheshta bala near zero, and the square
+   * root is steepest there: a fifth of a virupa in becomes a whole virupa out.
+   * Kashta, taking sixty less each share, is flat in the same place and lands.
+   */
+  ok('and Mars shows what a square root does near zero',
+    Math.abs(r.Mars.cheshta - 0.03) < 0.25 &&
+    Math.abs(r.Mars.phala.ishta - 0.61) > 0.5 &&
+    Math.abs(r.Mars.phala.kashta - 53.48) < 0.2,
+    'cheshta ' + r.Mars.cheshta.toFixed(2) + ' for 0.03, ishta ' +
+      r.Mars.phala.ishta.toFixed(2) + ' for 0.61, kashta ' +
+      r.Mars.phala.kashta.toFixed(2) + ' for 53.48');
 })();
 
 
@@ -6823,6 +6857,143 @@ console.log('\nDrik bala on all three of the textbook’s worked charts');
   ok('and the signs follow the split, positive only where benefics outweigh',
     CASES[2].want.Moon > 0 && CASES[2].want.Saturn > 0 &&
     GRAHAS.every(function (g) { return CASES[0].want[g] < 0; }));
+})();
+
+
+console.log('\nIshta and kashta phala, on every worked example there is');
+/*
+ * Not a bala, and in no total: the good and the harm a graha is disposed to do
+ * in its dasha, read off uchcha bala and cheshta bala alone. It is the reason
+ * the luminaries have a cheshta bala at all, Raman saying at section 136 that
+ * the Sun is given one because it "is necessary to ascertain the Ishta and
+ * Kashta Phalas".
+ *
+ * Four printed tables to check against, 56 figures. The balas go in as printed
+ * so nothing here depends on casting the charts.
+ */
+(function () {
+  var GRAHAS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+
+  /*
+   * The textbook's chapter 9 works all three of its charts. Three of its 42
+   * answers do not follow from the inputs printed beside them, and in each the
+   * engine lands on what those inputs give:
+   *
+   *   Example 1, Mars kashta: it writes "(60 - 0.03) = 59.57", which is 59.97.
+   *   Example 1, Jupiter ishta: 36.41 x 3.49 is 127.07, and it prints 130.71,
+   *     the product of 36.41 and 3.59.
+   *   Example 3, Mars kashta: the root of 750.20 is 27.39, printed as 27.30.
+   *
+   * They are listed rather than tolerated, so that a later reader cannot take
+   * the near miss for an engine fault and "fix" it towards the misprint.
+   */
+  var SLIPS = { 'Rao 1 Mars kashta': 1, 'Rao 1 Jupiter ishta': 1,
+    'Rao 3 Mars kashta': 1 };
+  var RAO = [
+    { n: 1, u: [11.73, 30.99, 12.30, 51.09, 36.41, 6.02, 51.43],
+            c: [30.64, 11.59, 0.03, 33.41, 3.49, 28.34, 23.25],
+            i: [18.96, 18.95, 0.61, 41.31, 11.43, 13.06, 34.58],
+            k: [37.65, 37.47, 53.31, 15.39, 36.51, 41.34, 17.75] },
+    { n: 2, u: [7.12, 30.20, 58.97, 50.86, 59.43, 10.28, 59.89],
+            c: [11.81, 29.65, 33.88, 28.90, 41.09, 57.93, 5.46],
+            i: [9.17, 29.92, 44.70, 38.34, 49.42, 24.40, 18.08],
+            k: [50.48, 30.07, 5.19, 16.86, 3.28, 10.14, 2.45] },
+    { n: 3, u: [44.84, 59.71, 11.91, 0.78, 30.58, 52.03, 21.66],
+            c: [25.87, 22.54, 44.40, 35.74, 47.32, 6.88, 40.93],
+            i: [34.06, 36.69, 23.00, 5.28, 38.04, 18.92, 29.77],
+            k: [22.75, 3.30, 27.30, 37.90, 19.31, 20.58, 27.04] }
+  ];
+  var missed = [], slipped = [];
+  RAO.forEach(function (x) {
+    GRAHAS.forEach(function (g, j) {
+      var p = Shadbala.ishtaKashta(x.u[j], x.c[j], Shadbala.ISHTA_KASHTA.SRIPATI);
+      [['ishta', p.ishta, x.i[j]], ['kashta', p.kashta, x.k[j]]].forEach(function (pair) {
+        var name = 'Rao ' + x.n + ' ' + g + ' ' + pair[0];
+        var off = Math.abs(pair[1] - pair[2]);
+        if (SLIPS[name]) { if (off > 0.05) slipped.push(name); }
+        else if (off > 0.011) missed.push(name + ' by ' + off.toFixed(2));
+      });
+    });
+  });
+  ok('the textbook’s three charts come out, 39 of its 42 figures exactly',
+    missed.length === 0, missed.join(', '));
+  ok('and the three that miss are its own arithmetic, each still off',
+    slipped.length === 3, slipped.join(', '));
+
+  /*
+   * Raman's Standard Horoscope, Examples 62 and 63. The balas are his own, off
+   * the sthana table of Example 13 and the cheshta table of Example 33. Two of
+   * his kashta figures do not follow from them at all, and Mercury's cannot
+   * follow from any pair of balas: an ishta of 11.20 and a kashta of 49.16
+   * would need two numbers whose sum and product have no real roots.
+   */
+  var RU = [3.000, 32.75, 37.060, 54.500, 56.330, 1.950, 34.800];
+  var RC = [22.66, 43.46, 22.23, 2.30, 35.26, 5.95, 21.14];
+  var RI = [8.25, 37.73, 28.70, 11.20, 44.57, 3.49, 27.00];
+  var RK = [46.13, 21.23, 29.44, 49.16, 13.19, 56.00, 31.50];
+  var clean = 0, wrong = [];
+  GRAHAS.forEach(function (g, j) {
+    var p = Shadbala.ishtaKashta(RU[j], RC[j], Shadbala.ISHTA_KASHTA.SRIPATI);
+    [['ishta', p.ishta, RI[j]], ['kashta', p.kashta, RK[j]]].forEach(function (pair) {
+      // A fifth of a virupa, his tables rounding loosely: Venus's kashta is
+      // 56.014 and he prints 56.00.
+      if (Math.abs(pair[1] - pair[2]) <= 0.02) clean++;
+      else wrong.push(g + ' ' + pair[0] + ' ' + pair[1].toFixed(2) +
+        ' for ' + pair[2].toFixed(2));
+    });
+  });
+  ok('Raman’s Examples 62 and 63 come out on nine of their fourteen',
+    clean === 9, clean + ' exact; the rest: ' + wrong.join(', '));
+  ok('and his Mercury pair is not a misreading but an impossibility',
+    (function () {
+      // i^2 = uc and k^2 = (60-u)(60-c) fix the product and the sum; if the
+      // quadratic they imply has no real roots, no pair of balas gives both.
+      var prod = 11.20 * 11.20;
+      var sum = (3600 + prod - 49.16 * 49.16) / 60;
+      return sum * sum - 4 * prod < 0;
+    })());
+
+  /*
+   * Parashara's rule, from Sastri's commentary on Sripatipaddhati IV.6, which
+   * prints it beside Sripati's and works the Sun: uchcha rasmi 6.742 and
+   * cheshta rasmi 5.317, which are the balas over ten plus one, give an ishta
+   * of 50.295 and a kashta of 9.705.
+   */
+  var par = Shadbala.ishtaKashta(10 * (6.742 - 1), 10 * (5.317 - 1),
+    Shadbala.ISHTA_KASHTA.PARASHARA);
+  ok('Parashara’s rule reproduces the Sun of that commentary, both figures',
+    Math.abs(par.ishta - 50.295) < 0.005 && Math.abs(par.kashta - 9.705) < 0.005,
+    par.ishta.toFixed(3) + ' and ' + par.kashta.toFixed(3));
+
+  /*
+   * The difference between the two readings, stated as a property rather than
+   * a number: Parashara divides a fixed sixty, Sripati does not, so only the
+   * second lets a graha be low in both at once.
+   */
+  var splits = 0, both = 0;
+  for (var u = 0; u <= 60; u += 2.5) {
+    for (var c = 0; c <= 60; c += 2.5) {
+      var p = Shadbala.ishtaKashta(u, c, Shadbala.ISHTA_KASHTA.PARASHARA);
+      if (Math.abs(p.ishta + p.kashta - 60) < 1e-9) splits++;
+      var sr = Shadbala.ishtaKashta(u, c, Shadbala.ISHTA_KASHTA.SRIPATI);
+      if (sr.ishta < 20 && sr.kashta < 20) both++;
+    }
+  }
+  ok('Parashara’s pair always halves sixty between them', splits === 625, splits + ' of 625');
+  ok('and Sripati’s lets a graha be low in both, which is why the two part',
+    both > 0, both + ' of 625 under twenty on each');
+
+  /*
+   * Both ends, on both readings. A graha at the floor of both shares is all
+   * kashta and no ishta either way; at the ceiling of both, the reverse.
+   */
+  ['sripati', 'parashara'].forEach(function (rule) {
+    var low = Shadbala.ishtaKashta(0, 0, rule), high = Shadbala.ishtaKashta(60, 60, rule);
+    ok('nothing in either share is nothing good and all harm, ' + rule,
+      low.ishta === 0 && Math.abs(low.kashta - 60) < 1e-9);
+    ok('and everything in both is the other way about, ' + rule,
+      Math.abs(high.ishta - 60) < 1e-9 && high.kashta === 0);
+  });
 })();
 
 

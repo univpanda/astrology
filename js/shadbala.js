@@ -775,6 +775,62 @@ var Shadbala = (function () {
     return pinda / 4;
   }
 
+  /* ------------------------------------------- ishta and kashta phala */
+
+  /*
+   * Not a bala. The good and the evil a graha is disposed to do in its dasha,
+   * read off the two shares that say where it stands and how it is moving:
+   * uchcha bala and cheshta bala. This is what the luminaries' cheshta bala is
+   * computed for, the figure being kept out of the shadbala sum but wanted
+   * here - Raman says so at section 136, that the Sun is given a cheshta bala
+   * at all because it "is necessary to ascertain the Ishta and Kashta Phalas".
+   *
+   * Two readings, and they are not close. Sastri's commentary on
+   * Sripatipaddhati sets them side by side, quoting Parashara to say he "lays
+   * down a different rule".
+   *
+   *   'sripati'   - Sripatipaddhati IV.6: "Multiply the figures representing
+   *                 the two phalas. The square root of the resulting product
+   *                 expresses the good due to the Uchcha and the Cheshta balas
+   *                 of the planets. Subtract the two phalas separately from
+   *                 unity and multiply the remainders together. The square
+   *                 root of the product gives the evil that is to accrue."
+   *                 Sripati works in fractions of one; in shashtiamsas that is
+   *                 the square root of the product over sixty. Kesava Daivagna
+   *                 states it the same way, and Raman's sections 138-139 are
+   *                 this rule in English.
+   *
+   *   'parashara' - Parashara ch.28.6: reduce one from each of the uchcha and
+   *                 cheshta rasmis, multiply each by ten, add, halve. A rasmi
+   *                 is the bala over ten plus one, which Sastri says outright
+   *                 - the rays "can be obtained by multiplying the Uchchabala
+   *                 and Cheshtabala severally by 6 and adding 1" on his scale
+   *                 of one - so the ten and the one cancel and what is left is
+   *                 the plain average of the two balas. Kashta is then sixty
+   *                 less it, ch.28.6 again.
+   *
+   * The geometric pair does not sum to sixty and the arithmetic pair always
+   * does, which is the whole of the difference: Parashara divides a fixed
+   * sixty between the two, where Sripati lets a graha be weak in both at once.
+   * A graha at the bottom of both shares gets ishta 0 and kashta 60 on either.
+   * One at the top of one and the bottom of the other gets 30 and 30 from
+   * Parashara and 0 and 0 from Sripati.
+   */
+  var ISHTA_KASHTA = { SRIPATI: 'sripati', PARASHARA: 'parashara' };
+
+  function ishtaKashta(uchcha, cheshta, reading) {
+    var clamp = function (v) { return Math.min(60, Math.max(0, v || 0)); };
+    var u = clamp(uchcha), c = clamp(cheshta);
+    if (reading === ISHTA_KASHTA.PARASHARA) {
+      var ishta = (u + c) / 2;
+      return { ishta: ishta, kashta: 60 - ishta };
+    }
+    return {
+      ishta: Math.sqrt(u * c),
+      kashta: Math.sqrt((60 - u) * (60 - c))
+    };
+  }
+
   /* ------------------------------------------------------------ totals */
 
   /**
@@ -929,6 +985,8 @@ var Shadbala = (function () {
       ? AYANA_CONSTANT.PARASHARA : AYANA_CONSTANT.RAMAN;
     var horaLength = (options && options.horaLength) === HORA_LENGTH.EQUAL
       ? HORA_LENGTH.EQUAL : HORA_LENGTH.SEASONAL;
+    var phalaRule = (options && options.ishtaKashta) === ISHTA_KASHTA.PARASHARA
+      ? ISHTA_KASHTA.PARASHARA : ISHTA_KASHTA.SRIPATI;
     var wanted = options && options.natClock;
     var natClock = wanted === NAT_CLOCK.ZONE || wanted === NAT_CLOCK.MEAN
       ? wanted : NAT_CLOCK.APPARENT;
@@ -1109,6 +1167,13 @@ var Shadbala = (function () {
       x.totalShashtiamsa = x.sthana.total + x.dig + x.kala.total +
         (counted ? x.cheshta : 0) + x.naisargika + x.drik;
       x.rupas = x.totalShashtiamsa / 60;
+      /*
+       * Computed from the cheshta bala whether or not the sum counted it: the
+       * chapter that wants this figure is the chapter the luminaries' kendras
+       * come from, so leaving it out for the Sun and the Moon would empty the
+       * two rows the rule exists to fill.
+       */
+      x.phala = ishtaKashta(x.sthana.uchcha, x.cheshta, phalaRule);
       x.required = REQUIRED_RUPAS[graha];
       x.ratio = x.rupas / x.required;
       x.strong = x.rupas >= x.required;
@@ -1220,6 +1285,10 @@ var Shadbala = (function () {
     HORA_LENGTH: HORA_LENGTH,
     KRANTI: KRANTI, AYANA_CONSTANT: AYANA_CONSTANT,
     CHESHTA: CHESHTA, MOTION_VALUE: MOTION_VALUE,
+    ISHTA_KASHTA: ISHTA_KASHTA,
+    // Exported so Raman's Examples 62-63 and the textbook's chapter 9 can be
+    // run on the balas they print, without casting any of their charts.
+    ishtaKashta: ishtaKashta,
     // Exported for the worked examples in Raman s60-61 and BPHS ch.27 v.13.
     abdaLord: abdaLord, masaLord: masaLord,
     GRAHAS: GRAHAS,
