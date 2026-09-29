@@ -2816,6 +2816,51 @@ console.log('\nShadbala');
          (arc > 180 ? 360 - arc : arc) / 3) < 1e-9;
      })());
   /*
+   * Parashara says at 27.18 that the Moon's cheshta bala IS her paksha bala,
+   * and under the default the two can differ. That is not a contradiction we
+   * introduced: Raman writes her a separate rule at section 137 - "Subtract
+   * the Sun's longitude from that of the Moon and the latter's Chesta Kendra
+   * is obtained" - while section 53 lets her be a Papa, from whom paksha bala
+   * takes sixty minus that same arc. The two coincide only while she is a
+   * Subha, which she is on his own chart, which is why the identity at 27.18
+   * never troubles him.
+   *
+   * Both of his worked examples are pinned here, since between them they are
+   * the whole of the argument.
+   */
+  ok('Raman\u2019s Example 18 and Example 61 agree on his chart, as they must',
+     (function () {
+       var lon = 77.58333;
+       var p = { latitude: 13, longitude: lon, tzOffsetMinutes: Math.round(lon * 4) };
+       var c = Astro.chart({ jdUT: Astro.julianDay(1918, 10, 16,
+         14 + 6 / 60 + 16 / 3600 - lon / 15), latitude: 13, longitude: lon,
+         tzOffsetMinutes: p.tzOffsetMinutes, ayanamsa: 'raman' });
+       var m = Shadbala.compute(c, p).grahas.Moon;
+       return Math.abs(m.kala.paksha - 86.92) < 0.05 &&   // Example 18, doubled
+         Math.abs(m.cheshta - 43.46) < 0.05 &&            // Example 61
+         Math.abs(m.kala.paksha / 2 - m.cheshta) < 0.05;  // and are the same figure
+     })());
+  ok('and part company on a thin Moon, where section 53 makes her a Papa',
+     (function () {
+       var p = { latitude: 21.3069, longitude: -157.8583, tzOffsetMinutes: -600 };
+       var c = Astro.chart({ jdUT: Astro.julianDay(1961, 8, 4, 19.4 + 10),
+         latitude: 21.3069, longitude: -157.8583, tzOffsetMinutes: -600 });
+       var m = Shadbala.compute(c, p).grahas.Moon;
+       var sun = c.planets.filter(function (x) { return x.name === 'Sun'; })[0];
+       var moon = c.planets.filter(function (x) { return x.name === 'Moon'; })[0];
+       /*
+        * 290.8 degrees, so waning and past the eighth of the dark half. Both
+        * rules reduce past six signs first, which leaves 69.2: inside the
+        * ninety that section 53 calls thin, whichever side of the Sun it falls.
+        */
+       var raw = Astro.norm360(moon.longitude - sun.longitude);
+       var arc = raw > 180 ? 360 - raw : raw;
+       return raw > 270 && arc < 90 &&
+         Math.abs(m.cheshta - arc / 3) < 1e-9 &&               // section 137
+         Math.abs(m.kala.paksha / 2 - (60 - arc / 3)) < 1e-9;  // section 53
+     })());
+
+  /*
    * 27.18, the other reading, is still on offer: there the two borrow, the Sun
    * his ayana bala and the Moon her paksha. Undoubled, cheshta being capped at
    * sixty like every other strength.
