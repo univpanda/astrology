@@ -877,8 +877,6 @@
    * than inside the renderer.
    */
   function dignitiesByGraha(state, division) {
-    var chart = division === 1 ? state.chart
-      : Astro.chartInDivision(state.chart, division);
     var d1 = {};
     state.chart.planets.forEach(function (p) { d1[p.name] = p; });
 
@@ -886,19 +884,34 @@
       return g === 'Sun' || g === 'Moon' ? 'the ' + g : g;
     };
     var map = {};
-    chart.planets.forEach(function (p) {
+    state.chart.planets.forEach(function (p) {
+      var standing = Astro.vargaDignity(p.name, p.longitude, division, d1);
+      if (!standing) {
+        /*
+         * Nodes are deliberately outside the varga-viswa scale, but the card
+         * still reports Raman's sign-wide exaltation and debilitation for
+         * them. Neither is a degree-range dignity, so this cannot recreate the
+         * divisional moolatrikona leak the shared helper closes above.
+         */
+        if (Astro.NODES.indexOf(p.name) < 0) return;
+        var nodePosition = Astro.vargaPosition(p.longitude, division);
+        var nodeDignity = Astro.dignityOf(p.name, nodePosition.sign,
+          nodePosition.degreeInSign);
+        if (nodeDignity) map[p.name] = nodeDignity + '.';
+        return;
+      }
       var parts = [];
-      var dignity = Astro.dignityOf(p.name, p.sign, p.longitude % 30);
-      if (dignity) parts.push(dignity === 'Own Sign' ? 'In its own sign' : dignity);
+      var formal = standing.key === 'exalted' || standing.key === 'debilitated' ||
+        standing.key === 'moolatrikona' || standing.key === 'own';
+      if (formal) {
+        parts.push(standing.key === 'own' ? 'In its own sign' : standing.label);
+      }
 
-      var lord = Astro.SIGN_LORDS[p.sign];
-      if (lord && lord !== p.name && d1[lord] && d1[p.name]) {
-        var relation = Astro.compoundRelation(p.name, lord,
-          ((d1[lord].sign - d1[p.name].sign) % 12 + 12) % 12 + 1);
-        if (relation) {
-          parts.push((parts.length ? 'in ' : 'In ') + named(lord) + '’s sign, ' +
-            withArticle(Astro.RELATION_LABELS[relation]));
-        }
+      var lord = standing.lord;
+      if (lord && lord !== p.name && standing.relation &&
+          standing.relation !== 'moolatrikona') {
+        parts.push((parts.length ? 'in ' : 'In ') + named(lord) + '’s sign, ' +
+          withArticle(Astro.RELATION_LABELS[standing.relation]));
       }
       if (parts.length) map[p.name] = parts.join(', ') + '.';
     });

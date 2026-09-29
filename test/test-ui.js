@@ -7034,6 +7034,8 @@ console.log('\nThe card says how the graha stands in its sign');
    * app.js and check both halves answer on a chart that has each case.
    */
   var body = src.match(/function dignitiesByGraha\(state, division\) \{[\s\S]*?\n  \}/)[0];
+  ok('the card reads the same varga dignity as the grid',
+    /Astro\.vargaDignity\(p\.name, p\.longitude, division, d1\)/.test(body));
   var withArticle = function (label) {
     if (label === 'neutral') return 'neutral';
     return (label.charAt(0) === 'e' ? 'an ' : 'a ') + label;
@@ -7051,7 +7053,7 @@ console.log('\nThe card says how the graha stands in its sign');
     /^In Saturn’s sign, an? /.test(got.Moon || ''), got.Moon);
   ok('the luminaries take an article when they are the dispositor',
     /In the Sun’s sign/.test(got.Mercury || ''), got.Mercury);
-  ok('and a debilitated graha says so',
+  ok('and a debilitated node keeps its separate, sign-wide dignity',
     (got.Rahu || '').indexOf('Debilitated') === 0, got.Rahu);
 
   /*
@@ -7063,6 +7065,33 @@ console.log('\nThe card says how the graha stands in its sign');
     .map(function (p) { return p.name; });
   ok('no graha is left with nothing said about where it stands',
     silent.length === 0, silent.join(', ') || 'all nine covered');
+
+  /*
+   * A divisional degree is the fraction of one division stretched over a
+   * whole sign. It can accidentally fall in a moolatrikona degree range, but
+   * that is not a degree the graha occupies. The card used to read it while
+   * the grid correctly refused it.
+   */
+  var falseMool = null;
+  Astro.SHODASAVARGA.some(function (division) {
+    if (division === 1) return false;
+    var recast = Astro.chartInDivision(chart, division);
+    return recast.planets.some(function (p) {
+      if (['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn']
+          .indexOf(p.name) < 0) return false;
+      if (Astro.dignityOf(p.name, p.sign, p.longitude % 30) !== 'Mooltrikona') return false;
+      falseMool = { division: division, name: p.name };
+      return true;
+    });
+  });
+  if (falseMool) {
+    var divided = build({ chart: chart }, falseMool.division);
+    ok('a stretched varga degree cannot put moolatrikona on the card',
+      !/Mooltrikona/.test(divided[falseMool.name] || ''),
+      falseMool.name + ' D' + falseMool.division + ': ' + divided[falseMool.name]);
+  } else {
+    ok('the regression fixture contains a false divisional moolatrikona', false);
+  }
 
   /*
    * The ascendant is a point and holds no dignity, so it must not appear -

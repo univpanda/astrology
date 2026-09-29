@@ -1360,7 +1360,23 @@ var Astro = (function () {
     if (NODES.indexOf(graha) >= 0) return null;
     var lord = SIGN_LORDS[position.sign];
 
+    /*
+     * A rashi longitude is a real degree in a sign, so its degree-bounded
+     * dignities remain exact. A higher varga only supplies a sign: the degree
+     * returned by vargaPosition is the fraction of that division stretched
+     * back across thirty degrees. It cannot decide whether the Moon is inside
+     * the first three degrees of Taurus or Mercury inside the first fifteen of
+     * Virgo. In divisions above D1, exaltation is therefore a sign dignity,
+     * as ownership and debilitation already are.
+     */
     var own = dignityOf(graha, position.sign, position.degreeInSign);
+    if (division !== 1) {
+      var natalDignity = DIGNITY[graha];
+      own = natalDignity && position.sign === natalDignity.exalt.sign ? 'Exalted'
+        : natalDignity && position.sign === natalDignity.debil ? 'Debilitated'
+        : natalDignity && natalDignity.own.indexOf(position.sign) >= 0 ? 'Own Sign'
+        : '';
+    }
     /*
      * A luminary never owns a trimsamsa, not even by proxy.
      *

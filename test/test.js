@@ -82,6 +82,31 @@ console.log('\nMoolatrikona as a dignity, in the rashi and nowhere else');
   }
   ok('and no division above the rashi ever claims it',
     leaked.length === 0, leaked.slice(0, 3).join(', ') || 'none');
+
+  /*
+   * The degree a division reports is only its fraction stretched over a sign.
+   * It cannot split the Moon's Taurus or Mercury's Virgo into exalted and
+   * non-exalted portions. In a varga, the exaltation belongs to the sign.
+   */
+  ['Moon', 'Mercury'].forEach(function (graha) {
+    var exaltSign = A.DIGNITY[graha].exalt.sign;
+    var readings = {};
+    for (var lon = 0; lon < 360; lon += 0.05) {
+      var vp = A.vargaPosition(lon, 9);
+      if (vp.sign !== exaltSign) continue;
+      var vd = A.vargaDignity(graha, lon, 9, pos);
+      readings[vd && vd.key] = true;
+    }
+    ok(graha + ' is exalted throughout the exaltation sign in a higher varga',
+      Object.keys(readings).length === 1 && readings.exalted,
+      Object.keys(readings).join(', '));
+  });
+
+  ok('while the rashi keeps the Moon and Mercury degree boundaries',
+    A.vargaDignity('Moon', 1 * 30 + 2, 1, pos).key === 'exalted' &&
+    A.vargaDignity('Moon', 1 * 30 + 20, 1, pos).key === 'moolatrikona' &&
+    A.vargaDignity('Mercury', 5 * 30 + 10, 1, pos).key === 'exalted' &&
+    A.vargaDignity('Mercury', 5 * 30 + 18, 1, pos).key === 'moolatrikona');
 })();
 
 console.log('\nCheshta bala by the eight motions');
