@@ -6142,5 +6142,127 @@ console.log('\nDrekkana bala, where the verse and the practice part');
     missed.length + ' missed, ' + paidWrongly.length + ' paid wrongly over 1400 readings');
 })();
 
+
+console.log('\nSthana bala against three worked examples');
+/*
+ * A textbook on Shadbala by two of K. N. Rao's students works three charts
+ * through the positional strengths and prints the longitudes it starts from,
+ * which makes them the first check available for saptavargaja - Raman's
+ * Example 9 gives only totals, and no classical text works it at all.
+ *
+ * The ladder it states is the halving one, 45 / 30 / 22.5 / 15 / 7.5 / 3.75 /
+ * 1.875, with "Mool Trikon is seen only in D-1" beside it, over D-1, D-2, D-3,
+ * D-7, D-9, D-12 and D-30, and the compound friendship taken from the rashi
+ * chart. That is what this engine does, and these are the numbers it produces.
+ */
+(function () {
+  var GRAHAS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+  var DEBILITATION = { Sun: 190, Moon: 213, Mars: 118, Mercury: 345,
+    Jupiter: 275, Venus: 177, Saturn: 20 };
+
+  var CHARTS = {
+    one: { Sun: 154.82, Moon: 120.03, Mars: 154.90, Mercury: 138.27,
+           Jupiter: 165.78, Venus: 195.07, Saturn: 225.70 },
+    two: { Sun: 211.35, Moon: 122.40, Mars: 294.92, Mercury: 192.42,
+           Jupiter: 96.70, Venus: 207.83, Saturn: 200.33 },
+    three: { Sun: 324.52, Moon: 32.13, Mars: 82.28, Mercury: 342.67,
+             Jupiter: 183.25, Venus: 333.08, Saturn: 84.97 }
+  };
+
+  /*
+   * Uchcha bala first, because it is the one the book derives in full - it
+   * prints the longitude, the deep debilitation point, the difference and the
+   * reduction, so every step is visible.
+   */
+  var UCHCHA = {
+    one: { Sun: 11.73, Moon: 30.99, Mars: 12.30, Mercury: 51.09,
+           Jupiter: 36.41, Venus: 6.02, Saturn: 51.43 },
+    two: { Sun: 7.12, Moon: 30.20, Mars: 58.97, Mercury: 50.86,
+           Jupiter: 59.43, Venus: 10.28, Saturn: 59.89 },
+    three: { Sun: 44.84, Moon: 59.71, Mars: 11.91, Mercury: 0.78,
+             Jupiter: 30.58, Venus: 52.03, Saturn: 21.66 }
+  };
+  var worst = 0;
+  Object.keys(UCHCHA).forEach(function (k) {
+    GRAHAS.forEach(function (g) {
+      var arc = Math.abs(Astro.norm360(CHARTS[k][g] - DEBILITATION[g]));
+      if (arc > 180) arc = 360 - arc;
+      worst = Math.max(worst, Math.abs(arc / 3 - UCHCHA[k][g]));
+    });
+  });
+  ok('uchcha bala reproduces all twenty-one printed figures', worst < 0.01,
+    'worst ' + worst.toFixed(3) + ' virupas');
+
+  /*
+   * The book prints 71.43 for Example 1's Saturn in its summary table, which
+   * cannot be an uchcha bala at all - the measure caps at 60 - and leaves that
+   * row twenty short of its own total. Its derivation table has 51.43, which
+   * is the figure used above and the one that reconciles.
+   */
+  ok('and the one figure that cannot be right is the one the book contradicts',
+    71.43 > 60 &&
+    Math.abs((51.43 + 15 + 0 + 15 + 82.50) - 163.93) < 0.01 &&
+    Math.abs((71.43 + 15 + 0 + 15 + 82.50) - 163.93) > 19);
+
+  /* Now saptavargaja, cell by cell, through the engine's own function. */
+  var run = function (L) {
+    var planets = GRAHAS.map(function (g) {
+      return { name: g, longitude: L[g], sign: Math.floor(Astro.norm360(L[g]) / 30) };
+    });
+    var d1 = {};
+    planets.forEach(function (p) { d1[p.name] = p; });
+    var out = {};
+    GRAHAS.forEach(function (g) {
+      out[g] = Shadbala.saptavargajaBala(g, { planets: planets }, d1);
+    });
+    return out;
+  };
+
+  var EX3 = { Sun: [1.875, 22.5, 7.5, 22.5, 7.5, 7.5, 15],
+    Moon: [15, 30, 15, 15, 15, 15, 15], Mars: [7.5, 22.5, 3.75, 30, 30, 3.75, 7.5],
+    Mercury: [3.75, 7.5, 7.5, 15, 7.5, 22.5, 3.75],
+    Jupiter: [1.875, 7.5, 1.875, 1.875, 1.875, 7.5, 7.5],
+    Venus: [3.75, 7.5, 3.75, 7.5, 7.5, 15, 30],
+    Saturn: [22.5, 7.5, 30, 1.875, 22.5, 3.75, 22.5] };
+  var r3 = run(CHARTS.three), off3 = [];
+  GRAHAS.forEach(function (g) {
+    r3[g].detail.forEach(function (d, i) {
+      var v = Shadbala.SAPTAVARGAJA_VALUES[d.relation];
+      if (Math.abs(v - EX3[g][i]) > 0.01) off3.push(g + ' D-' + d.division);
+    });
+  });
+  ok('every one of Example 3’s forty-nine saptavargaja cells comes out',
+    off3.length === 0, off3.join(', ') || '49 of 49');
+
+  /*
+   * Example 1 misses by one cell, and the book is wrong on it rather than the
+   * engine. Its panchadha table lists the Moon among Mars's friends, worth 15,
+   * where its own three rules make her a fast friend at 22.5: the natural table
+   * on page 17 has the Moon among Mars's friends, the temporal table on the
+   * same page has her there too, and page 18 gives friend plus friend as
+   * Aadhi mitra. Mars's other five relationships all agree with the engine, and
+   * the error carries into his D-2 cell and his total, 105 against 112.5.
+   */
+  var EX1 = { Sun: [15, 22.5, 15, 7.5, 7.5, 7.5, 7.5],
+    Moon: [22.5, 22.5, 22.5, 22.5, 15, 22.5, 15],
+    Mars: [7.5, 15, 7.5, 30, 15, 15, 15],
+    Mercury: [22.5, 1.875, 15, 15, 30, 15, 30],
+    Jupiter: [7.5, 7.5, 15, 7.5, 7.5, 30, 30],
+    Venus: [30, 7.5, 22.5, 22.5, 22.5, 15, 15],
+    Saturn: [7.5, 7.5, 15, 7.5, 7.5, 22.5, 15] };
+  var r1 = run(CHARTS.one), off1 = [];
+  GRAHAS.forEach(function (g) {
+    r1[g].detail.forEach(function (d, i) {
+      var v = Shadbala.SAPTAVARGAJA_VALUES[d.relation];
+      if (Math.abs(v - EX1[g][i]) > 0.01) off1.push(g + ' D-' + d.division);
+    });
+  });
+  ok('and forty-eight of Example 1’s, the forty-ninth being the book’s slip',
+    off1.length === 1 && off1[0] === 'Mars D-2', off1.join(', '));
+  ok('which the book’s own rules resolve in the engine’s favour',
+    Astro.compoundRelation('Mars', 'Moon', 12) === 'adhimitra' &&
+    Shadbala.SAPTAVARGAJA_VALUES.adhimitra === 22.5);
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

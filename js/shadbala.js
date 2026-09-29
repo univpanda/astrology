@@ -1179,6 +1179,12 @@ var Shadbala = (function () {
     abdaLord: abdaLord, masaLord: masaLord,
     GRAHAS: GRAHAS,
     SAPTAVARGAJA_VALUES: RELATION_VALUE,
+    /*
+     * Exposed so the worked examples can drive the real function rather than a
+     * copy of it. It wants only chart.planets and a map of D1 positions, so a
+     * set of longitudes off a printed page is enough to run it.
+     */
+    saptavargajaBala: saptavargajaBala,
     REQUIRED_RUPAS: REQUIRED_RUPAS,
     NAISARGIKA: NAISARGIKA
   };
