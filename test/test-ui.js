@@ -724,8 +724,6 @@ ok('every flag rides on the value it qualifies', (function () {
   };
   return /headRow\.appendChild\(grahaColumnHead\(col\.entity, sun\)\);/.test(block) &&
     /'V' : null/.test(after('Astro.SIGNS[v.sign]')) &&
-    /'S' : null/.test(after('Astro.SIGNS[v.sign]')) &&
-    /'P' : null/.test(after('Astro.SIGNS[v.sign]')) &&
     !/graha-chart/.test(block);
 })());
 ok('and the three that qualified a graha rather than a sign are gone from it',
@@ -733,7 +731,10 @@ ok('and the three that qualified a graha rather than a sign are gone from it',
      var at = appSrc.indexOf('function grahaTableFor');
      var block = appSrc.slice(at, appSrc.indexOf('function renderShadbala', at));
      return !/'Y' : null/.test(block) && !/'D' : null/.test(block) &&
-       !/cell\.star/.test(appSrc) && !/star: /.test(block);
+       !/'S' : null/.test(block) && !/'P' : null/.test(block) &&
+       !/cell\.star/.test(appSrc) && !/star: /.test(block) &&
+       // and the work those marks needed is not done for nothing
+       !/Yogas\.neechaBhanga/.test(block) && !/chartInDivision/.test(block);
    })());
 /*
  * Three tokens sitting together have to read as three different facts, so each
@@ -2383,16 +2384,14 @@ ok('and the grid really carries those six and no others', (function () {
  */
 /*
  * The division decides who the neighbours are; the rashi decides who is a
- * benefic. Reading both off the division made the Moon's phase a property of the
- * varga, which it cannot be.
+ * benefic. Reading both off the division made the Moon's phase a property of
+ * the varga, which it cannot be. The graha table no longer draws these marks,
+ * so the rule is kept where they are still drawn - the card's builder and the
+ * varga grid.
  */
-ok('hemming reads its neighbours from the division and its benefics from the rashi',
-   /Astro\.hemmedByBenefics\(r\.name, v\.sign, divisionChart,\s*\n?\s*benefics\)/
-     .test(appSrc) &&
-   /Astro\.hemmedByMalefics\(r\.name, v\.sign, divisionChart,\s*\n?\s*benefics\)/
-     .test(appSrc) &&
-   /var benefics = Astro\.naturalBenefics\(c\);/.test(appSrc) &&
-   /var divisionChart = Astro\.chartInDivision\(c, view\.division\);/.test(appSrc));
+ok('hemming still reads neighbours from the division and benefics from the rashi',
+   /var chart = division === 1 \? state\.chart\s*\n?\s*: Astro\.chartInDivision\(state\.chart, division\);\s*\n\s*var benefics = Astro\.naturalBenefics\(state\.chart\);/
+     .test(appSrc));
 /*
  * Dig bala and neecha bhanga came off the graha table with the yogakaraka mark.
  * Both still have somewhere to be said: the varga grid marks them per division,
@@ -2420,10 +2419,15 @@ ok('and the legend still explains all three, since all three are still drawn',
 ok('the ascendant takes none of what is about a graha',
    /var owned = r\.isAscendant \? \[\] : Astro\.housesOwned/.test(appSrc) &&
    /r\.isAscendant \? '' : Astro\.dignityOf/.test(appSrc));
-ok('but it does take the hemming marks, which are defined on it first',
-   !/!r\.isAscendant && Astro\.hemmedBy/.test(appSrc) &&
-   /Astro\.hemmedByBenefics\(r\.name, v\.sign, divisionChart/.test(appSrc) &&
-   /Astro\.hemmedByMalefics\(r\.name, v\.sign, divisionChart/.test(appSrc));
+/*
+ * The graha table used to withhold the hemming marks from the ascendant, the
+ * one placement the texts define kartari on. That is moot now the table draws
+ * no hemming at all - but the rule still matters where hemming is drawn, so
+ * what is asserted is that nothing anywhere excludes the ascendant from it.
+ */
+ok('and nothing excludes the ascendant from the hemming, defined on it first',
+   !/isAscendant[^\n]*hemmedBy/.test(appSrc) &&
+   !/hemmedBy[^\n]*isAscendant/.test(appSrc));
 ok('each carries its flag in its own colour, and names it',
    ['r Retrograde', 'v Vargottama', 'y Yogakaraka', 'c Combust'].every(function (pair) {
      var parts = pair.split(' ');
@@ -2653,8 +2657,9 @@ ok('which is measurably a third of the cells rather than three fifths', (functio
  * it; the raja form is the case where the floor misreports the graha outright.
  * Marking both put a star on two debilitations in three.
  */
-ok('the star marks the raja form and not a plain cancellation',
-   /if \(yoga\.kind !== 'raja'\) return;/.test(appSrc));
+ok('the mark is the raja form and not a plain cancellation',
+   /if \(yoga\.yoga === 'Neecha Bhanga' && yoga\.kind === 'raja'\) cancelled\[name\] = true;/
+     .test(appSrc));
 ok('and that really does thin it out', (function () {
   var deb = 0, any = 0, raja = 0;
   var scheme = Astro.VARGA_SCHEMES.shodasavarga;

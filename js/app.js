@@ -1548,14 +1548,13 @@
     var positionsD1 = {};
     c.planets.forEach(function (p) { positionsD1[p.name] = p; });
     var sun = positionsD1.Sun;
-    var benefics = Astro.naturalBenefics(c);
-    var divisionChart = Astro.chartInDivision(c, view.division);
 
-    var cancelledHere = {};
-    Yogas.neechaBhanga(divisionChart).forEach(function (yoga) {
-      if (yoga.kind !== 'raja') return;
-      (yoga.grahas || []).forEach(function (name) { cancelledHere[name] = true; });
-    });
+    /*
+     * The benefics, the recast chart and a neecha bhanga pass used to be
+     * worked out here for [S], [P] and [N]. With those marks off this table
+     * nothing reads them, so the table no longer runs a yoga detector on every
+     * render for a letter it does not draw.
+     */
 
     // House 1 for this chart: the ascendant, or the graha it is turned onto.
     var firstSign = Astro.vargaPosition(c.ascendant.longitude, view.division).sign;
@@ -1598,19 +1597,15 @@
         cells: [
           { text: Astro.SIGNS[v.sign],
             /*
-             * Hemming is the one mark the ascendant should carry. Dignity and
-             * ownership are about a graha and the ascendant is a point, so it
-             * is excluded from those - but kartari is defined on the lagna
-             * first and on grahas only by extension, and this row was the one
-             * place the mark was withheld. Phaladeepika ch.6 sloka 8 puts the
-             * 2nd and 12th "from the Lagna"; Charak and Raman are what license
-             * reading the same shape around a graha.
+             * [V] alone. It says this division put the graha back in the sign
+             * it holds in the rashi, which is a fact about this cell and
+             * nothing else. [S] and [P] are about the two signs on either
+             * side, so they go the way of [N], [D] and [Y] below - onto the
+             * card, which has room to name who is doing the hemming. The varga
+             * grid still marks them per division.
              */
-            flags: [view.division !== 1 && v.sign === Astro.signOf(r.longitude) ? 'V' : null,
-              Astro.hemmedByBenefics(r.name, v.sign, divisionChart,
-                benefics) ? 'S' : null,
-              Astro.hemmedByMalefics(r.name, v.sign, divisionChart,
-                benefics) ? 'P' : null] },
+            flags: [view.division !== 1 && v.sign === Astro.signOf(r.longitude)
+              ? 'V' : null] },
           /*
            * [N], [D] and [Y] used to hang off these three cells - neecha
            * bhanga on the dignity, dig bala on the house, yogakaraka on the
