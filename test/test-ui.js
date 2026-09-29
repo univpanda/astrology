@@ -6841,5 +6841,46 @@ console.log('\nThe settings sit three to a row, explaining themselves on hover')
     /card\.appendChild\(el\('h4', null, label\.textContent\)\)/.test(src));
 })();
 
+console.log('\nThe settings notes describe what the code does');
+/*
+ * The cheshta note said three of the eight motions were settled by the
+ * ephemeris and four of the boundaries were this site's choice, then listed
+ * five numbers. Only two are settled outright - retrogression and
+ * retrogression across a sign - and the other six are bands on a speed with
+ * five thresholds between them, every one of them chosen here.
+ */
+(function () {
+  var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  var flat = page.replace(/\s+/g, ' ');
+  var bands = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8')
+    .match(/var MOTION_BANDS = \[[\s\S]*?\];/)[0];
+  var cut = (bands.match(/\[[0-9.]+,/g) || []).map(function (m) {
+    return m.slice(1, -1);
+  });
+
+  ok('the note counts the thresholds the code actually has',
+    cut.length === 5 && /all five\s+boundaries dividing them are this site/.test(flat),
+    cut.length + ' thresholds');
+  ok('and names each of them',
+    cut.every(function (v) { return flat.indexOf(v) >= 0; }), cut.join(', '));
+  /*
+   * And it no longer counts the stationary band among what the ephemeris
+   * settles: 0.05 of mean motion is a line this site drew.
+   */
+  ok('and does not claim the stationary band is settled for it',
+    !/Vikala\s+is stationary and Anuvakra/.test(flat) &&
+    /Vakra is retrograde and\s+Anuvakra is retrogression across a sign boundary/.test(flat));
+
+  /*
+   * The inner two are measured against the Sun's motion rather than their own,
+   * which the note claims and the table has to agree with.
+   */
+  var motion = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8')
+    .match(/var MEAN_MOTION = \{[^}]*\}/)[0];
+  ok('and the inner two really are measured against the Sun',
+    /Mercury: 0\.985609/.test(motion) && /Venus: 0\.985609/.test(motion) &&
+    /the inner two measured against the/.test(flat));
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
