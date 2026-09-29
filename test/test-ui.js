@@ -4640,7 +4640,7 @@ ok('every strength passage in the seed names its sources', (function () {
   var sql = fs.readFileSync(path.join(root,
     'supabase/seed/astro_readings_strength.sql'), 'utf8');
   var rows = sql.split(/\n\('strength', /).slice(1);
-  if (rows.length !== 17) return false;
+  if (rows.length !== 18) return false;
   return rows.every(function (row) {
     // the source is the literal between the note and the sort order
     var tail = row.slice(row.indexOf(' ],\n') + 4);
@@ -4651,16 +4651,27 @@ ok('every strength passage in the seed names its sources', (function () {
   });
 })());
 /*
- * Two works reach this site only through a third, and saying so is the whole
- * value of the citation. Sripatipaddhati comes by way of Raman and Saravali by
- * way of Santhanam's note; neither was read here, and a passage that cited them
- * flatly would claim a check that was never made.
+ * A work reached at second hand has to say so, or the citation claims a check
+ * that was never made. Saravali still is: it comes by way of Santhanam's note,
+ * only Devanagari scans of the text itself being available.
+ *
+ * Sripatipaddhati no longer is, and that is worth pinning in both directions.
+ * Its cheshta chapter was read here, and it is the source that makes sense of
+ * the eight motions. Its drishti chapter was not, so the curve in this code
+ * still descends from Raman, and the passage that cites it has to keep saying
+ * so rather than inheriting the other's promotion.
  */
 ok('and works cited at second hand are marked as such', (function () {
   var sql = fs.readFileSync(path.join(root,
     'supabase/seed/astro_readings_strength.sql'), 'utf8');
-  return /Sripatipaddhati has not been read directly here/.test(sql) &&
-    /Kalyana Varma''s text has not been consulted directly/.test(sql);
+  return /Kalyana Varma''s text has not been consulted directly/.test(sql) &&
+    !/Sripatipaddhati has not been read directly here/.test(sql);
+})());
+ok('and a work read for one thing is not claimed for another', (function () {
+  var sql = fs.readFileSync(path.join(root,
+    'supabase/seed/astro_readings_strength.sql'), 'utf8');
+  return /has not been re-derived from those slokas/.test(sql) &&
+    /The drishti curve is the part still taken at second hand/.test(sql);
 })());
 
 console.log('\nVarga charts');
