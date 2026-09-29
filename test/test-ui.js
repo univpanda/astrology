@@ -6778,9 +6778,23 @@ console.log('\nThe settings sit three to a row, explaining themselves on hover')
    */
   ok('hovering a setting opens a card, wired once on the grid',
     /function wireSettingHelp\(\)/.test(src) &&
-    /grid\.addEventListener\('mouseover', show\)/.test(src) &&
-    /grid\.addEventListener\('focusin', show\)/.test(src) &&
+    /grid\.addEventListener\('mouseover', function \(e\)/.test(src) &&
+    /grid\.addEventListener\('focusin', function \(e\)/.test(src) &&
     /wireSettingHelp\(\);/.test(src));
+  /*
+   * The label opens it and the select does not: reaching for a dropdown is not
+   * asking why it is there, and a card springing up over the options just as
+   * you go to read them is in the way of what you came for. Focus is the other
+   * way in and lands on the select, a label being no tab stop, so a keyboard
+   * reader still has a way to see it.
+   */
+  ok('but only from the label, not from the select beneath it',
+    /var labelOf = function \(node\)/.test(src) &&
+    /var label = labelOf\(e\.target\);\s*\n\s*if \(!label\) \{ hide\(\); return; \}/
+      .test(src));
+  ok('while focus opens it from the control, which is where focus lands',
+    /grid\.addEventListener\('focusin', function \(e\) \{ open\(fieldOf\(e\.target\)\); \}\)/
+      .test(src));
   ok('and the label says it is hoverable',
     /#panel-settings \.field label \{ cursor: help; \}/.test(css));
 

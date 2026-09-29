@@ -1072,16 +1072,23 @@
     card.hidden = true;
     grid.appendChild(card);
 
-    var fieldOf = function (node) {
+    var climb = function (node, match) {
       while (node && node !== grid) {
-        if (node.className === 'field') return node;
+        if (match(node)) return node;
         node = node.parentNode;
       }
       return null;
     };
+    var fieldOf = function (node) {
+      return climb(node, function (n) { return n.className === 'field'; });
+    };
+    var labelOf = function (node) {
+      return climb(node, function (n) {
+        return String(n.tagName || n.tag || '').toLowerCase() === 'label';
+      });
+    };
 
-    var show = function (e) {
-      var field = fieldOf(e.target);
+    var open = function (field) {
       var label = field && field.querySelector ? field.querySelector('label') : null;
       var why = field && field.querySelector ? field.querySelector('.field-why') : null;
       if (!label || !why) { card.hidden = true; return; }
@@ -1094,10 +1101,25 @@
       card.hidden = false;
       placeCard(card, label, grid);
     };
+
+    /*
+     * The label opens it and the select does not. Reaching for a dropdown is
+     * not asking why it is there, and a card springing up over the options
+     * just as you go to read them is in the way of the thing you came for.
+     */
     var hide = function () { card.hidden = true; };
-    grid.addEventListener('mouseover', show);
+    grid.addEventListener('mouseover', function (e) {
+      var label = labelOf(e.target);
+      if (!label) { hide(); return; }
+      open(fieldOf(label));
+    });
     grid.addEventListener('mouseout', hide);
-    grid.addEventListener('focusin', show);
+    /*
+     * Focus is the other way in, and it lands on the select, since a label is
+     * not a tab stop. A keyboard reader cannot hover, so this is the only way
+     * they see the card at all.
+     */
+    grid.addEventListener('focusin', function (e) { open(fieldOf(e.target)); });
     grid.addEventListener('focusout', hide);
   }
 
