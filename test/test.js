@@ -5614,7 +5614,7 @@ console.log('\nThe two ayana choices are independent, and each comparator picks 
 })();
 
 
-console.log('\nOnly one pairing keeps ayana bala inside its own scale');
+console.log('\nEach constant keeps ayana bala inside its own scale, with its own obliquity');
 /*
  * Which constant belongs with which declination is decidable from the formula
  * rather than from preference, and it was argued here the wrong way round for
