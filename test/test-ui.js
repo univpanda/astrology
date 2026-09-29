@@ -4116,14 +4116,28 @@ console.log('\nThe Moon\u2019s paksha bala is a setting');
  * The control belongs with the ayanamsa and the node: all three are choices
  * about how to read a chart rather than facts about one.
  */
-ok('the reading is offered in settings, defaulting to always-benefic',
+/*
+ * The default was always-benefic while the only source for it was Phaladeepika,
+ * which does not assign the Moon a group rather than saying she is always a
+ * benefic. Three texts put her in the groups - chapter 2 through Santhanam,
+ * Raman at section 53, and Uttara Kalamrita stating it outright with the same
+ * eighth-day boundary - so the group reading is the default now, and the page
+ * agrees with the engine, which had defaulted that way all along.
+ */
+ok('the reading is offered in settings, defaulting to her fortnight group',
   (function () {
     var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
     var at = html.indexOf('id="panel-settings"');
     var panel = html.slice(at, html.indexOf('</section>', at));
     return /<select id="moon-paksha"/.test(panel) &&
-      /<option value="group">/.test(panel) &&
-      /<option value="benefic" selected>/.test(panel);
+      /<option value="group" selected>/.test(panel) &&
+      /<option value="benefic">/.test(panel);
+  })());
+ok('and the page and the engine now default the same way',
+  (function () {
+    var sb = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8');
+    return /=== MOON_PAKSHA\.BENEFIC\s*\n?\s*\? MOON_PAKSHA\.BENEFIC : MOON_PAKSHA\.GROUP/
+      .test(sb);
   })());
 /*
  * The page and the engine default differently, on purpose. shadbala.js keeps
@@ -7121,7 +7135,21 @@ console.log('\nUttara Kalamrita on the Moon in paksha bala');
    * group at all and that is a position, not an oversight.
    */
   ok('and both readings are still offered',
-    /<option value="group">/.test(page) && /<option value="benefic"/.test(page));
+    /<option value="group"/.test(page) && /<option value="benefic"/.test(page));
+  /*
+   * A note that argues a question and does not say which way the site settled
+   * it leaves the reader to infer the default from the select, which is the
+   * one place it is not explained.
+   */
+  ok('and the note says which reading is the default, and on what grounds',
+    /The group reading is the default, on the weight of the texts/
+      .test(page.replace(/\s+/g, ' ')) &&
+    /three\s+sources put her in them, and Phaladeepika does not put her anywhere/
+      .test(page.replace(/\s+/g, ' ')));
+  ok('and the oldest of the texts frames the measure as one of groups',
+    /Brihat Jataka 21/.test(page) &&
+    /malefic and benefic planets have strength \(Pakshabala\) in the dark and bright halves/
+      .test(page.replace(/\s+/g, ' ')));
 })();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
