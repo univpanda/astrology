@@ -1019,6 +1019,88 @@
     });
   }
 
+  /*
+   * Where a hover card goes: centred on whatever opened it, kept on screen,
+   * and flipped above when there is no room below.
+   *
+   * The clamp is against the viewport rather than the container, because a
+   * card may be wider than the column it hangs off - clamping to the column
+   * would shove a wide one sideways until it ran off the page.
+   *
+   * Vertically it goes below, unless it does not fit there but does fit above.
+   * Merely having more room above is not enough: a card taller than both
+   * spaces would flip to a negative top and lose its heading off-screen, and
+   * keeping its head below is the useful failure. These cards take no pointer
+   * events by design, so one that overflows cannot be scrolled into view.
+   */
+  function placeCard(card, target, container) {
+    var GAP = 8;
+    var r = target.getBoundingClientRect(), c = container.getBoundingClientRect();
+    var vw = window.innerWidth || document.documentElement.clientWidth || 0;
+    var vh = window.innerHeight || document.documentElement.clientHeight || 0;
+
+    var half = card.offsetWidth / 2;
+    var centre = r.left + r.width / 2;
+    var lo = half + GAP, hi = vw - half - GAP;
+    if (hi > lo) centre = Math.max(lo, Math.min(hi, centre));
+    card.style.left = (centre - c.left) + 'px';
+
+    var height = card.offsetHeight || 0;
+    var room = vh - r.bottom - GAP;
+    var above = r.top - GAP;
+    card.style.top = (height > room && height <= above
+      ? r.top - c.top - height - GAP
+      : r.bottom - c.top + GAP) + 'px';
+  }
+
+  /*
+   * Each setting's reasoning, on hovering its label.
+   *
+   * It used to fold out of a <details> beneath the select, which put eleven
+   * disclosure triangles down the page and gave every row a different height -
+   * so the settings could not be laid three to a row without a fold shunting
+   * its neighbours about. The text is unchanged and still in the document,
+   * where the select points at it with aria-describedby so a screen reader
+   * still gets it on focus. What it has lost is its claim on the layout.
+   */
+  function wireSettingHelp() {
+    var grid = document.querySelector('.settings-grid');
+    if (!grid || !grid.appendChild || (grid.dataset && grid.dataset.helped)) return;
+    if (grid.dataset) grid.dataset.helped = '1';
+
+    var card = el('div', 'setting-card');
+    card.hidden = true;
+    grid.appendChild(card);
+
+    var fieldOf = function (node) {
+      while (node && node !== grid) {
+        if (node.className === 'field') return node;
+        node = node.parentNode;
+      }
+      return null;
+    };
+
+    var show = function (e) {
+      var field = fieldOf(e.target);
+      var label = field && field.querySelector ? field.querySelector('label') : null;
+      var why = field && field.querySelector ? field.querySelector('.field-why') : null;
+      if (!label || !why) { card.hidden = true; return; }
+      card.innerHTML = '';
+      card.appendChild(el('h4', null, label.textContent));
+      /* The note's own markup, paragraph breaks and emphasis and all. */
+      var body = el('div', 'field-note');
+      body.innerHTML = why.innerHTML;
+      card.appendChild(body);
+      card.hidden = false;
+      placeCard(card, label, grid);
+    };
+    var hide = function () { card.hidden = true; };
+    grid.addEventListener('mouseover', show);
+    grid.addEventListener('mouseout', hide);
+    grid.addEventListener('focusin', show);
+    grid.addEventListener('focusout', hide);
+  }
+
   function wireGrahaCard(container) {
     /*
      * The renderer empties the container on every draw, which takes the card
@@ -1192,36 +1274,8 @@
        * the chart scales with the column and the two stop agreeing the moment
        * it does.
        */
-      var r = t.getBoundingClientRect(), c = container.getBoundingClientRect();
       card.hidden = false;
-      var GAP = 8;
-      var vw = window.innerWidth || document.documentElement.clientWidth || 0;
-      var vh = window.innerHeight || document.documentElement.clientHeight || 0;
-
-      /*
-       * Centred on the graha, then kept on screen. The clamp is against the
-       * viewport and not the container, because the card is allowed to be
-       * wider than the chart column it hangs off - clamping to the column
-       * would shove a wide card sideways until it ran off the page.
-       */
-      var half = card.offsetWidth / 2;
-      var centre = r.left + r.width / 2;
-      var lo = half + GAP, hi = vw - half - GAP;
-      if (hi > lo) centre = Math.max(lo, Math.min(hi, centre));
-      card.style.left = (centre - c.left) + 'px';
-
-      /*
-       * Below the graha, unless it does not fit there but does fit above. Merely
-       * having more room above is not enough: a card taller than both spaces
-       * would otherwise flip to a negative top and lose its name off-screen.
-       * In that case keeping its head below the graha is the useful failure.
-       */
-      var height = card.offsetHeight || 0;
-      var room = vh - r.bottom - GAP;
-      var above = r.top - GAP;
-      card.style.top = (height > room && height <= above
-        ? r.top - c.top - height - GAP
-        : r.bottom - c.top + GAP) + 'px';
+      placeCard(card, t, container);
     };
 
     var show = function (e) {
@@ -4054,6 +4108,7 @@
   var tableTabs = setupTabs(['grahas', 'shadbala', 'vargas', 'yogas', 'aspects'],
     document.querySelector('.tabs.subtabs:not(.graha-charts)'));
   wireGrahaChartKeys();
+  wireSettingHelp();
 
   function activateTab(name, moveFocus) { sections.activate(name, moveFocus); }
 

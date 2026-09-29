@@ -526,7 +526,95 @@ input::placeholder { color: #a9bdb2; }
 
 /* Settings sit closer together now that each one is a label, a control and a
    line, rather than a control and an essay. */
-#panel-settings .field + .field { margin-top: 1.4rem; }
+/*
+ * Eleven settings stacked one to a row made a long scroll of mostly empty
+ * space, each select the full width of the card for the sake of a phrase.
+ * Three to a row on a wide window, two on a narrower one, one on a phone.
+ * Positioned, because the explanation card hangs off it.
+ */
+.settings-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.3rem 1.5rem;
+}
+@media (min-width: 40rem) {
+  .settings-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 62rem) {
+  .settings-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/*
+ * The reasoning used to fold out of a <details> under each select, which put
+ * eleven disclosure triangles on the page and made every row a different
+ * height. It is kept in the document - the select points at it with
+ * aria-describedby, so it is read out on focus - and taken out of the layout,
+ * where the hover card reads it instead.
+ */
+.field-why {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  border: 0;
+}
+
+/*
+ * The same card the chart uses for a graha, for the same reason: the
+ * explanation is long enough to want room and rare enough not to want it
+ * taking space until asked.
+ */
+.setting-card {
+  position: absolute;
+  transform: translateX(-50%);
+  z-index: 5;
+  min-width: 11rem;
+  width: max-content;
+  max-width: min(34rem, calc(100vw - 1.5rem));
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+  text-align: left;
+}
+.setting-card[hidden] { display: none; }
+.setting-card h4 {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+  color: var(--green-deep);
+  font-weight: 700;
+}
+.setting-card .field-note {
+  position: static;
+  width: auto; height: auto;
+  margin: 0; padding: 0;
+  clip: auto;
+  overflow: visible;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+/* The label is what you hover, so it has to say so. */
+#panel-settings .field label { cursor: help; }
+
+/*
+ * A select stretched to the width of the card reads as a text box waiting to
+ * be filled in, not as a choice between two or three phrases - and the panel
+ * is wide, so "Lahiri (Chitrapaksha)" sat alone in a box five times its
+ * length. Capped at the width the longest option needs: "True declination,
+ * latitude and all (Parashara's note)" is the longest of them at 53
+ * characters, and 30rem carries it without clipping at the default size.
+ *
+ * A cap rather than a fixed width, so a narrow window still shrinks it, and
+ * scoped to this panel so the chart selects and the place combobox, which want
+ * the width they are given, are untouched.
+ */
+#panel-settings .field select { max-width: 30rem; }
 
 /*
  * The hover card for a graha in a chart. The label can only carry initials and

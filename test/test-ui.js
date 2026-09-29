@@ -4061,7 +4061,7 @@ ok('the switch is offered in settings', (function () {
   var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   var at = html.indexOf('id="panel-settings"');
   var panel = html.slice(at, html.indexOf('</section>', at));
-  return /<select id="doubled-rows">/.test(panel) &&
+  return /<select id="doubled-rows"/.test(panel) &&
     /<option value="undoubled" selected>/.test(panel) &&
     /<option value="doubled">/.test(panel);
 })());
@@ -4121,7 +4121,7 @@ ok('the reading is offered in settings, defaulting to always-benefic',
     var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
     var at = html.indexOf('id="panel-settings"');
     var panel = html.slice(at, html.indexOf('</section>', at));
-    return /<select id="moon-paksha">/.test(panel) &&
+    return /<select id="moon-paksha"/.test(panel) &&
       /<option value="group">/.test(panel) &&
       /<option value="benefic" selected>/.test(panel);
   })());
@@ -4410,16 +4410,16 @@ console.log('\nSettings show the choice and fold the argument');
   var at = html.indexOf('id="panel-settings"');
   var panel = html.slice(at, html.indexOf('</section>', at));
   var fields = (panel.match(/<div class="field">/g) || []).length;
-  var whys = (panel.match(/<details class="field-why">/g) || []).length;
-  ok('every setting carries its own folded explanation',
-    fields === whys && fields >= 9, fields + ' fields, ' + whys + ' folds');
+  var whys = (panel.match(/<div class="field-why"/g) || []).length;
+  ok('every setting carries its own explanation',
+    fields === whys && fields >= 9, fields + ' fields, ' + whys + ' notes');
   /*
    * Each fold must sit AFTER its control, or the argument still comes first.
    */
-  ok('and the control comes before the fold', (function () {
+  ok('and the control comes before the explanation', (function () {
     var blocks = panel.split('<div class="field">').slice(1);
     return blocks.every(function (b) {
-      var sel = b.indexOf('</select>'), why = b.indexOf('<details class="field-why">');
+      var sel = b.indexOf('</select>'), why = b.indexOf('<div class="field-why"');
       return sel >= 0 && why > sel;
     });
   })());
@@ -4487,7 +4487,7 @@ ok('the ayanamsa select sits in the settings panel', (function () {
   var options = html.slice(html.indexOf('class="options-grid"'),
     html.indexOf('</details>'));
   return at > 0 &&
-    /<select id="ayanamsa">/.test(panel) &&
+    /<select id="ayanamsa"/.test(panel) &&
     !/id="ayanamsa"/.test(options) &&
     /id="node-type"/.test(panel);
 })());
@@ -6057,14 +6057,14 @@ console.log('\nThe Budha-Aditya floor is a setting, defaulting to Raman');
   var src = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
 
   ok('the page offers both readings and preselects the sourced one',
-    /<select id="budha-floor">/.test(page) &&
+    /<select id="budha-floor"/.test(page) &&
     /<option value="raman" selected>/.test(page) &&
     /<option value="none">/.test(page));
   ok('and says who reads it each way',
     /Raman/.test(page) && /K\. N\. Rao/.test(page) &&
     /Advance Techniques of Astrology/.test(page));
-  ok('the reason to choose one over the other folds away like the others',
-    /<label for="budha-floor">[\s\S]{0,400}?<details class="field-why">/.test(page));
+  ok('the reason to choose one over the other is carried with the field',
+    /<label for="budha-floor">[\s\S]{0,400}?<div class="field-why"/.test(page));
 
   /*
    * Stamped on the chart rather than passed to one caller. The yogas are
@@ -6235,7 +6235,7 @@ console.log('\nMahabhagya needs two things the sky does not supply');
   var src = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
 
   ok('the day test is offered as a setting, defaulting to the fuller rule',
-    /<select id="mahabhagya-day">/.test(page) &&
+    /<select id="mahabhagya-day"/.test(page) &&
     /<option value="phaladeepika" selected>/.test(page) &&
     /<option value="raman">/.test(page));
   ok('and the page shows the worked chart that settles which Raman meant',
@@ -6517,16 +6517,20 @@ console.log('\nThe card is wide enough to read and stays on screen');
    * Run the placement rather than read it. The block is lifted out of app.js
    * and driven with rects, so the arithmetic is what is being checked.
    */
-  var block = src.match(/var GAP = 8;[\s\S]*?card\.style\.top = [\s\S]*?\+ 'px';/)[0];
-  var place = function (target, box, size, view) {
+  /*
+   * placeCard is shared by the graha card and the settings card now, so it is
+   * lifted out whole and called rather than having its body spliced into a
+   * harness - which is what broke when it stopped being an inline block.
+   */
+  var body = src.match(/function placeCard\(card, target, container\) \{[\s\S]*?\n  \}/)[0];
+  var place = function (rect, box, size, view) {
     var card = { style: {}, hidden: true,
                  offsetWidth: size.w, offsetHeight: size.h };
-    var t = { getBoundingClientRect: function () { return target; } };
+    var target = { getBoundingClientRect: function () { return rect; } };
     var container = { getBoundingClientRect: function () { return box; } };
-    new Function('card', 't', 'container', 'window', 'document',
-      'var r = t.getBoundingClientRect(), c = container.getBoundingClientRect();\n' + block)(
-        card, t, container, { innerWidth: view.w, innerHeight: view.h },
-        { documentElement: {} });
+    new Function('window', 'document', body + '\n return placeCard;')(
+      { innerWidth: view.w, innerHeight: view.h }, { documentElement: {} })(
+        card, target, container);
     return { left: parseFloat(card.style.left), top: parseFloat(card.style.top) };
   };
 
@@ -6669,6 +6673,134 @@ console.log('\nThe card leads with what is rare');
   var ordered = shown.every(function (v, i) { return i === 0 || shown[i - 1] <= v; });
   ok('and they run from rarest to commonest down the card', ordered,
     shown.join('% then ') + '%');
+})();
+
+console.log('\nThe settings read as choices, not as boxes to fill in');
+/*
+ * A select stretched to the full width of a wide card reads as a text field
+ * waiting for input rather than a choice between two or three phrases. Capped
+ * at what the longest option needs, so nothing is clipped.
+ */
+(function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+
+  ok('the settings selects are capped rather than filling the card',
+    /#panel-settings \.field select \{ max-width: 30rem; \}/.test(css));
+
+  /*
+   * The cap has to clear the longest option this panel offers, or the choice a
+   * reader most needs to tell apart is the one that gets truncated. Measured in
+   * characters against a conservative average width, since the page has no
+   * layout engine here.
+   */
+  var panel = page.slice(page.indexOf('id="panel-settings"'));
+  var options = (panel.match(/<option[^>]*>([^<]+)<\/option>/g) || [])
+    .map(function (o) {
+      return o.replace(/<[^>]+>/g, '').replace(/&[a-z]+;/g, "'").trim();
+    });
+  var longest = options.reduce(function (a, b) {
+    return b.length > a.length ? b : a;
+  }, '');
+  // 0.5em per character is generous for this face at 1rem; 30rem is 60 of them,
+  // and the arrow and padding take about four.
+  ok('and the cap clears the longest option the panel offers',
+    longest.length <= 56, longest.length + ' chars: ' + longest);
+
+  /*
+   * Scoped, because the chart selects sit in a narrow control row and the place
+   * combobox is a text field that wants every pixel it is given.
+   */
+  ok('and nothing outside the settings panel is capped with it',
+    !/(^|\})\s*\.field select \{ max-width/.test(css) &&
+    !/^select \{[^}]*max-width/m.test(css));
+})();
+
+
+console.log('\nThe settings sit three to a row, explaining themselves on hover');
+/*
+ * Eleven settings, each a select the full width of the card with a <details>
+ * folded under it. That is a long scroll of mostly empty space, and the folds
+ * were what made three-to-a-row impossible: opening one would have shunted its
+ * neighbours down the grid.
+ *
+ * The reasoning is unchanged and still in the document. What it has lost is its
+ * claim on the layout: the select points at it with aria-describedby, so a
+ * screen reader still gets it on focus, and hovering the label opens the same
+ * card the chart uses for a graha.
+ */
+(function () {
+  var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var src = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
+  var panel = page.slice(page.indexOf('id="panel-settings"'),
+                         page.indexOf('</section>', page.indexOf('id="panel-settings"')));
+
+  ok('the fields are gridded rather than stacked one to a row',
+    /<div class="settings-grid">/.test(panel) &&
+    /\.settings-grid \{[^}]*display: grid/.test(css) &&
+    !/#panel-settings \.field \+ \.field \{ margin-top/.test(css));
+  ok('and reach three across only when there is room for three',
+    /@media \(min-width: 40rem\) \{\s*\.settings-grid \{ grid-template-columns: repeat\(2/
+      .test(css) &&
+    /@media \(min-width: 62rem\) \{\s*\.settings-grid \{ grid-template-columns: repeat\(3/
+      .test(css));
+
+  /*
+   * The point of moving the reasoning out of the flow is that it no longer
+   * decides how tall a row is. A <details> left anywhere in the panel would put
+   * that back.
+   */
+  ok('no setting folds out of the layout any more',
+    !/<details class="field-why">/.test(panel) &&
+    (panel.match(/<div class="field-why" id="why-/g) || []).length === 11);
+
+  /*
+   * Kept for the reader who cannot hover. The note stays in the document and
+   * the select names it, so focusing the control reads the reasoning out.
+   */
+  ok('every select points at its own explanation for a screen reader',
+    (function () {
+      var ids = (panel.match(/<select id="([a-z-]+)"/g) || [])
+        .map(function (m) { return m.slice('<select id="'.length, -1); });
+      return ids.length === 11 && ids.every(function (id) {
+        return panel.indexOf('aria-describedby="why-' + id + '"') >= 0 &&
+          panel.indexOf('<div class="field-why" id="why-' + id + '"') >= 0;
+      });
+    })());
+  ok('and the note is hidden from sight without being hidden from the reader',
+    /\.field-why \{[^}]*clip: rect\(0 0 0 0\)/.test(css) &&
+    !/\.field-why \{[^}]*display: none/.test(css));
+
+  /*
+   * Hovering the label opens the card. It is wired on the grid rather than per
+   * field, so the eleven share one card and one pair of listeners.
+   */
+  ok('hovering a setting opens a card, wired once on the grid',
+    /function wireSettingHelp\(\)/.test(src) &&
+    /grid\.addEventListener\('mouseover', show\)/.test(src) &&
+    /grid\.addEventListener\('focusin', show\)/.test(src) &&
+    /wireSettingHelp\(\);/.test(src));
+  ok('and the label says it is hoverable',
+    /#panel-settings \.field label \{ cursor: help; \}/.test(css));
+
+  /*
+   * One placement for both cards. They want the same behaviour - centred on
+   * what opened them, clamped to the viewport, flipped above when there is no
+   * room below - and had no business each keeping a copy of it.
+   */
+  ok('both cards are placed by the same code',
+    /function placeCard\(card, target, container\)/.test(src) &&
+    // the definition matches the same shape, so it is excluded from the count
+    (src.match(/(?<!function )placeCard\(card, /g) || []).length === 2);
+
+  /*
+   * The card reads the note rather than holding a second copy of the text,
+   * which is how the two would drift apart.
+   */
+  ok('the card reads the note rather than repeating it',
+    /body\.innerHTML = why\.innerHTML;/.test(src) &&
+    /card\.appendChild\(el\('h4', null, label\.textContent\)\)/.test(src));
 })();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
