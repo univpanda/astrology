@@ -4156,10 +4156,11 @@ ok('and the page never leans on the engine default',
  */
 ok('and the note cites both sides from the classical texts', (function () {
   var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  var at = html.indexOf('id="moon-paksha"');
+  var at = html.indexOf('id="why-moon-paksha"');
   var block = html.slice(at, html.indexOf('</div>', at));
   return /Santhanam/.test(block) && /Raman/.test(block) &&
-    /Phaladeepika IV\.21/.test(block) && /Phaladeepika IV\.5|And IV\.5/.test(block);
+    /Brihat Jataka 21/.test(block) && /Phaladeepika IV\.1/.test(block) &&
+    /Uttara Kalamrita/.test(block) && /Phaladeepika IV\.5/.test(block);
 })());
 /*
  * It changes no position, so the chart is not recast - the cached Shadbala is
@@ -7120,7 +7121,7 @@ console.log('\nUttara Kalamrita on the Moon in paksha bala');
   var flat = page.replace(/\s+/g, ' ');
 
   ok('the paksha note carries the classical statement of the group rule',
-    /Uttara Kalamrita is the plainest on the group side/.test(flat) &&
+    /Uttara Kalamrita is the plainest of them/.test(flat) &&
     /waning Moon, badly associated Mercury, and Rahu are malefics/.test(flat));
   ok('and the boundary it gives is the one the engine uses',
     /from the eighth lunar day of the bright fortnight to the eighth of the dark fortnight/
@@ -7141,15 +7142,27 @@ console.log('\nUttara Kalamrita on the Moon in paksha bala');
    * it leaves the reader to infer the default from the select, which is the
    * one place it is not explained.
    */
+  var flat2 = page.replace(/\s+/g, ' ');
   ok('and the note says which reading is the default, and on what grounds',
-    /The group reading is the default, on the weight of the texts/
-      .test(page.replace(/\s+/g, ' ')) &&
-    /three\s+sources put her in them, and Phaladeepika does not put her anywhere/
-      .test(page.replace(/\s+/g, ' ')));
+    /That reading is the default here, on Raman's boundary/
+      .test(flat2.replace(/&rsquo;/g, "'")));
   ok('and the oldest of the texts frames the measure as one of groups',
     /Brihat Jataka 21/.test(page) &&
     /malefic and benefic planets have strength \(Pakshabala\) in the dark and bright halves/
-      .test(page.replace(/\s+/g, ' ')));
+      .test(flat2));
+  /*
+   * The alternative was credited to Phaladeepika on a misreading of IV.5. IV.1
+   * states the group rule in the same chapter, and IV.5 is satisfied by it -
+   * the Moon reaches 119.5 of 120 at the full Moon under the group reading, so
+   * "strong and auspicious when she has her full Paksha bala" is a description
+   * of it rather than a difficulty for it. No text asks for the alternative.
+   */
+  ok('and does not credit the alternative to a text that does not hold it',
+    /No text asks for it/.test(flat2) &&
+    /under the group rule she reaches 119.5 of her possible 120 at the full Moon/
+      .test(flat2) &&
+    /<option value="benefic">Always as a benefic \(no classical source\)<\/option>/
+      .test(page));
 })();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');

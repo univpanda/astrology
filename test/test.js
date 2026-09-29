@@ -5286,5 +5286,63 @@ console.log('\nEvery finding says what happened in this chart');
     bareLuminary.map(function (k) { return k + ' -> ' + seen[k]; }).join(' | '));
 })();
 
+
+console.log('\nThe Moon does reach her full paksha bala at the full Moon');
+/*
+ * Both the settings note and the lesson argued that Phaladeepika IV.5 - "The
+ * Moon is strong and auspicious when she has her full Paksha bala" - could not
+ * be said under the group rule, "where a full paksha bala for the Moon means a
+ * dark Moon". That was the sharper of the two arguments for reading her always
+ * a benefic, and it is false.
+ *
+ * Under the group rule she is a benefic through the bright half, so her figure
+ * rises with her light and peaks at the full Moon. The sloka describes the
+ * group rule rather than contradicting it. Pinned here because it is a claim
+ * about arithmetic that was carried in prose for a long time without anyone
+ * running it.
+ */
+(function () {
+  var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+  var at = function (want) {
+    for (var y = 2000; y < 2003; y++) {
+      for (var m = 1; m <= 12; m++) {
+        for (var d = 1; d <= 28; d++) {
+          var c = A.chart({ jdUT: A.julianDay(y, m, d, 6), latitude: 28.61,
+            longitude: 77.21, tzOffsetMinutes: 330 });
+          var p = {};
+          c.planets.forEach(function (q) { p[q.name] = q; });
+          var e = A.norm360(p.Moon.longitude - p.Sun.longitude);
+          if (Math.min(Math.abs(e - want), Math.abs(e - want - 360)) < 4) {
+            return Shadbala.compute(c, place, { moonPaksha: 'group' })
+              .grahas.Moon.kala.paksha;
+          }
+        }
+      }
+    }
+    return null;
+  };
+  var full = at(180), halfWaxing = at(90), halfWaning = at(270);
+  ok('a full Moon carries very nearly the whole 120 under the group rule',
+    full !== null && full > 115, full === null ? 'no full Moon found' : full.toFixed(1));
+  ok('and far more than a half Moon does, so the figure follows her light',
+    halfWaxing !== null && halfWaning !== null &&
+    full > halfWaxing * 1.8 && full > halfWaning * 1.8,
+    'full ' + full.toFixed(1) + ' against ' + halfWaxing.toFixed(1) +
+    ' and ' + halfWaning.toFixed(1));
+  /*
+   * So neither the note nor the lesson may say the sloka cannot hold under the
+   * group rule, which both did.
+   */
+  var read = function (rel) {
+    return require('fs').readFileSync(
+      require('path').join(__dirname, '..', rel), 'utf8');
+  };
+  var page = read('index.html');
+  var seed = read('supabase/seed/astro_readings_strength.sql');
+  ok('and neither the note nor the lesson still claims otherwise',
+    !/cannot be said under the group rule/.test(seed) &&
+    !/cannot hold under\s+the group rule/.test(page));
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
