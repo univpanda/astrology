@@ -6802,13 +6802,23 @@ console.log('\nThe settings sit three to a row, explaining themselves on hover')
    * worth a ring opens it, which is what :focus-visible answers.
    */
   ok('but a click on the select opens the dropdown, not the card',
-    /var byKeyboard = function \(node\)/.test(src) &&
-    /node\.matches\(':focus-visible'\)/.test(src) &&
-    /if \(!byKeyboard\(e\.target\)\) \{ hide\(\); return; \}/.test(src) &&
+    /var viaPointer = false;/.test(src) &&
+    /if \(viaPointer\) \{ hide\(\); return; \}/.test(src) &&
     /grid\.addEventListener\('mousedown', hide\)/.test(src));
-  ok('and where that selector is not understood it errs towards showing it',
-    /if \(!node \|\| !node\.matches\) return true;/.test(src) &&
-    /catch \(err\) \{ return true; \}/.test(src));
+  /*
+   * :focus-visible was tried and does not settle it: whether a clicked
+   * <select> matches is a matter the engines disagree on, and Safari says yes,
+   * so the card came straight back after the mousedown that hid it. The
+   * question is asked of the input instead - pointer down sets, key down
+   * clears - and both are watched in the capture phase so they are seen before
+   * focus moves.
+   */
+  ok('and the modality is read from the input, not from the element',
+    !/matches\(':focus-visible'\)/.test(src) &&
+    /document\.addEventListener\('pointerdown', function \(\) \{ viaPointer = true; \}, true\)/
+      .test(src) &&
+    /document\.addEventListener\('keydown', function \(\) \{ viaPointer = false; \}, true\)/
+      .test(src));
   ok('and the label says it is hoverable',
     /#panel-settings \.field label \{ cursor: help; \}/.test(css));
 

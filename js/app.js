@@ -1122,19 +1122,26 @@
      * But clicking a select focuses it too, and that opened the card right
      * where the list of options was about to appear - the card and the
      * dropdown covering each other, over the one control you had just reached
-     * for. So only focus the browser itself judges worth a ring opens it,
-     * which is the same question :focus-visible answers: keyboard yes, pointer
-     * no. Where that selector is not understood, erring towards showing the
-     * card is the safer failure, since the alternative hides it from keyboard
-     * readers altogether.
+     * for.
+     *
+     * :focus-visible was tried for this and does not settle it. Whether a
+     * clicked <select> matches it is a matter the engines disagree on, and
+     * Safari says yes: the card came straight back after the mousedown that
+     * hid it. So the question is asked of the input rather than of the
+     * element. A pointer going down anywhere sets the flag, a key going down
+     * clears it, and both are watched on the document in the capture phase so
+     * they are seen before focus moves. Tab always raises a keydown before the
+     * focus lands, so the keyboard path stays open.
      */
-    var byKeyboard = function (node) {
-      if (!node || !node.matches) return true;
-      try { return node.matches(':focus-visible'); } catch (err) { return true; }
-    };
+    var viaPointer = false;
+    if (document.addEventListener) {
+      document.addEventListener('pointerdown', function () { viaPointer = true; }, true);
+      document.addEventListener('mousedown', function () { viaPointer = true; }, true);
+      document.addEventListener('keydown', function () { viaPointer = false; }, true);
+    }
     grid.addEventListener('mousedown', hide);
     grid.addEventListener('focusin', function (e) {
-      if (!byKeyboard(e.target)) { hide(); return; }
+      if (viaPointer) { hide(); return; }
       open(fieldOf(e.target));
     });
     grid.addEventListener('focusout', hide);
