@@ -7238,6 +7238,21 @@ console.log('\nThe settings notes do not argue from what software does');
     !/No authority asks for zone time/.test(panel.replace(/\s+/g, ' ')) &&
     /It is enough if we take 12.00 hours as noon and zero hours as midnight/
       .test(panel.replace(/\s+/g, ' ')));
+
+  /*
+   * Which moved the charge onto the middle option, where it belongs. Local mean
+   * time is a mechanical-clock convention: Uttara Kalamrita allows the clock as
+   * a stated shortcut and Raman asks for the sundial, while Raman's own wording
+   * - "it must be converted into the apparent time" - treats mean time as an
+   * input rather than an endpoint. A reader comparing the first two settings
+   * should be told which to keep.
+   */
+  ok('mean time is now the choice named as the one no text asks for',
+    /Mean time is the one choice no text asks for/
+      .test(panel.replace(/\s+/g, ' ')));
+  ok('and the note says outright which of the three to use',
+    /Use apparent time, the default/.test(panel.replace(/\s+/g, ' ')) &&
+    /Noon here means the Sun on the meridian/.test(panel.replace(/\s+/g, ' ')));
   ok('and the comparator work is kept where it belongs, in the lessons',
     /Drik Panchang/.test(seed));
 })();
