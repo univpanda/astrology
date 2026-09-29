@@ -6882,5 +6882,32 @@ console.log('\nThe settings notes describe what the code does');
     /the inner two measured against the/.test(flat));
 })();
 
+console.log('\nThe notes claim only what was checked');
+/*
+ * "Lahiri is the Indian government standard" was carried here for a long time
+ * and is repeated everywhere, but it could not be sourced. The two books on
+ * this site's shelf say something weaker - Charak "the best" and "the most
+ * popular", de Fouw and Svoboda "the majority of Indian jyotishis use" - and
+ * neither the Calendar Reform Committee's published remit nor the Rashtriya
+ * Panchang's own pages name an ayanamsa at all.
+ *
+ * The note says that rather than dropping the matter, because a reader who has
+ * met the claim elsewhere is owed the reason it is not made here.
+ */
+(function () {
+  var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  var flat = page.replace(/\s+/g, ' ');
+
+  ok('the ayanamsa note no longer asserts what could not be sourced',
+    !/Lahiri is the Indian government\s*standard/.test(flat));
+  ok('and says why the claim is repeated but not made',
+    /widely called the Indian government standard, which could not be confirmed here/
+      .test(flat) &&
+    /Rashtriya Panchang/.test(flat) && /Calendar Reform Committee/.test(flat));
+  ok('while giving the grounds it does have, named',
+    /Charak/.test(flat) && /de Fouw and Svoboda/.test(flat) &&
+    /the majority of Indian jyotishis use/.test(flat));
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
