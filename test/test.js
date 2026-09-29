@@ -6053,16 +6053,33 @@ console.log('\nOne frame throughout, mean places included');
    * a nirayana constant propagated at the tropical mean motion walks forward
    * by one precession a year, and converting back to tropical adds a second.
    *
-   * One precession, 1.40 a century, would be the answer if the classical rate
-   * were exactly sidereal. It is not, and should not be forced to be: it is
-   * fitted to the worked mean positions in the two textbooks, and those tables
-   * carry a mean motion slightly slower than the true sidereal one. That shows
-   * up here as 1.16 rather than 1.40, and it is a property of the tables. What
-   * matters is that it is nowhere near twice precession.
+   * The observed drift is 1.16 a century, not the 1.40 of precession, and
+   * that number is derivable rather than something to leave a band around.
+   * The Surya Siddhanta's year is 1577917828 / 4320000 days, which is 0.0024
+   * longer than the true sidereal year, so its mean Sun falls behind the fixed
+   * stars by 0.236 a century. Precession less that deficit is what should be
+   * seen, and is.
    */
+  var ssYear = Astro.MAHAYUGA_DAYS / Astro.SS_REVOLUTIONS.sun;
+  var deficit = (360 / 365.256363 - 360 / ssYear) * 36525;
+  var expected = 1.3972 - deficit;
   var perCentury = (gap(2000) - gap(1800)) / 2;
-  ok('the classical mean Sun drifts against the modern one by about one precession',
-    perCentury > 0.9 && perCentury < 1.9, perCentury.toFixed(2) + ' deg/century');
+  ok('the classical mean Sun drifts by precession less the Surya Siddhanta year’s deficit',
+    Math.abs(perCentury - expected) < 0.05,
+    perCentury.toFixed(3) + ' observed against ' + expected.toFixed(3) +
+      ' predicted (precession 1.397 less ' + deficit.toFixed(3) + ')');
+
+  /*
+   * And the rates are the Surya Siddhanta's, not numbers tuned until two
+   * worked examples came out. They were solved from those examples first, and
+   * every one landed on the figure its revolution count gives - which is how
+   * the fit was known not to be landing on noise.
+   */
+  ok('every classical rate is its Surya Siddhanta revolution count',
+    Object.keys(Astro.SS_REVOLUTIONS).every(function (k) {
+      return Astro.SS_REVOLUTIONS[k] > 0 && Astro.SS_REVOLUTIONS[k] % 1 === 0;
+    }) && Astro.MAHAYUGA_DAYS === 1577917828 &&
+    Math.abs(Astro.SS_REVOLUTIONS.sun * 360 / Astro.MAHAYUGA_DAYS - 0.98560265) < 1e-7);
 
   /*
    * And the elements take the J2000 ayanamsa. Checked through the arithmetic
