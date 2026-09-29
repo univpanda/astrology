@@ -6264,5 +6264,77 @@ console.log('\nSthana bala against three worked examples');
     Shadbala.SAPTAVARGAJA_VALUES.adhimitra === 22.5);
 })();
 
+
+console.log('\nDig bala against the same three worked charts');
+/*
+ * The book works dig bala the way it works uchcha bala, from the longitude and
+ * the point the graha is weakest at, so all three examples are checkable. Its
+ * rule is the shorter arc from that point over three - "if the difference is
+ * more than 180, then subtract it from 360" - which is this file's shortestArc.
+ *
+ * Its two chakras name the strengthless points: Saturn in the 1st, Sun and
+ * Mars in the 4th, Jupiter and Mercury in the 7th, Moon and Venus in the 10th.
+ * The angles below are not given in the book; they are what its own
+ * strengthless columns imply, which is a check in itself, since each example
+ * has to yield one ascendant and one midheaven consistent across seven rows.
+ */
+(function () {
+  var GRAHAS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+  var CHARTS = [
+    { asc: 267.07, mc: 192.43,
+      L: { Sun: 154.82, Moon: 120.03, Mars: 154.90, Mercury: 138.27,
+           Jupiter: 165.78, Venus: 195.07, Saturn: 225.70 },
+      dig: { Sun: 47.46, Moon: 24.13, Mars: 47.49, Mercury: 17.07,
+             Jupiter: 26.24, Venus: 0.88, Saturn: 13.79 } },
+    { asc: 35.05, mc: 290.32,
+      L: { Sun: 211.35, Moon: 122.40, Mars: 294.92, Mercury: 192.42,
+           Jupiter: 96.70, Venus: 207.83, Saturn: 200.33 },
+      dig: { Sun: 33.68, Moon: 55.97, Mars: 58.47, Mercury: 7.54,
+             Jupiter: 39.45, Venus: 27.50, Saturn: 55.09 } },
+    { asc: 228.33, mc: 145.72,
+      L: { Sun: 324.52, Moon: 32.13, Mars: 82.28, Mercury: 342.67,
+           Jupiter: 183.25, Venus: 333.08, Saturn: 84.97 },
+      dig: { Sun: 0.40, Moon: 37.86, Mars: 38.86, Mercury: 21.89,
+             Jupiter: 44.97, Venus: 57.54, Saturn: 47.79 } }
+  ];
+  var weakestOf = function (g, asc, mc) {
+    if (g === 'Sun' || g === 'Mars') return mc + 180;
+    if (g === 'Jupiter' || g === 'Mercury') return asc + 180;
+    if (g === 'Moon' || g === 'Venus') return mc;
+    return asc;
+  };
+  var worst = 0;
+  CHARTS.forEach(function (c) {
+    GRAHAS.forEach(function (g) {
+      var d = Math.abs(Astro.norm360(c.L[g] - weakestOf(g, c.asc, c.mc)));
+      if (d > 180) d = 360 - d;
+      worst = Math.max(worst, Math.abs(d / 3 - c.dig[g]));
+    });
+  });
+  ok('all twenty-one printed dig balas come out', worst < 0.02,
+    'worst ' + worst.toFixed(3) + ' virupas');
+
+  /*
+   * And the engine's own function agrees with the arithmetic above, which is
+   * the part that would otherwise be a copy of the rule checked against
+   * itself. Driven on a real chart rather than the book's, since digBala takes
+   * an ascendant and a midheaven off one.
+   */
+  var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+  var c = Astro.chart({ jdUT: Astro.julianDay(1977, 8, 20, 3), latitude: 28.61,
+    longitude: 77.21, tzOffsetMinutes: 330 });
+  var r = Shadbala.compute(c, place).grahas;
+  var off = [];
+  GRAHAS.forEach(function (g) {
+    var lon = c.planets.filter(function (p) { return p.name === g; })[0].longitude;
+    var d = Math.abs(Astro.norm360(lon -
+      weakestOf(g, c.ascendant.longitude, c.midheaven.longitude)));
+    if (d > 180) d = 360 - d;
+    if (Math.abs(d / 3 - r[g].dig) > 1e-9) off.push(g);
+  });
+  ok('and the engine computes dig bala by that same rule', off.length === 0,
+    off.join(', ') || 'all seven');
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
