@@ -6905,15 +6905,19 @@ console.log('\nThe notes claim only what was checked');
   var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   var flat = page.replace(/\s+/g, ' ');
 
-  ok('the ayanamsa note no longer asserts what could not be sourced',
-    !/Lahiri is the Indian government\s*standard/.test(flat));
-  ok('and says why the claim is repeated but not made',
-    /widely called the Indian government standard, which could not be confirmed here/
-      .test(flat) &&
-    /Rashtriya Panchang/.test(flat) && /Calendar Reform Committee/.test(flat));
-  ok('while giving the grounds it does have, named',
-    /Charak/.test(flat) && /de Fouw and Svoboda/.test(flat) &&
-    /the majority of Indian jyotishis use/.test(flat));
+  /*
+   * The note said Lahiri was "the Indian government standard" for a long time.
+   * It is repeated everywhere and could not be sourced: Charak and de Fouw and
+   * Svoboda both say only that it is the most used, the Calendar Reform
+   * Committee's published remit names no ayanamsa, and neither do the
+   * Rashtriya Panchang's own pages. The note explaining all that has since
+   * come out too - a reader choosing an ayanamsa does not need the audit - so
+   * what is left is the guard, which is the part that has to last.
+   */
+  ok('the note claims usage, which can be shown',
+    /Lahiri, or Chitrapaksha, is the one most\s+Indian practice uses/.test(page));
+  ok('and not standing, which could not be',
+    !/government standard/.test(flat) && !/official/.test(flat));
 })();
 
 
@@ -6978,6 +6982,43 @@ console.log('\nThe node setting says what it moves, and what it does not');
   ok('and count as malefics for the hemming, which is why a mark can move',
     /NODES\.indexOf\(p\.name\) < 0 && benefics\[p\.name\] === true/.test(
       fs.readFileSync(path.join(root, 'js/astro.js'), 'utf8')));
+})();
+
+
+console.log('\nEvery citation in the settings names its book');
+/*
+ * "Santhanam's notes to chapter 27" - of what? Each of these notes is read on
+ * its own, in a card that opens over one setting, so a citation that leans on
+ * another note to say which book it means says nothing. Raman's sections had
+ * the same fault: consistent shorthand across the app, and bare to anyone
+ * reading a single card.
+ */
+(function () {
+  var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  var panel = page.slice(page.indexOf('id="panel-settings"'),
+                         page.indexOf('</section>', page.indexOf('id="panel-settings"')));
+  var text = panel.replace(/<[^>]+>/g, ' ').replace(/&rsquo;/g, "'");
+  text = text.split(/\s+/).join(' ');
+  var WORKS = ['Brihat Parashara Hora Shastra', 'Phaladeepika',
+    'Hindu Predictive Astrology', 'Graha and Bhava Balas',
+    'Advance Techniques', 'Satayoga Manjari'];
+
+  var bare = [];
+  var cite = /(chapter \d+|section \d+|ch\.\d+)/g, m;
+  while ((m = cite.exec(text)) !== null) {
+    var around = text.slice(Math.max(0, m.index - 80), m.index + m[0].length + 70);
+    if (!WORKS.some(function (w) { return around.indexOf(w) >= 0; })) bare.push(m[0]);
+  }
+  ok('no chapter or section is cited without naming the work it is in',
+    bare.length === 0, bare.join(', ') || 'all named');
+
+  /*
+   * And the doubling argument lives in the one setting that controls it. It was
+   * being made twice, which is how two statements of the same thing drift.
+   */
+  ok('the doubling is argued once, under the setting that controls it',
+    /None of it is disputed/.test(panel) &&
+    !/The doubling is not in dispute/.test(panel));
 })();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
