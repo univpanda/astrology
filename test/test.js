@@ -4833,53 +4833,47 @@ console.log('\nTwelve more from Raman, and one correction to what was here');
     none > 0, none + ' such charts in the sweep');
 
   /*
-   * Mahabhagya. Raman's own worked chart is the test: a male born at night with
-   * the tripod in odd signs. He reports the yoga; Phaladeepika's day test
-   * refuses it. Both readings have to behave as their authority says.
+   * Mahabhagya. The day test is the rule and every source that carries the
+   * yoga asks for it, so a man born at night does not have it however the
+   * tripod falls. Raman's worked chart 25 is a night birth read as having it,
+   * against the definition printed two paragraphs above; the definition is
+   * what is followed here. Built rather than hunted, so the assertion always
+   * runs.
    */
-  var night = chartAt(1964, 10, 7, 16);          // 21:30 IST, well after sunset
-  night.gender = 'male';
-  night.dayBirth = false;
-  var odd = function (sg) { return sg % 2 === 0; };
-  var lag2 = A.signOf(night.ascendant.longitude);
-  var pos = {};
-  night.planets.forEach(function (p) { pos[p.name] = p; });
-  if (odd(lag2) && odd(pos.Sun.sign) && odd(pos.Moon.sign)) {
-    night.mahabhagyaDay = Yogas.MAHABHAGYA_DAY.RAMAN;
-    ok('on Raman’s wording a man born at night can still have Mahabhagya',
-      !!find(night, 'Mahabhagya Yoga'));
-    night.mahabhagyaDay = Yogas.MAHABHAGYA_DAY.PHALADEEPIKA;
-    ok('and on Phaladeepika’s he cannot', !find(night, 'Mahabhagya Yoga'));
-  } else {
-    // Build the case rather than hunt for it, so the assertion always runs.
-    var made = { ascendant: { longitude: 10 },          // Aries, an odd sign
-      gender: 'male', dayBirth: false,
-      planets: [{ name: 'Sun', sign: 4, longitude: 4 * 30 + 5, house: 5 },
-                { name: 'Moon', sign: 6, longitude: 6 * 30 + 5, house: 7 }] };
-    made.mahabhagyaDay = Yogas.MAHABHAGYA_DAY.RAMAN;
-    ok('on Raman’s wording a man born at night can still have Mahabhagya',
-      Yogas.mahabhagya(made).length === 1);
-    made.mahabhagyaDay = Yogas.MAHABHAGYA_DAY.PHALADEEPIKA;
-    ok('and on Phaladeepika’s he cannot', Yogas.mahabhagya(made).length === 0);
-    made.dayBirth = true;
-    ok('while by day Phaladeepika allows it', Yogas.mahabhagya(made).length === 1);
-  }
+  var made = { ascendant: { longitude: 10 },          // Aries, an odd sign
+    gender: 'male', dayBirth: false,
+    planets: [{ name: 'Sun', sign: 4, longitude: 4 * 30 + 5, house: 5 },
+              { name: 'Moon', sign: 6, longitude: 6 * 30 + 5, house: 7 }] };
+  ok('a man born at night has no Mahabhagya, the tripod notwithstanding',
+    Yogas.mahabhagya(made).length === 0);
+  made.dayBirth = true;
+  ok('and by day the same three signs give it',
+    Yogas.mahabhagya(made).length === 1);
 
   /*
-   * The even-sign half is the woman's on both readings, and both ask for night,
-   * so the setting must not touch it.
+   * A place too far north for the Sun to set settles neither, and so does a
+   * birth time recorded only to the day. The finding is still made, since the
+   * signs are what they are, and it says what it could not check.
+   */
+  made.dayBirth = undefined;
+  var unsettled = Yogas.mahabhagya(made)[0];
+  ok('where the hour cannot be settled the finding is made and says so',
+    !!unsettled && unsettled.reasons.some(function (r) {
+      return r.indexOf('could not be determined') > -1;
+    }), unsettled ? unsettled.reasons.join(' | ') : 'nothing found');
+
+  /*
+   * The even-sign half is the woman's, and it asks for night as the man's
+   * asks for day.
    */
   var her = { ascendant: { longitude: 40 },              // Taurus, an even sign
     gender: 'female', dayBirth: false,
     planets: [{ name: 'Sun', sign: 3, longitude: 3 * 30 + 5, house: 12 },
               { name: 'Moon', sign: 7, longitude: 7 * 30 + 5, house: 4 }] };
-  [Yogas.MAHABHAGYA_DAY.RAMAN, Yogas.MAHABHAGYA_DAY.PHALADEEPIKA].forEach(function (r) {
-    her.mahabhagyaDay = r;
-  });
-  ok('a woman born at night gets the even-sign reading on either authority',
+  ok('a woman born at night gets the even-sign reading',
     Yogas.mahabhagya(her).length === 1);
   her.dayBirth = true;
-  ok('and by day neither authority allows it', Yogas.mahabhagya(her).length === 0);
+  ok('and by day it is withheld', Yogas.mahabhagya(her).length === 0);
 
   /*
    * The form offers Other, and stores unstated. Reporting nothing hides a

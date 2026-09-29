@@ -752,7 +752,6 @@
      * honoured by one of them would have the chart disagreeing with itself.
      */
     if (c) c.budhaAdityaFloor = document.getElementById('budha-floor').value;
-    if (c) c.mahabhagyaDay = document.getElementById('mahabhagya-day').value;
     /*
      * Two facts about the native rather than about the sky, both of which
      * Mahabhagya turns on. The sex is asked for on the form already; whether
@@ -4067,19 +4066,6 @@
     status.textContent = motion
       ? 'Cheshta bala now reads the eight motions. Four of their boundaries are this site\u2019s, not a text\u2019s.'
       : 'Cheshta bala now reads the chesta kendra, which is the verse that states a computation.';
-  });
-
-  document.getElementById('mahabhagya-day').addEventListener('change', function () {
-    var status = document.getElementById('settings-status');
-    var loose = this.value === 'raman';
-    if (!lastChart) {
-      status.textContent = 'Saved. The next chart will use it.';
-      return;
-    }
-    render(lastChart);
-    status.textContent = loose
-      ? 'Mahabhagya no longer asks a man to be born by day, which is Raman\u2019s wording.'
-      : 'Mahabhagya asks a man to be born by day, which is what Phaladeepika states.';
   });
 
   document.getElementById('budha-floor').addEventListener('change', function () {

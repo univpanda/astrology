@@ -1448,8 +1448,7 @@ var Astro = (function () {
    * quietly reverted to its default the moment a varga was read, and the same
    * chart answered differently in D1 and D9.
    */
-  var CARRIED = ['mercuryNature', 'budhaAdityaFloor', 'mahabhagyaDay',
-    'gender', 'dayBirth'];
+  var CARRIED = ['mercuryNature', 'budhaAdityaFloor', 'gender', 'dayBirth'];
 
   function chartInDivision(chart, division) {
     if (!division || division === 1) return chart;

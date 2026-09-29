@@ -1428,32 +1428,31 @@ var Yogas = (function () {
   /* ----------------------------------------------------- Mahabhagya */
 
   /*
-   * Combination 25, and the one place where Raman and his own source part.
+   * Combination 25. One rule, and every source that has it states it the same
+   * way.
    *
-   * Raman: "In the case of a man, the Sun, the Moon and the Lagna should be in
-   * odd signs. In case of women, when the birth is during night, the Sun, the
-   * Moon and Lagna must be in even signs." Night for women, nothing for men -
-   * and both scans of the 1947 edition read the same, so it is not the OCR.
+   * Phaladeepika ch.6 shloka 14, where the combination comes from: "If, at a
+   * day-birth in the case of a male, the Sun, the Moon and the Lagna are in
+   * odd signs, the Mahabhagya Yoga is formed. The same Yoga in the case of
+   * females will arise when the birth is at night and the Sun, the Moon and
+   * the Lagna are posited in even signs." Parashara, Uttara Kalamrita, Jataka
+   * Parijata and Sripatipaddhati do not carry the yoga at all, so that sloka
+   * is the only classical statement of it there is.
    *
-   * Phaladeepika ch.6 shloka 14, which is where the combination comes from, is
-   * symmetric: "If, at a day-birth in the case of a male, the Sun, the Moon and
-   * the Lagna are in odd signs, the Mahabhagya Yoga is formed. The same Yoga in
-   * the case of females will arise when the birth is at night and the Sun, the
-   * Moon and the Lagna are posited in even signs."
+   * Raman gives it identically. Three Hundred Important Combinations,
+   * combination 25: "In the case of a man, when the birth is during daytime
+   * the Sun, the Moon and the Lagna should be in odd signs. In the case of
+   * women, when the birth is during night, the Sun, the Moon and Lagna must be
+   * in even signs."
    *
-   * Raman means it. His own worked chart for the combination - No. 25, a male
-   * born at 8-15 p.m., which is night - reads "the Lagna is Aries, the Sun is
-   * in Leo and the Moon is in Libra - all odd signs, consequently Mahabhagya
-   * Yoga is fully present." Under Phaladeepika's rule that birth fails the day
-   * test and there is no yoga.
-   *
-   * So it is a setting, defaulting to Phaladeepika: he states the fuller rule,
-   * the two halves are symmetric in a way Raman's are not, and the day test
-   * halves how often the male form is claimed, from 12.5 per cent of charts to
-   * 6.2.
+   * This site read him as dropping the day test for men and carried a setting
+   * for it. The reading came from the summary at the back of his book, which
+   * compresses the rule and leaves the condition out, and from his worked
+   * chart, a man born at 8-35 p.m., night, declared to have the yoga fully
+   * present. Both contradict the definition he had just given two paragraphs
+   * earlier. They are slips, of which the book has many, and the day test is
+   * simply the rule.
    */
-  var MAHABHAGYA_DAY = { PHALADEEPIKA: 'phaladeepika', RAMAN: 'raman' };
-
   function mahabhagya(chart) {
     var positions = {};
     chart.planets.forEach(function (p) { positions[p.name] = p; });
@@ -1468,7 +1467,6 @@ var Yogas = (function () {
 
     var gender = chart.gender;
     var day = chart.dayBirth;
-    var ramanReading = chart.mahabhagyaDay === MAHABHAGYA_DAY.RAMAN;
 
     var signs = 'the Sun in ' + Astro.SIGNS[sun.sign] + ', the Moon in ' +
       Astro.SIGNS[moon.sign] + ' and the ascendant in ' + Astro.SIGNS[lagna] +
@@ -1490,30 +1488,28 @@ var Yogas = (function () {
 
     if (allOdd) {
       if (known && !male) return [];              // the odd-sign half is the man's
-      if (!ramanReading && day === false) {
-        return [];                                 // Phaladeepika wants a day birth
-      }
+      if (day === false) return [];               // and it asks for a day birth
       if (male) {
-        reasons.push(ramanReading
-          ? 'the odd signs are the reading for a man, and on Raman’s ' +
-            'wording that is the whole of it'
-          : 'the odd signs are the reading for a man, born by day, which this ' +
-            'birth was');
+        reasons.push(day === true
+          ? 'the odd signs are the reading for a man, born by day, which this ' +
+            'birth was'
+          : 'the odd signs are the reading for a man, and the rule asks that ' +
+            'he be born by day');
       } else {
         reasons.push('the odd signs are the reading for a man; this chart ' +
-          'records no sex, so the finding holds only if the native is one' +
-          (ramanReading ? '' : ', and the birth is by day as the rule asks'));
+          'records no sex, so the finding holds only if the native is one, ' +
+          'and the birth is by day as the rule asks');
       }
-      if (!ramanReading && day === undefined) {
+      if (day === undefined) {
         reasons.push('whether the birth was by day could not be determined ' +
-          'here, and Phaladeepika asks for it');
+          'here, and the rule asks for it');
       }
     } else {
       if (known && !female) return [];
       if (day === true) return [];                 // both authorities want night
       if (female) {
         reasons.push('the even signs are the reading for a woman born at ' +
-          'night, which both Raman and Phaladeepika ask for');
+          'night, which is what Phaladeepika asks for');
       } else {
         reasons.push('the even signs are the reading for a woman born at ' +
           'night; this chart records no sex, so the finding holds only if the ' +
@@ -2391,7 +2387,7 @@ var Yogas = (function () {
     moonCompany: moonCompany, chandraMangala: chandraMangala, adhiYoga: adhiYoga,
     sakata: sakata, amala: amala, budhaAditya: budhaAditya,
     BUDHA_ADITYA_FLOOR: BUDHA_ADITYA_FLOOR, BUDHA_FLOOR: BUDHA_FLOOR,
-    MAHABHAGYA_DAY: MAHABHAGYA_DAY, SUN_COMPANY: SUN_COMPANY,
+    SUN_COMPANY: SUN_COMPANY,
     MALIKA_NAMES: MALIKA_NAMES, MOON_FROM_SUN: MOON_FROM_SUN,
     sunCompany: sunCompany, moonFromSun: moonFromSun, mahabhagya: mahabhagya,
     chatussagara: chatussagara, rajalakshana: rajalakshana, malika: malika,

@@ -6328,33 +6328,21 @@ console.log('\nMahabhagya needs two things the sky does not supply');
   var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   var src = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
 
-  ok('the day test is offered as a setting, defaulting to the fuller rule',
-    /<select id="mahabhagya-day"/.test(page) &&
-    /<option value="phaladeepika" selected>/.test(page) &&
-    /<option value="raman">/.test(page));
   /*
-   * The note used to say Raman drops the day test for men. He does not: his
+   * The setting is gone. It offered a reading with no source behind it: the
+   * note said Raman drops the day test for men, and he does not. His
    * definition at combination 25 of Three Hundred Important Combinations reads
-   * "In the case of a man, when the birth is during daytime", the same rule
-   * Mantreswara gives. What an earlier reading almost certainly took for the
-   * definition is the summary at the back of the book, which compresses the
-   * rule and drops the condition.
-   *
-   * So the disagreement is not between two authors but inside one: his worked
-   * chart 25 is a man born at 8-35 p.m., night, read as having the yoga fully
-   * present. The note now says that, and the time is his - it was printed here
-   * as 8-15 for a long while.
+   * "In the case of a man, when the birth is during daytime", which is
+   * Mantreswara's rule exactly. What was taken for the definition is the
+   * summary at the back of the book, which compresses the rule and leaves the
+   * condition out; the worked chart that seemed to confirm it, a man born at
+   * 8-35 p.m. read as having the yoga, contradicts the page it sits on.
    */
-  ok('the note quotes Raman’s definition, which keeps the day test',
-    /when\s+the birth is during daytime the Sun, the Moon and the Lagna should be\s+in odd signs/
-      .test(page.replace(/\s+/g, ' ')) ||
-    /during daytime the Sun, the Moon and the Lagna should be in odd signs/
-      .test(page.replace(/\s+/g, ' ')));
-  ok('and cites his chart 25 at the hour he actually prints',
-    /8-35 p\.m\./.test(page) && !/8-15 p\.m\./.test(page));
-  ok('and still names Phaladeepika as the only classical statement',
-    /only classical statement of it/.test(page.replace(/\s+/g, ' ')) &&
-    /Phaladeepika/.test(page));
+  ok('the day test is not offered as a choice, there being nothing to choose',
+    !/mahabhagya-day/.test(page) && !/mahabhagyaDay/.test(src));
+  ok('and the lessons no longer send a reader to a setting that is gone',
+    !/mahabhagya/i.test(page.slice(page.indexOf('id="panel-settings"'),
+      page.indexOf('</section>', page.indexOf('id="panel-settings"')))));
 
   /*
    * The sex comes off the form and the day comes off the real sunrise for the
@@ -6368,8 +6356,6 @@ console.log('\nMahabhagya needs two things the sky does not supply');
   ok('and day or night is taken from the real sunrise, not from the clock',
     /Astro\.sunriseSunset\(c\.julianDay, place\.lat, place\.lon, false\)/.test(src) &&
     /Astro\.sunriseSunset\(c\.julianDay, place\.lat, place\.lon, true\)/.test(src));
-  ok('changing the setting redraws', /getElementById\('mahabhagya-day'\)\.addEventListener/
-    .test(src));
 
   /*
    * A division moves the grahas; it does not move the native's sex, the hour
@@ -6383,14 +6369,11 @@ console.log('\nMahabhagya needs two things the sky does not supply');
   chart.dayBirth = false;
   chart.budhaAdityaFloor = 'none';
   chart.mercuryNature = 'benefic';
-  chart.mahabhagyaDay = 'raman';
   var d9 = Astro.chartInDivision(chart, 9);
   ok('the nativity and the chosen readings survive into a division',
     d9.gender === 'male' && d9.dayBirth === false &&
-    d9.budhaAdityaFloor === 'none' && d9.mercuryNature === 'benefic' &&
-    d9.mahabhagyaDay === 'raman',
-    [d9.gender, d9.dayBirth, d9.budhaAdityaFloor, d9.mercuryNature,
-     d9.mahabhagyaDay].join(' / '));
+    d9.budhaAdityaFloor === 'none' && d9.mercuryNature === 'benefic',
+    [d9.gender, d9.dayBirth, d9.budhaAdityaFloor, d9.mercuryNature].join(' / '));
   ok('and the division is still a division, not a copy of the rashi',
     d9.division === 9 && d9.planets.length === chart.planets.length &&
     d9.planets.some(function (p, i) { return p.sign !== chart.planets[i].sign; }));
@@ -7398,18 +7381,18 @@ console.log('\nThe settings run from the chart outward');
     order.slice(0, 3).join(', '));
 
   /*
-   * And the three that are not shadbala at all come last. Two of them settle
-   * yogas rather than strengths, and Mercury's nature is read by the yoga
-   * detectors as well as by paksha and drik bala. Sitting in the middle they
-   * broke the run of shadbala settings in two.
+   * And the two that are not shadbala at all come last. One settles a yoga
+   * rather than a strength, and Mercury's nature is read by the yoga detectors
+   * as well as by paksha and drik bala. Sitting in the middle they broke the
+   * run of shadbala settings in two.
    */
   ok('the settings that are not shadbala sit at the end',
-    order.slice(-3).join(',') === 'mahabhagya-day,budha-floor,mercury-nature',
-    order.slice(-3).join(', '));
+    order.slice(-2).join(',') === 'budha-floor,mercury-nature',
+    order.slice(-2).join(', '));
   ok('so the shadbala run is unbroken from the Moon’s paksha to the luminaries',
     order.slice(order.indexOf('moon-paksha'), order.indexOf('luminary-cheshta') + 1)
       .every(function (k) {
-        return ['mahabhagya-day', 'budha-floor', 'mercury-nature'].indexOf(k) < 0;
+        return ['budha-floor', 'mercury-nature'].indexOf(k) < 0;
       }),
     order.slice(order.indexOf('moon-paksha'), order.indexOf('luminary-cheshta') + 1).join(', '));
   ok('and every field still carries its own note',
