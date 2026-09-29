@@ -6721,6 +6721,108 @@ console.log('\nOne chart end to end, from birth data to every bala');
   ok('and Mars misses by one step of the ladder, which is the book’s slip',
     Math.abs((r.Mars.sthana.saptavargaja - sapta.Mars) - 7.5) < 0.05,
     (r.Mars.sthana.saptavargaja - sapta.Mars).toFixed(2) + ' virupas');
+
+  ok('drik bala comes out, the visesha additions with it',
+    worstOf({ Sun: -13.21, Moon: -3.83, Mars: -13.21, Mercury: -14.68,
+      Jupiter: -1.97, Venus: -13.42, Saturn: -29.00 },
+      function (x) { return x.drik; }) < 0.05);
+  ok('and naisargika, which the book rounds a hundredth up',
+    worstOf({ Sun: 60.00, Moon: 51.43, Mars: 17.15, Mercury: 25.72,
+      Jupiter: 34.29, Venus: 42.86, Saturn: 8.58 },
+      function (x) { return x.naisargika; }) < 0.015);
+
+  /*
+   * Chapter 8 adds the six up. Its motional row is filled for both luminaries
+   * and both are in the totals, so the chapter is read with the luminaries'
+   * cheshta counted; with it omitted every total is a rupa light. Mars carries
+   * the saptavargaja slip and nothing else does.
+   */
+  var full = Shadbala.compute(chart, place, { moonPaksha: 'benefic',
+    kendraMethod: 'averaged', luminaryCheshta: 'counted' });
+  var t = full.grahas;
+  var totals = { Sun: 482.80, Moon: 319.23, Mars: 349.76, Mercury: 434.59,
+    Jupiter: 468.83, Venus: 301.50, Saturn: 433.29 };
+  var offTotal = GRAHAS.filter(function (g) {
+    return Math.abs(t[g].totalShashtiamsa - totals[g]) > 0.6;
+  });
+  ok('the six sum to the shadbalapinda the chapter prints, Mars excepted',
+    offTotal.length === 1 && offTotal[0] === 'Mars',
+    GRAHAS.map(function (g) {
+      return g + ' ' + (t[g].totalShashtiamsa - totals[g]).toFixed(2);
+    }).join(', '));
+  ok('and the Sun’s rupa figure lands on all three of its decimals',
+    Math.abs(t.Sun.rupas - 8.047) < 0.001, t.Sun.rupas.toFixed(3));
+
+  /*
+   * The ranking is the point of the table, and it is by proportional strength -
+   * the rupa figure over the minimum the graha is required to reach - not by
+   * the raw total. Mars is ranked 4th here on both readings, so its slip does
+   * not reach the order.
+   */
+  ok('and the proportional ranking is the chapter’s, all seven places',
+    full.ranking.join(' ') === 'Sun Saturn Jupiter Mars Mercury Venus Moon',
+    full.ranking.join(' > '));
+})();
+
+
+console.log('\nDrik bala on all three of the textbook’s worked charts');
+/*
+ * Chapter 7 is the one chapter that prints its drishti kendras, its aspect
+ * values and its totals for three separate charts, which makes it the best
+ * check of the piece the engine changed most: drishti as a continuous function
+ * of the angle rather than a step per whole sign, with Mars, Jupiter and
+ * Saturn's visesha added on top of the ordinary value instead of replacing it.
+ *
+ * The longitudes go in as printed and the benefic split is the chapter's own,
+ * so nothing here depends on the engine casting the chart. Its three splits
+ * differ: the Moon is malefic in all three, Mercury malefic in the first two
+ * and benefic in the third, which is the conditional rule working.
+ */
+(function () {
+  var GRAHAS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+  var CASES = [
+    { name: 'Example 1',
+      lon: { Sun: 154.82, Moon: 120.03, Mars: 154.90, Mercury: 138.27,
+        Jupiter: 165.78, Venus: 195.07, Saturn: 225.70 },
+      benefic: ['Jupiter', 'Venus'],
+      want: { Sun: -13.21, Moon: -3.83, Mars: -13.21, Mercury: -14.68,
+        Jupiter: -1.97, Venus: -13.42, Saturn: -29.00 } },
+    { name: 'Example 2',
+      lon: { Sun: 211.35, Moon: 122.40, Mars: 294.92, Mercury: 192.42,
+        Jupiter: 96.70, Venus: 207.83, Saturn: 200.33 },
+      benefic: ['Jupiter', 'Venus'],
+      want: { Sun: -5.76, Moon: -29.25, Mars: -18.02, Mercury: -1.03,
+        Jupiter: -16.25, Venus: -4.89, Saturn: -3.01 } },
+    { name: 'Example 3',
+      lon: { Sun: 324.52, Moon: 32.13, Mars: 82.28, Mercury: 342.67,
+        Jupiter: 183.25, Venus: 333.08, Saturn: 84.97 },
+      benefic: ['Mercury', 'Jupiter', 'Venus'],
+      want: { Sun: -6.04, Moon: 11.80, Mars: 21.22, Mercury: -5.53,
+        Jupiter: -10.91, Venus: -5.10, Saturn: 20.27 } }
+  ];
+  CASES.forEach(function (c) {
+    var positions = {}, benefics = {};
+    GRAHAS.forEach(function (g) {
+      positions[g] = { longitude: c.lon[g] };
+      benefics[g] = c.benefic.indexOf(g) >= 0;
+    });
+    var worst = 0, at = '';
+    GRAHAS.forEach(function (g) {
+      var d = Math.abs(Shadbala.drikBala(g, positions, benefics) - c.want[g]);
+      if (d > worst) { worst = d; at = g; }
+    });
+    ok('the chapter’s aspectual strengths come out, ' + c.name.toLowerCase(),
+      worst < 0.02, 'worst ' + worst.toFixed(3) + ' virupas on ' + at);
+  });
+
+  /*
+   * Two of the seven are positive in Example 3 and none is in the other two.
+   * A sign error anywhere in the benefic split would show here before it showed
+   * in a magnitude.
+   */
+  ok('and the signs follow the split, positive only where benefics outweigh',
+    CASES[2].want.Moon > 0 && CASES[2].want.Saturn > 0 &&
+    GRAHAS.every(function (g) { return CASES[0].want[g] < 0; }));
 })();
 
 
