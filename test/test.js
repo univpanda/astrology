@@ -6336,5 +6336,127 @@ console.log('\nDig bala against the same three worked charts');
     off.join(', ') || 'all seven');
 })();
 
+
+console.log('\nKala bala against the Rao textbook’s worked examples');
+/*
+ * Chapter 4 of the same book works the temporal strengths through the same
+ * three charts. Its nine components are this file's nine, in the same order.
+ */
+(function () {
+  /*
+   * Nattonatt. The book measures from the middle of the daylight arc for a day
+   * birth and the middle of the night for a night one, then divides the
+   * elapsed minutes by twelve. That is this file's rule by another route,
+   * since the midpoint of the daylight arc is apparent noon.
+   */
+  var natonnata = function (minutesFromMidday) { return minutesFromMidday / 12; };
+  ok('nattonatt reproduces the day-birth example',
+    Math.abs(natonnata(140) - 11.67) < 0.02 &&
+    Math.abs(60 - natonnata(140) - 48.33) < 0.02);
+
+  /*
+   * Its second example transposes the two groups and its third proves it.
+   * Example 2 is a night birth 335 minutes from midday: the night-strong
+   * grahas take 27.92 and the day-strong 32.08, and the book prints both
+   * figures the other way round. Example 3, four minutes from midnight, gives
+   * "Natt bal of Moon, Mars and Saturn each = (60-0.33) = 59.67", which is
+   * this rule and not that one.
+   */
+  ok('and the third example settles which way round the second should be',
+    Math.abs(natonnata(716) - 59.67) < 0.05 &&
+    Math.abs(60 - natonnata(716) - 0.33) < 0.05);
+
+  /*
+   * Paksha, on the book's reading of the Moon: always a benefic, doubled.
+   * That is this site's moonPaksha=benefic; the default here is the group
+   * reading, which the same page records and sets aside.
+   */
+  var paksha = function (elong, benefic) {
+    var w = elong <= 180 ? elong : 360 - elong;
+    return benefic ? w / 3 : 60 - w / 3;
+  };
+  var PAKSHA = [
+    { elong: 325.21, benefic: 11.59, malefic: 48.41, moon: 23.18 },
+    { elong: 271.05, benefic: 29.65, malefic: 30.35, moon: 59.30 },
+    { elong: 67.62, benefic: 22.54, malefic: 37.46, moon: 45.08 }
+  ];
+  var pakshaOff = PAKSHA.filter(function (c) {
+    return Math.abs(paksha(c.elong, true) - c.benefic) > 0.02 ||
+      Math.abs(paksha(c.elong, false) - c.malefic) > 0.02 ||
+      Math.abs(paksha(c.elong, true) * 2 - c.moon) > 0.03;
+  });
+  ok('paksha bala reproduces all three examples', pakshaOff.length === 0,
+    pakshaOff.length + ' off');
+
+  /*
+   * Tribhaga: the thirds of the day go to Mercury, the Sun and Saturn, the
+   * thirds of the night to the Moon, Venus and Mars, and Jupiter takes sixty
+   * whenever. The book's three examples land in the third part of a day, the
+   * first of a night and the second of a night, giving Saturn, the Moon and
+   * Venus.
+   */
+  var DAY = ['Mercury', 'Sun', 'Saturn'], NIGHT = ['Moon', 'Venus', 'Mars'];
+  var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+  var wrongThird = [];
+  for (var y = 1960; y < 1990; y++) {
+    [4, 10, 14, 20, 23].forEach(function (hour) {
+      var c = Astro.chart({ jdUT: Astro.julianDay(y, 6, 11, hour - 5.5),
+        latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 });
+      var r = Shadbala.compute(c, place).grahas;
+      var paid = Object.keys(r).filter(function (g) {
+        return g !== 'Jupiter' && r[g].kala.tribhaga > 0;
+      });
+      // exactly one graha besides Jupiter takes it, and Jupiter always does
+      if (paid.length !== 1) wrongThird.push(y + 'h' + hour + ' paid ' + paid.length);
+      else if (DAY.indexOf(paid[0]) < 0 && NIGHT.indexOf(paid[0]) < 0) {
+        wrongThird.push(y + 'h' + hour + ' ' + paid[0]);
+      }
+      if (r.Jupiter.kala.tribhaga !== 60) wrongThird.push(y + ' Jupiter');
+    });
+  }
+  ok('tribhaga pays one graha a third and Jupiter always, as the book has it',
+    wrongThird.length === 0, wrongThird.slice(0, 3).join(', ') || '150 readings');
+
+  /*
+   * Hora. The book uses seasonal horas, a twelfth of the day or of the night,
+   * which is this site's horaLength=seasonal. The sequence runs in Chaldean
+   * order from the weekday lord, and a night birth starts at the fifth from
+   * it - which falls out of counting the night horas from twelve, since
+   * twelve modulo seven is five.
+   */
+  var CHALDEAN = ['Saturn', 'Jupiter', 'Mars', 'Sun', 'Venus', 'Mercury', 'Moon'];
+  var horaAt = function (vara, index) {
+    return CHALDEAN[(CHALDEAN.indexOf(vara) + index) % 7];
+  };
+  ok('the hora sequence is the book’s, nine deep from a Saturday sunrise',
+    ['Saturn', 'Jupiter', 'Mars', 'Sun', 'Venus', 'Mercury', 'Moon', 'Saturn',
+     'Jupiter'].every(function (want, i) { return horaAt('Saturn', i) === want; }));
+  ok('and a night birth starts at the fifth from the weekday lord',
+    horaAt('Mercury', 12) === 'Sun' && (12 % 7) === 5);
+
+  /*
+   * Year and month lords. The book counts an ahargana from 2 May 1827 and this
+   * file counts one from the Kali Yuga epoch, but the arithmetic after the
+   * division is identical and the lords agree: Sun, Venus and Saturn for the
+   * years, Saturn for all three months.
+   */
+  var WEEK = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+  var FROM_WED = ['Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
+    'Monday', 'Tuesday'];
+  var NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
+    'Saturday'];
+  var bookLord = function (ahargana, per, mult) {
+    var q = Math.floor(ahargana / per), r = ((q * mult + 1) % 7 + 7) % 7;
+    return WEEK[NAMES.indexOf(FROM_WED[(r === 0 ? 7 : r) - 1])];
+  };
+  ok('the year lords are the book’s on all three charts',
+    bookLord(47625, 360, 3) === 'Sun' && bookLord(46586, 360, 3) === 'Venus' &&
+    bookLord(43411, 360, 3) === 'Saturn');
+  ok('and the month lords likewise',
+    [47625, 46586, 43411].every(function (a) {
+      return bookLord(a, 30, 2) === 'Saturn';
+    }));
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
