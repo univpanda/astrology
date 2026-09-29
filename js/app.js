@@ -2063,10 +2063,22 @@
    * setting halves what is SHOWN and leaves the arithmetic alone: the doubled
    * value is what Kala bala and every total still count.
    */
-  var DOUBLED = { ayana: 'Sun', paksha: 'Moon' };
+  var DOUBLED = {
+    ayana: { graha: 'Sun', control: 'ayana-doubled' },
+    paksha: { graha: 'Moon', control: 'paksha-doubled' }
+  };
 
-  function halvingDoubled() {
-    var select = document.getElementById('doubled-rows');
+  /*
+   * A switch each, rather than one for both. The two doublings are separate
+   * rules on separate grahas from separate texts, and the reason for showing a
+   * row undoubled is to line it up against another table: one table may print
+   * the Sun's ayana undoubled and the Moon's paksha doubled, and a single
+   * control cannot be set to match that.
+   */
+  function halvingDoubled(key) {
+    var spec = DOUBLED[key];
+    if (!spec) return false;
+    var select = document.getElementById(spec.control);
     return !!select && select.value === 'undoubled';
   }
 
@@ -2122,13 +2134,13 @@
         if (part.onlyWhenSet && grahas.every(function (graha) {
           return !result.grahas[graha][bala.key][part.key];
         })) return;
-        var halved = halvingDoubled();
-        var shows = halved && DOUBLED[part.key] ? '60' : part.shows;
-        row(part.label, part.en, halved && DOUBLED[part.key] ? 60 : part.max,
+        var halved = halvingDoubled(part.key);
+        var shows = halved ? '60' : part.shows;
+        row(part.label, part.en, halved ? 60 : part.max,
           part.says, grahas.map(function (graha) {
           var x = result.grahas[graha];
           var raw = x[bala.key][part.key];
-          var doubled = DOUBLED[part.key] === graha;
+          var doubled = !!DOUBLED[part.key] && DOUBLED[part.key].graha === graha;
           var td = el('td', 'numeric', n(halved && doubled ? raw / 2 : raw));
           /*
            * The figure is halved for display only. The total above it still
@@ -3972,18 +3984,21 @@
     });
   });
 
-  document.getElementById('doubled-rows').addEventListener('change', function () {
-    var status = document.getElementById('settings-status');
-    var halved = this.value === 'undoubled';
-    if (!lastChart) {
-      status.textContent = 'Saved. The next chart will use it.';
-      return;
-    }
-    // Display only, so there is nothing to recompute - not even the strengths.
-    render(lastChart);
-    status.textContent = halved
-      ? 'The Sun\u2019s ayana and the Moon\u2019s paksha are shown halved. The totals still count them doubled.'
-      : 'The Sun\u2019s ayana and the Moon\u2019s paksha are shown as the texts compute them, doubled.';
+  [['paksha-doubled', 'The Moon\u2019s paksha bala'],
+   ['ayana-doubled', 'The Sun\u2019s ayana bala']].forEach(function (pair) {
+    document.getElementById(pair[0]).addEventListener('change', function () {
+      var status = document.getElementById('settings-status');
+      var halved = this.value === 'undoubled';
+      if (!lastChart) {
+        status.textContent = 'Saved. The next chart will use it.';
+        return;
+      }
+      // Display only, so there is nothing to recompute - not even the strengths.
+      render(lastChart);
+      status.textContent = halved
+        ? pair[1] + ' is shown halved. The totals still count it doubled.'
+        : pair[1] + ' is shown as the texts compute it, doubled.';
+    });
   });
 
   document.getElementById('cheshta-method').addEventListener('change', function () {

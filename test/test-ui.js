@@ -4057,21 +4057,51 @@ console.log('\nThe doubled rows can be shown halved');
  * the texts put it, which is the whole reason it is a display switch rather
  * than an option on compute().
  */
-ok('the switch is offered in settings', (function () {
+ok('a switch is offered for each row, not one for both', (function () {
   var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   var at = html.indexOf('id="panel-settings"');
   var panel = html.slice(at, html.indexOf('</section>', at));
-  return /<select id="doubled-rows"/.test(panel) &&
-    /<option value="undoubled" selected>/.test(panel) &&
-    /<option value="doubled">/.test(panel);
+  return !/<select id="doubled-rows"/.test(panel) &&
+    ['paksha-doubled', 'ayana-doubled'].every(function (id) {
+      var sel = panel.slice(panel.indexOf('<select id="' + id + '"'));
+      sel = sel.slice(0, sel.indexOf('</select>'));
+      return /<option value="undoubled" selected>/.test(sel) &&
+        /<option value="doubled">/.test(sel);
+    });
+})());
+/*
+ * They were one control while they looked like one question. They are not:
+ * separate rules, on separate grahas, from separate texts. The reason to show a
+ * row undoubled is to line it up against another table, and a table may well
+ * print one of them doubled and the other not, which a single switch cannot be
+ * set to match.
+ */
+ok('and each row reads its own control', (function () {
+  return /ayana: \{ graha: 'Sun', control: 'ayana-doubled' \}/.test(appSrc) &&
+    /paksha: \{ graha: 'Moon', control: 'paksha-doubled' \}/.test(appSrc) &&
+    /function halvingDoubled\(key\)/.test(appSrc) &&
+    /halvingDoubled\(part\.key\)/.test(appSrc);
+})());
+ok('so one can be halved while the other stands', (function () {
+  var reads = { 'paksha-doubled': 'undoubled', 'ayana-doubled': 'doubled' };
+  var block = appSrc.slice(appSrc.indexOf('function halvingDoubled(key)'));
+  block = block.slice(0, block.indexOf('\n  }') + 4);
+  var DOUBLED = { ayana: { graha: 'Sun', control: 'ayana-doubled' },
+                  paksha: { graha: 'Moon', control: 'paksha-doubled' } };
+  var fn = new Function('DOUBLED', 'document',
+    block + '; return halvingDoubled;')(DOUBLED,
+    { getElementById: function (id) {
+        return reads[id] ? { value: reads[id] } : null; } });
+  return fn('paksha') === true && fn('ayana') === false &&
+    fn('tribhaga') === false;
 })());
 /*
  * Only the two named grahas are halved, and only in their own row. Halving a
  * whole row would take the other six with it.
  */
 ok('only the Sun\u2019s ayana and the Moon\u2019s paksha are halved',
-  /var DOUBLED = \{ ayana: 'Sun', paksha: 'Moon' \};/.test(appSrc) &&
-  /var doubled = DOUBLED\[part\.key\] === graha;/.test(appSrc) &&
+  /var doubled = !!DOUBLED\[part\.key\] && DOUBLED\[part\.key\]\.graha === graha;/
+    .test(appSrc) &&
   /halved && doubled \? raw \/ 2 : raw/.test(appSrc));
 /*
  * The totals must not move. If this ever reaches compute() the setting has
@@ -4097,17 +4127,18 @@ ok('and a halved cell names the figure the total uses', (function () {
  * on a row that now tops out at 60.
  */
 ok('the ceiling follows what is shown',
-  /halved && DOUBLED\[part\.key\] \? 60 : part\.max/.test(appSrc) &&
-  /halved && DOUBLED\[part\.key\] \? '60' : part\.shows/.test(appSrc));
+  /row\(part\.label, part\.en, halved \? 60 : part\.max,/.test(appSrc) &&
+  /var shows = halved \? '60' : part\.shows;/.test(appSrc));
 /*
  * Nothing is recomputed: not the chart, not even the strengths.
  */
-ok('changing it only redraws', (function () {
-  var at = appSrc.indexOf("getElementById('doubled-rows').addEventListener");
+ok('changing either only redraws', (function () {
+  var at = appSrc.indexOf("[['paksha-doubled',");
   if (at < 0) return false;
-  var block = appSrc.slice(at, appSrc.indexOf('});\n\n', at));
+  var block = appSrc.slice(at, appSrc.indexOf('});\n  });', at));
   return /render\(lastChart\);/.test(block) && !/computeChart\(/.test(block) &&
-    !/shadbala = null/.test(block);
+    !/shadbala = null/.test(block) &&
+    /'ayana-doubled'/.test(block);
 })());
 
 console.log('\nThe Moon\u2019s paksha bala is a setting');
@@ -7053,12 +7084,30 @@ console.log('\nEvery citation in the settings names its book');
     bare.length === 0, bare.join(', ') || 'all named');
 
   /*
-   * And the doubling argument lives in the one setting that controls it. It was
-   * being made twice, which is how two statements of the same thing drift.
+   * Each doubling is argued under the setting that controls it, and only
+   * there. This began as a guard against one argument being made twice, back
+   * when a single switch drove both rows; splitting the switch splits the
+   * argument, so what it now watches is that neither note reaches across and
+   * restates the other's case.
    */
-  ok('the doubling is argued once, under the setting that controls it',
-    /Neither doubling is disputed/.test(panel.replace(/\s+/g, ' ')) &&
-    !/The doubling is not in dispute/.test(panel.replace(/\s+/g, ' ')));
+  (function () {
+    var note = function (id) {
+      var at = panel.indexOf('id="' + id + '"');
+      return panel.slice(at, panel.indexOf('</div>', at))
+        .replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+    };
+    var paksha = note('why-paksha-doubled'), ayana = note('why-ayana-doubled');
+    ok('the Moon\u2019s doubling is argued under the Moon\u2019s row',
+      /The paksha bala of the Moon is to be doubled/.test(paksha) &&
+      /Uttara Kalamrita/.test(paksha) && !/Ayana Bala/.test(paksha));
+    ok('and the Sun\u2019s under the Sun\u2019s, neither restating the other',
+      /Ayana Bala is again multiplied by 2/.test(ayana) &&
+      /Graha and Bhava Balas/.test(ayana) &&
+      !/paksha bala of the Moon is to be doubled/.test(ayana));
+    ok('and the old single-switch wording is gone',
+      !/Neither doubling is disputed/.test(panel.replace(/\s+/g, ' ')) &&
+      !/The doubling is not in dispute/.test(panel.replace(/\s+/g, ' ')));
+  })();
 })();
 
 
@@ -7299,6 +7348,20 @@ console.log('\nThe settings run from the chart outward');
   ok('and every field still carries its own note',
     order.length === (panel.match(/field-why" id="why-/g) || []).length,
     order.length + ' fields');
+
+  /*
+   * Each doubling switch sits against the thing it doubles: the Moon's beside
+   * the reading of her paksha, the Sun's after the declination his ayana bala
+   * is computed from. Apart they would be two identically worded controls with
+   * nothing nearby to say which row each one meant.
+   */
+  ok('the paksha switch follows the paksha reading',
+    order[order.indexOf('moon-paksha') + 1] === 'paksha-doubled',
+    order.slice(order.indexOf('moon-paksha'), order.indexOf('moon-paksha') + 2).join(' then '));
+  ok('and the ayana switch follows the declination it is built on',
+    order[order.indexOf('kranti') + 1] === 'ayana-doubled' &&
+    order.indexOf('ayana-constant') < order.indexOf('kranti'),
+    order.slice(order.indexOf('ayana-constant'), order.indexOf('kranti') + 2).join(' then '));
 })();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
