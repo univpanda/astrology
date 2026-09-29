@@ -7273,7 +7273,7 @@ console.log('\nThe settings notes do not argue from what software does');
     /<select id="time-standard">/.test(page) &&
     /<option value="lmt">Local mean time \(from longitude\)<\/option>/.test(page));
   ok('and the nata note points at it instead of duplicating it',
-    /recorded in local mean time, as Indian times were before 1906, say so on the birth form under time standard/
+    /recorded in local mean time, as Indian times were before 1906, is a separate question: set that on the birth form under time standard/
       .test(panel.replace(/\s+/g, ' ')));
   ok('and the comparator work is kept where it belongs, in the lessons',
     /Drik Panchang/.test(seed));
