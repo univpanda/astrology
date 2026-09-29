@@ -1895,6 +1895,7 @@
            ayanaConstant: document.getElementById('ayana-constant').value,
            mercuryNature: document.getElementById('mercury-nature').value,
            cheshtaMethod: document.getElementById('cheshta-method').value,
+           kendraMethod: document.getElementById('kendra-method').value,
            meanSource: document.getElementById('mean-source').value,
            luminaryRule: document.getElementById('luminary-rule').value,
            luminaryCheshta: document.getElementById('luminary-cheshta').value });
@@ -4023,7 +4024,9 @@
    * Three readings of cheshta bala, all of which change the figures rather
    * than the display, so the cached strengths are dropped and the page redrawn.
    */
-  [['mean-source', { classical: 'Cheshta kendras now read the classical mean longitudes.',
+  [['kendra-method', { seeghra: 'Cheshta bala now reads the seeghra kendra itself.',
+                       averaged: 'Cheshta bala now reads the averaged shortcut.' }],
+   ['mean-source', { classical: 'Cheshta kendras now read the classical mean longitudes.',
                      modern: 'Cheshta kendras now read the modern mean longitudes.' }],
    ['luminary-rule', { kendra: 'The Sun and Moon now take their own cheshta kendras.',
                        borrowed: 'The Sun and Moon now borrow their ayana and paksha bala.' }],

@@ -417,6 +417,39 @@ var Shadbala = (function () {
    * Example 49 shows it plainly - Budha and Sukra are both worked with 181.23,
    * the Sun's mean, where Kuja, Guru and Sani use their own.
    */
+  /*
+   * Which of the two kendras the texts describe is being computed.
+   *
+   * They define one quantity, and Sripatipaddhati says so outright: the
+   * cheshta kendra "is identical with the Seeghrakendra", the arc of the
+   * seeghra correction in Indian planetary theory. Getting at it, his
+   * translator adds, "is very elaborate and involves a good knowledge of the
+   * laws of planetary motion, their Manda and Seeghra phalas", which is why
+   * both he and Raman then give a shortcut instead - Raman calling his "a
+   * simple method" at section 83 in as many words.
+   *
+   * The shortcut is the averaging one this file used alone: seeghrocha less
+   * half the sum of the mean and true longitudes. It stands in for the
+   * manda-corrected longitude, which is what the seeghra kendra is measured
+   * from, and for an outer graha near opposition the two are close.
+   *
+   * Sripati prints accurate kendras for his own example, taken from Ketakar's
+   * tables, and they are the check. Against those five: reading the seeghra
+   * kendra straight off the heliocentric longitudes lands within 1.8 degrees,
+   * 0.61 of a virupa, where the shortcut averages 7.5 degrees and misses Budha
+   * by 24.9 - eight virupas, on the graha whose manda correction is largest.
+   *
+   * Raman's own worked examples are computed with the shortcut, so they check
+   * that option rather than this one. Both are kept for that reason.
+   */
+  var KENDRA_METHOD = { SEEGHRA: 'seeghra', AVERAGED: 'averaged' };
+
+  /** Heliocentric longitude, which is the manda-corrected place. */
+  function helioLongitude(key, T, ayanamsa) {
+    var p = Astro.heliocentric(key, T);
+    return Astro.norm360(Math.atan2(p.y, p.x) * 180 / Math.PI - ayanamsa);
+  }
+
   function chestaKendra(graha, longitude, T, ayanamsa, source, jd) {
     var key = MEAN_KEY[graha];
     if (!key) return 0;
@@ -432,6 +465,33 @@ var Shadbala = (function () {
     return INNER.indexOf(graha) >= 0
       ? chestaKendraFrom(own, sunMean, longitude)
       : chestaKendraFrom(sunMean, own, longitude);
+  }
+
+  /*
+   * The seeghra kendra itself: the arc between the seeghrocha and the
+   * manda-corrected graha. For the outer three the seeghrocha is the Sun's
+   * mean place and the graha's own heliocentric longitude is the corrected
+   * one; for the inner two it is the other way about, their heliocentric
+   * longitude being the seeghrocha and the true Sun standing where the
+   * corrected mean would.
+   */
+  /*
+   * The mean-longitude setting does not reach this one, and should not. It
+   * exists because the averaged formula pairs a modern true longitude with a
+   * mean one, and a mean longitude belongs to the model that defines it. The
+   * seeghra kendra has no such seam: it is an arc between two astronomical
+   * places, so both come from the same ephemeris. Raman's tables would be the
+   * wrong thing to reach for here anyway, being anchored at 1900 - against
+   * Sripati's 1853 example his Sun's mean place is 4.2 degrees out, and using
+   * it costs 0.8 of a virupa on figures otherwise good to 0.6.
+   */
+  function seeghraKendra(graha, sunTrue, T, ayanamsa) {
+    var key = MEAN_KEY[graha];
+    if (!key) return 0;
+    var helio = helioLongitude(key, T, ayanamsa);
+    if (INNER.indexOf(graha) >= 0) return reducedKendra(helio - sunTrue);
+    var sunMean = Astro.norm360(Astro.sunMeanLongitude(T) - ayanamsa);
+    return reducedKendra(sunMean - helio);
   }
 
   /*
@@ -532,7 +592,10 @@ var Shadbala = (function () {
       var state = motionState(graha, longitude, o.speed, o.accel, o.moonLongitude);
       return state ? MOTION_VALUE[state] : 0;
     }
-    return chestaKendra(graha, longitude, o.T, o.ayanamsa, o.meanSource, o.jd) / 3;
+    if (o.kendraMethod === KENDRA_METHOD.AVERAGED) {
+      return chestaKendra(graha, longitude, o.T, o.ayanamsa, o.meanSource, o.jd) / 3;
+    }
+    return seeghraKendra(graha, o.sunTrue, o.T, o.ayanamsa) / 3;
   }
 
   /* -------------------------------------------------------- yuddha bala */
@@ -797,6 +860,8 @@ var Shadbala = (function () {
       ? MOON_PAKSHA.BENEFIC : MOON_PAKSHA.GROUP;
     var cheshtaMethod = (options && options.cheshtaMethod) === CHESHTA.MOTION
       ? CHESHTA.MOTION : CHESHTA.KENDRA;
+    var kendraMethod = (options && options.kendraMethod) === KENDRA_METHOD.AVERAGED
+      ? KENDRA_METHOD.AVERAGED : KENDRA_METHOD.SEEGHRA;
     var meanSource = (options && options.meanSource) === MEAN_SOURCE.MODERN
       ? MEAN_SOURCE.MODERN : MEAN_SOURCE.CLASSICAL;
     var luminaryRule = (options && options.luminaryRule) === LUMINARY_RULE.BORROWED
@@ -934,6 +999,7 @@ var Shadbala = (function () {
         method: cheshtaMethod, speed: p.speed, accel: p.accel,
         moonLongitude: moon.longitude, meanSource: meanSource,
         luminaryRule: luminaryRule, elongation: elongation,
+        kendraMethod: kendraMethod, sunTrue: sun.longitude,
         longitude: p.longitude
       });
       var naisargika = NAISARGIKA[graha];
@@ -1092,6 +1158,7 @@ var Shadbala = (function () {
     MOON_PAKSHA: MOON_PAKSHA,
     NAT_CLOCK: NAT_CLOCK,
     MEAN_SOURCE: MEAN_SOURCE,
+    KENDRA_METHOD: KENDRA_METHOD,
     LUMINARY_RULE: LUMINARY_RULE,
     LUMINARY_CHESHTA: LUMINARY_CHESHTA,
     HORA_LENGTH: HORA_LENGTH,

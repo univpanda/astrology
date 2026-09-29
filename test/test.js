@@ -5777,7 +5777,8 @@ console.log('\nCheshta bala, against the one worked example the texts give');
   /* Example 51, his printed answers. */
   var EX51 = { Mars: 22.23, Mercury: 2.30, Jupiter: 35.26, Venus: 5.95, Saturn: 21.14 };
   var bySource = function (src) {
-    var r = Shadbala.compute(chart, place, { meanSource: src }).grahas;
+    var r = Shadbala.compute(chart, place,
+      { meanSource: src, kendraMethod: 'averaged' }).grahas;
     return Object.keys(EX51).reduce(function (w, n) {
       return Math.max(w, Math.abs(r[n].cheshta - EX51[n]));
     }, 0);
@@ -5787,6 +5788,50 @@ console.log('\nCheshta bala, against the one worked example the texts give');
   ok('where the modern means miss Budha by whole virupas', bySource('modern') > 3,
     'worst ' + bySource('modern').toFixed(2) + ' virupas');
   ok('the classical tables are the default', bySource(undefined) === bySource('classical'));
+
+  /*
+   * Those are all the averaged kendra, which is what Raman computes with. The
+   * arc the texts define is the seeghra kendra, and the check for that one is
+   * Sripatipaddhati's own example: five kendras printed from Ketakar's tables
+   * for a birth of 30 April 1853 at 10 deg 38' N, twelve minutes before
+   * sunrise. Each method answers to the book that uses it, which is why both
+   * are kept.
+   */
+  (function () {
+    var lon = 78.7;
+    var p = { latitude: 10.633, longitude: lon, tzOffsetMinutes: Math.round(lon * 4) };
+    var c = Astro.chart({ jdUT: Astro.julianDay(1853, 4, 30, 5 + 48 / 60 - lon / 15),
+      latitude: 10.633, longitude: lon, tzOffsetMinutes: p.tzOffsetMinutes });
+    // his printed kendras, already reduced past six signs
+    var PRINTED = { Mars: 34.011, Mercury: 142.941, Jupiter: 143.240,
+      Venus: 8.915, Saturn: 11.270 };
+    var err = function (method) {
+      var r = Shadbala.compute(c, p, { kendraMethod: method }).grahas;
+      return Object.keys(PRINTED).reduce(function (s, g) {
+        return s + Math.abs(r[g].cheshta - PRINTED[g] / 3);
+      }, 0) / 5;
+    };
+    ok('the seeghra kendra reproduces the kendras Sripati prints',
+      err('seeghra') < 1, err('seeghra').toFixed(2) + ' virupas');
+    ok('and the averaged shortcut does not, Budha worst of the five',
+      err('averaged') > 3, err('averaged').toFixed(2) + ' virupas');
+    ok('and the seeghra kendra is the default',
+      err(undefined) === err('seeghra'));
+
+    /*
+     * Which reverses on Raman's chart, and has to: he works his examples with
+     * the shortcut. Neither method is simply better; each matches its own
+     * source, and that symmetry is the reason this is a setting.
+     */
+    ok('while Raman’s own examples go the other way round',
+      bySource('classical') < 0.25 &&
+      (function () {
+        var r = Shadbala.compute(chart, place, { kendraMethod: 'seeghra' }).grahas;
+        return Object.keys(EX51).reduce(function (w, n) {
+          return Math.max(w, Math.abs(r[n].cheshta - EX51[n]));
+        }, 0) > 1;
+      })());
+  })();
 
   /*
    * Example 60 works the Sun by the other rule Parashara gives, at 28.3-4:

@@ -7377,8 +7377,8 @@ console.log('\nThe settings run from the chart outward');
    * other whether that figure is summed.
    */
   ok('the cheshta settings follow cheshta bala, in that order',
-    order.slice(order.indexOf('cheshta-method'), order.indexOf('cheshta-method') + 4)
-      .join(',') === 'cheshta-method,mean-source,luminary-rule,luminary-cheshta',
+    order.slice(order.indexOf('cheshta-method'), order.indexOf('cheshta-method') + 5)
+      .join(',') === 'cheshta-method,kendra-method,mean-source,luminary-rule,luminary-cheshta',
     order.slice(order.indexOf('cheshta-method')).join(', '));
 
   ok('and the ayana switch follows the declination it is built on',

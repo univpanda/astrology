@@ -761,6 +761,37 @@
         </div>
       </div>
       <div class="field">
+        <label for="kendra-method">Chesta kendra</label>
+        <select id="kendra-method" aria-describedby="why-kendra-method">
+          <option value="seeghra" selected>The seeghra kendra</option>
+          <option value="averaged">Seeghrocha less the mean and true averaged</option>
+        </select>
+        <div class="field-why" id="why-kendra-method">
+          <p class="field-note">The texts define one quantity and Sripatipaddhati
+          names it: the cheshta kendra &ldquo;is identical with the
+          Seeghrakendra&rdquo;, the arc of the seeghra correction in Indian
+          planetary theory. Reaching it, its translator adds, &ldquo;is very
+          elaborate and involves a good knowledge of the laws of planetary
+          motion, their Manda and Seeghra phalas&rdquo;.
+          <br><br>
+          So both he and Raman give a shortcut instead, and Raman calls his
+          &ldquo;a simple method&rdquo; at section 83 of <em>Graha and Bhava
+          Balas</em> in as many words: the
+          seeghrocha less half the sum of the mean and true longitudes, which
+          stands in for the manda-corrected place the real arc is measured
+          from. That is the second option, and it is what every worked example
+          in Raman is computed with.
+          <br><br>
+          Sripati prints accurate kendras for his own 1853 example, taken from
+          Ketakar&rsquo;s tables, and they separate the two cleanly. The seeghra
+          kendra reproduces them to 0.61 of a virupa; the shortcut averages 3.58
+          and misses Budha by eight, his manda correction being the largest.
+          Against Raman&rsquo;s Example 51 it is the other way about, 0.09
+          against 1.59, each method answering to the book that uses it. The
+          default is the arc the texts define.</p>
+        </div>
+      </div>
+      <div class="field">
         <label for="mean-source">Cheshta mean longitudes</label>
         <select id="mean-source" aria-describedby="why-mean-source">
           <option value="classical" selected>Classical tables</option>
@@ -782,8 +813,10 @@
           outer three scarcely move either way, since the Sun&rsquo;s error
           cancels most of each graha&rsquo;s own.
           <br><br>
-          Nothing else in the chart uses these. True longitudes are modern
-          throughout, as Raman&rsquo;s are.</p>
+          This bears on the averaged kendra only. The seeghra kendra is an arc
+          between two astronomical places with no such seam, so it takes both
+          from the same ephemeris. Nothing else in the chart uses these, true
+          longitudes being modern throughout, as Raman&rsquo;s are.</p>
         </div>
       </div>
       <div class="field">
