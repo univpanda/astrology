@@ -5344,5 +5344,59 @@ console.log('\nThe Moon does reach her full paksha bala at the full Moon');
     !/cannot hold under\s+the group rule/.test(page));
 })();
 
+
+console.log('\nHalving a row is a display choice, not a computation');
+/*
+ * The note says kala bala and every total still count the doubled value while
+ * the cell shows half of it. That is a claim worth enforcing rather than
+ * asserting: if the setting ever reached the engine, two people reading the
+ * same chart would get different totals from a display preference.
+ */
+(function () {
+  var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+  var c = A.chart({ jdUT: A.julianDay(1975, 8, 20, 3), latitude: 28.61,
+    longitude: 77.21, tzOffsetMinutes: 330 });
+  var sb = require('fs').readFileSync(
+    require('path').join(__dirname, '../js/shadbala.js'), 'utf8');
+
+  /*
+   * The engine doubles both rows unconditionally, and reads no option that
+   * could stop it. Checking the option list rather than the word "doubled",
+   * which appears in the engine's comments and in the doubling itself.
+   */
+  var opts = (sb.match(/options\.[A-Za-z]+/g) || [])
+    .map(function (o) { return o.slice('options.'.length); })
+    .filter(function (o, i, all) { return all.indexOf(o) === i; });
+  ok('no option the engine reads could turn the doubling off',
+    opts.length > 0 && !opts.some(function (o) {
+      return /doubl|halv/i.test(o);
+    }), opts.join(', '));
+  ok('and the two doublings are unconditional in the code',
+    /paksha: graha === 'Moon' \? paksha \* 2 : paksha/.test(sb) &&
+    /ayana: graha === 'Sun' \? ayana \* 2 : ayana/.test(sb));
+
+  var r = Shadbala.compute(c, place);
+  /*
+   * The undoubled ceiling for either row is sixty, so a figure above it is the
+   * doubled one. Both rows are checked, the Sun's ayana and the Moon's paksha.
+   */
+  ok('the Sun’s ayana is carried doubled, above the undoubled sixty',
+    r.grahas.Sun.kala.ayana > 60, r.grahas.Sun.kala.ayana.toFixed(1));
+  ok('and the Moon’s paksha likewise',
+    r.grahas.Moon.kala.paksha > 60, r.grahas.Moon.kala.paksha.toFixed(1));
+
+  var parts = ['nathonnatha', 'paksha', 'tribhaga', 'abda', 'masa', 'vara',
+    'hora', 'ayana', 'yuddha'];
+  var adds = function (name) {
+    var k = r.grahas[name].kala;
+    var sum = parts.reduce(function (t, p) { return t + (k[p] || 0); }, 0);
+    return Math.abs(sum - k.total) < 1e-9;
+  };
+  ok('and kala bala is the sum of its parts, the doubled figures among them',
+    adds('Sun') && adds('Moon'),
+    'Sun ' + r.grahas.Sun.kala.total.toFixed(1) +
+    ', Moon ' + r.grahas.Moon.kala.total.toFixed(1));
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
