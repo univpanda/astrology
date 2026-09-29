@@ -5818,17 +5818,11 @@ console.log('\nCheshta bala, against the one worked example the texts give');
     }));
 })();
 
-console.log('\nThe eight motions carry the values the texts pair them with');
+console.log('\nThe eight motions, driven rather than read');
 /*
- * Santhanam and a second independent translation agree word for word: Vakra
- * 60, Anuvakra 30, Vikala 15, Manda 30, Mandatara 15, Sama 7.5, Chara 45,
- * Atichara 30. This code used to reassign them so that strength climbed with
- * speed, on the view that the translators had slid the names by a slot. Two
- * translations agreeing is the answer to that, and the figures themselves fall
- * in halves - 60 30 15, 30 15 7.5, 45 30 - which is a shape, not a slip.
- *
- * Driven rather than read: every figure the method can emit, swept over sixty
- * years, has to be one the texts name.
+ * Sripatipaddhati's eight: Vakra 60, Anuvakra 30, Vikala 15, Samagama 30,
+ * Manda 15, Mandatara 7.5, Seeghra 45, Seeghratara 30. Every figure the method
+ * can emit has to be one of those, swept over sixty years.
  */
 (function () {
   var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
@@ -5846,19 +5840,45 @@ console.log('\nThe eight motions carry the values the texts pair them with');
       });
     }
   }
-  ok('every figure the method emits is one the texts allot', stray.length === 0,
+  ok('every figure the method emits is one Sripati allots', stray.length === 0,
     stray.slice(0, 5).join(', ') || Object.keys(seen).sort(function (a, b) {
       return b - a; }).join(', '));
+  ok('and all five distinct figures are reachable',
+    ALLOWED.every(function (v) { return seen[v] > 0; }),
+    ALLOWED.map(function (v) { return v + ':' + (seen[v] || 0); }).join(' '));
 
   /*
-   * And 7.5 is reached, which is the part that looks like a mistake: Sama is
-   * the ordinary middling motion and the weakest of the eight. If a later
-   * edit quietly makes the scale climb with speed again, the commonest state
-   * stops paying the smallest figure and this goes out.
+   * The two sides of the mean motion, checked directly: below it and still
+   * slowing is Mandatara at 7.5, the weakest direct state; above it and
+   * slowing is Seeghra at 45, the strongest short of retrogression. Reading
+   * these off the ephemeris rather than asserting them, since the whole point
+   * of the rewrite is that the boundary is the mean motion and not a band.
    */
-  ok('the middling motion really does pay the smallest figure',
-    seen[7.5] > 0 && Math.min.apply(null, Object.keys(seen).map(Number)) === 7.5,
-    (seen[7.5] || 0) + ' charts at Sama');
+  var MEAN = { Mars: 0.524033, Mercury: 0.985609, Jupiter: 0.083091,
+    Venus: 0.985609, Saturn: 0.033460 };
+  var wrong = [];
+  for (var y2 = 1960; y2 < 1990; y2++) {
+    var c2 = Astro.chart({ jdUT: Astro.julianDay(y2, 5, 9, 7), latitude: 28.61,
+      longitude: 77.21, tzOffsetMinutes: 330 });
+    var g2 = Shadbala.compute(c2, place, { cheshtaMethod: 'motion' }).grahas;
+    var moonSign = Math.floor(Astro.norm360(
+      c2.planets.filter(function (p) { return p.name === 'Moon'; })[0].longitude) / 30);
+    ['Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'].forEach(function (n) {
+      var p = c2.planets.filter(function (x) { return x.name === n; })[0];
+      if (p.speed < 0 || p.speed < 0.05 * MEAN[n]) return;      // vakra, vikala
+      if (Math.floor(Astro.norm360(p.longitude) / 30) === moonSign) {
+        if (g2[n].cheshta !== 30) wrong.push(n + ' samagama ' + g2[n].cheshta);
+        return;
+      }
+      var want = p.speed < MEAN[n] ? (p.accel >= 0 ? 15 : 7.5)
+                                   : (p.accel >= 0 ? 30 : 45);
+      if (g2[n].cheshta !== want) {
+        wrong.push(n + ' wanted ' + want + ' got ' + g2[n].cheshta);
+      }
+    });
+  }
+  ok('and each direct state follows the mean motion and the trend',
+    wrong.length === 0, wrong.slice(0, 4).join(', ') || 'all agree');
 })();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');

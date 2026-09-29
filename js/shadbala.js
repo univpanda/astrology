@@ -435,34 +435,48 @@ var Shadbala = (function () {
   }
 
   /*
-   * The eight motions, Brihat Parashara Hora Shastra ch.27 vv.21-23, which the
-   * verse heads "PLANETARY MOTIONS (MARS TO SATURN)" and Charak repeats as the
-   * whole of his cheshta bala. The Sun and Moon keep their borrowings either
-   * way, v.18 being silent about motion for them.
+   * The eight motions, as Sripatipaddhati sets them out at slokas 16.5-18.
    *
-   * The names below and the value each carries are the text's, checked in two
-   * independent English translations which agree word for word on the pairing:
-   * Manda 30, Mandatara 15, Sama 7.5, Chara 45, Atichara 30. An earlier
-   * reading here took the translators to have slid the words by a slot,
-   * because it puts Sama - the average speed, and much the commonest state -
-   * at the bottom of the scale, and reassigned the values to climb with speed.
-   * That was the wrong call. The list is not a ranking of speed: read down the
-   * figures and they fall in halves, 60 30 15, then 30 15 7.5, then 45 30,
-   * which is a deliberate shape rather than a translator's slip. This method
-   * does not agree with the chesta kendra either way - the kendra gives sixty
-   * at retrogression and nothing at the fastest direct motion, where this list
-   * pays Chara 45 - so making it monotonic did not reconcile them.
+   * It is the right text to take them from. Mantreswara sends the reader there
+   * for the computation at Phaladeepika IV.24, and Raman's kendra formula is
+   * credited to the same author by name. Kesava Daivagna's line, quoted there,
+   * is the formula this file already uses: "The Cheshtakendra of the planets,
+   * Mars, etc., is their Sighrochcha diminished by half the sum of their mean
+   * and true positions."
    *
-   * Four states come straight out of the ephemeris. Vakra is retrograde,
-   * Vikala is stationary, Anuvakra is retrograde across a sign boundary, and
-   * Atichara is its mirror, "entering next sign in accelerated motion".
-   * THE REMAINING BOUNDARIES ARE NOT IN ANY TEXT. Neither Parashara nor
-   * Charak says where slow becomes slower, so the ratios below are a choice,
-   * and the only honest thing to do is say so here rather than let them pass
-   * as received.
+   * The list resolves something that reads as nonsense in the translations of
+   * Parashara. Those give eight names against 60, 30, 15, 30, 15, 7.5, 45, 30
+   * and put "Sama", the ordinary middling motion, at the bottom of the scale
+   * on 7.5. Sripati has the same eight figures in the same order, and the
+   * fourth of them is not a speed at all:
+   *
+   *   Vakra        retrograde                                    60
+   *   Anuvakra     retrograde over a sign boundary               30
+   *   Vikala       stationary                                    15
+   *   Samagama     conjunction with the Moon                     30
+   *   Manda        slower than mean, and gaining                 15
+   *   Mandatara    slower than mean, and still slowing            7.5
+   *   Seeghra      faster than mean, and slowing                 45
+   *   Seeghratara  faster than mean, and still gaining           30
+   *
+   * With a non-speed sitting in the fourth slot the speed names shift by one
+   * and "Sama" inherits a figure belonging to the state below it. There is no
+   * Sama. An earlier reading here reassigned the values instead so that
+   * strength climbed with speed, and a later one decided the odd order was
+   * deliberate; both were working around this.
+   *
+   * It also supplies the boundary this file used to say no text gives. There
+   * is one, and it is the mean motion itself - "less than the mean motion",
+   * "greater than the mean motion" - with each side split by whether the speed
+   * is rising or falling. Nothing is banded by hand any more.
+   *
+   * THE ONE CHOICE LEFT IS VIKALA. Sripati calls it stationary without saying
+   * how near to nothing a motion has to be, so the fraction below is this
+   * site's, and so is reading Samagama as sharing a sign with the Moon, the
+   * text saying only "conjunction".
    */
-  var MOTION_VALUE = { vakra: 60, anuvakra: 30, vikala: 15, manda: 30,
-    mandatara: 15, sama: 7.5, chara: 45, atichara: 30 };
+  var MOTION_VALUE = { vakra: 60, anuvakra: 30, vikala: 15, samagama: 30,
+    manda: 15, mandatara: 7.5, seeghra: 45, seeghratara: 30 };
 
   /*
    * Mean geocentric daily motion. The inner two take the Sun's, not their own
@@ -473,8 +487,7 @@ var Shadbala = (function () {
   var MEAN_MOTION = { Mars: 0.524033, Mercury: 0.985609, Jupiter: 0.083091,
     Venus: 0.985609, Saturn: 0.033460 };
 
-  var MOTION_BANDS = [[0.05, 'vikala'], [0.50, 'mandatara'], [1.00, 'manda'],
-    [1.50, 'sama']];
+  var STATIONARY = 0.05;     // of mean motion; the one band still ours
 
   /** Whether a day's travel carries the graha out of the sign it is in. */
   function crossesSign(longitude, speed) {
@@ -482,18 +495,21 @@ var Shadbala = (function () {
       Math.floor(Astro.norm360(longitude + speed) / 30);
   }
 
-  function motionState(graha, longitude, speed) {
+  function motionState(graha, longitude, speed, accel, moonLongitude) {
     var mean = MEAN_MOTION[graha];
     if (!mean) return null;
     if (speed < 0) {
       return crossesSign(longitude, speed) ? 'anuvakra' : 'vakra';
     }
-    var ratio = speed / mean;
-    for (var i = 0; i < MOTION_BANDS.length; i++) {
-      if (ratio < MOTION_BANDS[i][0]) return MOTION_BANDS[i][1];
+    if (speed < STATIONARY * mean) return 'vikala';
+    if (typeof moonLongitude === 'number' &&
+        Math.floor(Astro.norm360(longitude) / 30) ===
+        Math.floor(Astro.norm360(moonLongitude) / 30)) {
+      return 'samagama';
     }
-    // Chara is fast; Atichara is fast and over the boundary with it.
-    return crossesSign(longitude, speed) ? 'atichara' : 'chara';
+    var gaining = (accel || 0) >= 0;
+    return speed < mean ? (gaining ? 'manda' : 'mandatara')
+                        : (gaining ? 'seeghratara' : 'seeghra');
   }
 
   /** "If the Cheshta Kendra is in excess of 6 signs, deduct it from 12." */
@@ -513,7 +529,7 @@ var Shadbala = (function () {
         : reducedKendra(o.elongation) / 3;
     }
     if (o.method === CHESHTA.MOTION) {
-      var state = motionState(graha, longitude, o.speed);
+      var state = motionState(graha, longitude, o.speed, o.accel, o.moonLongitude);
       return state ? MOTION_VALUE[state] : 0;
     }
     return chestaKendra(graha, longitude, o.T, o.ayanamsa, o.meanSource, o.jd) / 3;
@@ -915,7 +931,8 @@ var Shadbala = (function () {
       var dig = digBala(graha, p.longitude, chart.ascendant.longitude, chart.midheaven.longitude);
       var cheshta = cheshtaBala(graha, p.longitude, {
         T: T, jd: jd, ayanamsa: chart.ayanamsa, ayana: ayana, paksha: paksha,
-        method: cheshtaMethod, speed: p.speed, meanSource: meanSource,
+        method: cheshtaMethod, speed: p.speed, accel: p.accel,
+        moonLongitude: moon.longitude, meanSource: meanSource,
         luminaryRule: luminaryRule, elongation: elongation,
         longitude: p.longitude
       });

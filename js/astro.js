@@ -1855,14 +1855,23 @@ var Astro = (function () {
     var planets = [];
     for (var i = 0; i < bodies.length; i++) {
       var b = bodies[i];
-      // Sampled again half a day on, to report speed and retrogression.
+      /*
+       * Sampled half a day either side. The forward pair gives speed and
+       * retrogression; the backward one gives whether that speed is rising or
+       * falling, which Sripatipaddhati needs to tell Manda from Mandatara and
+       * Seeghra from Seeghratara - each pair is one side of the mean motion,
+       * separated only by which way the speed is going.
+       */
+      var lonT0 = sample(b.key, jdUT - 0.5);
       var lonT = sample(b.key, jdUT);
       var lonT2 = sample(b.key, jdUT + 0.5);
       var speed = norm180(lonT2 - lonT) / 0.5; // degrees per day
+      var before = norm180(lonT - lonT0) / 0.5;
       var lon = norm360(lonT - ayan);
-      planets.push(makePlanet(b.name, lon, speed, ascSign));
+      planets.push(makePlanet(b.name, lon, speed, ascSign, speed - before));
       if (b.key === 'rahu') {
-        planets.push(makePlanet('Ketu', norm360(lon + 180), speed, ascSign));
+        planets.push(makePlanet('Ketu', norm360(lon + 180), speed, ascSign,
+          speed - before));
       }
     }
 
@@ -1906,7 +1915,7 @@ var Astro = (function () {
     }, o);
   }
 
-  function makePlanet(name, lon, speed, ascSign) {
+  function makePlanet(name, lon, speed, ascSign, accel) {
     var sign = signOf(lon);
     var nav = navamsaSign(lon);
     return {
@@ -1920,6 +1929,8 @@ var Astro = (function () {
       house: houseOf(lon, ascSign),
       nakshatra: nakshatraOf(lon),
       speed: speed,
+      // Change in speed per day: positive while the graha is picking up.
+      accel: accel || 0,
       // Rahu and Ketu are always taken as retrograde in Vedic practice.
       retrograde: name === 'Rahu' || name === 'Ketu' ? true : speed < 0,
       dignity: dignityOf(name, sign, lon - sign * 30),

@@ -6921,43 +6921,44 @@ console.log('\nThe settings sit three to a row, explaining themselves on hover')
 
 console.log('\nThe settings notes describe what the code does');
 /*
- * The cheshta note said three of the eight motions were settled by the
- * ephemeris and four of the boundaries were this site's choice, then listed
- * five numbers. Only two are settled outright - retrogression and
- * retrogression across a sign - and the other six are bands on a speed with
- * five thresholds between them, every one of them chosen here.
+ * This began as a guard on the cheshta note, which had claimed the ephemeris
+ * settled more of the eight motions than it does and then listed the wrong
+ * count of hand-drawn thresholds. There are no hand-drawn thresholds left:
+ * Sripatipaddhati gives the boundary as the mean motion, with each side split
+ * by whether the speed is rising or falling. What survives of the old worry is
+ * that the two things still chosen here are named as chosen.
  */
 (function () {
   var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   var flat = page.replace(/\s+/g, ' ');
-  var bands = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8')
-    .match(/var MOTION_BANDS = \[[\s\S]*?\];/)[0];
-  var cut = (bands.match(/\[[0-9.]+,/g) || []).map(function (m) {
-    return m.slice(1, -1);
-  });
+  var shad = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8');
 
-  ok('the note counts the thresholds the code actually has',
-    cut.length === 4 && /all four\s+boundaries dividing them are this site/.test(flat),
-    cut.length + ' thresholds');
-  ok('and names each of them',
-    cut.every(function (v) { return flat.indexOf(v) >= 0; }), cut.join(', '));
+  ok('no speed bands survive in the code for the note to have to list',
+    !/MOTION_BANDS/.test(shad) &&
+    /return speed < mean \? \(gaining \? 'manda' : 'mandatara'\)/.test(shad));
+  ok('and the note gives the mean motion as the boundary, which is the text’s',
+    /Sripati also gives the boundary, which is the mean motion itself/.test(flat) &&
+    /Manda and Mandatara fall below it, Seeghra and Seeghratara above/.test(flat));
+
   /*
-   * And it no longer counts the stationary band among what the ephemeris
-   * settles: 0.05 of mean motion is a line this site drew.
+   * Two things are still this site's, and both have to be owned in the note:
+   * how slow counts as stationary, and how close counts as conjunct.
    */
-  ok('and does not claim the stationary band is settled for it',
-    !/Vikala\s+is stationary and Anuvakra/.test(flat) &&
-    /Vakra is retrograde and\s+Anuvakra is retrogression across a sign boundary/.test(flat));
+  ok('the stationary fraction is named as chosen, and matches the code',
+    /var STATIONARY = 0\.05;/.test(shad) &&
+    /must be to count as Vikala, which is set at a twentieth of mean/.test(flat));
+  ok('and so is reading Samagama as sharing a sign',
+    /reading Samagama as sharing a sign with the Moon, the text saying only conjunction/
+      .test(flat) &&
+    /Math\.floor\(Astro\.norm360\(moonLongitude\) \/ 30\)/.test(shad));
 
   /*
    * The inner two are measured against the Sun's motion rather than their own,
-   * which the note claims and the table has to agree with.
+   * which the table has to agree with wherever the note is read.
    */
-  var motion = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8')
-    .match(/var MEAN_MOTION = \{[^}]*\}/)[0];
+  var motion = shad.match(/var MEAN_MOTION = \{[^}]*\}/)[0];
   ok('and the inner two really are measured against the Sun',
-    /Mercury: 0\.985609/.test(motion) && /Venus: 0\.985609/.test(motion) &&
-    /the inner two measured against the/.test(flat));
+    /Mercury: 0\.985609/.test(motion) && /Venus: 0\.985609/.test(motion));
 })();
 
 console.log('\nThe notes claim only what was checked');
@@ -7375,40 +7376,49 @@ console.log('\nThe settings run from the chart outward');
     order.slice(order.indexOf('ayana-constant'), order.indexOf('kranti') + 2).join(' then '));
 })();
 
-console.log('\nThe eight motions carry the values the texts pair them with');
+console.log('\nThe eight motions, as Sripatipaddhati names them');
 /*
- * Santhanam and a second independent translation agree word for word: Vakra
- * 60, Anuvakra 30, Vikala 15, Manda 30, Mandatara 15, Sama 7.5, Chara 45,
- * Atichara 30. This code used to reassign them so that strength climbed with
- * speed, on the view that the translators had slid the names by a slot. Two
- * translations agreeing is the answer to that, and the figures themselves fall
- * in halves - 60 30 15, 30 15 7.5, 45 30 - which is a shape, not a slip.
+ * Translations of Parashara give eight names against 60, 30, 15, 30, 15, 7.5,
+ * 45, 30 and leave "Sama", the ordinary middling motion, holding the smallest
+ * figure in the set. Two earlier readings here tried to work around that: one
+ * reassigned the values so strength climbed with speed, the other decided the
+ * odd order was deliberate.
+ *
+ * Neither was needed. Sripatipaddhati - the text Mantreswara sends the reader
+ * to at Phaladeepika IV.24, and the one Raman credits for the kendra - has the
+ * same eight figures in the same order, and the fourth is Samagama,
+ * conjunction with the Moon, which is not a speed. With a non-speed in that
+ * slot the speed names shift by one, and Sama, which does not exist, inherits
+ * the figure belonging to the state below it.
  */
 (function () {
   var src = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8');
   var table = src.match(/var MOTION_VALUE = \{[^}]*\}/)[0].replace(/\s+/g, ' ');
-  var TEXT = { vakra: 60, anuvakra: 30, vikala: 15, manda: 30, mandatara: 15,
-    sama: 7.5, chara: 45, atichara: 30 };
-  ok('every motion takes the figure the texts give it',
+  var TEXT = { vakra: 60, anuvakra: 30, vikala: 15, samagama: 30, manda: 15,
+    mandatara: 7.5, seeghra: 45, seeghratara: 30 };
+  ok('every motion takes the figure Sripati gives it',
     Object.keys(TEXT).every(function (k) {
       return new RegExp(k + ': ' + TEXT[k] + '\\b').test(table);
     }), table);
-  ok('and the names the code once used are gone',
-    !/madhya|sheeghra|atisheeghra/.test(src));
+  ok('and no Sama is left, nor the names an earlier reading invented',
+    !/\bsama:/.test(table) && !/madhya|sheeghra:|atisheeghra|chara:|atichara/.test(table));
 
   /*
-   * Sama is the weakest of the eight although it is the ordinary middling
-   * motion. That is the part that looks wrong and is not, so it is pinned.
+   * The two sides of the mean motion, each split by whether the speed is still
+   * rising. Slower and slowing is the weakest of the direct states; faster and
+   * slowing is the strongest.
    */
-  ok('Sama, the middling motion, is the weakest of them',
-    Math.min.apply(null, Object.keys(TEXT).map(function (k) { return TEXT[k]; })) === TEXT.sama);
+  ok('the four direct states hang off the mean motion, not off a band',
+    /var gaining = \(accel \|\| 0\) >= 0;/.test(src) &&
+    /return speed < mean \? \(gaining \? 'manda' : 'mandatara'\)\s*\n\s*: \(gaining \? 'seeghratara' : 'seeghra'\);/
+      .test(src));
+  ok('and the trend comes from the ephemeris rather than being guessed',
+    /accel: accel \|\| 0,/.test(fs.readFileSync(path.join(root, 'js/astro.js'), 'utf8')) &&
+    /var before = norm180\(lonT - lonT0\) \/ 0\.5;/
+      .test(fs.readFileSync(path.join(root, 'js/astro.js'), 'utf8')));
 
-  /*
-   * Atichara is "entering next sign in accelerated motion", so it is Chara
-   * plus a boundary rather than a faster band, and mirrors Anuvakra.
-   */
-  ok('Atichara is a sign crossing, as Anuvakra is',
-    /return crossesSign\(longitude, speed\) \? 'atichara' : 'chara';/.test(src) &&
+  /* Anuvakra is retrogression over a boundary, and nothing now mirrors it. */
+  ok('Anuvakra is still a sign crossing',
     /return crossesSign\(longitude, speed\) \? 'anuvakra' : 'vakra';/.test(src));
 })();
 
