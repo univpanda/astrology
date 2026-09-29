@@ -450,11 +450,19 @@ var Shadbala = (function () {
     return Astro.norm360(Math.atan2(p.y, p.x) * 180 / Math.PI - ayanamsa);
   }
 
-  function chestaKendra(graha, longitude, T, ayanamsa, source, jd) {
+  function chestaKendra(graha, longitude, T, ayanamsa, source, jd, ayanamsaJ2000) {
     var key = MEAN_KEY[graha];
     if (!key) return 0;
-    var sidereal = function (tropical) { return Astro.norm360(tropical - ayanamsa); };
     var classical = source === MEAN_SOURCE.CLASSICAL;
+    /*
+     * Raman's tables are nirayana already and carry precession with them, so
+     * they are reckoned against the ayanamsa of the date. The modern ones come
+     * off elements referred to J2000 and take that frame's ayanamsa instead.
+     * Subtracting the wrong one leaves the precession since 2000 in the figure.
+     */
+    var sidereal = function (tropical) {
+      return Astro.norm360(tropical - (classical ? ayanamsa : ayanamsaJ2000));
+    };
     var meanOf = function (k) {
       return sidereal(classical ? Astro.classicalMeanLongitude(k, jd, T)
                                 : Astro.meanLongitude(k, T));
@@ -485,12 +493,13 @@ var Shadbala = (function () {
    * Sripati's 1853 example his Sun's mean place is 4.2 degrees out, and using
    * it costs 0.8 of a virupa on figures otherwise good to 0.6.
    */
-  function seeghraKendra(graha, sunTrue, T, ayanamsa) {
+  function seeghraKendra(graha, sunTrue, T, ayanamsaJ2000) {
     var key = MEAN_KEY[graha];
     if (!key) return 0;
-    var helio = helioLongitude(key, T, ayanamsa);
+    // Both of these come off the elements, so both are J2000-framed.
+    var helio = helioLongitude(key, T, ayanamsaJ2000);
     if (INNER.indexOf(graha) >= 0) return reducedKendra(helio - sunTrue);
-    var sunMean = Astro.norm360(Astro.sunMeanLongitude(T) - ayanamsa);
+    var sunMean = Astro.norm360(Astro.sunMeanLongitude(T) - ayanamsaJ2000);
     return reducedKendra(sunMean - helio);
   }
 
@@ -593,9 +602,10 @@ var Shadbala = (function () {
       return state ? MOTION_VALUE[state] : 0;
     }
     if (o.kendraMethod === KENDRA_METHOD.AVERAGED) {
-      return chestaKendra(graha, longitude, o.T, o.ayanamsa, o.meanSource, o.jd) / 3;
+      return chestaKendra(graha, longitude, o.T, o.ayanamsa, o.meanSource,
+        o.jd, o.ayanamsaJ2000) / 3;
     }
-    return seeghraKendra(graha, o.sunTrue, o.T, o.ayanamsa) / 3;
+    return seeghraKendra(graha, o.sunTrue, o.T, o.ayanamsaJ2000) / 3;
   }
 
   /* -------------------------------------------------------- yuddha bala */
@@ -1000,6 +1010,7 @@ var Shadbala = (function () {
         moonLongitude: moon.longitude, meanSource: meanSource,
         luminaryRule: luminaryRule, elongation: elongation,
         kendraMethod: kendraMethod, sunTrue: sun.longitude,
+        ayanamsaJ2000: chart.ayanamsaJ2000,
         longitude: p.longitude
       });
       var naisargika = NAISARGIKA[graha];

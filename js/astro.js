@@ -609,9 +609,20 @@ var Astro = (function () {
    * in, so a caller can subtract whichever ayanamsa the chart is cast in and
    * keep one frame throughout. The figures themselves are nirayana.
    */
+  /*
+   * Every rate here is SIDEREAL, because the constants beside them are
+   * nirayana. The Sun's was tropical for a while, which is the famous form of
+   * that number, 360/365.2422 - and it is the wrong one: propagating a
+   * nirayana constant at a tropical rate walks the result forward by one
+   * precession a year, and converting the answer back to tropical adds a
+   * second, which showed up as a gap against the modern mean Sun drifting at
+   * twice the precession rate instead of staying put. It cost 0.25 degrees at
+   * Raman's 1918 chart, which passed unnoticed inside a half-degree check,
+   * and 1.76 by 2026.
+   */
   var DUTT_EPOCH = 2415020.5 - 76 / 360;   // 0h, 1 Jan 1900, at 76 E
   var DUTT = {
-    sun:     { c: 257.4568, n: 0.98564734, corr: null },
+    sun:     { c: 257.4568, n: 0.98560912, corr: null },
     mars:    { c: 270.22,   n: 0.52402825, corr: null },
     jupiter: { c: 220.04,   n: 0.08308510, corr: function (t) { return -(3.33 + 0.0067 * t); } },
     saturn:  { c: 236.74,   n: 0.03344141, corr: function (t) { return 5 + 0.001 * t; } },
@@ -1885,6 +1896,20 @@ var Astro = (function () {
       julianDay: jdUT,
       deltaT: deltaT(jdUT),
       ayanamsa: ayan,
+      /*
+       * The same ayanamsa at J2000, which is what a longitude taken from the
+       * orbital elements needs. Those are referred to the mean ecliptic and
+       * equinox of J2000, so they do not carry precession since then; an
+       * of-date ayanamsa subtracted from one leaves that precession behind as
+       * an error, growing at about 0.014 degrees a year from 2000 in either
+       * direction. A sidereal longitude is frame-independent, so the right
+       * subtraction is the ayanamsa of the frame the longitude is measured in.
+       *
+       * Apparent positions are of date and take the ayanamsa above. Only mean
+       * longitudes and heliocentric places, which come straight off the
+       * elements, take this one.
+       */
+      ayanamsaJ2000: ayanamsa(0, o.ayanamsa || 'lahiri'),
       ayanamsaName: (AYANAMSA[o.ayanamsa] || AYANAMSA.lahiri).label,
       obliquity: eps,
       siderealTime: lst,

@@ -5974,5 +5974,88 @@ console.log('\nThe saptavargaja ladder is the one three texts print');
     }));
 })();
 
+
+console.log('\nOne frame throughout, mean places included');
+/*
+ * Two frame errors, found by being asked whether two things I had said were
+ * consistent. They were not, and each sentence was covering a bug.
+ *
+ * The first: the classical tables carry nirayana constants, and the Sun's was
+ * being propagated at the tropical mean motion, 360/365.2422. That walks a
+ * sidereal longitude forward by one precession a year, and the conversion back
+ * to tropical adds a second, which showed as a gap against the modern mean Sun
+ * drifting at twice the precession rate instead of holding steady.
+ *
+ * The second: the orbital elements are referred to the mean ecliptic and
+ * equinox of J2000, so a longitude taken from them does not carry precession
+ * since then. Subtracting the ayanamsa OF THE DATE leaves that precession in
+ * the figure. A sidereal longitude is frame-independent, so the subtraction
+ * has to be the ayanamsa of the frame the longitude is measured in.
+ */
+(function () {
+  /*
+   * The Sun's classical rate is sidereal, like the five beside it. The test is
+   * not the constant but its consequence: the gap between the classical mean
+   * Sun and the modern one must drift by one precession, not two, because only
+   * one of the pair is of date.
+   */
+  var gap = function (y) {
+    var jd = Astro.julianDay(y, 1, 1, 12);
+    var T = (jd + Astro.deltaT(jd) / 86400 - 2451545.0) / 36525;
+    return ((Astro.classicalMeanLongitude('sun', jd, T)
+      - Astro.sunMeanLongitude(T) + 540) % 360) - 180;
+  };
+  var perCentury = (gap(2000) - gap(1800)) / 2;
+  ok('the classical mean Sun drifts against the modern one by one precession',
+    Math.abs(perCentury - 1.3972) < 0.15, perCentury.toFixed(2) + ' deg/century');
+
+  /*
+   * And the elements take the J2000 ayanamsa. Checked through the arithmetic
+   * that depends on it: Sripatipaddhati's printed kendras are computed from
+   * heliocentric places, and his chart is 1853, where the two ayanamsas are
+   * two degrees apart. Budha and Sukra carried the whole of that error, their
+   * kendra being the only one measured against a true place of date.
+   */
+  var lon = 78.7;
+  var place = { latitude: 10.633, longitude: lon, tzOffsetMinutes: Math.round(lon * 4) };
+  var chart1853 = Astro.chart({ jdUT: Astro.julianDay(1853, 4, 30, 5 + 48 / 60 - lon / 15),
+    latitude: 10.633, longitude: lon, tzOffsetMinutes: place.tzOffsetMinutes });
+  ok('a chart carries the ayanamsa of its own frame and of J2000',
+    Math.abs((chart1853.ayanamsa - chart1853.ayanamsaJ2000) + 2.047) < 0.01,
+    (chart1853.ayanamsa - chart1853.ayanamsaJ2000).toFixed(3) + ' apart in 1853');
+
+  var r = Shadbala.compute(chart1853, place).grahas;
+  ok('and the inner two now land on Sripati’s figures outright',
+    Math.abs(r.Mercury.cheshta - 142.941 / 3) < 0.1 &&
+    Math.abs(r.Venus.cheshta - 8.915 / 3) < 0.1,
+    'Budha ' + r.Mercury.cheshta.toFixed(2) + ', Sukra ' + r.Venus.cheshta.toFixed(2));
+
+  /*
+   * Both fixes moved both anchors the right way, which is the point: a frame
+   * error does not improve one reading at another's expense.
+   */
+  var err = function (c, p, want, opts) {
+    var g = Shadbala.compute(c, p, opts).grahas;
+    return Object.keys(want).reduce(function (s, k) {
+      return s + Math.abs(g[k].cheshta - want[k]);
+    }, 0) / Object.keys(want).length;
+  };
+  var SRIPATI = { Mars: 34.011 / 3, Mercury: 142.941 / 3, Jupiter: 143.240 / 3,
+    Venus: 8.915 / 3, Saturn: 11.270 / 3 };
+  ok('the seeghra kendra is inside half a virupa of Sripati',
+    err(chart1853, place, SRIPATI) < 0.5,
+    err(chart1853, place, SRIPATI).toFixed(2));
+
+  var l2 = 77.58333;
+  var p2 = { latitude: 13, longitude: l2, tzOffsetMinutes: Math.round(l2 * 4) };
+  var c2 = Astro.chart({ jdUT: Astro.julianDay(1918, 10, 16,
+    14 + 6 / 60 + 16 / 3600 - l2 / 15), latitude: 13, longitude: l2,
+    tzOffsetMinutes: p2.tzOffsetMinutes, ayanamsa: 'raman' });
+  var EX51 = { Mars: 22.23, Mercury: 2.30, Jupiter: 35.26, Venus: 5.95, Saturn: 21.14 };
+  ok('and the averaged one is inside a tenth of Raman',
+    err(c2, p2, EX51, { kendraMethod: 'averaged' }) < 0.1,
+    err(c2, p2, EX51, { kendraMethod: 'averaged' }).toFixed(2));
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
