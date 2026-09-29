@@ -7232,5 +7232,27 @@ console.log('\nThe settings notes do not argue from what software does');
     /Drik Panchang/.test(seed));
 })();
 
+console.log('\nThe settings run from the chart outward');
+/*
+ * The order is the order a reading is built in: what the zodiac is measured
+ * from, then where the nodes are, then the clock every temporal strength is
+ * counted against, and only then the individual balas. Nata-unnata sat among
+ * the balas although everything in kala bala is measured from the midnight it
+ * defines.
+ */
+(function () {
+  var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  var panel = page.slice(page.indexOf('id="panel-settings"'),
+                         page.indexOf('</section>', page.indexOf('id="panel-settings"')));
+  var order = (panel.match(/<label for="([a-z-]+)">/g) || [])
+    .map(function (m) { return m.slice('<label for="'.length, -2); });
+  ok('the chart-wide choices come first, the clock among them',
+    order.slice(0, 3).join(',') === 'ayanamsa,node-type,nat-clock',
+    order.slice(0, 3).join(', '));
+  ok('and every field still carries its own note',
+    order.length === (panel.match(/field-why" id="why-/g) || []).length,
+    order.length + ' fields');
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
