@@ -4088,8 +4088,7 @@
    */
   document.getElementById('nat-clock').addEventListener('change', function () {
     var status = document.getElementById('settings-status');
-    var names = { apparent: 'the sundial at the birthplace',
-      mean: 'local mean time', zone: 'zone time' };
+    var names = { apparent: 'the sundial at the birthplace', zone: 'zone time' };
     var chosen = names[this.value] || this.value;
     if (!lastChart) {
       status.textContent = 'Saved. The next chart will use it.';

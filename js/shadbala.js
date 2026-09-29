@@ -653,6 +653,18 @@ var Shadbala = (function () {
 
   var CHESHTA = { KENDRA: 'kendra', MOTION: 'motion' };
 
+  /*
+   * MEAN is not offered on the settings panel. Nothing asks for it - Uttara
+   * Kalamrita allows the clock outright, Raman asks for the sundial - and a
+   * birth time genuinely recorded in local mean time is a question the birth
+   * form already asks under its time standard, which sets the offset from
+   * longitude and makes the clock reading mean time anyway.
+   *
+   * It stays here because it is the seam between the two corrections that
+   * separate the clock from the sundial, and the note on that setting quotes
+   * what each of them is worth. Computing from MEAN is how those figures are
+   * checked.
+   */
   var NAT_CLOCK = { APPARENT: 'apparent', MEAN: 'mean', ZONE: 'zone' };
 
   function natHours(clock, jd, place) {

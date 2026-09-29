@@ -7240,19 +7240,41 @@ console.log('\nThe settings notes do not argue from what software does');
       .test(panel.replace(/\s+/g, ' ')));
 
   /*
-   * Which moved the charge onto the middle option, where it belongs. Local mean
-   * time is a mechanical-clock convention: Uttara Kalamrita allows the clock as
-   * a stated shortcut and Raman asks for the sundial, while Raman's own wording
-   * - "it must be converted into the apparent time" - treats mean time as an
-   * input rather than an endpoint. A reader comparing the first two settings
-   * should be told which to keep.
+   * Which left the charge sitting on the middle option - and that one turned
+   * out not to be worth defending. Nothing asks for local mean time: Uttara
+   * Kalamrita allows the clock as a stated shortcut, Raman asks for the
+   * sundial, and Raman's own wording - "it must be converted into the apparent
+   * time" - treats mean time as an input rather than an endpoint.
+   *
+   * The reason it is gone rather than merely discouraged is that the app
+   * already had the control for it, in the right place. A birth recorded in
+   * local mean time is a fact about the record, and the birth form asks that
+   * question under time standard; answering it there sets the offset from
+   * longitude, after which the clock reading IS mean time. The setting was a
+   * second, worse spelling of a question already asked.
    */
-  ok('mean time is now the choice named as the one no text asks for',
-    /Mean time is the one choice no text asks for/
-      .test(panel.replace(/\s+/g, ' ')));
-  ok('and the note says outright which of the three to use',
+  ok('the nata clock offers the two readings a text supports, and no third',
+    (function () {
+      var sel = panel.slice(panel.indexOf('<select id="nat-clock"'));
+      sel = sel.slice(0, sel.indexOf('</select>'));
+      return (sel.match(/<option /g) || []).length === 2 &&
+        /value="apparent"/.test(sel) && /value="zone"/.test(sel) &&
+        !/value="mean"/.test(sel);
+    })());
+  ok('and the note says outright which of the two to use',
     /Use apparent time, the default/.test(panel.replace(/\s+/g, ' ')) &&
     /Noon here means the Sun on the meridian/.test(panel.replace(/\s+/g, ' ')));
+
+  /*
+   * Where mean time does belong, it is still offered - and the note sends the
+   * reader there rather than leaving the capability unfindable.
+   */
+  ok('local mean time is still selectable as a birth-time standard',
+    /<select id="time-standard">/.test(page) &&
+    /<option value="lmt">Local mean time \(from longitude\)<\/option>/.test(page));
+  ok('and the nata note points at it instead of duplicating it',
+    /recorded in local mean time, as Indian times were before 1906, say so on the birth form under time standard/
+      .test(panel.replace(/\s+/g, ' ')));
   ok('and the comparator work is kept where it belongs, in the lessons',
     /Drik Panchang/.test(seed));
 })();
