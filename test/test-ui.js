@@ -7375,6 +7375,22 @@ console.log('\nThe settings run from the chart outward');
   ok('the chart-wide choices come first, the clock among them',
     order.slice(0, 3).join(',') === 'ayanamsa,node-type,nat-clock',
     order.slice(0, 3).join(', '));
+
+  /*
+   * And the three that are not shadbala at all come last. Two of them settle
+   * yogas rather than strengths, and Mercury's nature is read by the yoga
+   * detectors as well as by paksha and drik bala. Sitting in the middle they
+   * broke the run of shadbala settings in two.
+   */
+  ok('the settings that are not shadbala sit at the end',
+    order.slice(-3).join(',') === 'mahabhagya-day,budha-floor,mercury-nature',
+    order.slice(-3).join(', '));
+  ok('so the shadbala run is unbroken from the Moon’s paksha to the luminaries',
+    order.slice(order.indexOf('moon-paksha'), order.indexOf('luminary-cheshta') + 1)
+      .every(function (k) {
+        return ['mahabhagya-day', 'budha-floor', 'mercury-nature'].indexOf(k) < 0;
+      }),
+    order.slice(order.indexOf('moon-paksha'), order.indexOf('luminary-cheshta') + 1).join(', '));
   ok('and every field still carries its own note',
     order.length === (panel.match(/field-why" id="why-/g) || []).length,
     order.length + ' fields');
