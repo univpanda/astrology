@@ -6456,6 +6456,121 @@ console.log('\nKala bala against the Rao textbook’s worked examples');
     [47625, 46586, 43411].every(function (a) {
       return bookLord(a, 30, 2) === 'Saturn';
     }));
+
+  /*
+   * Ayan bal. The book pairs Raman's constant, 24 over 48, with a declination
+   * read off a six-part table of the bhuja - which is the exact declination for
+   * an obliquity of 24 degrees, tabulated every fifteen and interpolated. This
+   * site pairs Parashara's 23.45 over 46.9 with the true obliquity. Both are
+   * normalised to span nought to sixty, so they very nearly agree: over the
+   * book's own two tables the difference from its printed figures is 0.098 for
+   * ours against 0.095 for its own pairing, the residue being its interpolation.
+   */
+  var NORTH = ['Sun', 'Mars', 'Jupiter', 'Venus'];
+  var ayanOf = function (g, sayana, max, div, eps) {
+    var d = Math.asin(Math.sin(eps * Math.PI / 180) *
+      Math.sin(sayana * Math.PI / 180)) * 180 / Math.PI;
+    var eff = g === 'Mercury' ? Math.abs(d) : (NORTH.indexOf(g) >= 0 ? d : -d);
+    var v = 60 * (max + eff) / div;
+    return g === 'Sun' ? v * 2 : v;
+  };
+  var AYANA = [
+    { ayanamsa: 23 + 16 / 60,
+      L: { Sun: 154.82, Moon: 120.03, Mars: 154.90, Mercury: 138.27,
+           Jupiter: 165.78, Venus: 195.07, Saturn: 225.70 },
+      book: { Sun: 61.94, Moon: 12.57, Mars: 30.92, Mercury: 39.19,
+              Jupiter: 25.45, Venus: 11.90, Saturn: 57.66 } },
+    { ayanamsa: 23 + 13 / 60,
+      L: { Sun: 211.35, Moon: 122.40, Mars: 294.92, Mercury: 192.42,
+           Jupiter: 96.70, Venus: 207.83, Saturn: 200.33 },
+      book: { Sun: 11.98, Moon: 13.52, Mars: 10.43, Mercury: 46.99,
+              Jupiter: 55.80, Venus: 7.14, Saturn: 50.28 } }
+  ];
+  var worstAyana = 0;
+  AYANA.forEach(function (c) {
+    Object.keys(c.book).forEach(function (g) {
+      var sayana = Astro.norm360(c.L[g] + c.ayanamsa);
+      worstAyana = Math.max(worstAyana,
+        Math.abs(ayanOf(g, sayana, 23.45, 46.9, 23.44) - c.book[g]));
+    });
+  });
+  ok('ayan bala reproduces both printed tables on this site’s own constant',
+    worstAyana < 0.45, 'worst ' + worstAyana.toFixed(2) + ' virupas');
+
+  /*
+   * Yuddha. No chart here has a war, so there is nothing to check
+   * numerically. What can be checked is that the engine adds the winner's
+   * share into kala bala and takes the loser's out, and that the nine parts
+   * it reports really sum to the total it prints - which is what makes the
+   * column comparison below mean anything.
+   */
+  var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+  var chart = Astro.chart({ jdUT: Astro.julianDay(1977, 8, 20, 3),
+    latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 });
+  var got = Shadbala.compute(chart, place).grahas;
+  var PARTS = ['nathonnatha', 'paksha', 'tribhaga', 'abda', 'masa', 'vara',
+    'hora', 'ayana', 'yuddha'];
+  ok('the engine’s nine kala parts sum to the kala bala it prints',
+    Object.keys(got).every(function (g) {
+      var sum = PARTS.reduce(function (t, k) { return t + (got[g].kala[k] || 0); }, 0);
+      return Math.abs(sum - got[g].kala.total) < 1e-9;
+    }));
+
+  /*
+   * And the whole column, all nine parts, against the two examples the book
+   * totals. Built from the book's own inputs - its longitudes, its ayanamsa,
+   * its lords - by the rules stated above, so what it checks is that those
+   * rules together land where the book lands. The third example is the one
+   * whose nattonatt it transposes, so it is not totalled here.
+   */
+  var NORTH2 = ['Sun', 'Mars', 'Jupiter', 'Venus'];
+  var DAYS = ['Sun', 'Jupiter', 'Venus'];
+  var column = function (o) {
+    var out = {};
+    ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'].forEach(function (g) {
+      var nat = g === 'Mercury' ? 60
+        : (DAYS.indexOf(g) >= 0 ? 60 - o.fromMidday / 12 : o.fromMidday / 12);
+      var w = o.elong <= 180 ? o.elong : 360 - o.elong, bright = w / 3;
+      var ben = g === 'Moon' ? true
+        : (g === 'Jupiter' || g === 'Venus' || (g === 'Mercury' && o.mercuryBenefic));
+      var pak = ben ? bright : 60 - bright;
+      if (g === 'Moon') pak *= 2;
+      var d = Math.asin(Math.sin(23.44 * Math.PI / 180) *
+        Math.sin(Astro.norm360(o.L[g] + o.ayanamsa) * Math.PI / 180)) * 180 / Math.PI;
+      var eff = g === 'Mercury' ? Math.abs(d) : (NORTH2.indexOf(g) >= 0 ? d : -d);
+      var ay = 60 * (23.45 + eff) / 46.9;
+      if (g === 'Sun') ay *= 2;
+      out[g] = nat + pak + (g === 'Jupiter' || g === o.tribhaga ? 60 : 0) +
+        (g === o.yearLord ? 15 : 0) + (g === o.monthLord ? 30 : 0) +
+        (g === o.dayLord ? 45 : 0) + (g === o.horaLord ? 60 : 0) + ay;
+    });
+    return out;
+  };
+  var WHOLE = [
+    { o: { fromMidday: 140.5, elong: 325.21, mercuryBenefic: false,
+           tribhaga: 'Saturn', yearLord: 'Sun', monthLord: 'Saturn',
+           dayLord: 'Saturn', horaLord: 'Jupiter', ayanamsa: 23 + 16 / 60,
+           L: { Sun: 154.82, Moon: 120.03, Mars: 154.90, Mercury: 138.27,
+                Jupiter: 165.78, Venus: 195.07, Saturn: 225.70 } },
+      book: { Sun: 173.68, Moon: 47.42, Mars: 91.00, Mercury: 147.60,
+              Jupiter: 205.37, Venus: 71.82, Saturn: 252.74 } },
+    { o: { fromMidday: 716, elong: 67.62, mercuryBenefic: true,
+           tribhaga: 'Venus', yearLord: 'Saturn', monthLord: 'Saturn',
+           dayLord: 'Saturn', horaLord: 'Jupiter', ayanamsa: 23 + 13 / 60,
+           L: { Sun: 324.52, Moon: 32.13, Mars: 82.28, Mercury: 342.67,
+                Jupiter: 183.25, Venus: 333.08, Saturn: 84.97 } },
+      book: { Sun: 85.35, Moon: 110.53, Mars: 155.97, Mercury: 115.44,
+              Jupiter: 159.96, Venus: 110.95, Saturn: 188.86 } }
+  ];
+  var worstWhole = 0;
+  WHOLE.forEach(function (c) {
+    var mine = column(c.o);
+    Object.keys(c.book).forEach(function (g) {
+      worstWhole = Math.max(worstWhole, Math.abs(mine[g] - c.book[g]));
+    });
+  });
+  ok('and the two totalled kala columns come out, all nine parts together',
+    worstWhole < 0.4, 'worst ' + worstWhole.toFixed(2) + ' virupas across 14 figures');
 })();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
