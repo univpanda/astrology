@@ -3244,7 +3244,8 @@ ok('ordinals read correctly', Yogas.ordinal(1) === '1st' && Yogas.ordinal(2) ===
                    Yogas.vanchanachorabheethi, Yogas.kahala, Yogas.pushkala,
                    Yogas.gauri, Yogas.bharathi, Yogas.kusuma, Yogas.chapa,
                    Yogas.sreenatha, Yogas.sankha, Yogas.bheri, Yogas.matsya,
-                   Yogas.mridanga, Yogas.saraswati, Yogas.mahaRaja];
+                   Yogas.mridanga, Yogas.saraswati, Yogas.mahaRaja,
+                   Yogas.nabhasa];
   ok('every detector is covered by this test', detectors.length === Yogas.DETECTOR_COUNT,
      detectors.length + ' named, ' + Yogas.DETECTOR_COUNT + ' in the module');
 
@@ -5157,7 +5158,7 @@ console.log('\nEverything Raman numbers up to 50');
    * this figure drift upwards with every addition, which would quietly stop it
    * saying anything about Raman's fifty at all.
    */
-  var NOT_RAMANS = [Yogas.saraswati, Yogas.mahaRaja];
+  var NOT_RAMANS = [Yogas.saraswati, Yogas.mahaRaja, Yogas.nabhasa];
   var detectors = Yogas.DETECTOR_COUNT - NOT_RAMANS.length;
   ok('the module carries a detector for each of them', detectors === 34,
     detectors + ' from the book, ' + Yogas.DETECTOR_COUNT + ' in all');
@@ -7004,6 +7005,135 @@ console.log('\nSaraswati, Maha Raja, and the Sun’s company named by its form')
   ok('while the library key stays the bare name, all three being one combination',
     Object.keys(keys).sort().join(' ') === 'Ubhayachari Yoga Vasi Yoga Vesi Yoga',
     Object.keys(keys).sort().join(', '));
+})();
+
+
+console.log('\nThe thirty-two Nabhasa figures, one built chart apiece');
+/*
+ * Parashara's chapter 35. Built rather than hunted: a sweep of 3,600 charts
+ * turned up sixteen of the thirty-two, the rest needing the slow grahas to
+ * agree, and a family checked only where it happens to occur is a family half
+ * checked. Aries rises in every fixture, so a sign is its house less one.
+ */
+(function () {
+  var SEVEN = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+  var chartOf = function (where) {
+    return { ascendant: { longitude: 5 }, planets: SEVEN.map(function (g) {
+      var at = where[g];
+      var sign = typeof at === 'number' ? at : at.sign;
+      var lon = typeof at === 'number' ? sign * 30 + 5 : at.lon;
+      return { name: g, sign: sign, longitude: lon, house: sign + 1 };
+    }) };
+  };
+  // The seven dealt round the given signs, so every one of them is occupied.
+  var over = function (signs) {
+    var out = {};
+    SEVEN.forEach(function (g, i) { out[g] = signs[i % signs.length]; });
+    return out;
+  };
+  var titles = function (where) {
+    return Yogas.nabhasa(chartOf(where)).map(function (f) { return f.title; });
+  };
+
+  var CASES = [
+    // Asraya: the quality of the signs, nothing else
+    ['Rajju yoga', over([0, 3, 6, 9])],
+    ['Musala yoga', over([1, 4, 7, 10])],
+    ['Nala yoga', over([2, 5, 8, 11])],
+    // Akriti: the shape the occupied houses make
+    ['Gada yoga', over([0, 3])],
+    ['Sakata yoga (Nabhasa)', over([0, 6])],
+    ['Vihaga yoga', over([3, 9])],
+    ['Sringataka yoga', over([0, 4, 8])],
+    ['Hala yoga', over([1, 5, 9])],
+    ['Kamala yoga', over([0, 3, 6, 9])],
+    ['Vapi yoga', over([1, 4, 7, 10])],
+    ['Yupa yoga', over([0, 1, 2, 3])],
+    ['Sara yoga', over([3, 4, 5, 6])],
+    ['Sakthi yoga', over([6, 7, 8, 9])],
+    ['Danda yoga', over([9, 10, 11, 0])],
+    ['Nauka yoga', over([0, 1, 2, 3, 4, 5, 6])],
+    ['Koota yoga', over([3, 4, 5, 6, 7, 8, 9])],
+    ['Chatra yoga', over([6, 7, 8, 9, 10, 11, 0])],
+    ['Chapa yoga (Nabhasa)', over([9, 10, 11, 0, 1, 2, 3])],
+    ['Ardhachandra yoga', over([1, 2, 3, 4, 5, 6, 7])],
+    ['Chakra yoga', over([0, 2, 4, 6, 8, 10])],
+    ['Samudra yoga', over([1, 3, 5, 7, 9, 11])],
+    // Sankhya: the bare count, one sign up to seven
+    ['Gola yoga', over([0])],
+    ['Yuga yoga', over([0, 1])],
+    ['Sula yoga', over([0, 1, 2])],
+    ['Kedara yoga', over([0, 1, 2, 4])],
+    ['Pasa yoga', over([0, 1, 2, 4, 5])],
+    ['Dama yoga', over([0, 1, 2, 3, 4, 5])],
+    ['Vallaki yoga', over([0, 1, 2, 3, 4, 5, 7])],
+    /*
+     * The four that turn on nature rather than on position alone. The Moon has
+     * to be bright to count a benefic, so hers is placed by longitude: in Yava
+     * she is 105 degrees from the Sun, in Vajra 100.
+     */
+    ['Mala yoga', { Jupiter: 0, Venus: 3, Mercury: 6, Sun: 1, Mars: 2,
+      Saturn: 4, Moon: 5 }],
+    ['Sarpa yoga', { Sun: 0, Mars: 3, Saturn: 6, Jupiter: 1, Venus: 2,
+      Mercury: 4, Moon: 5 }],
+    ['Vajra yoga', { Sun: { sign: 3, lon: 95 }, Mars: 3, Saturn: 9,
+      Jupiter: 0, Mercury: 0, Venus: 6, Moon: { sign: 6, lon: 195 } }],
+    ['Yava yoga', { Sun: 0, Mars: 0, Saturn: 6, Jupiter: 3, Mercury: 3,
+      Venus: 9, Moon: { sign: 3, lon: 110 } }]
+  ];
+
+  var missed = [];
+  CASES.forEach(function (c) {
+    if (titles(c[1]).indexOf(c[0]) < 0) missed.push(c[0] + ' -> ' + titles(c[1]).join(', '));
+  });
+  ok('all thirty-two form on a chart built for them',
+    CASES.length === 32 && missed.length === 0,
+    CASES.length + ' cases; missed: ' + (missed.join(' | ') || 'none'));
+
+  /*
+   * The reading that makes the twenty shapes distinct: the figure has to be
+   * filled, not merely contained. All seven in the 1st satisfies "occupy the
+   * 1st, 2nd, 3rd and 4th houses" on a loose reading, and would be Yupa, Nauka,
+   * Gada, Sakata and Kamala at once. Here it is Gola and nothing else.
+   */
+  var heaped = titles(over([0]));
+  ok('a heap in one sign is the count and no shape at all',
+    heaped.indexOf('Gola yoga') >= 0 &&
+    ['Yupa yoga', 'Nauka yoga', 'Gada yoga', 'Sakata yoga (Nabhasa)',
+     'Kamala yoga'].every(function (t) { return heaped.indexOf(t) < 0; }),
+    heaped.join(', '));
+
+  /*
+   * And a shape silences the count, which is Parashara's own rule and the
+   * reason Jataka Parijata gives for it.
+   */
+  var shaped = titles(over([0, 4, 8]));
+  ok('a shape silences the count it would otherwise be a case of',
+    shaped.indexOf('Sringataka yoga') >= 0 && shaped.indexOf('Sula yoga') < 0,
+    shaped.join(', '));
+
+  /*
+   * The nodes are out. Verse 13 counts "all the 7 planets", so a Rahu parked
+   * outside the figure must not break it and a Ketu inside must not make one.
+   */
+  var withNodes = chartOf(over([0, 4, 8]));
+  withNodes.planets.push({ name: 'Rahu', sign: 2, longitude: 65, house: 3 });
+  withNodes.planets.push({ name: 'Ketu', sign: 8, longitude: 245, house: 9 });
+  ok('the nodes neither make a figure nor break one',
+    Yogas.nabhasa(withNodes).map(function (f) { return f.title; })
+      .indexOf('Sringataka yoga') >= 0);
+
+  /*
+   * Every one of the thirty-two carries Parashara's own reading, from verses 18
+   * to 50. A finding that named a figure and said nothing about it would be a
+   * shape without a meaning.
+   */
+  ok('each of the thirty-two is quoted for what it is read as',
+    Object.keys(Yogas.NABHASA_SAYS).length === 32 &&
+    Object.keys(Yogas.NABHASA_SAYS).every(function (k) {
+      return typeof Yogas.NABHASA_SAYS[k] === 'string' &&
+        Yogas.NABHASA_SAYS[k].length > 20;
+    }), Object.keys(Yogas.NABHASA_SAYS).length + ' readings');
 })();
 
 

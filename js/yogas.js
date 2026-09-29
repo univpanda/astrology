@@ -1325,6 +1325,256 @@ var Yogas = (function () {
   }
 
 
+  /* ------------------------------------------------------- Nabhasa */
+
+  /*
+   * Parashara's chapter 35, thirty-two yogas read off one thing: which signs
+   * the seven grahas occupy. No strength, no dignity, no aspect, no lordship.
+   * "O excellent of the Brahmins, explained below are 32 Nabhasa yogas which
+   * have a total of 1800 different varieties. These consist of 3 Asraya yogas,
+   * 2 Dala yogas, 20 Akriti yogas, and 7 Sankhya yogas."
+   *
+   * The nodes are out. Verse 13 counts "all the .7 planets" and Jataka Parijata
+   * says the seven throughout, so Rahu and Ketu neither make a figure nor break
+   * one.
+   *
+   * Every Akriti is matched on the exact set of houses occupied rather than on
+   * containment, and that is a reading worth stating because the alternative
+   * makes nonsense. "All the planets should occupy the 1st, 2nd, 3rd and 4th
+   * houses" is satisfied by all seven sitting in the 1st, which would then be
+   * Yupa and Nauka and Gada and Sakata and Kamala at once. Jataka Parijata
+   * settles it: the Akritis are "special instances" of the Sankhya yogas by
+   * count - Sringataka and Hala of Sula, which is three signs; Vajra, Yava,
+   * Kamala, Vapi, Yupa, Ishu, Sakti and Danda of Kedara, which is four; Nauka,
+   * Koota, Chatra, Chapa and Ardhachandra of Veena, which is seven; Samudra and
+   * Chakra of Dama, which is six. So the figure has to be filled, not merely
+   * contained, and the sets below are exact.
+   *
+   * Houses are whole signs here as everywhere on this site, so an occupied
+   * house and an occupied sign are the same count. The commentary on Jataka
+   * Parijata notes that Maya, Yavana and Garga read these from the bhava chart
+   * rather than the rasi, which would let unequal bhavas make figures the signs
+   * do not; that is not the reading here.
+   */
+  var NABHASA_MODALITY = { Rajju: 0, Musala: 1, Nala: 2 };
+
+  /* The exact house sets, sorted. Gada is the only one with alternatives that
+     are not a rotation of a single shape, so its four runs are listed out. */
+  var NABHASA_AKRITI = [
+    { name: 'Gada', sets: [[1, 4], [4, 7], [7, 10], [1, 10]] },
+    { name: 'Sakata', sets: [[1, 7]], collides: true },
+    { name: 'Vihaga', sets: [[4, 10]] },
+    { name: 'Sringataka', sets: [[1, 5, 9]] },
+    { name: 'Hala', sets: [[2, 6, 10], [3, 7, 11], [4, 8, 12]] },
+    { name: 'Vapi', sets: [[2, 5, 8, 11], [3, 6, 9, 12]] },
+    { name: 'Yupa', sets: [[1, 2, 3, 4]] },
+    { name: 'Sara', sets: [[4, 5, 6, 7]] },
+    { name: 'Sakthi', sets: [[7, 8, 9, 10]] },
+    { name: 'Danda', sets: [[1, 10, 11, 12]] },
+    { name: 'Chakra', sets: [[1, 3, 5, 7, 9, 11]] },
+    { name: 'Samudra', sets: [[2, 4, 6, 8, 10, 12]] }
+  ];
+
+  var NABHASA_SANKHYA = [null, 'Gola', 'Yuga', 'Sula', 'Kedara', 'Pasa',
+    'Dama', 'Vallaki'];
+
+  /*
+   * What each is read for, from Parashara's verses 18 to 50. Kept to the head
+   * of each list: the whole of Chakra is "an emperor at whose feet will be the
+   * prostrating kings' heads", and the rest of them run to a line apiece.
+   */
+  var NABHASA_SAYS = {
+    Rajju: 'fond of wandering, charming, earning in foreign countries',
+    Musala: 'honour, wisdom and wealth, dear to king, firm in disposition',
+    Nala: 'uneven physique, skilful, helpful to relatives, charming',
+    Mala: 'ever happy, with conveyances, robes, food and pleasures',
+    Sarpa: 'crooked and cruel, poor, dependent on others for food',
+    Gada: 'always at work to earn, skilful in shastra and song, with gold and gems',
+    Sakata: 'afflicted by disease, poor, devoid of friends and relatives',
+    Vihaga: 'fond of roaming, a messenger, shameless, given to quarrels',
+    Sringataka: 'fond of battle, happy, dear to king, with an auspicious wife',
+    Hala: 'a farmer, very poor, miserable, given up by friends',
+    Vajra: 'happy at the beginning and the end of life, valorous, charming',
+    Yava: 'observing fasts, charitable and firm, happy and wealthy in mid-life',
+    Kamala: 'rich and virtuous, long-lived, very famous, a king',
+    Vapi: 'accumulating lasting wealth, with happiness and sons, a king',
+    Yupa: 'spiritual knowledge, given to sacrifice and fasting, distinguished',
+    Sara: 'head of a prison, earning through animals, given to mean handiwork',
+    Sakthi: 'bereft of wealth and unsuccessful, long-lived, skilful in war',
+    Danda: 'losing sons and wife, indigent, away from his own, serving mean people',
+    Nauka: 'a livelihood through water, wealthy and famous, but wretched and miserly',
+    Koota: 'heading a jail, poor and crafty, living in hills and fortresses',
+    Chatra: 'helping his own, kind, dear to many kings, long-lived',
+    Chapa: 'a keeper of secrets, fond of forests, happy in the middle of life',
+    Ardhachandra: 'leading an army, dear to king, strong, with gems and gold',
+    Chakra: 'an emperor, at whose feet the heads of kings are prostrate',
+    Samudra: 'many precious stones and abundant wealth, dear to people',
+    Gola: 'strong, but devoid of wealth, learning and intelligence',
+    Yuga: 'heretic, devoid of wealth, discarded by others',
+    Sula: 'sharp and indolent, valiant, famous through war',
+    Kedara: 'useful to many, an agriculturist, truthful, wealthy, fickle',
+    Pasa: 'liable to imprisonment, skilful in work, talkative, with many servants',
+    Dama: 'helpful to others, righteously wealthy, famous, courageous',
+    Vallaki: 'fond of song, dance and instruments, skilful, a leader of men'
+  };
+
+  /* A run of `length` houses starting at `from`, as a sorted set. */
+  function houseRun(from, length) {
+    var out = [];
+    for (var i = 0; i < length; i++) out.push((from - 1 + i) % 12 + 1);
+    return out.sort(function (a, b) { return a - b; });
+  }
+
+  function sameSet(a, b) {
+    return a.length === b.length && a.every(function (h, i) { return h === b[i]; });
+  }
+
+  function nabhasaFinding(name, group, reasons, summary, grahas, houses) {
+    /*
+     * Two of the thirty-two share a name with a combination this site already
+     * reports on a different rule: Sakata here is all seven grahas in the 1st
+     * and the 7th, where the Sakata on the Yogas tab is Phaladeepika's Moon in
+     * the 6th, 8th or 12th from Jupiter; and Chapa here is a seven-house arc
+     * from the 10th, where the other is Raman's exalted lagna lord with the 4th
+     * and 10th lords exchanged. Both pairs are legitimate uses of the name, so
+     * the family is put in the title rather than one of them being renamed.
+     */
+    var collides = name === 'Sakata' || name === 'Chapa';
+    return {
+      yoga: 'Nabhasa Yoga',
+      kind: name.toLowerCase(),
+      subject: 'Nabhasa Yoga',
+      condition: group,
+      title: name + ' yoga' + (collides ? ' (Nabhasa)' : ''),
+      family: 'Nabhasa',
+      grahas: grahas,
+      houses: houses,
+      reasons: reasons.concat(['read for one ' + NABHASA_SAYS[name]]),
+      summary: summary
+    };
+  }
+
+  function nabhasa(chart) {
+    var c = lordship(chart);
+    var houses = [], bySign = {}, ready = true;
+    GRAHAS.forEach(function (g) {
+      var h = c.houseOf(g);
+      if (h === null) { ready = false; return; }
+      if (houses.indexOf(h) < 0) houses.push(h);
+      (bySign[h] || (bySign[h] = [])).push(g);
+    });
+    if (!ready) return [];
+    houses.sort(function (a, b) { return a - b; });
+    var all = GRAHAS.slice();
+    var out = [];
+
+    /* Asraya: the quality of the signs, movable, fixed or dual. */
+    var modality = Astro.signOf(c.at.Sun.longitude) % 3;
+    var oneQuality = GRAHAS.every(function (g) { return c.at[g].sign % 3 === modality; });
+    if (oneQuality) {
+      var quality = ['movable', 'fixed', 'dual'][modality];
+      Object.keys(NABHASA_MODALITY).forEach(function (name) {
+        if (NABHASA_MODALITY[name] !== modality) return;
+        out.push(nabhasaFinding(name, 'asraya',
+          ['all seven grahas stand in ' + quality + ' signs, which is the whole ' +
+            'of what this one asks'],
+          'The Sun to Saturn all stand in ' + quality + ' signs, which is ' +
+            name + ' yoga.', all, houses));
+      });
+    }
+
+    /*
+     * Dala: "If 3 angles are occupied by benefices Maala yoga is produced while
+     * malefic so placed will cause Bhujanga or Sarpa yoga." Read as three of
+     * the four angles held, and nothing but benefics (or nothing but malefics)
+     * standing in them.
+     */
+    var benefics = Astro.naturalBenefics(chart);
+    var angles = KENDRAS.filter(function (h) { return bySign[h]; });
+    if (angles.length >= 3) {
+      [[true, 'Mala', 'benefic'], [false, 'Sarpa', 'malefic']].forEach(function (side) {
+        var held = angles.every(function (h) {
+          return bySign[h].every(function (g) { return !!benefics[g] === side[0]; });
+        });
+        if (!held) return;
+        var who = [];
+        angles.forEach(function (h) {
+          bySign[h].forEach(function (g) { if (who.indexOf(g) < 0) who.push(g); });
+        });
+        out.push(nabhasaFinding(side[1], 'dala',
+          [angles.length + ' of the four angles are occupied, and every graha in ' +
+            'them is ' + side[2] + ': ' + listOf(who)],
+          listOf(who) + ' hold ' + angles.length + ' of the four angles and all ' +
+            'of them are ' + side[2] + ', which is ' + side[1] + ' yoga.',
+          who, angles));
+      });
+    }
+
+    /* Akriti: the shape the occupied houses make, filled exactly. */
+    var akriti = null;
+    NABHASA_AKRITI.forEach(function (shape) {
+      if (akriti) return;
+      if (shape.sets.some(function (set) { return sameSet(houses, set); })) {
+        akriti = shape.name;
+      }
+    });
+    /*
+     * The four angles together are Kamala, unless the benefics and the malefics
+     * have sorted themselves onto the two axes, which makes it Vajra or Yava.
+     */
+    if (!akriti && sameSet(houses, [1, 4, 7, 10])) {
+      var pure = function (list, wanted) {
+        return list.every(function (h) {
+          return bySign[h].every(function (g) { return !!benefics[g] === wanted; });
+        });
+      };
+      akriti = pure([1, 7], true) && pure([4, 10], false) ? 'Vajra'
+        : pure([4, 10], true) && pure([1, 7], false) ? 'Yava' : 'Kamala';
+    }
+    /* Seven in a row: from an angle it is named, from anywhere else it is the
+       half moon. */
+    if (!akriti && houses.length === 7) {
+      var SEVENS = { 1: 'Nauka', 4: 'Koota', 7: 'Chatra', 10: 'Chapa' };
+      for (var from = 1; from <= 12 && !akriti; from++) {
+        if (!sameSet(houses, houseRun(from, 7))) continue;
+        akriti = SEVENS[from] || 'Ardhachandra';
+      }
+    }
+    if (akriti) {
+      var where = listOf(houses.map(ordinal));
+      out.push(nabhasaFinding(akriti, 'akriti',
+        ['the seven grahas fall in the ' + where + ' and nowhere else, which is ' +
+          'the figure this one is named for'],
+        'The Sun to Saturn hold the ' + where + ' between them, which is ' +
+          akriti + ' yoga.', all, houses));
+    }
+
+    /*
+     * Sankhya, by the count of signs occupied. Parashara: "None of these seven
+     * yogas will be operable, if another Nabhasa yoga explained earlier is
+     * derivable." Read as the Akriti figures only, which is what Jataka
+     * Parijata states and gives a reason for - the Akritis are special cases of
+     * these by count, so a count reported beside its own special case says
+     * nothing. Asraya and Dala are not counts of anything and do not crowd it
+     * out: all seven in movable signs is a fact about the signs, and Mala is a
+     * fact about the angles, where Kedara is the bare number four.
+     */
+    if (!akriti) {
+      var name = NABHASA_SANKHYA[houses.length];
+      if (name) {
+        out.push(nabhasaFinding(name, 'sankhya',
+          ['the seven grahas are spread over ' + houses.length + ' sign' +
+            (houses.length === 1 ? '' : 's') + ' and no Akriti figure is made, ' +
+            'which is what these seven count'],
+          'The Sun to Saturn occupy ' + houses.length + ' sign' +
+            (houses.length === 1 ? '' : 's') + ' between them, which is ' +
+            name + ' yoga.', all, houses));
+      }
+    }
+    return out;
+  }
+
+
   /* ----------------------------------------------------- Saraswati */
 
   /*
@@ -2609,7 +2859,7 @@ var Yogas = (function () {
     vanchanachorabheethi, kahala, pushkala, gauri, bharathi, kusuma,
     chapa, sreenatha, sankha, bheri, matsya, mridanga,
     chandraMangala, adhiYoga, sakata, amala, budhaAditya,
-                   gajaKesari, kartari, saraswati, mahaRaja];
+                   gajaKesari, kartari, saraswati, mahaRaja, nabhasa];
 
   /**
    * Every yoga this module knows how to look for, in one pass.
@@ -2682,6 +2932,14 @@ var Yogas = (function () {
       'Gauri yoga', 'Bharathi yoga', 'Kusuma yoga', 'Chapa yoga',
       'Sreenatha yoga', 'Sankha yoga', 'Bheri yoga', 'Matsya yoga',
       'Mridanga yoga', 'Vanchanachorabheethi yoga'] },
+    { group: 'Nabhasa', names: ['Rajju yoga', 'Musala yoga', 'Nala yoga',
+      'Mala yoga', 'Sarpa yoga', 'Gada yoga', 'Sakata yoga (Nabhasa)',
+      'Vihaga yoga', 'Sringataka yoga', 'Hala yoga', 'Vajra yoga', 'Yava yoga',
+      'Kamala yoga', 'Vapi yoga', 'Yupa yoga', 'Sara yoga', 'Sakthi yoga',
+      'Danda yoga', 'Nauka yoga', 'Koota yoga', 'Chatra yoga',
+      'Chapa yoga (Nabhasa)', 'Ardhachandra yoga', 'Chakra yoga',
+      'Samudra yoga', 'Gola yoga', 'Yuga yoga', 'Sula yoga', 'Kedara yoga',
+      'Pasa yoga', 'Dama yoga', 'Vallaki yoga'] },
     { group: 'Others', names: ['Adhi yoga', 'Amala yoga', 'Budha-Aditya yoga',
       'Chandra Mangala yoga', 'Chatussagara yoga', 'Gaja Kesari yoga',
       'Kesari yoga', 'Lakshmi yoga', 'Mahabhagya yoga', 'Parvata yoga',
@@ -2719,7 +2977,8 @@ var Yogas = (function () {
     MOON_COMPANY: MOON_COMPANY,
     vipareeta: vipareeta, lakshmi: lakshmi, mahapurusha: mahapurusha,
     rajaYoga: rajaYoga, gajaKesari: gajaKesari,
-    saraswati: saraswati, mahaRaja: mahaRaja,
+    saraswati: saraswati, mahaRaja: mahaRaja, nabhasa: nabhasa,
+    NABHASA_SAYS: NABHASA_SAYS,
     SARASWATI_HOUSES: SARASWATI_HOUSES, SARASWATI_GRAHAS: SARASWATI_GRAHAS,
     VISHNU_HOUSES: VISHNU_HOUSES, LAKSHMI_HOUSES: LAKSHMI_HOUSES,
     VIPAREETA_NAMES: VIPAREETA_NAMES, MAHAPURUSHA: MAHAPURUSHA,

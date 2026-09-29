@@ -779,7 +779,53 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'Two readings had to be fixed to implement the second clause, and both are stated rather than hidden. The karakas are assigned in the rashi, as they are everywhere on this site, so reading a division does not reshuffle them; and "in aspect to a benefic" is read as aspect and not as company, Santhanam''s note saying "related to a benefice by aspect" in as many words. A chart that meets everything else with a benefic sitting beside a karaka rather than looking at it is reported as not having the yoga.',
    'It is uncommon on either clause, holding in about one chart in forty on this site''s sample. The finding says which clause made it, and says so when the other would have made it too.'
  ],
- 'The exchange clause is also reported on its own as a parivartana, the two being the same fact read at two levels of detail.', 922)
+ 'The exchange clause is also reported on its own as a parivartana, the two being the same fact read at two levels of detail.', 922),
+
+('yoga', 'Nabhasa Yoga', 'asraya',
+ 'Nabhasa - thirty-two figures made of nothing but position',
+ array[
+   'Parashara gives a whole chapter to these, and they are unlike everything else on this page: no strength, no dignity, no aspect, no lordship. Which signs the seven grahas occupy, and nothing else. "O excellent of the Brahmins, explained below are 32 Nabhasa yogas which have a total of 1800 different varieties. These consist of 3 Asraya yogas, 2 Dala yogas, 20 Akriti yogas, and 7 Sankhya yogas."',
+   'The nodes are out of it. Verse 13 counts "all the 7 planets" and Jataka Parijata says the seven throughout, so Rahu and Ketu neither make a figure nor break one.',
+   'Asraya means support, and the three ask what kind of sign supports the whole chart. All seven in movable signs is Rajju, all in fixed is Musala, all in dual is Nala. They are rare, because the slow grahas have to agree: a little over two charts in a thousand on this site''s sample.',
+   'Dala means petal, and the two ask who holds the angles. Benefics in three of them is Mala, malefics is Sarpa. Parashara states it in one line and the commentators differ over whether the Moon should be classed at all, so this site reads it plainly: three angles occupied, and everything standing in them of one nature.',
+   'Akriti means shape, and the twenty are figures: all seven confined to the 1st and 7th is a cart, to the four angles a lotus, to six alternate signs a wheel. Sankhya means number, and the last seven are the bare count of signs occupied, from all in one sign to all in seven.',
+   'One reading had to be fixed to make the twenty work, and it is worth setting out. "All the planets should occupy the 1st, 2nd, 3rd and 4th houses" is satisfied by all seven sitting in the 1st, which would then be Yupa and Nauka and Gada and Sakata and Kamala at once. Jataka Parijata settles it: the Akriti yogas are "special instances" of the Sankhya ones by count. Sringataka and Hala are varieties of Sula, which is three signs; Vajra, Yava, Kamala, Vapi, Yupa, Ishu, Sakti and Danda of Kedara, which is four; Nauka, Koota, Chatra, Chapa and Ardhachandra of Veena, which is seven; Samudra and Chakra of Dama, which is six. So the figure must be filled and not merely contained, and every shape here is matched on the exact set of houses.',
+   'That also decides when the counting yogas apply. Parashara: "None of these seven yogas will be operable, if another Nabhasa yoga explained earlier is derivable." Read here as the shapes only, which is what Jataka Parijata says and gives a reason for: a count reported beside its own special case says nothing. Asraya and Dala are not counts of anything and do not crowd it out.',
+   'Because the count covers every chart that makes no shape, one of these thirty-two is present in almost every chart. Pasa, five signs occupied, holds in 42 per cent; Kedara and Dama in about 25 each. They are a base classification rather than a distinction, and the figure beside each name on the card is the way to read them.',
+   'Two of the names collide with combinations this site already reports on other rules, so both carry the family in the title. Sakata here is all seven grahas in the 1st and the 7th, where the other Sakata is Phaladeepika''s Moon in the 6th, 8th or 12th from Jupiter. Chapa here is a seven-house arc from the 10th, where the other is Raman''s exalted ascendant lord with the 4th and 10th lords exchanged.',
+   'Houses are whole signs here as everywhere on this site. The commentary on Jataka Parijata notes that Maya, Yavana and Garga read these from the bhava chart rather than the rasi, which would let unequal houses make figures the signs do not. That is not the reading followed here, and at high latitudes the two can part.'
+ ],
+ 'The effects quoted on each finding are Parashara''s own, from verses 18 to 50 of the same chapter.', 923),
+
+('yoga', 'Nabhasa Yoga', 'dala',
+ 'Dala - the angles held by one nature',
+ array[
+   'The two petal yogas ask who holds the four angles. Parashara: "If 3 angles are occupied by benefices Maala yoga is produced while malefic so placed will cause Bhujanga or Sarpa yoga."',
+   'Mala is read for a life of ease: "ever happy, endowed with conveyances, robes, food and pleasures". Sarpa is its opposite, "crooked, cruel, poor, miserable and will depend on others for food and drinks".',
+   'The line is short and the commentators fill it differently. Jataka Parijata''s commentator has the Moon left out of the benefic and malefic classification altogether for this purpose, and adds that the Dala yogas amount to the planets restricting themselves to the angles. This site reads Parashara plainly instead: three of the four angles occupied, and every graha standing in them of one nature.',
+   'Which grahas count as benefic follows the settings on the Chart tab, so the Moon''s nature and Mercury''s company can both move this one.'
+ ],
+ 'The full family is set out under Nabhasa.', 924),
+
+('yoga', 'Nabhasa Yoga', 'akriti',
+ 'Akriti - the shape the grahas make',
+ array[
+   'Twenty figures, each named for what the occupied houses look like. Two successive angles is Gada the mace; the 1st and 7th is Sakata the cart; the 4th and 10th is Vihaga the bird; the 1st, 5th and 9th is Sringataka. The four angles together is Kamala the lotus, unless the benefics and malefics have sorted themselves onto the two axes, which makes it Vajra the diamond or Yava the barleycorn.',
+   'Four houses in a row from an angle gives Yupa, Sara, Sakthi and Danda, in that order from the 1st, the 4th, the 7th and the 10th. Seven in a row from an angle gives Nauka the boat, Koota the peak, Chatra the umbrella and Chapa the bow; seven in a row from anywhere else is Ardhachandra, the half moon. Six alternate signs from the ascendant is Chakra the wheel, and from the 2nd, Samudra the ocean.',
+   'The readings are not all kind. Chakra is "an emperor at whose feet will be the prostrating kings'' heads"; Sakata is "afflicted by diseases ... poor and devoid of friends and relatives"; Danda loses sons and wife. They are figures rather than judgements, and Parashara gives each its own verse.',
+   'Every one is matched on the exact set of houses occupied, not on containment, which is what makes the twenty distinct from each other. The reason is set out under Nabhasa.'
+ ],
+ 'A chart makes at most one of these twenty, the sets being exclusive.', 925),
+
+('yoga', 'Nabhasa Yoga', 'sankhya',
+ 'Sankhya - the bare count of signs',
+ array[
+   'The last seven are arithmetic: how many signs the seven grahas occupy between them. All in one sign is Gola, two Yuga, three Sula, four Kedara, five Pasa, six Dama, seven Vallaki, which is also called Veena.',
+   'They apply only when the chart makes no Akriti figure, Parashara saying that none of the seven "will be operable, if another Nabhasa yoga explained earlier is derivable". Jataka Parijata gives the reason: the shapes are special cases of these counts, so reporting a count beside its own special case says nothing.',
+   'Because every chart occupies between one and seven signs, one of these holds whenever no shape does, which is most of the time. Pasa is 42 per cent of charts on this site''s sample, Kedara and Dama about 25 each, and Gola - all seven grahas in a single sign - is vanishingly rare. Read them as a base classification and take the rarity figure on the card seriously.',
+   'The readings run from Vallaki, "fond of songs, dance and musical instruments, skilful, happy, wealthy, and be a leader of men", down to Gola, "strong, be devoid of wealth, learning and intelligence, be dirty, sorrowful, and miserable".'
+ ],
+ 'The full family is set out under Nabhasa.', 926)
 
 on conflict (topic, subject, condition) do update set
   heading = excluded.heading,
