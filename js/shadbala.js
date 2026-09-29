@@ -830,9 +830,29 @@ var Shadbala = (function () {
    * the default, being the older of the two and the one a reader checking
    * against a panchang is likelier to meet.
    */
+  /*
+   * 60 * (max + declination) / divisor, and the constant brings the obliquity
+   * it assumes, because the two are one choice rather than two.
+   *
+   * The scale only spans nought to sixty if the declination can reach the max.
+   * Parashara's 23 deg 27' is near enough today's obliquity, so it pairs with
+   * the true declination and closes: 0.01 to 59.99 over 360 charts. Raman's 24
+   * does not, the true declination stopping at 23.44, and paired with it the
+   * measure runs 0.69 to 59.31 and touches neither end.
+   *
+   * The textbook by K. N. Rao's students shows how the 24 is meant to be used:
+   * with a declination read off a six-part table of the bhuja, which is the
+   * exact declination for an obliquity of 24. So each constant carries its own
+   * and each closes its own scale.
+   *
+   * The cost is recorded rather than hidden. Drik Panchang pairs Raman's
+   * constant with the TRUE declination, and this file used to reproduce it
+   * exactly on that combination. It no longer does, because choosing Raman's
+   * constant here now means choosing the textbook's obliquity with it.
+   */
   var AYANA_CONSTANT = {
-    PARASHARA: { key: 'parashara', max: 23.45, divisor: 46.9 },
-    RAMAN: { key: 'raman', max: 24, divisor: 48 }
+    PARASHARA: { key: 'parashara', max: 23.45, divisor: 46.9, obliquity: null },
+    RAMAN: { key: 'raman', max: 24, divisor: 48, obliquity: 24 }
   };
 
   var CHESHTA = { KENDRA: 'kendra', MOTION: 'motion' };
@@ -882,10 +902,10 @@ var Shadbala = (function () {
       ? 'benefic' : 'qualified';
     var kranti = (options && options.kranti) === KRANTI.TRUE
       ? KRANTI.TRUE : KRANTI.LONGITUDE;
-    var ayanaConstant = (options && options.ayanaConstant) === AYANA_CONSTANT.RAMAN.key
-      ? AYANA_CONSTANT.RAMAN : AYANA_CONSTANT.PARASHARA;
-    var horaLength = (options && options.horaLength) === HORA_LENGTH.SEASONAL
-      ? HORA_LENGTH.SEASONAL : HORA_LENGTH.EQUAL;
+    var ayanaConstant = (options && options.ayanaConstant) === AYANA_CONSTANT.PARASHARA.key
+      ? AYANA_CONSTANT.PARASHARA : AYANA_CONSTANT.RAMAN;
+    var horaLength = (options && options.horaLength) === HORA_LENGTH.EQUAL
+      ? HORA_LENGTH.EQUAL : HORA_LENGTH.SEASONAL;
     var wanted = options && options.natClock;
     var natClock = wanted === NAT_CLOCK.ZONE || wanted === NAT_CLOCK.MEAN
       ? wanted : NAT_CLOCK.APPARENT;
@@ -957,7 +977,9 @@ var Shadbala = (function () {
           : graha === 'Sun' ? 0
           : (Astro.apparentLongitude(MEAN_KEY[graha], T, nut) || {}).lat || 0;
       }
-      var dec = Astro.declination(tropical, latitude, eps);
+      // The ayana constant brings its own obliquity; null means the true one.
+      var dec = Astro.declination(tropical, latitude,
+        ayanaConstant.obliquity === null ? eps : ayanaConstant.obliquity);
 
       var saptavargaja = saptavargajaBala(graha, chart, positions);
       var ojha = ojhayugmaBala(graha, p);

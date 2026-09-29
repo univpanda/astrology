@@ -291,17 +291,24 @@ console.log('\nWhich declination the kranti is');
     return S.compute(chart, place, opts).grahas[g].kala.ayana;
   };
   /*
-   * The default is the declination without latitude, on Parashara's constant.
-   * Drik Panchang pairs the other way about - Raman's constant with the true
-   * declination - and on that pairing this reproduces it exactly, which is why
-   * both halves have to be named here rather than one.
+   * The default is the declination without latitude, on Raman's constant,
+   * which the textbook by K. N. Rao's students works all three of its charts
+   * with. Each constant brings the obliquity it assumes - Raman's 24, and the
+   * true one for Parashara's 23 deg 27' - so both close their own scale.
+   *
+   * That coupling costs an agreement, and the loss is recorded rather than
+   * quietly dropped. Drik Panchang pairs Raman's constant with the TRUE
+   * declination at the true obliquity, and this file used to reproduce it
+   * exactly on that combination: Budha 61.44 and Sukra 58.53. No setting
+   * reaches those figures now.
    */
-  var RAMAN_TRUE = { kranti: S.KRANTI.TRUE, ayanaConstant: S.AYANA_CONSTANT.RAMAN.key };
   check('the declination without latitude is the default',
     ayana('Mercury'), 59.62, 0.05, 'virupas');
-  check('and Raman\u2019s constant with the true declination reproduces Drik Panchang',
-    ayana('Mercury', RAMAN_TRUE), 61.44, 0.05, 'virupas');
-  check('Venus too', ayana('Venus', RAMAN_TRUE), 58.53, 0.05, 'virupas');
+  ok('and Drik Panchang\u2019s ayana pairing is no longer among the options',
+    [{}, { kranti: S.KRANTI.TRUE },
+     { ayanaConstant: 'parashara' },
+     { ayanaConstant: 'parashara', kranti: S.KRANTI.TRUE }]
+      .every(function (o) { return Math.abs(ayana('Mercury', o) - 61.44) > 0.3; }));
   /*
    * The Sun has no ecliptic latitude, so it must read the same either way. If
    * it ever moves, a latitude is being invented for it.
@@ -364,13 +371,22 @@ console.log('\nHow long a hora is');
     var r = S.compute(chart, place, opts);
     return S.GRAHAS.filter(function (g) { return r.grahas[g].kala.hora > 0; })[0];
   };
-  ok('equal horas are the default, and give Mars here',
-    lordOf() === 'Mars', String(lordOf()));
-  ok('seasonal horas give Jupiter, which is what Drik Panchang prints',
-    lordOf({ horaLength: S.HORA_LENGTH.SEASONAL }) === 'Jupiter',
-    String(lordOf({ horaLength: S.HORA_LENGTH.SEASONAL })));
-  ok('an unknown value falls back to equal',
-    lordOf({ horaLength: 'ghatika-ish' }) === 'Mars');
+  /*
+   * Seasonal is the default now: the Rao textbook divides the day-length by
+   * twelve and the night-length by twelve and works all three of its charts
+   * that way, and it is what Drik Panchang prints. Parashara's verse asks for
+   * twenty-four equal parts, which is the other option.
+   *
+   * This is the one small setting that moves a total by a whole rupa, the
+   * sixty being all or nothing.
+   */
+  ok('seasonal horas are the default, and give Jupiter here',
+    lordOf() === 'Jupiter', String(lordOf()));
+  ok('equal horas give Mars instead',
+    lordOf({ horaLength: S.HORA_LENGTH.EQUAL }) === 'Mars',
+    String(lordOf({ horaLength: S.HORA_LENGTH.EQUAL })));
+  ok('an unknown value falls back to seasonal',
+    lordOf({ horaLength: 'ghatika-ish' }) === 'Jupiter');
 
   /*
    * Exactly one graha may hold it, under either reading. Sixty virupas landing
@@ -5555,20 +5571,40 @@ console.log('\nThe two ayana choices are independent, and each comparator picks 
     sj.map(function (v) { return v.toFixed(1); }).join(' '));
 
   /*
-   * Drik Panchang prints two decimals, so this one can be held tight.
+   * Drik Panchang used to be reproduced here to a tenth, on Raman's constant
+   * with the true declination at the true obliquity - 102.61 for the Sun
+   * doubled, then 10.41, 34.51, 55.87, 4.26, 57.04, 56.56. Coupling each
+   * constant to the obliquity it assumes gave that up: Raman's now brings 24
+   * with it, as the Rao textbook uses it, and no combination of settings
+   * reaches Drik Panchang's figures any more. Recorded so the trade is visible
+   * rather than discovered later as a regression.
    */
   var drik = row({ ayanaConstant: 'raman', kranti: Shadbala.KRANTI.TRUE });
-  ok('and Raman with the true declination reproduces Drik Panchang to a tenth',
-    near(drik, [102.61 / 2, 10.41, 34.51, 55.87, 4.26, 57.04, 56.56], 0.1),
+  ok('Drik Panchang\u2019s ayana figures are no longer reachable',
+    !near(drik, [102.61 / 2, 10.41, 34.51, 55.87, 4.26, 57.04, 56.56], 0.1),
     drik.map(function (v) { return v.toFixed(2); }).join(' '));
 
   /*
    * And the two decisions really are independent: changing one must not change
    * what the other does. The Sun is the test for latitude, having none.
    */
+  /*
+   * The two constants used to part by up to 0.70 on a graha. They no longer
+   * do, and that is the point of the coupling rather than a fault in it: once
+   * each is used with the obliquity it assumes, the two classical readings
+   * agree to 0.02 in the worst case over 2520 readings. What looked like a
+   * disagreement between the texts was an artifact of pairing one text's
+   * constant with another's obliquity.
+   */
   var a = row({ ayanaConstant: 'parashara' }), b = row({ ayanaConstant: 'raman' });
-  ok('the constant moves every graha, being a scaling',
-    GR.every(function (g, i) { return Math.abs(a[i] - b[i]) > 0.01; }));
+  ok('the two constants now agree, each carrying its own obliquity',
+    a.every(function (v, i) { return Math.abs(v - b[i]) < 0.05; }),
+    a.map(function (v, i) { return (v - b[i]).toFixed(3); }).join(' '));
+  ok('which is why the setting barely moves a total any more',
+    a.reduce(function (t, v, i) { return t + Math.abs(v - b[i]); }, 0) < 0.2,
+    'the seven differ by ' +
+      a.reduce(function (t, v, i) { return t + Math.abs(v - b[i]); }, 0).toFixed(3) +
+      ' virupas in total');
   var noLat = row({ kranti: Shadbala.KRANTI.LONGITUDE });
   var withLat = row({ kranti: Shadbala.KRANTI.TRUE });
   ok('while the latitude leaves the Sun alone, he having none',
@@ -5622,8 +5658,14 @@ console.log('\nOnly one pairing keeps ayana bala inside its own scale');
     def.lo.toFixed(2) + ' to ' + def.hi.toFixed(2) + ' over ' + def.n + ' charts');
 
   var raman = range('raman', 'longitude');
-  ok('Raman’s constant stays inside but never reaches the sixty it declares',
-    raman.lo >= -1e-9 && raman.hi < 59.9,
+  /*
+   * And Raman's does too, now it carries its own obliquity. Pairing his 24
+   * with a declination that stops at 23.44 left the measure running 0.69 to
+   * 59.31, unable to touch either end of the scale it declares; pairing it
+   * with the 24 the Rao textbook reads its declination at closes both.
+   */
+  ok('Raman’s constant reaches both ends too, carrying its own obliquity',
+    raman.lo >= -1e-9 && raman.hi <= 60 + 1e-9 && raman.lo < 0.2 && raman.hi > 59.8,
     raman.lo.toFixed(2) + ' to ' + raman.hi.toFixed(2));
 
   /*

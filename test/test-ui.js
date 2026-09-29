@@ -7291,9 +7291,20 @@ console.log('\nThe settings notes do not argue from what software does');
    * But the warning itself stays. A reader is owed the fact that a reading has
    * no text behind it; that is the part of the sentence worth keeping.
    */
-  ok('while each unsourced option still says no text asks for it',
-    /No classical text asks for it/.test(panel.replace(/\s+/g, ' ')) &&
-    /no source consulted here asks for it in this bala/
+  ok('while an unsourced option still says no text asks for it',
+    /No classical text asks for it/.test(panel.replace(/\s+/g, ' ')));
+  /*
+   * The seasonal hora used to be on that list too - "no source consulted here
+   * asks for it in this bala" - and it has a source now. The textbook by
+   * K. N. Rao's students divides the day-length by twelve and the night-length
+   * by twelve and works all three of its charts that way, which is why it is
+   * the default. Parashara's verse asking for twenty-four equal parts is the
+   * other reading, and the note gives both.
+   */
+  ok('and the seasonal hora is no longer called unsupported',
+    !/no source consulted here asks for it in this bala/
+      .test(panel.replace(/\s+/g, ' ')) &&
+    /how long that hour is turns out to be disputed after all/
       .test(panel.replace(/\s+/g, ' ')));
   /*
    * Zone time used to be on that list - "No authority asks for zone time" - and
