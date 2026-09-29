@@ -7225,8 +7225,18 @@ console.log('\nThe settings notes do not argue from what software does');
    */
   ok('while each unsourced option still says no text asks for it',
     /No classical text asks for it/.test(panel.replace(/\s+/g, ' ')) &&
-    /No authority asks for zone time/.test(panel.replace(/\s+/g, ' ')) &&
     /no source consulted here asks for it in this bala/
+      .test(panel.replace(/\s+/g, ' ')));
+  /*
+   * Zone time used to be on that list - "No authority asks for zone time" - and
+   * it is not unsourced after all. Uttara Kalamrita's own working takes the
+   * clock's noon: "It is enough if we take 12.00 hours as noon and zero hours
+   * as midnight." Raman asks for the sundial instead, so the note now gives
+   * both rather than calling one of them unsupported.
+   */
+  ok('and zone time is no longer called unsupported, since a text allows it',
+    !/No authority asks for zone time/.test(panel.replace(/\s+/g, ' ')) &&
+    /It is enough if we take 12.00 hours as noon and zero hours as midnight/
       .test(panel.replace(/\s+/g, ' ')));
   ok('and the comparator work is kept where it belongs, in the lessons',
     /Drik Panchang/.test(seed));
