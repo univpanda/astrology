@@ -2479,8 +2479,9 @@ console.log('\nShadbala');
     });
   })());
   ok('so the most saptavargaja can reach is 45 across all seven vargas',
-     Shadbala.SAPTAVARGAJA_VALUES.moolatrikona * 7 === 315 &&
-     Shadbala.GRAHAS.every(function (g) { return result.grahas[g].sthana.saptavargaja <= 315; }));
+     Shadbala.SAPTAVARGAJA_VALUES.moolatrikona +
+       Shadbala.SAPTAVARGAJA_VALUES.own * 6 === 225 &&
+     Shadbala.GRAHAS.every(function (g) { return result.grahas[g].sthana.saptavargaja <= 225; }));
 
   /*
    * The hora is judged here the ordinary way, by the compound relation, and NOT by
@@ -2875,7 +2876,7 @@ console.log('\nShadbala');
   // Ceilings, each from its own definition.
   ok('no component exceeds its maximum', Shadbala.GRAHAS.every(function (g) {
     var x = result.grahas[g];
-    return x.sthana.uchcha <= 60.0001 && x.sthana.saptavargaja <= 315.0001 &&
+    return x.sthana.uchcha <= 60.0001 && x.sthana.saptavargaja <= 225.0001 &&
            x.sthana.ojhayugma <= 30.0001 && x.sthana.kendradi <= 60.0001 &&
            x.sthana.drekkana <= 15.0001 && x.dig <= 60.0001 && x.cheshta <= 60.0001 &&
            // Paksha is doubled for the Moon and ayana for the Sun; nothing else
@@ -6055,6 +6056,90 @@ console.log('\nOne frame throughout, mean places included');
   ok('and the averaged one is inside a tenth of Raman',
     err(c2, p2, EX51, { kendraMethod: 'averaged' }) < 0.1,
     err(c2, p2, EX51, { kendraMethod: 'averaged' }).toFixed(2));
+})();
+
+
+console.log('\nDrekkana bala, where the verse and the practice part');
+/*
+ * Which third of a sign each sex wants is not agreed, and the disagreement is
+ * between the translations and everyone who works the arithmetic.
+ *
+ * Both English BPHS texts give the same order: "Male, female and hermaphrodite
+ * planets respectively get a quarter Rupa according to placements in the
+ * first, second and third decanates", and Santhanam's note repeats it -
+ * female in the 2nd, eunuch in the 3rd.
+ *
+ * Raman has it the other way at section 36, hermaphrodite in the middle and
+ * feminine in the last, and K. N. Rao the same. Raman then works it: Example
+ * 12 gives Sukra, a female graha in the third drekkana, 15 - which under the
+ * translated verse would be nothing - and Chandra, also female, in the second,
+ * nothing, which under the verse would be 15.
+ *
+ * So the verse is a translator's ordering of a compound and the practice is
+ * three sources deep. This follows the practice, and the whole of Example 12
+ * is pinned because that is the only place the difference is worked out.
+ */
+(function () {
+  var SEX = { Sun: 'male', Mars: 'male', Jupiter: 'male',
+    Mercury: 'impotent', Saturn: 'impotent', Moon: 'female', Venus: 'female' };
+  var WANTS = { male: 0, impotent: 1, female: 2 };   // first, second, third
+
+  var lon = 77.58333;
+  var place = { latitude: 13, longitude: lon, tzOffsetMinutes: Math.round(lon * 4) };
+  var chart = Astro.chart({ jdUT: Astro.julianDay(1918, 10, 16,
+    14 + 6 / 60 + 16 / 3600 - lon / 15), latitude: 13, longitude: lon,
+    tzOffsetMinutes: place.tzOffsetMinutes, ayanamsa: 'raman' });
+  var r = Shadbala.compute(chart, place).grahas;
+
+  /* Example 12: the drekkana each graha falls in, and what he allots it. */
+  var EX12 = { Sun: [0, 15], Moon: [1, 0], Mars: [1, 0], Mercury: [0, 0],
+    Jupiter: [2, 0], Venus: [2, 15], Saturn: [0, 0] };
+  var wrong = [];
+  Object.keys(EX12).forEach(function (g) {
+    var p = chart.planets.filter(function (x) { return x.name === g; })[0];
+    var part = Math.floor((p.longitude % 30) / 10);
+    if (part !== EX12[g][0]) wrong.push(g + ' in drekkana ' + (part + 1));
+    if (r[g].sthana.drekkana !== EX12[g][1]) {
+      wrong.push(g + ' scored ' + r[g].sthana.drekkana + ' not ' + EX12[g][1]);
+    }
+  });
+  ok('every row of Raman’s Example 12 comes out', wrong.length === 0,
+    wrong.join(', ') || 'all seven');
+
+  /*
+   * And the two rows that carry the argument, named so a later edit that
+   * flipped the table could not pass by scoring zero everywhere.
+   */
+  ok('a female graha scores in the third drekkana, not the second',
+    r.Venus.sthana.drekkana === 15 && r.Moon.sthana.drekkana === 0,
+    'Sukra ' + r.Venus.sthana.drekkana + ', Chandra ' + r.Moon.sthana.drekkana);
+
+  /*
+   * The sexes themselves, which all the sources agree on. Driven over real
+   * charts rather than restated: for every graha in every sweep, the fifteen
+   * has to land exactly when it stands in the third its sex wants, and never
+   * otherwise. An earlier draft of this test recomputed the rule and compared
+   * it with itself, which would have passed whatever the table said.
+   */
+  var missed = [], paidWrongly = [];
+  for (var y = 1950; y < 2000; y++) {
+    for (var mo = 1; mo <= 12; mo += 3) {
+      var cc = Astro.chart({ jdUT: Astro.julianDay(y, mo, 9, 6), latitude: 28.61,
+        longitude: 77.21, tzOffsetMinutes: 330 });
+      var rr = Shadbala.compute(cc, { latitude: 28.61, longitude: 77.21,
+        tzOffsetMinutes: 330 }).grahas;
+      Object.keys(SEX).forEach(function (g) {
+        var p = cc.planets.filter(function (x) { return x.name === g; })[0];
+        var third = Math.floor((p.longitude % 30) / 10);
+        var got = rr[g].sthana.drekkana;
+        if (third === WANTS[SEX[g]] && got !== 15) missed.push(g);
+        if (third !== WANTS[SEX[g]] && got !== 0) paidWrongly.push(g);
+      });
+    }
+  }
+  ok('the fifteen lands only in the third that graha’s sex wants',
+    missed.length === 0 && paidWrongly.length === 0,
+    missed.length + ' missed, ' + paidWrongly.length + ' paid wrongly over 1400 readings');
 })();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');

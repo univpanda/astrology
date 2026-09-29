@@ -1907,17 +1907,26 @@
    * The five shares Sthana bala is made of, in the order Parashara gives them,
    * each with the most it can be worth. The maximum is beside the name rather
    * than left to be known: a row reading 60.0 says nothing until it is read
-   * against 60 for Kendradi and 315 for Saptavargaja, and the two rows look the
+   * against 60 for Kendradi and 225 for Saptavargaja, and the two rows look the
    * same until it is.
+   *
+   * Saptavargaja read 315 here for a long time, seven times the 45 a graha
+   * takes in its moolatrikona. It cannot reach that: moolatrikona counts in
+   * the rashi and nowhere else, so the ceiling is 45 once and 30, an own sign,
+   * in each of the other six. The rows beneath were being read against a
+   * figure half again too large - 217.5, the most seen over twelve hundred
+   * charts, showed as 69 per cent of the scale where it is 97 - and Sthana
+   * bala inherited it, printing 480 where 390 is the sum of its parts.
    */
   var STHANA_PARTS = [
     { key: 'uchcha', label: 'Uchcha', en: 'Exaltation', max: 60,
       says: 'How far the graha stands from its own debilitation point: nothing at ' +
         'that degree, sixty half a circle away from it.' },
-    { key: 'saptavargaja', label: 'Saptavargaja', en: 'Seven divisions', max: 315,
+    { key: 'saptavargaja', label: 'Saptavargaja', en: 'Seven divisions', max: 225,
       says: 'The graha against the lord of the sign it takes in each of the seven ' +
-        'divisions, 45 for moolatrikona down to 2 in a great enemy’s, added ' +
-        'over all seven.' },
+        'divisions, 45 for moolatrikona down to 1.875 in a great enemy’s, added ' +
+        'over all seven. It caps at 225 rather than seven 45s, moolatrikona ' +
+        'counting in the rashi alone, so the best elsewhere is an own sign.' },
     /*
      * One bala in the text and two rows here. Santhanam gives it as a single
      * Ojhayugmarasiamsa bala, but the instruction under verse 414 is that the
@@ -2005,7 +2014,7 @@
    */
   var BALA_ROWS = [
     { key: 'sthana', label: 'Sthana bala', en: 'Positional', parts: STHANA_PARTS,
-      total: true, max: 480,
+      total: true, max: 390,
       says: 'Positional strength: the six rows under it added.' },
     { key: 'dig', label: 'Dig bala', en: 'Directional', max: 60,
       says: 'Directional strength. Each graha has one angle it is strongest on and ' +

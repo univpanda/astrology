@@ -1755,7 +1755,14 @@ ok('and no measure ever exceeds the ceiling it claims', (function () {
                            appSrc.indexOf('function renderShadbala'));
   var m, re = /key: '([A-Za-z]+)', label: '[^']*', en: '[^']*',(?:\s*parts: [A-Z_]+,)?\s*(?:total: true,)?\s*max: ([\d.]+|null)/g;
   while ((m = re.exec(parts))) declared[m[1]] = m[2] === 'null' ? null : Number(m[2]);
-  if (declared.sthana !== 60 + 315 + 15 + 15 + 60 + 15) return false;
+  /*
+   * Saptavargaja claimed 315, seven times the 45 of moolatrikona, and cannot
+   * reach it: moolatrikona counts in the rashi alone, so the ceiling is 45
+   * once and an own sign's 30 in each of the other six. Sthana bala inherited
+   * the error, claiming 480 where its parts sum to 390.
+   */
+  if (declared.saptavargaja !== 45 + 30 * 6) return false;
+  if (declared.sthana !== 60 + 225 + 15 + 15 + 60 + 15) return false;
   // The three that differ by graha claim their upper figure; drik claims its bound.
   if (declared.drik !== 97.5) return false;
   if (declared.kala !== 450 || declared.paksha !== 120 || declared.ayana !== 120) {
