@@ -7196,5 +7196,36 @@ console.log('\nUttara Kalamrita on the Moon in paksha bala');
     })());
 })();
 
+
+console.log('\nThe settings notes do not argue from what software does');
+/*
+ * "It is offered because some software computes it that way" is not a reason a
+ * reader needs while choosing a setting. What they need is whether a text asks
+ * for it, and the notes say that. Where the comparator work belongs is the
+ * Lesson tab, which carries it at length.
+ */
+(function () {
+  var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  var panel = page.slice(page.indexOf('id="panel-settings"'),
+                         page.indexOf('</section>', page.indexOf('id="panel-settings"')));
+  var seed = fs.readFileSync(path.join(root,
+    'supabase/seed/astro_readings_strength.sql'), 'utf8');
+
+  ok('no settings note justifies an option by what other programs do',
+    !/software/i.test(panel) && !/Drik Panchang/.test(panel) &&
+    !/Star Jyotish/.test(panel));
+  /*
+   * But the warning itself stays. A reader is owed the fact that a reading has
+   * no text behind it; that is the part of the sentence worth keeping.
+   */
+  ok('while each unsourced option still says no text asks for it',
+    /No classical text asks for it/.test(panel.replace(/\s+/g, ' ')) &&
+    /No authority asks for zone time/.test(panel.replace(/\s+/g, ' ')) &&
+    /no source consulted here asks for it in this bala/
+      .test(panel.replace(/\s+/g, ' ')));
+  ok('and the comparator work is kept where it belongs, in the lessons',
+    /Drik Panchang/.test(seed));
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
