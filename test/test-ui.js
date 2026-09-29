@@ -7021,5 +7021,21 @@ console.log('\nEvery citation in the settings names its book');
     !/The doubling is not in dispute/.test(panel));
 })();
 
+
+console.log('\nA column heading sits over its own column');
+/*
+ * "Measure" was centred while every cell beneath it starts at the left edge,
+ * so the one word naming the column floated over the middle of it. The graha
+ * headings are right to stay centred: the figures under them are.
+ */
+(function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  ok('the measure heading is aligned with the names it heads',
+    /#shadbala-table thead th:first-child \{ text-align: left; \}/.test(css) &&
+    /#shadbala-table tbody th\[scope="row"\] \{\s*\n\s*text-align: left;/.test(css));
+  ok('and the graha headings are left centred, over figures that are',
+    /#shadbala-table th, #shadbala-table td \{ text-align: center; \}/.test(css));
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

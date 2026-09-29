@@ -1211,6 +1211,10 @@ td .retro-flag, td.retro-flag, th .retro-flag { color: var(--retro); }
   white-space: nowrap;
   color: var(--ink);
 }
+/* The measure names below are left-aligned, so the word heading them has to be
+   too. Centred, it sat adrift over a column whose every other cell begins at
+   the left edge. The graha headings stay centred, over figures that are. */
+#shadbala-table thead th:first-child { text-align: left; }
 #shadbala-table td.numeric { font-variant-numeric: tabular-nums; }
 /* Fifteen rows is a lot of table; let it breathe less than the others. */
 #shadbala-table th, #shadbala-table td { padding-top: 0.4rem; padding-bottom: 0.4rem; }
