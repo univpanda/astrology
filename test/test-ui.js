@@ -2004,7 +2004,7 @@ ok('and it lands inside kala bala rather than beside it', (function () {
   var shadSrc = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8');
   return /results\[war\.won\]\.kala\.yuddha \+= war\.value;/.test(shadSrc) &&
     /x\.kala\.total \+= x\.kala\.yuddha;/.test(shadSrc) &&
-    /x\.totalShashtiamsa = x\.sthana\.total \+ x\.dig \+ x\.kala\.total \+ x\.cheshta \+/
+    /x\.totalShashtiamsa = x\.sthana\.total \+ x\.dig \+ x\.kala\.total \+/
       .test(shadSrc);
 })());
 /*
@@ -6937,7 +6937,7 @@ console.log('\nThe settings notes describe what the code does');
   });
 
   ok('the note counts the thresholds the code actually has',
-    cut.length === 5 && /all five\s+boundaries dividing them are this site/.test(flat),
+    cut.length === 4 && /all four\s+boundaries dividing them are this site/.test(flat),
     cut.length + ' thresholds');
   ok('and names each of them',
     cut.every(function (v) { return flat.indexOf(v) >= 0; }), cut.join(', '));
@@ -7362,6 +7362,43 @@ console.log('\nThe settings run from the chart outward');
     order[order.indexOf('kranti') + 1] === 'ayana-doubled' &&
     order.indexOf('ayana-constant') < order.indexOf('kranti'),
     order.slice(order.indexOf('ayana-constant'), order.indexOf('kranti') + 2).join(' then '));
+})();
+
+console.log('\nThe eight motions carry the values the texts pair them with');
+/*
+ * Santhanam and a second independent translation agree word for word: Vakra
+ * 60, Anuvakra 30, Vikala 15, Manda 30, Mandatara 15, Sama 7.5, Chara 45,
+ * Atichara 30. This code used to reassign them so that strength climbed with
+ * speed, on the view that the translators had slid the names by a slot. Two
+ * translations agreeing is the answer to that, and the figures themselves fall
+ * in halves - 60 30 15, 30 15 7.5, 45 30 - which is a shape, not a slip.
+ */
+(function () {
+  var src = fs.readFileSync(path.join(root, 'js/shadbala.js'), 'utf8');
+  var table = src.match(/var MOTION_VALUE = \{[^}]*\}/)[0].replace(/\s+/g, ' ');
+  var TEXT = { vakra: 60, anuvakra: 30, vikala: 15, manda: 30, mandatara: 15,
+    sama: 7.5, chara: 45, atichara: 30 };
+  ok('every motion takes the figure the texts give it',
+    Object.keys(TEXT).every(function (k) {
+      return new RegExp(k + ': ' + TEXT[k] + '\\b').test(table);
+    }), table);
+  ok('and the names the code once used are gone',
+    !/madhya|sheeghra|atisheeghra/.test(src));
+
+  /*
+   * Sama is the weakest of the eight although it is the ordinary middling
+   * motion. That is the part that looks wrong and is not, so it is pinned.
+   */
+  ok('Sama, the middling motion, is the weakest of them',
+    Math.min.apply(null, Object.keys(TEXT).map(function (k) { return TEXT[k]; })) === TEXT.sama);
+
+  /*
+   * Atichara is "entering next sign in accelerated motion", so it is Chara
+   * plus a boundary rather than a faster band, and mirrors Anuvakra.
+   */
+  ok('Atichara is a sign crossing, as Anuvakra is',
+    /return crossesSign\(longitude, speed\) \? 'atichara' : 'chara';/.test(src) &&
+    /return crossesSign\(longitude, speed\) \? 'anuvakra' : 'vakra';/.test(src));
 })();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');

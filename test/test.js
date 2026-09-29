@@ -5630,5 +5630,142 @@ console.log('\nThe two sundial settings differ by the equation of time alone');
     'summer ' + summer.toFixed(1) + ', winter ' + winter.toFixed(1));
 })();
 
+
+console.log('\nCheshta bala, against the one worked example the texts give');
+/*
+ * Raman works his Standard Horoscope end to end in Graha and Bhava Balas,
+ * which makes it the only place any of these books shows its arithmetic. The
+ * birth: female, 16 October 1918, 14:06:16 LMT, 13 N, 77 deg 35' E, on his own
+ * ayanamsa.
+ */
+(function () {
+  var lon = 77.58333;
+  var place = { latitude: 13, longitude: lon, tzOffsetMinutes: Math.round(lon * 4) };
+  var jd = Astro.julianDay(1918, 10, 16, 14 + 6 / 60 + 16 / 3600 - lon / 15);
+  var chart = Astro.chart({ jdUT: jd, latitude: 13, longitude: lon,
+    tzOffsetMinutes: place.tzOffsetMinutes, ayanamsa: 'raman' });
+
+  /* Section 6 prints the nirayana longitudes he works from. */
+  var PRINTED = { Sun: 180.899, Moon: 311.288, Mars: 229.509, Mercury: 181.526,
+    Jupiter: 84.014, Venus: 171.166, Saturn: 124.378 };
+  var offBy = 0;
+  Object.keys(PRINTED).forEach(function (n) {
+    var got = chart.planets.filter(function (p) { return p.name === n; })[0].longitude;
+    offBy = Math.max(offBy, Math.abs(got - PRINTED[n]));
+  });
+  ok('our true longitudes are his true longitudes', offBy < 0.1,
+    'worst ' + offBy.toFixed(3) + ' degrees');
+
+  /*
+   * His mean longitudes are not. They come from Kedarnath Dutt's tables, which
+   * are Surya Siddhanta, where ours are Standish - and a chesta kendra is a
+   * gap between a true longitude and a mean one, so it carries the difference
+   * between the two models on top of the arc it means to report.
+   */
+  var T = (jd + Astro.deltaT(jd) / 86400 - 2451545.0) / 36525;
+  var ayan = Astro.ayanamsa(T, 'raman');
+  var MEANS = { sun: 181.2275, mars: 266.34, jupiter: 66.91, saturn: 111.23,
+    mercury: 174.49, venus: 158.35 };
+  var worstClassical = 0, worstModern = 0;
+  Object.keys(MEANS).forEach(function (k) {
+    var c = Astro.norm360(Astro.classicalMeanLongitude(k, jd, T) - ayan);
+    var m = Astro.norm360((k === 'sun' ? Astro.sunMeanLongitude(T)
+                                       : Astro.meanLongitude(k, T)) - ayan);
+    var gap = function (v) { return Math.abs(((v - MEANS[k] + 540) % 360) - 180); };
+    worstClassical = Math.max(worstClassical, gap(c));
+    worstModern = Math.max(worstModern, gap(m));
+  });
+  ok('the classical tables reproduce his mean longitudes', worstClassical < 0.5,
+    'worst ' + worstClassical.toFixed(2) + ' degrees');
+  ok('and the modern ones do not, which is the whole reason for the setting',
+    worstModern > 5, 'worst ' + worstModern.toFixed(2) + ' degrees');
+
+  /* Example 51, his printed answers. */
+  var EX51 = { Mars: 22.23, Mercury: 2.30, Jupiter: 35.26, Venus: 5.95, Saturn: 21.14 };
+  var bySource = function (src) {
+    var r = Shadbala.compute(chart, place, { meanSource: src }).grahas;
+    return Object.keys(EX51).reduce(function (w, n) {
+      return Math.max(w, Math.abs(r[n].cheshta - EX51[n]));
+    }, 0);
+  };
+  ok('and so reproduce the cheshta balas he prints', bySource('classical') < 0.25,
+    'worst ' + bySource('classical').toFixed(2) + ' virupas');
+  ok('where the modern means miss Budha by whole virupas', bySource('modern') > 3,
+    'worst ' + bySource('modern').toFixed(2) + ' virupas');
+  ok('the classical tables are the default', bySource(undefined) === bySource('classical'));
+
+  /*
+   * Example 60 works the Sun by the other rule Parashara gives, at 28.3-4:
+   * sayana Sun plus three signs, reduced, over three. Raman prints 22.66.
+   */
+  var sun = chart.planets.filter(function (p) { return p.name === 'Sun'; })[0].longitude;
+  var arc = Astro.norm360(sun + chart.ayanamsa + 90);
+  ok('and the Ishta and Kashta rule for the Sun reproduces his Example 60',
+    Math.abs((arc > 180 ? 360 - arc : arc) / 3 - 22.66) < 0.1);
+
+  /*
+   * Example 56 is his Shadbala Pinda table, and it has no cheshta row for the
+   * luminaries. Chandra's printed total is the sum of the other five to the
+   * hundredth, which is how we know the blank is deliberate.
+   */
+  ok('Raman’s Chandra total is the sum with no cheshta in it',
+    Math.abs((126.50 + 31.56 + 202.04 + 51.43 - 21.73) - 389.80) < 0.005);
+  var counted = Shadbala.compute(chart, place, { luminaryCheshta: 'counted' }).grahas;
+  var omitted = Shadbala.compute(chart, place, { luminaryCheshta: 'omitted' }).grahas;
+  ok('and the setting takes it back out without hiding the figure',
+    omitted.Sun.cheshta === counted.Sun.cheshta &&
+    omitted.Sun.cheshtaCounted === false && counted.Sun.cheshtaCounted === true &&
+    Math.abs((counted.Sun.totalShashtiamsa - omitted.Sun.totalShashtiamsa)
+      - counted.Sun.cheshta) < 1e-9);
+  ok('while the five starry grahas keep theirs either way',
+    ['Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'].every(function (n) {
+      return omitted[n].cheshtaCounted === true &&
+        omitted[n].totalShashtiamsa === counted[n].totalShashtiamsa;
+    }));
+})();
+
+console.log('\nThe eight motions carry the values the texts pair them with');
+/*
+ * Santhanam and a second independent translation agree word for word: Vakra
+ * 60, Anuvakra 30, Vikala 15, Manda 30, Mandatara 15, Sama 7.5, Chara 45,
+ * Atichara 30. This code used to reassign them so that strength climbed with
+ * speed, on the view that the translators had slid the names by a slot. Two
+ * translations agreeing is the answer to that, and the figures themselves fall
+ * in halves - 60 30 15, 30 15 7.5, 45 30 - which is a shape, not a slip.
+ *
+ * Driven rather than read: every figure the method can emit, swept over sixty
+ * years, has to be one the texts name.
+ */
+(function () {
+  var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+  var ALLOWED = [60, 45, 30, 15, 7.5];
+  var seen = {}, stray = [];
+  for (var y = 1950; y < 2010; y++) {
+    for (var m = 1; m <= 12; m++) {
+      var c = Astro.chart({ jdUT: Astro.julianDay(y, m, 11, 7), latitude: 28.61,
+        longitude: 77.21, tzOffsetMinutes: 330 });
+      var r = Shadbala.compute(c, place, { cheshtaMethod: 'motion' }).grahas;
+      ['Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'].forEach(function (n) {
+        var v = r[n].cheshta;
+        seen[v] = (seen[v] || 0) + 1;
+        if (ALLOWED.indexOf(v) < 0) stray.push(n + ' ' + v);
+      });
+    }
+  }
+  ok('every figure the method emits is one the texts allot', stray.length === 0,
+    stray.slice(0, 5).join(', ') || Object.keys(seen).sort(function (a, b) {
+      return b - a; }).join(', '));
+
+  /*
+   * And 7.5 is reached, which is the part that looks like a mistake: Sama is
+   * the ordinary middling motion and the weakest of the eight. If a later
+   * edit quietly makes the scale climb with speed again, the commonest state
+   * stops paying the smallest figure and this goes out.
+   */
+  ok('the middling motion really does pay the smallest figure',
+    seen[7.5] > 0 && Math.min.apply(null, Object.keys(seen).map(Number)) === 7.5,
+    (seen[7.5] || 0) + ' charts at Sama');
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

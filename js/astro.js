@@ -578,6 +578,57 @@ var Astro = (function () {
     return norm360(meanLongitude('earth', T) + 180);
   }
 
+  /*
+   * The same mean longitudes as the classical tables carry them.
+   *
+   * The two above are Standish's, and for most purposes that is the right
+   * answer: they are the mean longitudes of the actual solar system. Cheshta
+   * bala is the exception, because the chesta kendra is not an observation of
+   * anything. It is the difference between a true longitude and a mean one,
+   * and the mean one is a construct of whichever model defines it. Measure a
+   * modern true longitude against a Surya Siddhanta mean and the gap carries
+   * the disagreement between two models on top of the arc it is meant to
+   * report.
+   *
+   * Raman works his Standard Horoscope this way throughout: true longitudes
+   * from an accurate ephemeris, mean longitudes from these tables - chapter VI
+   * sections 96 to 103, which he took from Kedarnath Dutt's "The Book of
+   * Fate". The epoch is midnight opening 1 January 1900 at 76 E, the meridian
+   * of India the Hindu astronomers used, and each graha carries a constant, a
+   * daily motion and for four of them a small linear correction in the years
+   * since that epoch.
+   *
+   * Two of these are not mean longitudes at all. Budha and Sukra never depart
+   * far from the Sun, so their MEAN longitude is his - section 99 prints
+   * 181.2275 for Ravi, Budha and Sukra alike - and what the table gives is
+   * their seeghrochcha. That is what the chesta kendra wants from them, and it
+   * is what meanLongitude returns for those two as well, so the two sources
+   * are interchangeable where they are used.
+   *
+   * Returned tropical, by adding back the ayanamsa these tables are reckoned
+   * in, so a caller can subtract whichever ayanamsa the chart is cast in and
+   * keep one frame throughout. The figures themselves are nirayana.
+   */
+  var DUTT_EPOCH = 2415020.5 - 76 / 360;   // 0h, 1 Jan 1900, at 76 E
+  var DUTT = {
+    sun:     { c: 257.4568, n: 0.98564734, corr: null },
+    mars:    { c: 270.22,   n: 0.52402825, corr: null },
+    jupiter: { c: 220.04,   n: 0.08308510, corr: function (t) { return -(3.33 + 0.0067 * t); } },
+    saturn:  { c: 236.74,   n: 0.03344141, corr: function (t) { return 5 + 0.001 * t; } },
+    mercury: { c: 164.00,   n: 4.09234598, corr: function (t) { return 6.67 - 0.00133 * t; } },
+    venus:   { c: 328.51,   n: 1.60213028, corr: function (t) { return -(5 + 0.001 * t); } }
+  };
+
+  function classicalMeanLongitude(bodyKey, jdUT, T) {
+    var e = DUTT[bodyKey];
+    if (!e) return null;
+    var days = jdUT - DUTT_EPOCH;
+    var value = e.c + e.n * days;
+    // t is whole years since 1900, which is how Raman writes the corrections.
+    if (e.corr) value += e.corr(calendarDate(jdUT).y - 1900);
+    return norm360(value + ayanamsa(T, 'raman'));
+  }
+
   /* ------------------------------------------------- karakas and avasthas */
 
   /*
@@ -1977,6 +2028,7 @@ var Astro = (function () {
     moonLatitude: moonLatitude,
     localApparentTime: localApparentTime,
     meanLongitude: meanLongitude, sunMeanLongitude: sunMeanLongitude,
+    classicalMeanLongitude: classicalMeanLongitude,
     charaKarakas: charaKarakas, CHARA_KARAKAS: CHARA_KARAKAS,
     KARAKA_GRAHAS: KARAKA_GRAHAS,
     baladiAvastha: baladiAvastha, BALADI: BALADI, BALADI_WORTH: BALADI_WORTH,

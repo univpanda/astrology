@@ -1894,7 +1894,10 @@
            kranti: document.getElementById('kranti').value,
            ayanaConstant: document.getElementById('ayana-constant').value,
            mercuryNature: document.getElementById('mercury-nature').value,
-           cheshtaMethod: document.getElementById('cheshta-method').value });
+           cheshtaMethod: document.getElementById('cheshta-method').value,
+           meanSource: document.getElementById('mean-source').value,
+           moonCheshta: document.getElementById('moon-cheshta').value,
+           luminaryCheshta: document.getElementById('luminary-cheshta').value });
     }
     return state.shadbala;
   }
@@ -3998,6 +4001,30 @@
       status.textContent = halved
         ? pair[1] + ' is shown halved. The totals still count it doubled.'
         : pair[1] + ' is shown as the texts compute it, doubled.';
+    });
+  });
+
+  /*
+   * Three readings of cheshta bala, all of which change the figures rather
+   * than the display, so the cached strengths are dropped and the page redrawn.
+   */
+  [['mean-source', { classical: 'Cheshta kendras now read the classical mean longitudes.',
+                     modern: 'Cheshta kendras now read the modern mean longitudes.' }],
+   ['moon-cheshta', { paksha: 'The Moon\u2019s cheshta bala is now her paksha bala.',
+                      elongation: 'The Moon\u2019s cheshta bala is now her distance from the Sun.' }],
+   ['luminary-cheshta', { counted: 'The Sun\u2019s and Moon\u2019s cheshta bala now counts in the total.',
+                          omitted: 'The Sun\u2019s and Moon\u2019s cheshta bala is shown but not counted.' }]
+  ].forEach(function (pair) {
+    document.getElementById(pair[0]).addEventListener('change', function () {
+      var status = document.getElementById('settings-status');
+      var said = pair[1][this.value];
+      if (!lastChart) {
+        status.textContent = 'Saved. The next chart will use it.';
+        return;
+      }
+      lastChart.shadbala = null;
+      render(lastChart);
+      status.textContent = said;
     });
   });
 

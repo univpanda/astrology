@@ -313,6 +313,56 @@ var Shadbala = (function () {
    * virupa and a half and misses Mars and Mercury by rather more, which is what
    * that difference looks like.
    */
+  /*
+   * Which mean longitudes the kendra is measured against.
+   *
+   * The chesta kendra is a gap between a true longitude and a mean one, and a
+   * mean longitude belongs to whichever model defines it. Reading a modern
+   * mean against a modern true is internally consistent but is not what any
+   * text computes; reading the classical tables against a modern true is what
+   * Raman does throughout his Standard Horoscope, and it is the only one of
+   * the two that reproduces his worked answers.
+   *
+   * Measured against his Examples 49 to 51: the classical tables land every
+   * graha within 0.11 virupas, where the modern means miss Budha by 4.1
+   * because the two models put his mean longitude 11 degrees apart. The outer
+   * three barely move either way, the Sun's error there cancelling most of
+   * each graha's own.
+   */
+  var MEAN_SOURCE = { CLASSICAL: 'classical', MODERN: 'modern' };
+
+  /*
+   * Where the Moon's cheshta bala comes from. Parashara answers this twice.
+   *
+   * Chapter 27.18, in the shadbala chapter: "The Moon's Paksha Bala will
+   * itself be her Cheshta Bala." Chapter 28.3-4, setting up Ishta and Kashta:
+   * "The sidereal longitude of the Sun should be deducted from the Moon to get
+   * the Moon's Cheshta Kendra", which over three is her elongation in virupas.
+   *
+   * The two agree exactly while the Moon is read as a benefic throughout, her
+   * paksha bala then being that same elongation over three. They part only
+   * under the group reading, where a waning Moon takes sixty minus it.
+   */
+  var MOON_CHESHTA = { PAKSHA: 'paksha', ELONGATION: 'elongation' };
+
+  /*
+   * Whether the luminaries' cheshta bala is added to the shadbala total.
+   *
+   * Parashara gives them one - 27.18 - and lists cheshta among the six at
+   * 27.24-25, which is the reading followed by default. Raman does not add it:
+   * Example 56 leaves both rows of his table empty, and the totals he prints
+   * are the sums without them, Chandra's 389.80 to the hundredth. His reason
+   * is at section 136, that the figure is "necessary to ascertain the Ishta
+   * and Kashta Phalas" - the subject of chapter 28, where Parashara's own
+   * second rule for them appears.
+   *
+   * It is not a small thing either way. The Sun's ayana bala is already inside
+   * his kala bala, doubled, so counting it again as cheshta puts it in at
+   * three times its base rather than twice; the same for the Moon's paksha.
+   * That is worth about a rupa on each.
+   */
+  var LUMINARY_CHESHTA = { COUNTED: 'counted', OMITTED: 'omitted' };
+
   var INNER = ['Mercury', 'Venus'];
   var MEAN_KEY = { Mars: 'mars', Mercury: 'mercury', Jupiter: 'jupiter',
     Venus: 'venus', Saturn: 'saturn' };
@@ -351,12 +401,18 @@ var Shadbala = (function () {
    * Example 49 shows it plainly - Budha and Sukra are both worked with 181.23,
    * the Sun's mean, where Kuja, Guru and Sani use their own.
    */
-  function chestaKendra(graha, longitude, T, ayanamsa) {
+  function chestaKendra(graha, longitude, T, ayanamsa, source, jd) {
     var key = MEAN_KEY[graha];
     if (!key) return 0;
     var sidereal = function (tropical) { return Astro.norm360(tropical - ayanamsa); };
-    var sunMean = sidereal(Astro.sunMeanLongitude(T));
-    var own = sidereal(Astro.meanLongitude(key, T));
+    var classical = source === MEAN_SOURCE.CLASSICAL;
+    var meanOf = function (k) {
+      return sidereal(classical ? Astro.classicalMeanLongitude(k, jd, T)
+                                : Astro.meanLongitude(k, T));
+    };
+    var sunMean = classical ? sidereal(Astro.classicalMeanLongitude('sun', jd, T))
+                            : sidereal(Astro.sunMeanLongitude(T));
+    var own = meanOf(key);
     return INNER.indexOf(graha) >= 0
       ? chestaKendraFrom(own, sunMean, longitude)
       : chestaKendraFrom(sunMean, own, longitude);
@@ -368,21 +424,29 @@ var Shadbala = (function () {
    * whole of his cheshta bala. The Sun and Moon keep their borrowings either
    * way, v.18 being silent about motion for them.
    *
-   * The naming below is Charak's, which runs in order - Madhya middling,
-   * Manda slow, Mandatara slower. Santhanam's gloss slides the words by one
-   * slot against the same sequence of values, so his "Manda" is this "Madhya",
-   * and his "Sama" takes 7.5, which is a strange thing to allot a middling
-   * speed. The values are identical in both; only the labels move.
+   * The names below and the value each carries are the text's, checked in two
+   * independent English translations which agree word for word on the pairing:
+   * Manda 30, Mandatara 15, Sama 7.5, Chara 45, Atichara 30. An earlier
+   * reading here took the translators to have slid the words by a slot,
+   * because it puts Sama - the average speed, and much the commonest state -
+   * at the bottom of the scale, and reassigned the values to climb with speed.
+   * That was the wrong call. The list is not a ranking of speed: read down the
+   * figures and they fall in halves, 60 30 15, then 30 15 7.5, then 45 30,
+   * which is a deliberate shape rather than a translator's slip. This method
+   * does not agree with the chesta kendra either way - the kendra gives sixty
+   * at retrogression and nothing at the fastest direct motion, where this list
+   * pays Chara 45 - so making it monotonic did not reconcile them.
    *
    * Four states come straight out of the ephemeris. Vakra is retrograde,
-   * Vikala is stationary, and Anuvakra is retrograde across a sign boundary.
-   * THE OTHER FOUR BOUNDARIES ARE NOT IN ANY TEXT. Neither Parashara nor
-   * Charak says where slow becomes slower or fast becomes very fast, so the
-   * ratios below are a choice, and the only honest thing to do is say so here
-   * rather than let them pass as received.
+   * Vikala is stationary, Anuvakra is retrograde across a sign boundary, and
+   * Atichara is its mirror, "entering next sign in accelerated motion".
+   * THE REMAINING BOUNDARIES ARE NOT IN ANY TEXT. Neither Parashara nor
+   * Charak says where slow becomes slower, so the ratios below are a choice,
+   * and the only honest thing to do is say so here rather than let them pass
+   * as received.
    */
-  var MOTION_VALUE = { vakra: 60, anuvakra: 30, vikala: 15, madhya: 30,
-    manda: 15, mandatara: 7.5, sheeghra: 45, atisheeghra: 30 };
+  var MOTION_VALUE = { vakra: 60, anuvakra: 30, vikala: 15, manda: 30,
+    mandatara: 15, sama: 7.5, chara: 45, atichara: 30 };
 
   /*
    * Mean geocentric daily motion. The inner two take the Sun's, not their own
@@ -393,35 +457,43 @@ var Shadbala = (function () {
   var MEAN_MOTION = { Mars: 0.524033, Mercury: 0.985609, Jupiter: 0.083091,
     Venus: 0.985609, Saturn: 0.033460 };
 
-  var MOTION_BANDS = [[0.05, 'vikala'], [0.40, 'mandatara'], [0.75, 'manda'],
-    [1.25, 'madhya'], [1.75, 'sheeghra']];
+  var MOTION_BANDS = [[0.05, 'vikala'], [0.50, 'mandatara'], [1.00, 'manda'],
+    [1.50, 'sama']];
+
+  /** Whether a day's travel carries the graha out of the sign it is in. */
+  function crossesSign(longitude, speed) {
+    return Math.floor(Astro.norm360(longitude) / 30) !==
+      Math.floor(Astro.norm360(longitude + speed) / 30);
+  }
 
   function motionState(graha, longitude, speed) {
     var mean = MEAN_MOTION[graha];
     if (!mean) return null;
     if (speed < 0) {
-      // Anuvakra is retrogression that carries the graha back over a sign
-      // boundary; a day's travel either side settles it.
-      var here = Math.floor(Astro.norm360(longitude) / 30);
-      var soon = Math.floor(Astro.norm360(longitude + speed) / 30);
-      return here === soon ? 'vakra' : 'anuvakra';
+      return crossesSign(longitude, speed) ? 'anuvakra' : 'vakra';
     }
     var ratio = speed / mean;
     for (var i = 0; i < MOTION_BANDS.length; i++) {
       if (ratio < MOTION_BANDS[i][0]) return MOTION_BANDS[i][1];
     }
-    return 'atisheeghra';
+    // Chara is fast; Atichara is fast and over the boundary with it.
+    return crossesSign(longitude, speed) ? 'atichara' : 'chara';
   }
 
-  function cheshtaBala(graha, longitude, T, ayanamsa, ayana, paksha, method, speed) {
+  function cheshtaBala(graha, longitude, o) {
     // The luminaries never retrograde, so they borrow another strength.
-    if (graha === 'Sun') return ayana;
-    if (graha === 'Moon') return paksha;
-    if (method === CHESHTA.MOTION) {
-      var state = motionState(graha, longitude, speed);
+    if (graha === 'Sun') return o.ayana;
+    if (graha === 'Moon') {
+      if (o.moonCheshta !== MOON_CHESHTA.ELONGATION) return o.paksha;
+      // "If the Cheshta Kendra is in excess of 6 signs, deduct it from 12."
+      var arc = Astro.norm360(o.elongation);
+      return (arc > 180 ? 360 - arc : arc) / 3;
+    }
+    if (o.method === CHESHTA.MOTION) {
+      var state = motionState(graha, longitude, o.speed);
       return state ? MOTION_VALUE[state] : 0;
     }
-    return chestaKendra(graha, longitude, T, ayanamsa) / 3;
+    return chestaKendra(graha, longitude, o.T, o.ayanamsa, o.meanSource, o.jd) / 3;
   }
 
   /* -------------------------------------------------------- yuddha bala */
@@ -686,6 +758,12 @@ var Shadbala = (function () {
       ? MOON_PAKSHA.BENEFIC : MOON_PAKSHA.GROUP;
     var cheshtaMethod = (options && options.cheshtaMethod) === CHESHTA.MOTION
       ? CHESHTA.MOTION : CHESHTA.KENDRA;
+    var meanSource = (options && options.meanSource) === MEAN_SOURCE.MODERN
+      ? MEAN_SOURCE.MODERN : MEAN_SOURCE.CLASSICAL;
+    var moonCheshta = (options && options.moonCheshta) === MOON_CHESHTA.ELONGATION
+      ? MOON_CHESHTA.ELONGATION : MOON_CHESHTA.PAKSHA;
+    var luminaryCheshta = (options && options.luminaryCheshta) === LUMINARY_CHESHTA.OMITTED
+      ? LUMINARY_CHESHTA.OMITTED : LUMINARY_CHESHTA.COUNTED;
     var mercuryNature = (options && options.mercuryNature) === 'benefic'
       ? 'benefic' : 'qualified';
     var kranti = (options && options.kranti) === KRANTI.TRUE
@@ -812,8 +890,11 @@ var Shadbala = (function () {
         kala.masa + kala.vara + kala.hora + kala.ayana;
 
       var dig = digBala(graha, p.longitude, chart.ascendant.longitude, chart.midheaven.longitude);
-      var cheshta = cheshtaBala(graha, p.longitude, T, chart.ayanamsa, ayana,
-        paksha, cheshtaMethod, p.speed);
+      var cheshta = cheshtaBala(graha, p.longitude, {
+        T: T, jd: jd, ayanamsa: chart.ayanamsa, ayana: ayana, paksha: paksha,
+        method: cheshtaMethod, speed: p.speed, meanSource: meanSource,
+        moonCheshta: moonCheshta, elongation: elongation
+      });
       var naisargika = NAISARGIKA[graha];
       var drik = drikBala(graha, positions, benefics);
 
@@ -854,8 +935,18 @@ var Shadbala = (function () {
     GRAHAS.forEach(function (graha) {
       var x = results[graha];
       x.kala.total += x.kala.yuddha;
-      x.totalShashtiamsa = x.sthana.total + x.dig + x.kala.total + x.cheshta +
-        x.naisargika + x.drik;
+      /*
+       * Raman's table has no cheshta row for the luminaries, and his printed
+       * totals are the sums without one. Under that reading the figure is
+       * still computed and still shown - chapter 28 wants it - but it is not
+       * added here, where it would count the Sun's ayana bala or the Moon's
+       * paksha bala for a second time.
+       */
+      var counted = luminaryCheshta === LUMINARY_CHESHTA.COUNTED ||
+        (graha !== 'Sun' && graha !== 'Moon');
+      x.cheshtaCounted = counted;
+      x.totalShashtiamsa = x.sthana.total + x.dig + x.kala.total +
+        (counted ? x.cheshta : 0) + x.naisargika + x.drik;
       x.rupas = x.totalShashtiamsa / 60;
       x.required = REQUIRED_RUPAS[graha];
       x.ratio = x.rupas / x.required;
@@ -961,6 +1052,9 @@ var Shadbala = (function () {
     chestaKendraFrom: chestaKendraFrom,
     MOON_PAKSHA: MOON_PAKSHA,
     NAT_CLOCK: NAT_CLOCK,
+    MEAN_SOURCE: MEAN_SOURCE,
+    MOON_CHESHTA: MOON_CHESHTA,
+    LUMINARY_CHESHTA: LUMINARY_CHESHTA,
     HORA_LENGTH: HORA_LENGTH,
     KRANTI: KRANTI, AYANA_CONSTANT: AYANA_CONSTANT,
     CHESHTA: CHESHTA, MOTION_VALUE: MOTION_VALUE,
