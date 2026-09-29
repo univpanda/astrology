@@ -6793,8 +6793,22 @@ console.log('\nThe settings sit three to a row, explaining themselves on hover')
     /var label = labelOf\(e\.target\);\s*\n\s*if \(!label\) \{ hide\(\); return; \}/
       .test(src));
   ok('while focus opens it from the control, which is where focus lands',
-    /grid\.addEventListener\('focusin', function \(e\) \{ open\(fieldOf\(e\.target\)\); \}\)/
-      .test(src));
+    /grid\.addEventListener\('focusin', function \(e\) \{/.test(src) &&
+    /open\(fieldOf\(e\.target\)\);/.test(src));
+  /*
+   * Clicking a select focuses it as well, and that opened the card exactly
+   * where the list of options was about to appear - the two covering each
+   * other over the control just reached for. Only focus the browser judges
+   * worth a ring opens it, which is what :focus-visible answers.
+   */
+  ok('but a click on the select opens the dropdown, not the card',
+    /var byKeyboard = function \(node\)/.test(src) &&
+    /node\.matches\(':focus-visible'\)/.test(src) &&
+    /if \(!byKeyboard\(e\.target\)\) \{ hide\(\); return; \}/.test(src) &&
+    /grid\.addEventListener\('mousedown', hide\)/.test(src));
+  ok('and where that selector is not understood it errs towards showing it',
+    /if \(!node \|\| !node\.matches\) return true;/.test(src) &&
+    /catch \(err\) \{ return true; \}/.test(src));
   ok('and the label says it is hoverable',
     /#panel-settings \.field label \{ cursor: help; \}/.test(css));
 

@@ -1118,8 +1118,25 @@
      * Focus is the other way in, and it lands on the select, since a label is
      * not a tab stop. A keyboard reader cannot hover, so this is the only way
      * they see the card at all.
+     *
+     * But clicking a select focuses it too, and that opened the card right
+     * where the list of options was about to appear - the card and the
+     * dropdown covering each other, over the one control you had just reached
+     * for. So only focus the browser itself judges worth a ring opens it,
+     * which is the same question :focus-visible answers: keyboard yes, pointer
+     * no. Where that selector is not understood, erring towards showing the
+     * card is the safer failure, since the alternative hides it from keyboard
+     * readers altogether.
      */
-    grid.addEventListener('focusin', function (e) { open(fieldOf(e.target)); });
+    var byKeyboard = function (node) {
+      if (!node || !node.matches) return true;
+      try { return node.matches(':focus-visible'); } catch (err) { return true; }
+    };
+    grid.addEventListener('mousedown', hide);
+    grid.addEventListener('focusin', function (e) {
+      if (!byKeyboard(e.target)) { hide(); return; }
+      open(fieldOf(e.target));
+    });
     grid.addEventListener('focusout', hide);
   }
 
