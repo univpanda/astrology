@@ -5543,5 +5543,92 @@ console.log('\nOnly one pairing keeps ayana bala inside its own scale');
   });
 })();
 
+
+console.log('\nThe two sundial settings differ by the equation of time alone');
+/*
+ * A reader set a chart to local apparent time, then to local mean time, and got
+ * the same figure twice. Nothing was broken: the birth was 14 June, four days
+ * off the mid-June zero of the equation of time, and that difference IS the
+ * whole of what separates those two settings.
+ *
+ * The note now quotes what each correction is worth. These are those numbers,
+ * recomputed, so the prose cannot drift away from the engine.
+ */
+(function () {
+  var GRAHAS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+  function spread(place, y, m, d, from, to) {
+    var c = Astro.chart({ jdUT: Astro.julianDay(y, m, d, 7.3),
+      latitude: place.latitude, longitude: place.longitude,
+      tzOffsetMinutes: place.tzOffsetMinutes });
+    var a = Shadbala.compute(c, place, { natClock: from }).grahas;
+    var b = Shadbala.compute(c, place, { natClock: to }).grahas;
+    return Math.max.apply(null, GRAHAS.map(function (g) {
+      return Math.abs(a[g].kala.nathonnatha - b[g].kala.nathonnatha);
+    }));
+  }
+  var NY = { latitude: 40.6975, longitude: -73.8042, tzOffsetMinutes: -240 };
+  var NY_WINTER = { latitude: 40.6975, longitude: -73.8042, tzOffsetMinutes: -300 };
+  var DELHI = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+  var KASHGAR = { latitude: 39.47, longitude: 75.99, tzOffsetMinutes: 480 };
+
+  /*
+   * The reader's own chart, and the reason it looked broken. Checked as the
+   * figures are printed rather than as they are held: they are 0.005 apart,
+   * which is a real difference that no displayed decimal can show.
+   */
+  ok('apparent and mean print the same figures on a zero of the equation of time',
+    (function () {
+      var c = Astro.chart({ jdUT: Astro.julianDay(1946, 6, 14, 7.3),
+        latitude: NY.latitude, longitude: NY.longitude,
+        tzOffsetMinutes: NY.tzOffsetMinutes });
+      var a = Shadbala.compute(c, NY, { natClock: 'apparent' }).grahas;
+      var b = Shadbala.compute(c, NY, { natClock: 'mean' }).grahas;
+      return GRAHAS.every(function (g) {
+        return a[g].kala.nathonnatha.toFixed(2) === b[g].kala.nathonnatha.toFixed(2);
+      });
+    })(),
+    'while held ' + spread(NY, 1946, 6, 14, 'apparent', 'mean').toFixed(4) + ' apart');
+  ok('and part either side of it',
+    spread(NY, 1946, 11, 3, 'apparent', 'mean') > 1.2 &&
+    spread(NY, 1946, 2, 11, 'apparent', 'mean') > 1.0,
+    'November ' + spread(NY, 1946, 11, 3, 'apparent', 'mean').toFixed(2) +
+    ', February ' + spread(NY, 1946, 2, 11, 'apparent', 'mean').toFixed(2));
+
+  /*
+   * The equation of time is bounded near sixteen minutes, so this gap has a
+   * ceiling wherever and whenever the birth was. The note says 1.4.
+   */
+  var worst = 0;
+  for (var y = 1950; y < 1954; y++) {
+    for (var mo = 1; mo <= 12; mo++) {
+      worst = Math.max(worst, spread(DELHI, y, mo, 11, 'apparent', 'mean'));
+    }
+  }
+  ok('the equation of time is never worth more than the 1.4 virupas claimed',
+    worst > 1.2 && worst <= 1.4, 'largest over four years: ' + worst.toFixed(2));
+
+  /*
+   * The longitude correction is the other one, and unlike the first it depends
+   * on where the birth was rather than when. The note's figures, in order.
+   */
+  ok('the longitude gap at Delhi is the 2 virupas the note gives',
+    Math.abs(spread(DELHI, 1977, 8, 20, 'zone', 'mean') - 2) < 0.5,
+    spread(DELHI, 1977, 8, 20, 'zone', 'mean').toFixed(1));
+  ok('and at the far west of a wide zone the 15 it warns about',
+    spread(KASHGAR, 1977, 8, 20, 'zone', 'mean') > 13,
+    spread(KASHGAR, 1977, 8, 20, 'zone', 'mean').toFixed(1) + ' at Kashgar');
+
+  /*
+   * Daylight saving is the part the note used to hide. "New York" is not one
+   * number: the clock is an hour further from the Sun in summer, and the note
+   * had quoted the summer figure as if it held all year.
+   */
+  var summer = spread(NY, 1946, 6, 14, 'zone', 'apparent');
+  var winter = spread(NY_WINTER, 1946, 1, 14, 'zone', 'apparent');
+  ok('New York in summer is the 4.6 quoted, and in winter is not',
+    Math.abs(summer - 4.6) < 0.4 && winter < 0.6,
+    'summer ' + summer.toFixed(1) + ', winter ' + winter.toFixed(1));
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
