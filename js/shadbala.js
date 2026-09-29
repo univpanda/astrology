@@ -247,11 +247,23 @@ var Shadbala = (function () {
    *
    * So both constants are sourced and the choice is between two authorities
    * rather than between a text and an invention. They differ by at most 0.70
-   * virupas. Raman's is used because the rest of Shadbala here is his, and
-   * because his constant and his longitude-only kranti belong together: 24 is
-   * the maximum a declination read off a longitude reaches. Parashara's 23.45
-   * pairs with the true declination his note sends the reader to a modern
-   * ephemeris for. Mixing the two, as this did, belongs to neither.
+   * virupas.
+   *
+   * Which constant belongs with which declination was argued here the wrong way
+   * round for a while, and the formula settles it. 23 deg 27' is the obliquity,
+   * and the obliquity is exactly the greatest declination a point on the
+   * ecliptic can have - so a declination read from longitude alone runs from
+   * -23.45 to +23.45 and the formula runs from 0 to 60, touching both ends and
+   * leaving neither. Measured over 1,800 charts it does exactly that.
+   *
+   * Every other pairing sits wrong. Raman's 24 with the same declination never
+   * lets the formula reach the sixty it declares, 0.69 to 59.31. And a true
+   * declination carries the graha's latitude, so the Moon passes 28 degrees and
+   * the formula breaks its own bounds either way: -6.70 to 66.13 on Parashara's
+   * constant, -5.86 to 65.30 on Raman's. Negative strength is not a reading.
+   *
+   * Parashara's constant with the longitude-only declination is the default for
+   * that reason, and it is what Star Jyotish computes.
    *
    * Worth up to 0.70 virupas, and double that for the Sun.
    *

@@ -5482,5 +5482,66 @@ console.log('\nThe two ayana choices are independent, and each comparator picks 
     Math.abs(noLat[1] - withLat[1]).toFixed(1));
 })();
 
+
+console.log('\nOnly one pairing keeps ayana bala inside its own scale');
+/*
+ * Which constant belongs with which declination is decidable from the formula
+ * rather than from preference, and it was argued here the wrong way round for
+ * a while. 23 deg 27' is the obliquity, and the obliquity is the greatest
+ * declination a point on the ecliptic can have - so a declination read from
+ * longitude alone is bounded by it exactly, and the scale runs 0 to 60 with
+ * nothing outside.
+ *
+ * A true declination carries latitude and the Moon passes 28 degrees, so both
+ * pairings that use it run past sixty and below nought. A negative strength is
+ * not a reading, which is why this is a fault and not a preference.
+ */
+(function () {
+  var PLACES = [[28.61, 77.21, 330], [40.71, -74.01, -300], [-33.87, 151.21, 600]];
+  var GR = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+  var range = function (constant, kranti) {
+    var lo = Infinity, hi = -Infinity, n = 0;
+    for (var y = 1940; y < 2020; y += 2) {
+      for (var m = 1; m <= 12; m += 3) {
+        var p = PLACES[(y + m) % 3];
+        var place = { latitude: p[0], longitude: p[1], tzOffsetMinutes: p[2] };
+        var c = A.chart({ jdUT: A.julianDay(y, m, 15, 6 - p[2] / 60),
+          latitude: p[0], longitude: p[1], tzOffsetMinutes: p[2] });
+        var r = Shadbala.compute(c, place,
+          { ayanaConstant: constant, kranti: kranti });
+        n++;
+        GR.forEach(function (g) {
+          var v = r.grahas[g].kala.ayana;
+          if (g === 'Sun') v /= 2;        // undo the doubling to compare on one scale
+          if (v < lo) lo = v;
+          if (v > hi) hi = v;
+        });
+      }
+    }
+    return { lo: lo, hi: hi, n: n };
+  };
+
+  var def = range('parashara', 'longitude');
+  ok('the default reaches nought and sixty and goes past neither',
+    def.lo >= -1e-9 && def.hi <= 60 + 1e-9 && def.lo < 0.2 && def.hi > 59.8,
+    def.lo.toFixed(2) + ' to ' + def.hi.toFixed(2) + ' over ' + def.n + ' charts');
+
+  var raman = range('raman', 'longitude');
+  ok('Raman’s constant stays inside but never reaches the sixty it declares',
+    raman.lo >= -1e-9 && raman.hi < 59.9,
+    raman.lo.toFixed(2) + ' to ' + raman.hi.toFixed(2));
+
+  /*
+   * Both latitude pairings break the scale, and Drik Panchang computes one of
+   * them. That is worth stating as a fact about the reading rather than as a
+   * complaint: it is offered, and the note says what it costs.
+   */
+  [['parashara', 'true'], ['raman', 'true']].forEach(function (pair) {
+    var r = range(pair[0], 'true');
+    ok('with latitude, ' + pair[0] + ' runs outside the scale in both directions',
+      r.lo < 0 && r.hi > 60, r.lo.toFixed(2) + ' to ' + r.hi.toFixed(2));
+  });
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);
