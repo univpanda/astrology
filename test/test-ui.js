@@ -7358,6 +7358,17 @@ console.log('\nThe settings run from the chart outward');
   ok('the paksha switch follows the paksha reading',
     order[order.indexOf('moon-paksha') + 1] === 'paksha-doubled',
     order.slice(order.indexOf('moon-paksha'), order.indexOf('moon-paksha') + 2).join(' then '));
+  /*
+   * The three cheshta settings sit together after the measure they qualify.
+   * Each is meaningless without it, and two of them read almost identically
+   * out of context: one picks which rule gives the luminaries a figure, the
+   * other whether that figure is summed.
+   */
+  ok('the cheshta settings follow cheshta bala, in that order',
+    order.slice(order.indexOf('cheshta-method'), order.indexOf('cheshta-method') + 4)
+      .join(',') === 'cheshta-method,mean-source,luminary-rule,luminary-cheshta',
+    order.slice(order.indexOf('cheshta-method')).join(', '));
+
   ok('and the ayana switch follows the declination it is built on',
     order[order.indexOf('kranti') + 1] === 'ayana-doubled' &&
     order.indexOf('ayana-constant') < order.indexOf('kranti'),
@@ -7415,10 +7426,18 @@ console.log('\nA figure the total leaves out says so on the cell');
   ok('the uncounted cheshta cells are marked from the engine, not guessed at',
     /if \(bala\.key === 'cheshta' && !x\.cheshtaCounted\) \{/.test(src) &&
     /td\.className = 'numeric not-counted';/.test(src));
-  ok('and each says which strength already counts it',
+  ok('and each says why the total leaves it out',
     /the total below does not include it/.test(src) &&
-    /graha === 'Sun' \? 'his ayana bala' : 'her paksha bala'/.test(src) &&
-    /which kala bala already counts/.test(src));
+    /Raman leaves this row /.test(src) &&
+    /belongs to the Ishta and Kashta computation/.test(src));
+
+  /*
+   * The reason has to hold under either rule above it. Naming the ayana or
+   * paksha bala would only be true of the borrowed one, and under the default
+   * the Sun's cheshta bala is not his ayana bala at all.
+   */
+  ok('and does so without assuming which rule is selected',
+    !/his ayana bala' : 'her paksha bala/.test(src));
   ok('and the mark is visible rather than hover-only',
     /#shadbala-table td\.not-counted \{ color: var\(--ink-soft\); cursor: help; \}/
       .test(css));

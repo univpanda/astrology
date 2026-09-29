@@ -1896,7 +1896,7 @@
            mercuryNature: document.getElementById('mercury-nature').value,
            cheshtaMethod: document.getElementById('cheshta-method').value,
            meanSource: document.getElementById('mean-source').value,
-           moonCheshta: document.getElementById('moon-cheshta').value,
+           luminaryRule: document.getElementById('luminary-rule').value,
            luminaryCheshta: document.getElementById('luminary-cheshta').value });
     }
     return state.shadbala;
@@ -2026,8 +2026,10 @@
         'its seeghrocha, nothing where that is nothing and sixty where it is a ' +
         'half circle. An outer graha turns retrograde at opposition, so the Sun is ' +
         'its seeghrocha; an inner one turns at inferior conjunction, so its own ' +
-        'mean longitude is. The Sun and Moon never retrograde and borrow instead, ' +
-        'the Sun its ayana bala and the Moon its paksha.' },
+        'mean longitude is. The Sun and Moon never retrograde, and take the ' +
+        'kendras Parashara gives them at 28.3-4 instead: sayana Sun and three ' +
+        'signs for him, her distance from the Sun for her. Neither is added to ' +
+        'the total below, which is how Raman tabulates them.' },
     { key: 'naisargika', label: 'Naisargika bala', en: 'Natural', max: 60,
       says: 'Natural strength, a constant per graha: the same figure in every ' +
         'chart, running from the Sun’s sixty down to Saturn’s 8.57.' },
@@ -2140,9 +2142,9 @@
         if (bala.key === 'cheshta' && !x.cheshtaCounted) {
           td.className = 'numeric not-counted';
           td.title = graha + '\u2019s cheshta bala is ' + n(x.cheshta) +
-            ', and the total below does not include it: it is ' +
-            (graha === 'Sun' ? 'his ayana bala' : 'her paksha bala') +
-            ', which kala bala already counts. Raman leaves this row blank.';
+            ', and the total below does not include it. Raman leaves this row ' +
+            'blank: the figure belongs to the Ishta and Kashta computation ' +
+            'rather than to the shadbala sum.';
         }
         return td;
       }), bala.parts ? 'bala-head' : null, bala.shows);
@@ -4023,8 +4025,8 @@
    */
   [['mean-source', { classical: 'Cheshta kendras now read the classical mean longitudes.',
                      modern: 'Cheshta kendras now read the modern mean longitudes.' }],
-   ['moon-cheshta', { paksha: 'The Moon\u2019s cheshta bala is now her paksha bala.',
-                      elongation: 'The Moon\u2019s cheshta bala is now her distance from the Sun.' }],
+   ['luminary-rule', { kendra: 'The Sun and Moon now take their own cheshta kendras.',
+                       borrowed: 'The Sun and Moon now borrow their ayana and paksha bala.' }],
    ['luminary-cheshta', { counted: 'The Sun\u2019s and Moon\u2019s cheshta bala now counts in the total.',
                           omitted: 'The Sun\u2019s and Moon\u2019s cheshta bala is shown but not counted.' }]
   ].forEach(function (pair) {

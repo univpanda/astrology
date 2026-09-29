@@ -332,18 +332,30 @@ var Shadbala = (function () {
   var MEAN_SOURCE = { CLASSICAL: 'classical', MODERN: 'modern' };
 
   /*
-   * Where the Moon's cheshta bala comes from. Parashara answers this twice.
+   * Where the luminaries' cheshta bala comes from. Parashara answers twice,
+   * once in each chapter, and the two answers are a pair.
    *
-   * Chapter 27.18, in the shadbala chapter: "The Moon's Paksha Bala will
-   * itself be her Cheshta Bala." Chapter 28.3-4, setting up Ishta and Kashta:
-   * "The sidereal longitude of the Sun should be deducted from the Moon to get
-   * the Moon's Cheshta Kendra", which over three is her elongation in virupas.
+   * Chapter 27.18, among the shadbalas: "The Sun's Cheshta Bala will
+   * correspond to his Ayana Bala. The Moon's Paksha Bala will itself be her
+   * Cheshta Bala." Chapter 28.3-4, opening Ishta and Kashta, gives each of
+   * them a kendra of its own instead: "Add 3 Rashis to Sayana Sun, which will
+   * be the Cheshta Kendra for the Sun. The sidereal longitude of the Sun
+   * should be deducted from the Moon to get the Moon's Cheshta Kendra."
+   * Reduced past six signs and divided by three, as every cheshta kendra is.
    *
-   * The two agree exactly while the Moon is read as a benefic throughout, her
-   * paksha bala then being that same elongation over three. They part only
-   * under the group reading, where a waning Moon takes sixty minus it.
+   * The second is the default, for the reason the figure is computed at all:
+   * it is not added to the shadbala sum, where it would count a strength that
+   * kala bala already carries, so what is left for it to be is the chapter 28
+   * quantity. Raman works the Sun exactly this way at Example 60 - sayana
+   * 202 10', add 90, reduce, divide by three, 22.66 - and never from his ayana
+   * bala, which on that chart is 18.95.
+   *
+   * For the Moon the two agree while she is read as a benefic, her paksha bala
+   * then being that same elongation over three. They part under the group
+   * reading, where a waning Moon takes sixty minus it, and there they are
+   * complements.
    */
-  var MOON_CHESHTA = { PAKSHA: 'paksha', ELONGATION: 'elongation' };
+  var LUMINARY_RULE = { KENDRA: 'kendra', BORROWED: 'borrowed' };
 
   /*
    * Whether the luminaries' cheshta bala is added to the shadbala total.
@@ -484,14 +496,21 @@ var Shadbala = (function () {
     return crossesSign(longitude, speed) ? 'atichara' : 'chara';
   }
 
+  /** "If the Cheshta Kendra is in excess of 6 signs, deduct it from 12." */
+  function reducedKendra(arc) {
+    var a = Astro.norm360(arc);
+    return a > 180 ? 360 - a : a;
+  }
+
   function cheshtaBala(graha, longitude, o) {
-    // The luminaries never retrograde, so they borrow another strength.
-    if (graha === 'Sun') return o.ayana;
+    // The luminaries never retrograde, so neither has an arc of retrogression.
+    if (graha === 'Sun') {
+      return o.luminaryRule === LUMINARY_RULE.BORROWED ? o.ayana
+        : reducedKendra(o.longitude + o.ayanamsa + 90) / 3;
+    }
     if (graha === 'Moon') {
-      if (o.moonCheshta !== MOON_CHESHTA.ELONGATION) return o.paksha;
-      // "If the Cheshta Kendra is in excess of 6 signs, deduct it from 12."
-      var arc = Astro.norm360(o.elongation);
-      return (arc > 180 ? 360 - arc : arc) / 3;
+      return o.luminaryRule === LUMINARY_RULE.BORROWED ? o.paksha
+        : reducedKendra(o.elongation) / 3;
     }
     if (o.method === CHESHTA.MOTION) {
       var state = motionState(graha, longitude, o.speed);
@@ -764,8 +783,8 @@ var Shadbala = (function () {
       ? CHESHTA.MOTION : CHESHTA.KENDRA;
     var meanSource = (options && options.meanSource) === MEAN_SOURCE.MODERN
       ? MEAN_SOURCE.MODERN : MEAN_SOURCE.CLASSICAL;
-    var moonCheshta = (options && options.moonCheshta) === MOON_CHESHTA.ELONGATION
-      ? MOON_CHESHTA.ELONGATION : MOON_CHESHTA.PAKSHA;
+    var luminaryRule = (options && options.luminaryRule) === LUMINARY_RULE.BORROWED
+      ? LUMINARY_RULE.BORROWED : LUMINARY_RULE.KENDRA;
     var luminaryCheshta = (options && options.luminaryCheshta) === LUMINARY_CHESHTA.COUNTED
       ? LUMINARY_CHESHTA.COUNTED : LUMINARY_CHESHTA.OMITTED;
     var mercuryNature = (options && options.mercuryNature) === 'benefic'
@@ -897,7 +916,8 @@ var Shadbala = (function () {
       var cheshta = cheshtaBala(graha, p.longitude, {
         T: T, jd: jd, ayanamsa: chart.ayanamsa, ayana: ayana, paksha: paksha,
         method: cheshtaMethod, speed: p.speed, meanSource: meanSource,
-        moonCheshta: moonCheshta, elongation: elongation
+        luminaryRule: luminaryRule, elongation: elongation,
+        longitude: p.longitude
       });
       var naisargika = NAISARGIKA[graha];
       var drik = drikBala(graha, positions, benefics);
@@ -1055,7 +1075,7 @@ var Shadbala = (function () {
     MOON_PAKSHA: MOON_PAKSHA,
     NAT_CLOCK: NAT_CLOCK,
     MEAN_SOURCE: MEAN_SOURCE,
-    MOON_CHESHTA: MOON_CHESHTA,
+    LUMINARY_RULE: LUMINARY_RULE,
     LUMINARY_CHESHTA: LUMINARY_CHESHTA,
     HORA_LENGTH: HORA_LENGTH,
     KRANTI: KRANTI, AYANA_CONSTANT: AYANA_CONSTANT,

@@ -2793,12 +2793,39 @@ console.log('\nShadbala');
        return best.el > 170 && worst.el < 15;
      })());
   /*
-   * And the luminaries borrow rather than compute, section 106. They never
-   * retrograde, so there is no kendra to take.
+   * The luminaries never retrograde, so neither has an arc of retrogression to
+   * measure, and Parashara gives them a rule apiece in each of two chapters.
+   * 28.3-4 is the default now: the Sun's kendra is sayana Sun plus three
+   * signs, the Moon's is her distance from the Sun, each reduced past six
+   * signs and divided by three. It is the chapter whose computation the figure
+   * is for, since the shadbala sum does not take it.
    */
-  ok('and the luminaries borrow, the Sun its ayana and the Moon its paksha',
-     Math.abs(result.grahas.Sun.cheshta - result.grahas.Sun.kala.ayana / 2) < 1e-9 &&
-     Math.abs(result.grahas.Moon.cheshta - result.grahas.Moon.kala.paksha / 2) < 1e-9);
+  ok('the Sun\u2019s cheshta kendra is sayana Sun and three signs',
+     (function () {
+       var sun = chart.planets.filter(function (p) { return p.name === 'Sun'; })[0];
+       var arc = Astro.norm360(sun.longitude + chart.ayanamsa + 90);
+       return Math.abs(result.grahas.Sun.cheshta -
+         (arc > 180 ? 360 - arc : arc) / 3) < 1e-9;
+     })());
+  ok('and the Moon\u2019s is her distance from the Sun',
+     (function () {
+       var sun = chart.planets.filter(function (p) { return p.name === 'Sun'; })[0];
+       var moon = chart.planets.filter(function (p) { return p.name === 'Moon'; })[0];
+       var arc = Astro.norm360(moon.longitude - sun.longitude);
+       return Math.abs(result.grahas.Moon.cheshta -
+         (arc > 180 ? 360 - arc : arc) / 3) < 1e-9;
+     })());
+  /*
+   * 27.18, the other reading, is still on offer: there the two borrow, the Sun
+   * his ayana bala and the Moon her paksha. Undoubled, cheshta being capped at
+   * sixty like every other strength.
+   */
+  ok('and 27.18 still borrows, the Sun its ayana and the Moon its paksha',
+     (function () {
+       var b = Shadbala.compute(chart, place, { luminaryRule: 'borrowed' }).grahas;
+       return Math.abs(b.Sun.cheshta - b.Sun.kala.ayana / 2) < 1e-9 &&
+         Math.abs(b.Moon.cheshta - b.Moon.kala.paksha / 2) < 1e-9;
+     })());
 
   // Ceilings, each from its own definition.
   ok('no component exceeds its maximum', Shadbala.GRAHAS.every(function (g) {
