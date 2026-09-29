@@ -280,6 +280,36 @@ console.log('\nHistorical reference chart');
      'zone reading gives ' + byZone.ascendant.signName + ' at ' + Geo.formatOffset(zoneOffset));
 })();
 
+console.log('\nWhat a chart slot recomputes when it is rotated');
+/*
+ * The bug this guards: a slot rotated onto a graha moved its houses, its House
+ * column and its [Y] flag, but went on marking the yogas it had found from the
+ * ascendant. The hover card then carried "counted from house 1 of this chart"
+ * directly above a list counted from a different house 1.
+ */
+(function () {
+  var src = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
+  ok('the slot hands its rotation to the yogas, not just its division',
+     /yogas: yogasByGraha\(state, set\.division, set\.reference\)/.test(src));
+  ok('and yogasByGraha rotates the chart before detecting',
+     /function yogasByGraha\(state, division, reference\)/.test(src) &&
+     /rotatedOnto\(division === 1 \? state\.chart/.test(src));
+  ok('rotating moves the ascendant onto the graha and records which one',
+     /turned\.ascendant\.longitude = anchor\.longitude;/.test(src) &&
+     /turned\.reference = reference;/.test(src));
+  /*
+   * Dignity, friendship and hemming are facts about a graha and its neighbours,
+   * not about where the houses are counted from, so they take the division only.
+   * Stated as a test so a later change does not rotate them by symmetry.
+   */
+  ok('dignity and hemming stay out of it, being rotation-independent',
+     /dignities: dignitiesByGraha\(state, set\.division\)/.test(src) &&
+     /hemming: hemmingByGraha\(state, set\.division\)/.test(src));
+  ok('the Yogas tab is unaffected, reading the whole chart from the ascendant',
+     /function renderYogas\(state\)/.test(src) &&
+     !/renderYogas\(state, [a-z]/.test(src));
+})();
+
 console.log('\nStudy charts that ship with the app');
 /*
  * The seeded charts carry notes that state what the chart shows. A note is a
@@ -293,7 +323,7 @@ console.log('\nStudy charts that ship with the app');
   ok('STUDY_CHARTS is still a literal this test can read', !!literal);
   if (!literal) return;
   var charts = new Function('return ' + literal[1])();
-  ok('five charts ship', charts.length === 5, charts.map(function (c) { return c.name; }).join(', '));
+  ok('six charts ship', charts.length === 6, charts.map(function (c) { return c.name; }).join(', '));
 
   function cast(entry, offsetMinutes) {
     var t = entry.time.split(':').map(Number);
@@ -349,10 +379,10 @@ console.log('\nStudy charts that ship with the app');
   }
   var trump = named('Donald Trump'), kareem = named('Kareem Abdul-Jabbar');
   var ava = named('Ava Gardner'), obama = named('Barack Obama');
-  var ratzinger = named('Pope Benedict XVI');
+  var ratzinger = named('Pope Benedict XVI'), nixon = named('Richard Nixon');
   ok('each chart checked below is still in the list',
-     !!trump && !!kareem && !!ava && !!obama && !!ratzinger);
-  if (!trump || !kareem || !ava || !obama || !ratzinger) return;
+     !!trump && !!kareem && !!ava && !!obama && !!ratzinger && !!nixon);
+  if (!trump || !kareem || !ava || !obama || !ratzinger || !nixon) return;
 
   var tc = cast(trump);
   ok('Trump: 6 Leo rises in Magha, as the note says',
@@ -558,6 +588,58 @@ console.log('\nStudy charts that ship with the app');
   ok('Benedict: Ketu dasha runs November 2005 to November 2012',
      rket && rket.y === 2005 && rket.m === 11 && rven && rven.y === 2012 && rven.m === 11,
      (rket ? rket.y + '-' + rket.m : '?') + ' to ' + (rven ? rven.y + '-' + rven.m : '?'));
+
+  var nc = cast(nixon);
+  ok('Nixon: 24 Leo rises in Purva Phalguni',
+     nc.ascendant.signName === 'Leo' && Math.floor(nc.ascendant.longitude % 30) === 24 &&
+     nc.ascendant.nakshatra.name === 'Purva Phalguni',
+     nc.ascendant.signName + ' ' + (nc.ascendant.longitude % 30).toFixed(2) +
+     ' ' + nc.ascendant.nakshatra.name);
+  var nTropical = (nc.ascendant.longitude + nc.ayanamsa) % 30;
+  ok('Nixon: the tropical ascendant agrees with the references to an arcminute',
+     Astro.SIGNS[Math.floor(((nc.ascendant.longitude + nc.ayanamsa) % 360) / 30)] === 'Virgo' &&
+     Math.abs(nTropical - (17 + 25 / 60)) < 2 / 60,
+     nTropical.toFixed(4) + ' of Virgo, references give ' + (17 + 25 / 60).toFixed(4));
+  ok('Nixon: January 1913 California is eight hours behind, before any summer time',
+     Geo.offsetMinutes(nixon.zone, 1913, 1, 9, 21, 35) === -480,
+     Geo.formatOffset(Geo.offsetMinutes(nixon.zone, 1913, 1, 9, 21, 35)));
+  /*
+   * Four grahas in one sign is why this chart is in the set: it is the only one
+   * that makes a house stack two columns, so the layout is exercised by
+   * something that ships rather than only by a chart somebody types in.
+   */
+  var np = {};
+  nc.planets.forEach(function (planet) { np[planet.name] = planet; });
+  var stellium = ['Sun', 'Mars', 'Mercury', 'Jupiter'];
+  ok('Nixon: the Sun, Mars, Mercury and Jupiter all stand in Sagittarius, in the 5th',
+     stellium.every(function (g) {
+       return np[g].signName === 'Sagittarius' && np[g].house === 5;
+     }), stellium.map(function (g) { return np[g].signName; }).join(', '));
+  ok('and no other shipped chart crowds a house that hard', (function () {
+    var most = 0;
+    charts.forEach(function (entry) {
+      if (entry.name === 'Richard Nixon') return;
+      var count = {};
+      cast(entry).planets.forEach(function (planet) {
+        count[planet.sign] = (count[planet.sign] || 0) + 1;
+        if (count[planet.sign] > most) most = count[planet.sign];
+      });
+    });
+    return most < 4;
+  })(), 'the rest peak below four to a sign');
+  ok('Nixon: Jupiter is in its mooltrikona there',
+     np.Jupiter.dignity === 'Mooltrikona', np.Jupiter.dignity);
+  ok('Nixon: Dhanishta birth nakshatra leaves under five years of Mars dasha',
+     nc.dashas.birthNakshatra.name === 'Dhanishta' && nc.dashas.balanceYears < 5,
+     nc.dashas.birthNakshatra.name + ', ' + nc.dashas.balanceYears.toFixed(2) + ' years');
+  /*
+   * Mercury opens in November 1970. The break-in was June 1972 and the
+   * resignation August 1974, so the whole of it falls inside that mahadasha.
+   */
+  var nmer = dashaStart(nc, 'Mercury'), nket = dashaStart(nc, 'Ketu');
+  ok('Nixon: Mercury dasha runs November 1970 to November 1987',
+     nmer && nmer.y === 1970 && nmer.m === 11 && nket && nket.y === 1987 && nket.m === 11,
+     (nmer ? nmer.y + '-' + nmer.m : '?') + ' to ' + (nket ? nket.y + '-' + nket.m : '?'));
 })();
 
 /*
@@ -3213,6 +3295,47 @@ ok('every script the page loads parses', (function () {
     return names.length > 0 &&
       !names.some(function (label) { return /^Yuddha/.test(label); });
   })());
+
+  /*
+   * The four lords of the birth, above the table rather than in it. Each hands
+   * its whole bala to one graha, so its row is six zeros and a number, and
+   * which graha took it was legible only by hunting for the cell.
+   */
+  ok('the strip is above the table, not another row in it',
+    /<p class="lords-strip" id="shadbala-lords"><\/p>/.test(html) &&
+    html.indexOf('id="shadbala-lords"') < html.indexOf('id="shadbala-table-scroll"'));
+  ok('and it is filled from the engine’s own names, all four labelled',
+    (function () {
+      var strip = byId['shadbala-lords'];
+      if (!strip) return false;
+      strip.children.length = 0;
+      out.renderShadbala(peace);
+      // The label and the graha are separate nodes on purpose, the label
+      // receding and the graha carrying the weight, so they are read apart.
+      var labels = strip.children.map(function (c) { return c.textContent; }).join(' ');
+      var named = strip.children.map(function (c) {
+        return (c.children[0] && c.children[0].textContent) || '';
+      });
+      return strip.children.length === 4 &&
+        /Year lord/.test(labels) && /Month lord/.test(labels) &&
+        /Day lord/.test(labels) && /Hour lord/.test(labels) &&
+        named.length === 4 && named.every(function (g) {
+          return Shadbala.GRAHAS.indexOf(g) >= 0;
+        });
+    })());
+  /*
+   * And it empties rather than going stale. A strip left over from the last
+   * chart would name four lords of somebody else's birth, which is worse than
+   * naming none.
+   */
+  ok('and it is rebuilt from scratch on each render, never appended to',
+    (function () {
+      var strip = byId['shadbala-lords'];
+      out.renderShadbala(peace);
+      var first = strip.children.length;
+      out.renderShadbala(war);
+      return first === 4 && strip.children.length === 4;
+    })());
 
   /*
    * Ishta and kashta phala, the one pair of rows in the table that is in no

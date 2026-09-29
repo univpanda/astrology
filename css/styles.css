@@ -1768,3 +1768,20 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
   tbody tr:hover { background: none; }
   th, td { border-bottom: 1px solid #ddd; }
 }
+
+/*
+ * The four lords of the birth, above the strength table. Data rather than
+ * prose, so it is set apart from the note under the table: the label recedes
+ * and the graha carries the weight, and the four wrap rather than scroll on a
+ * narrow screen.
+ */
+.lords-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.4rem;
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+.lords-strip:empty { display: none; }
+.lords-strip b { color: var(--ink); font-weight: 600; }

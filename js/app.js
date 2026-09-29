@@ -2287,6 +2287,24 @@
         return el('td', 'numeric', n(result.grahas[graha].phala.kashta));
       }));
 
+    /*
+     * The four lords of the birth. Abda, masa, vara and hora each hand their
+     * whole bala to one graha and nothing to the other six, so their rows are
+     * six zeros and a number, and which graha it went to is legible only by
+     * hunting for the cell. Naming them is the row read out.
+     */
+    var LORD_LABELS = [['abda', 'Year'], ['masa', 'Month'], ['vara', 'Day'],
+      ['hora', 'Hour']];
+    var strip = document.getElementById('shadbala-lords');
+    strip.innerHTML = '';
+    LORD_LABELS.forEach(function (pair) {
+      var who = result.lords && result.lords[pair[0]];
+      if (!who) return;
+      var span = el('span', null, pair[1] + ' lord ');
+      span.appendChild(el('b', null, who));
+      strip.appendChild(span);
+    });
+
     renderShadbalaChart(grahas, result);
 
     document.getElementById('shadbala-note').textContent =
@@ -3537,11 +3555,12 @@
   var editButton = document.getElementById('edit-button');
 
   /*
-   * Five charts ship with the app, so the saved list is not empty before anyone
-   * has typed a birth time in. All five are picked for being checkable rather
+   * Six charts ship with the app, so the saved list is not empty before anyone
+   * has typed a birth time in. All six are picked for being checkable rather
    * than for being famous, and between them they show the three things that
    * decide whether a chart can be trusted: the time, the clock it is read on,
-   * and the place.
+   * and the place. The last of them is here for what it asks of the drawing
+   * rather than of the data.
    *
    * Donald Trump's time is on a public birth certificate, so the chart can be
    * reproduced in any other ephemeris, and its Jupiter mahadasha begins in
@@ -3575,6 +3594,14 @@
    * His dasha is the one that needs no astrology to notice. Ketu, the graha of
    * letting go, runs from November 2005 to November 2012, and the pontificate
    * runs from April 2005 to February 2013.
+   *
+   * Richard Nixon's is the one that exercises the picture. The Sun, Mars,
+   * Mercury and Jupiter all stand in Sagittarius, so one house has to hold four
+   * grahas, which is the case the two-column stacking in charts.js exists for
+   * and the case a chart with a graha or two to a house never reaches. The time
+   * is AA from the birth certificate, and its dasha turns where the biography
+   * does: Mercury, one of the four, opens in November 1970, and both the
+   * break-in and the resignation fall inside it.
    */
   var STUDY_CHARTS = [{
     name: 'Donald Trump',
@@ -3643,6 +3670,19 @@
     zone: 'Europe/Berlin',
     date: '1927-04-16',
     time: '04:15:00',
+    standard: 'zone',
+    ayanamsa: 'lahiri',
+    trueNode: false,
+    gender: 'male',
+    celebrity: true
+  }, {
+    name: 'Richard Nixon',
+    placeLabel: 'Yorba Linda, California, United States',
+    latitude: 33.8886,
+    longitude: -117.8131,
+    zone: 'America/Los_Angeles',
+    date: '1913-01-09',
+    time: '21:35:00',
     standard: 'zone',
     ayanamsa: 'lahiri',
     trueNode: false,

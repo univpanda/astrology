@@ -6860,6 +6860,75 @@ console.log('\nDrik bala on all three of the textbook’s worked charts');
 })();
 
 
+console.log('\nThe four lords of the birth, named rather than hunted for');
+/*
+ * Abda, masa, vara and hora each hand their whole bala to one graha and nothing
+ * to the other six, so each of their four rows is six zeros and a number. The
+ * engine used to work out who the lord was seven times over inside the per-graha
+ * loop and never say; it now names the four once and returns them, which is what
+ * the page prints above the table.
+ */
+(function () {
+  var GRAHAS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+
+  /*
+   * Donald Trump, 14 June 1946 at 10:54 EDT in Queens. A Friday, so the day
+   * lord is Venus without any arithmetic, which is the one of the four that can
+   * be checked against a calendar.
+   */
+  var place = { latitude: 40.6915, longitude: -73.8057, tzOffsetMinutes: -240 };
+  var chart = Astro.chart({ jdUT: Astro.julianDay(1946, 6, 14, 10 + 54 / 60 + 4),
+    latitude: place.latitude, longitude: place.longitude,
+    tzOffsetMinutes: place.tzOffsetMinutes });
+  var lordsOf = function (hora) {
+    return Shadbala.compute(chart, place, { horaLength: hora }).lords;
+  };
+  var seasonal = lordsOf('seasonal'), equal = lordsOf('equal');
+  ok('the day lord is the weekday lord, and that day was a Friday',
+    seasonal.vara === 'Venus' && chart.panchang.varaLord === 'Venus');
+  ok('and the year and month lords come off the ahargana',
+    seasonal.abda === 'Saturn' && seasonal.masa === 'Venus',
+    seasonal.abda + ' and ' + seasonal.masa);
+
+  /*
+   * The hour is the one that the hora-length setting moves, and this chart is
+   * the clearest case of it there is: born five and a half hours after a June
+   * sunrise in New York, where a seasonal hora runs 75 minutes and an equal one
+   * 60, so the same moment falls in the fifth hora on one scheme and the sixth
+   * on the other. Both are named because a reader checking against software
+   * that divides the daylight differently will see this difference and no
+   * other.
+   */
+  ok('and the hour lord is the one of the four the hora length moves',
+    seasonal.hora === 'Jupiter' && equal.hora === 'Mars',
+    'seasonal ' + seasonal.hora + ', equal ' + equal.hora);
+
+  /*
+   * And the names agree with the table. If the lords were computed one way for
+   * the strip and another for the rows, the page would name a graha that the
+   * column below it gave nothing to.
+   */
+  var PAY = { abda: 15, masa: 30, vara: 45, hora: 60 };
+  var disagreed = [];
+  [[1946, 6], [1901, 1], [1977, 11], [2019, 3]].forEach(function (when) {
+    var c = Astro.chart({ jdUT: Astro.julianDay(when[0], when[1], 15, 3),
+      latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 });
+    var p = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+    var r = Shadbala.compute(c, p);
+    Object.keys(PAY).forEach(function (key) {
+      var paid = GRAHAS.filter(function (g) { return r.grahas[g].kala[key] > 0; });
+      if (paid.length !== 1 || paid[0] !== r.lords[key] ||
+          r.grahas[paid[0]].kala[key] !== PAY[key]) {
+        disagreed.push(when.join('-') + ' ' + key + ': ' + paid.join(',') +
+          ' for ' + r.lords[key]);
+      }
+    });
+  });
+  ok('every lord named is the one graha its row pays, and pays in full',
+    disagreed.length === 0, disagreed.join(' | '));
+})();
+
+
 console.log('\nIshta and kashta phala, on every worked example there is');
 /*
  * Not a bala, and in no total: the good and the harm a graha is disposed to do
@@ -7046,6 +7115,118 @@ console.log('\nA chart missing a field the engine added later still computes');
     Math.abs(Astro.ayanamsa(0, 'raman') - Astro.ayanamsa(0, 'lahiri')) > 1,
     (Astro.ayanamsa(0, 'raman') - Astro.ayanamsa(0, 'lahiri')).toFixed(2) +
       ' degrees apart at J2000');
+})();
+
+console.log('\nYogas follow the rotation the chart is drawn in');
+/*
+ * Rotating a chart onto a graha makes its sign house 1. The House column and the
+ * [Y] flag already moved with it; the yogas marked on the grahas did not, so a
+ * hover card could say "counted from house 1 of this chart" above a list counted
+ * from somewhere else. These hold the two to the same house 1.
+ */
+(function () {
+  var Shadbala = require('../js/shadbala.js');
+  // Obama's chart, one of the five that ship: Capricorn lagna, Taurus Moon.
+  var off = -600, lat = 21.3069, lon = -157.8583;
+  var chart = A.chart({
+    jdUT: A.julianDay(1961, 8, 4, (19 * 60 + 24 - off) / 60),
+    latitude: lat, longitude: lon, tzOffsetMinutes: off
+  });
+  var strengths = Shadbala.compute(chart,
+    { latitude: lat, longitude: lon, tzOffsetMinutes: off }, {});
+
+  function onto(reference) {
+    // The ascendant is where the chart already starts, so it is not a rotation.
+    if (!reference || reference === 'Ascendant') return chart;
+    var anchor = chart.planets.filter(function (p) { return p.name === reference; })[0];
+    var turned = {}, k;
+    for (k in chart) if (chart.hasOwnProperty(k)) turned[k] = chart[k];
+    turned.ascendant = {};
+    for (k in chart.ascendant) {
+      if (chart.ascendant.hasOwnProperty(k)) turned.ascendant[k] = chart.ascendant[k];
+    }
+    turned.ascendant.longitude = anchor.longitude;
+    turned.ascendant.sign = anchor.sign;
+    turned.reference = reference;
+    return turned;
+  }
+  function pairs(c) {
+    var out = {};
+    Yogas.detect(c, strengths).forEach(function (y) {
+      (y.grahas || []).forEach(function (g) { out[y.title + ' <' + g + '>'] = true; });
+    });
+    return Object.keys(out).sort();
+  }
+  function prose(c) {
+    return Yogas.detect(c, strengths).map(function (y) {
+      return (y.reasons || []).join(' ') + ' ' + (y.summary || '');
+    }).join(' ');
+  }
+
+  var fromAsc = pairs(chart), fromMoon = pairs(onto('Moon'));
+  ok('reading the same chart from the Moon finds a different set',
+     fromMoon.join('|') !== fromAsc.join('|'),
+     fromAsc.length + ' from the ascendant, ' + fromMoon.length + ' from the Moon');
+  /*
+   * Not merely different: house-counted yogas appear and disappear, which is the
+   * whole reason the marks have to move with the rotation.
+   */
+  ok('yogas appear that the ascendant does not give',
+     fromMoon.some(function (t) { return fromAsc.indexOf(t) < 0; }),
+     fromMoon.filter(function (t) { return fromAsc.indexOf(t) < 0; }).slice(0, 3).join(', '));
+  ok('and yogas the ascendant gives fall away',
+     fromAsc.some(function (t) { return fromMoon.indexOf(t) < 0; }),
+     fromAsc.filter(function (t) { return fromMoon.indexOf(t) < 0; }).join(', '));
+
+  /*
+   * The ascendant is a body in Mahabhagya, not a house: the test is the parity of
+   * its own sign. Rotating cannot re-seat it, so the yoga is not offered at all.
+   */
+  ok('Mahabhagya is never reported for a rotated chart',
+     ['Moon', 'Sun', 'Venus', 'Mars'].every(function (r) {
+       return pairs(onto(r)).every(function (t) { return t.indexOf('Mahabhagya') < 0; });
+     }));
+  ok('and is still found from the ascendant, where the tripod means something',
+     fromAsc.some(function (t) { return t.indexOf('Mahabhagya') === 0; }),
+     fromAsc.filter(function (t) { return t.indexOf('Mahabhagya') === 0; }).join(', '));
+
+  /*
+   * Wording. A rotated chart that still said "the lagna" would be naming a house
+   * nobody is looking at, and only the luminaries take an article.
+   */
+  ok('unrotated wording is the classical wording',
+     Yogas.firstHouse({}) === 'the lagna' &&
+     Yogas.firstHouse({}, 'the ascendant') === 'the ascendant' &&
+     Yogas.firstLord({}, 'the lagna lord') === 'the lagna lord');
+  ok('a rotation names the graha, with an article only for the luminaries',
+     Yogas.firstHouse({ reference: 'Moon' }) === 'the Moon' &&
+     Yogas.firstHouse({ reference: 'Sun' }) === 'the Sun' &&
+     Yogas.firstHouse({ reference: 'Venus' }) === 'Venus' &&
+     Yogas.firstHouse({ reference: 'Saturn' }) === 'Saturn',
+     [Yogas.firstHouse({ reference: 'Venus' }), Yogas.firstHouse({ reference: 'Moon' })].join(', '));
+  ok('the ascendant is not a rotation', Yogas.firstHouse({ reference: 'Ascendant' }) === 'the lagna');
+
+  var strays = [];
+  ['Moon', 'Sun', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Mercury'].forEach(function (r) {
+    var text = prose(onto(r));
+    if (/the lagna|the ascendant\b/.test(text)) strays.push(r);
+  });
+  ok('no rotated chart calls its first house the lagna', strays.length === 0,
+     strays.join(', ') || 'seven rotations checked');
+
+  /*
+   * Read from the Moon, house 1 and the Moon are the same sign, so the yogas that
+   * are defined "from the lagna or from the Moon" must say it once, not twice.
+   */
+  var moonText = prose(onto('Moon'));
+  ok('and none of them says the Moon twice over',
+     !/from both the Moon and the Moon/.test(moonText) &&
+     !/from the Moon or the Moon/.test(moonText) &&
+     !/upachayas from the Moon.*upachayas from the Moon/.test(moonText));
+
+  // The unrotated chart has to come out exactly as it did before any of this.
+  ok('rotating onto the ascendant is not a rotation at all',
+     pairs(onto('Ascendant')).join('|') === fromAsc.join('|'));
 })();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');

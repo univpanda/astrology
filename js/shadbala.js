@@ -1028,6 +1028,20 @@ var Shadbala = (function () {
           nextSunrise: sunrise }
       : { sunrise: sunrise, sunset: sunset, nextSunrise: nextSunrise };
 
+    /*
+     * The four lords of the birth, each worth all of its bala to one graha and
+     * nothing to the other six. They were computed inside the per-graha loop,
+     * seven times over and compared against the graha's own name, so the four
+     * rows of the table said which graha had them only by being the one cell
+     * that was not zero. Named here, and returned, so the page can say so.
+     */
+    var lords = {
+      abda: abdaLord(chart.panchang.ahargana),
+      masa: masaLord(chart.panchang.ahargana),
+      vara: chart.panchang.varaLord,
+      hora: horaLord(jd, horaSpan, chart.panchang.varaLord, horaLength)
+    };
+
     var results = {};
     GRAHAS.forEach(function (graha) {
       var p = positions[graha];
@@ -1089,10 +1103,10 @@ var Shadbala = (function () {
           ? tribhagaBala(graha, jd, sunrise, sunset, nextSunrise) : 0,
         // The lords of the weekdays the astrological year and month opened on,
         // counted from the ahargana rather than from any solar ingress.
-        abda: abdaLord(chart.panchang.ahargana) === graha ? 15 : 0,
-        masa: masaLord(chart.panchang.ahargana) === graha ? 30 : 0,
-        vara: chart.panchang.varaLord === graha ? 45 : 0,
-        hora: horaLord(jd, horaSpan, chart.panchang.varaLord, horaLength) === graha
+        abda: lords.abda === graha ? 15 : 0,
+        masa: lords.masa === graha ? 30 : 0,
+        vara: lords.vara === graha ? 45 : 0,
+        hora: lords.hora === graha
           ? 60 : 0,
         ayana: graha === 'Sun' ? ayana * 2 : ayana        // doubled for the Sun
       };
@@ -1183,7 +1197,8 @@ var Shadbala = (function () {
     // minimums differ, so comparing totals would flatter the Sun and punish
     // Mercury for no reason but the yardstick.
     var ranked = GRAHAS.slice().sort(function (a, b) { return results[b].ratio - results[a].ratio; });
-    return { grahas: results, ranking: ranked, wars: wars, sunrise: sunrise, sunset: sunset };
+    return { grahas: results, ranking: ranked, wars: wars, lords: lords,
+      sunrise: sunrise, sunset: sunset };
   }
 
   /*
@@ -1227,13 +1242,21 @@ var Shadbala = (function () {
    *   Charak, citing Aryabhata: "There are 24 Horas in a day, each Hora being
    *     (approximately!) equivalent to an hour."
    *
-   * So 'equal' is the only reading with a text behind it, and it is the
-   * default. 'seasonal' divides the daylight into twelve and the night into
-   * twelve, which is the older planetary-hour scheme and is what some software
-   * does; no source consulted here asks for it in this bala. It is offered so
-   * that a hora lord differing for that reason can be recognised rather than
-   * mistaken for an error, which is exactly what happened on one chart checked
-   * against Drik Panchang.
+   * So 'equal' is the only reading with a verse behind it. 'seasonal' divides
+   * the daylight into twelve and the night into twelve, which is the older
+   * planetary-hour scheme and the one the sequence of lords itself comes from,
+   * running in Chaldean order from the weekday lord and starting a night birth
+   * at the fifth from it.
+   *
+   * 'seasonal' is the default, the textbook by K. N. Rao's students working all
+   * three of its charts that way. This comment said 'equal' was the default for
+   * a while after the default changed, which is the sort of thing that sends a
+   * reader looking for a bug in the arithmetic.
+   *
+   * It matters more than its size suggests. The sixty is all or nothing, so the
+   * two schemes can hand it to different grahas: a birth five and a half hours
+   * after a June sunrise in New York falls in the fifth seasonal hora and the
+   * sixth equal one, which is Jupiter against Mars.
    */
   var HORA_LENGTH = { EQUAL: 'equal', SEASONAL: 'seasonal' };
 
