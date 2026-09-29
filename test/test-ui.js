@@ -7055,7 +7055,7 @@ console.log('\nEvery citation in the settings names its book');
    * being made twice, which is how two statements of the same thing drift.
    */
   ok('the doubling is argued once, under the setting that controls it',
-    /None of it is disputed/.test(panel.replace(/\s+/g, ' ')) &&
+    /Neither doubling is disputed/.test(panel.replace(/\s+/g, ' ')) &&
     !/The doubling is not in dispute/.test(panel.replace(/\s+/g, ' ')));
 })();
 
