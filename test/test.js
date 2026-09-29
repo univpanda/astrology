@@ -7034,6 +7034,98 @@ console.log('\nSaraswati, Maha Raja, and the Sun’s company named by its form')
 })();
 
 
+console.log('\nWhose yoga it is, as against who takes part in it');
+/*
+ * Two different questions, and only the second was ever asked. A finding
+ * carried the grahas involved and the page marked every one of them, so Shubha
+ * Vesi - Mercury standing in the sign after the Sun - appeared on the Sun's
+ * card as though the Sun had done something. The Sun marks where to count from
+ * and nothing else.
+ *
+ * Every finding now resolves to one graha or to none, and null is a real answer
+ * rather than a gap: an exchange belongs to two lords, a Nabhasa figure to all
+ * seven at once.
+ */
+(function () {
+  var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+  var missing = {}, resolved = {}, unresolved = {}, count = 0;
+  for (var y = 1950; y < 2005; y += 2) {
+    for (var m = 1; m <= 12; m += 2) {
+      for (var h = 2; h < 24; h += 7) {
+        var c = A.chart({ jdUT: A.julianDay(y, m, 15, h), latitude: 28.61,
+          longitude: 77.21, tzOffsetMinutes: 330 });
+        Yogas.detect(c, Shadbala.compute(c, place)).forEach(function (f) {
+          count++;
+          if (!('graha' in f)) { missing[f.title] = true; return; }
+          if (f.graha) {
+            resolved[f.title] = true;
+            // and it must be a graha, not a house number or a stray string
+            if (Yogas.GRAHAS.indexOf(f.graha) < 0 &&
+                ['Rahu', 'Ketu'].indexOf(f.graha) < 0) missing[f.title] = true;
+          } else unresolved[f.title] = true;
+        });
+      }
+    }
+  }
+  ok('every finding answers the question, even when the answer is nobody',
+    count > 5000 && Object.keys(missing).length === 0,
+    count + ' findings; bad: ' + (Object.keys(missing).join(', ') || 'none'));
+  ok('and both answers really occur',
+    Object.keys(resolved).length > 10 && Object.keys(unresolved).length > 5,
+    Object.keys(resolved).length + ' resolve to a graha, ' +
+      Object.keys(unresolved).length + ' to nobody');
+
+  /*
+   * The case that prompted it. Built rather than hunted so the Sun and Mercury
+   * are exactly where the rule wants them: the Sun in Taurus, Mercury in the
+   * sign after, and nothing in the sign before.
+   */
+  var vesi = { ascendant: { longitude: 5 }, planets: [
+    { name: 'Sun', sign: 1, longitude: 35, house: 2 },
+    { name: 'Mercury', sign: 2, longitude: 65, house: 3 },
+    { name: 'Moon', sign: 6, longitude: 185, house: 7 },
+    { name: 'Mars', sign: 8, longitude: 245, house: 9 },
+    { name: 'Jupiter', sign: 9, longitude: 275, house: 10 },
+    { name: 'Venus', sign: 10, longitude: 305, house: 11 },
+    { name: 'Saturn', sign: 11, longitude: 335, house: 12 }] };
+  var got = Yogas.sunCompany(vesi)[0];
+  ok('Shubha Vesi resolves to Mercury, who made it, and not to the Sun',
+    !!got && got.graha === 'Mercury' && /Vesi/.test(got.title),
+    got ? got.title + ' -> ' + got.graha : 'nothing found');
+  ok('and the Sun is still listed as taking part, being what it is counted from',
+    !!got && got.grahas.indexOf('Sun') >= 0);
+
+  /*
+   * Where the rule names one actor the column names him; where it does not, it
+   * says so. Mahapurusha is the graha making it; an exchange is two lords'.
+   */
+  var byName = {};
+  for (var yy = 1950; yy < 1990; yy++) {
+    var k = A.chart({ jdUT: A.julianDay(yy, 6, 15, 9), latitude: 28.61,
+      longitude: 77.21, tzOffsetMinutes: 330 });
+    Yogas.detect(k, Shadbala.compute(k, place)).forEach(function (f) {
+      if (byName[f.title] === undefined) byName[f.title] = f.graha;
+    });
+  }
+  ok('a Mahapurusha yoga resolves to the graha it is named for',
+    ['Ruchaka yoga', 'Bhadra yoga', 'Hamsa yoga', 'Malavya yoga', 'Sasa yoga']
+      .filter(function (t) { return byName[t] !== undefined; })
+      .every(function (t) {
+        return byName[t] === { 'Ruchaka yoga': 'Mars', 'Bhadra yoga': 'Mercury',
+          'Hamsa yoga': 'Jupiter', 'Malavya yoga': 'Venus',
+          'Sasa yoga': 'Saturn' }[t];
+      }));
+  ok('and an exchange resolves to neither of its two lords',
+    ['Maha parivartana yoga', 'Khala parivartana yoga', 'Dainya parivartana yoga']
+      .filter(function (t) { return t in byName; })
+      .every(function (t) { return byName[t] === null; }));
+  ok('and a Nabhasa figure to none of the seven that make it',
+    Object.keys(byName).filter(function (t) {
+      return ['Pasa yoga', 'Kedara yoga', 'Dama yoga', 'Sula yoga'].indexOf(t) >= 0;
+    }).every(function (t) { return byName[t] === null; }));
+})();
+
+
 console.log('\nWealth and want, Parashara’s chapters 41 and 42');
 (function () {
   var SEVEN = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];

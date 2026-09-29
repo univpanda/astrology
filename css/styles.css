@@ -1842,3 +1842,29 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
   border-color: currentColor;
   font-weight: 600;
 }
+
+/*
+ * The yogas as a table. The Graha column is the point of it: whose yoga this
+ * is, as against who takes part, which is the next column along. A dash there
+ * is an answer and not a gap, so it is set in the muted ink rather than hidden.
+ */
+.yoga-table { width: 100%; border-collapse: collapse; }
+.yoga-table th[scope="row"] {
+  font-weight: 600;
+  white-space: nowrap;
+  vertical-align: top;
+  padding-right: 1rem;
+}
+.yoga-table td { vertical-align: top; }
+.yoga-table .yoga-family,
+.yoga-table .yoga-part { color: var(--ink-soft); font-size: 0.85rem; }
+.yoga-table .yoga-graha { font-weight: 600; white-space: nowrap; }
+.yoga-table .yoga-graha.is-shared { font-weight: 400; color: var(--ink-soft); }
+.yoga-table .yoga-summary { margin: 0; }
+.yoga-table .yoga-reasons {
+  margin: 0.3rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+.yoga-table .yoga-houses { display: block; margin-top: 0.2rem; }

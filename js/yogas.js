@@ -90,6 +90,8 @@ var Yogas = (function () {
            */
           title: kind.charAt(0).toUpperCase() + kind.slice(1) + ' parivartana yoga',
           family: 'Parivartana',
+          /* An exchange is two lords' doing and resolves to neither. */
+          graha: null,
           grahas: [a, b],
           houses: houses,
           summary: a + ' in ' + Astro.SIGNS[signOfA] + ' and ' + b + ' in ' +
@@ -230,6 +232,7 @@ var Yogas = (function () {
          * very distinction the kendra-or-trikona test draws.
          */
         family: null,
+        graha: graha,
         grahas: [graha],
         houses: [house],
         reasons: reasons,
@@ -393,6 +396,7 @@ var Yogas = (function () {
         condition: name.toLowerCase(),
         title: name + ' yoga',
         family: 'Vipareeta raja yoga',
+        graha: lord,
         grahas: [lord],
         houses: [house, placed.house],
         reasons: reasons,
@@ -497,6 +501,7 @@ var Yogas = (function () {
       condition: 'general',
       title: 'Lakshmi yoga',
       family: 'Lakshmi yoga',
+      graha: ninthLord,
       grahas: [ninthLord, lagnaLord],
       houses: [9, placed.house],
       reasons: reasons,
@@ -571,6 +576,7 @@ var Yogas = (function () {
         condition: name.toLowerCase(),
         title: name + ' yoga',
         family: 'Pancha Mahapurusha yoga',
+        graha: p.name,
         grahas: [p.name],
         houses: [house],
         reasons: [
@@ -708,6 +714,8 @@ var Yogas = (function () {
            * repeating it would only say "Raja yoga" twice.
            */
           family: null,
+          /* An angle lord and a trine lord together: two grahas, one yoga. */
+          graha: null,
           grahas: [angleLord, trineLord],
           houses: angles.concat(trines),
           reasons: reasons,
@@ -800,6 +808,7 @@ var Yogas = (function () {
         condition: 'general',
         title: 'Gaja Kesari yoga',
         family: null,
+        graha: 'Jupiter',
         grahas: ['Jupiter', 'Moon'],
         houses: [houseFrom(jupiter.sign, lagna)],
         reasons: [
@@ -823,6 +832,7 @@ var Yogas = (function () {
       condition: 'kesari',
       title: 'Kesari yoga',
       family: null,
+      graha: 'Jupiter',
       grahas: ['Jupiter', 'Moon'],
       houses: [houseFrom(jupiter.sign, moon.sign)],
       reasons: [
@@ -936,6 +946,8 @@ var Yogas = (function () {
         condition: wanted ? 'shubha' : 'papa',
         title: (wanted ? 'Shubha' : 'Papa') + ' kartari yoga',
         family: 'Kartari yoga',
+        /* The hemming is done to a house, not by a graha to itself. */
+        graha: null,
         grahas: all.map(function (p) { return p.name; }),
         houses: [12, 2],
         reasons: reasons,
@@ -1051,6 +1063,7 @@ var Yogas = (function () {
       condition: 'general',
       title: name,
       family: 'The Moon’s company',
+      graha: 'Moon',
       grahas: ['Moon'].concat(second, twelfth),
       houses: [],
       reasons: reasons,
@@ -1076,6 +1089,8 @@ var Yogas = (function () {
       condition: 'general',
       title: 'Chandra Mangala yoga',
       family: null,
+      /* Named for both, and caused by their meeting. */
+      graha: null,
       grahas: ['Moon', 'Mars'],
       houses: [],
       reasons: [
@@ -1121,6 +1136,7 @@ var Yogas = (function () {
       condition: 'general',
       title: 'Adhi yoga',
       family: null,
+      graha: 'Moon',
       grahas: ['Moon'].concat(all),
       houses: [6, 7, 8],
       reasons: [
@@ -1164,6 +1180,7 @@ var Yogas = (function () {
       condition: 'general',
       title: 'Sakata yoga',
       family: null,
+      graha: 'Moon',
       grahas: ['Moon', 'Jupiter'],
       houses: [house],
       reasons: [
@@ -1212,6 +1229,8 @@ var Yogas = (function () {
       condition: 'general',
       title: 'Amala yoga',
       family: null,
+      /* The benefic standing in the 10th is the one doing it. */
+      graha: all[0] || null,
       grahas: all,
       houses: [10],
       reasons: [
@@ -1316,6 +1335,7 @@ var Yogas = (function () {
       condition: 'general',
       title: 'Budha-Aditya yoga',
       family: null,
+      graha: 'Mercury',
       grahas: ['Sun', 'Mercury'],
       houses: [],
       reasons: reasons,
@@ -1395,7 +1415,8 @@ var Yogas = (function () {
     });
     return [{
       yoga: subject, kind: 'general', subject: subject, condition: 'general',
-      title: title, family: 'Wealth and want', grahas: grahas, houses: houses,
+      title: title, family: 'Wealth and want', graha: null,
+      grahas: grahas, houses: houses,
       reasons: reasons,
       summary: parts.length === 1 ? parts[0].summary
         : parts[0].summary + ' And ' + parts.slice(1).map(function (p) {
@@ -1764,6 +1785,8 @@ var Yogas = (function () {
       group: group,
       title: name + ' yoga' + (collides ? ' (Nabhasa)' : ''),
       family: 'Nabhasa',
+      /* A figure is made of all seven at once and belongs to none of them. */
+      graha: null,
       grahas: grahas,
       houses: houses,
       reasons: reasons.concat(['read for one ' + NABHASA_SAYS[name]]),
@@ -1963,7 +1986,10 @@ var Yogas = (function () {
       ', and Jupiter is ' + seatSaid + ', strong enough to carry them. ' +
       'That is Saraswati yoga.',
     SARASWATI_GRAHAS.slice(),
-    SARASWATI_GRAHAS.map(function (g) { return where[g]; }));
+    SARASWATI_GRAHAS.map(function (g) { return where[g]; }),
+    /* Venus and Mercury only have to be well housed; Jupiter has to be
+       dignified and strong besides, so the combination is his. */
+    'Jupiter');
   }
 
 
@@ -2181,6 +2207,8 @@ var Yogas = (function () {
       condition: 'general',
       title: prefix + name + ' yoga',
       family: 'The Sun’s company',
+      /* The Sun marks where to count from; the grahas beside him make it. This is the case that showed the problem: with the Sun first in the list the card read it as the Sun's own. */
+      graha: all.length === 1 ? all[0] : null,
       grahas: ['Sun'].concat(all),
       houses: [],
       reasons: reasons,
@@ -2228,6 +2256,7 @@ var Yogas = (function () {
       condition: 'general',
       title: band.name + ' yoga',
       family: 'The Moon from the Sun',
+      graha: 'Moon',
       grahas: ['Moon', 'Sun'],
       houses: [],
       reasons: [
@@ -2341,6 +2370,8 @@ var Yogas = (function () {
       condition: 'general',
       title: 'Mahabhagya yoga',
       family: null,
+      /* The ascendant, the Sun and the Moon together: chart-wide. */
+      graha: null,
       grahas: ['Sun', 'Moon'],
       houses: [1],
       reasons: reasons,
@@ -2377,6 +2408,7 @@ var Yogas = (function () {
       condition: 'general',
       title: 'Chatussagara yoga',
       family: null,
+      graha: null,
       grahas: KENDRAS.reduce(function (all, h) { return all.concat(held[h]); }, []),
       houses: KENDRAS.slice(),
       reasons: [
@@ -2419,6 +2451,7 @@ var Yogas = (function () {
       condition: 'general',
       title: 'Rajalakshana yoga',
       family: null,
+      graha: null,
       grahas: RAJALAKSHANA.slice(),
       houses: RAJALAKSHANA.map(function (g) { return where[g]; }),
       reasons: [
@@ -2482,6 +2515,7 @@ var Yogas = (function () {
       condition: 'general',
       title: name + ' Malika yoga',
       family: 'Malika',
+      graha: null,
       grahas: GRAHAS.slice(),
       houses: [house],
       reasons: [
@@ -2530,6 +2564,7 @@ var Yogas = (function () {
       condition: 'general',
       title: 'Parvata yoga',
       family: null,
+      graha: null,
       grahas: inAngles.concat(guests),
       houses: [6, 8],
       reasons: [
@@ -2597,6 +2632,7 @@ var Yogas = (function () {
       condition: 'general',
       title: 'Vasumathi yoga',
       family: null,
+      graha: null,
       grahas: fromLagna.concat(fromMoon.filter(function (g) {
         return fromLagna.indexOf(g) < 0;
       })),
@@ -2671,10 +2707,20 @@ var Yogas = (function () {
     return !!(strengths && strengths[graha] && strengths[graha].strong);
   }
 
-  function finding(subject, title, reasons, summary, grahas, houses) {
+  /*
+   * `graha` is the one the yoga resolves to: whose yoga it is, as against who
+   * takes part in it. They are not the same question and the page had only ever
+   * asked the second, so a combination caused by Mercury standing beside the
+   * Sun appeared on the Sun's card too and read as the Sun's own. Several
+   * resolve to nobody - an exchange belongs to two lords, a Nabhasa figure to
+   * the whole chart - and null says so rather than naming whichever graha
+   * happens to be first in the list.
+   */
+  function finding(subject, title, reasons, summary, grahas, houses, graha) {
     return [{
       yoga: subject, kind: 'general', subject: subject, condition: 'general',
-      title: title, family: null, grahas: grahas || [], houses: houses || [],
+      title: title, family: null, graha: graha === undefined ? null : graha,
+      grahas: grahas || [], houses: houses || [],
       reasons: reasons, summary: summary
     }];
   }
@@ -2713,7 +2759,9 @@ var Yogas = (function () {
         'states which of the competing rules for finding it to use - so a ' +
         'chart may hold this yoga by one of those and be reported without it'
     ], lord + ', ' + firstLord(chart, 'the ascendant lord') + ', is joined by ' + listOf(with_) +
-       ', which is Vanchanachorabheethi yoga.', [lord].concat(with_), [1]);
+       ', which is Vanchanachorabheethi yoga.', [lord].concat(with_), [1],
+       /* The clause tested is about the ascendant lord's company, so it is his. */
+       lord);
   }
 
   /*

@@ -3399,31 +3399,83 @@
       'Everything this page checks for is listed under the findings, with what ' +
       'this chart gave marked. The Lesson tab explains what each one means.';
 
-    found.forEach(function (finding) {
-      var card = el('div', 'yoga-finding');
-      var name = el('h4', 'yoga-name', finding.title);
-      // Named kinds carry their family, so a reader meeting "sarala" for the
-      // first time can see what it belongs to without leaving the panel.
-      if (finding.family && finding.title.toLowerCase().indexOf(finding.family.toLowerCase()) < 0) {
-        name.appendChild(el('span', 'yoga-family', 'a ' + finding.family.toLowerCase()));
-      }
-      card.appendChild(name);
-      card.appendChild(el('p', 'yoga-summary', finding.summary));
-      card.appendChild(el('p', 'yoga-grahas',
-        (finding.grahas.length > 1 ? 'Grahas: ' : 'Graha: ') + finding.grahas.join(' and ') +
-        '   \u00b7   ' + (finding.houses.length > 1 ? 'Houses: ' : 'House: ') +
-        finding.houses.join(' and ')));
-
-      // Where a yoga rests on several conditions, name the ones that applied:
-      // they are not equally persuasive, and a bare verdict hides which did the
-      // work.
-      if (finding.reasons && finding.reasons.length) {
-        var why = el('ul', 'yoga-reasons');
-        finding.reasons.forEach(function (reason) { why.appendChild(el('li', null, reason)); });
-        card.appendChild(why);
-      }
-      list.appendChild(card);
+    /*
+     * A table now, not a stack of cards, and the column that matters is Graha.
+     *
+     * Every finding used to print the grahas taking part in it, which is a
+     * different question from whose yoga it is, and the page only ever asked
+     * the second. Shubha Vesi is the case that showed it: Mercury standing in
+     * the sign after the Sun makes the combination, the Sun only marks where to
+     * count from, and listing both put it on the Sun's card as though the Sun
+     * had done something. The engine now resolves each finding to one graha or
+     * to none, and that is what this column shows; everyone taking part is
+     * still there, under Taking part.
+     *
+     * A dash in the column is a real answer, not a gap. An exchange belongs to
+     * two lords, a Nabhasa figure to all seven at once, Mahabhagya to the
+     * ascendant and the luminaries together: naming any one of them would be
+     * the same mistake in the other direction.
+     */
+    var table = el('table', 'yoga-table');
+    var head = document.createElement('thead');
+    var headRow = document.createElement('tr');
+    ['Yoga', 'Family', 'Graha', 'Condition', 'Taking part'].forEach(function (h) {
+      var th = el('th', null, h);
+      th.setAttribute('scope', 'col');
+      headRow.appendChild(th);
     });
+    head.appendChild(headRow);
+    table.appendChild(head);
+    var body = document.createElement('tbody');
+
+    found.forEach(function (finding) {
+      var tr = document.createElement('tr');
+      var name = el('th', 'yoga-name', finding.title);
+      name.setAttribute('scope', 'row');
+      tr.appendChild(name);
+      tr.appendChild(el('td', 'yoga-family', finding.family || '\u2013'));
+
+      /*
+       * The resolved graha, or a dash where the yoga is nobody's in particular.
+       * Held apart from the list beside it so the two cannot be read as one.
+       */
+      var whose = el('td', finding.graha ? 'yoga-graha' : 'yoga-graha is-shared',
+        finding.graha || '\u2013');
+      if (!finding.graha) {
+        whose.title = finding.title + ' is not one graha\u2019s: it is made by ' +
+          (finding.grahas.length > 1 ? 'these together' : 'the chart as a whole') + '.';
+      }
+      tr.appendChild(whose);
+
+      /*
+       * What holds in this chart, with the reasons behind it. The reasons are
+       * the part a reader argues with, so they stay: a bare verdict hides which
+       * of several conditions did the work.
+       */
+      var why = el('td', 'yoga-condition');
+      why.appendChild(el('p', 'yoga-summary', finding.summary));
+      if (finding.reasons && finding.reasons.length) {
+        var list2 = el('ul', 'yoga-reasons');
+        finding.reasons.forEach(function (reason) {
+          list2.appendChild(el('li', null, reason));
+        });
+        why.appendChild(list2);
+      }
+      tr.appendChild(why);
+
+      var part = finding.grahas.filter(function (g) { return g !== finding.graha; });
+      var taking = el('td', 'yoga-part', part.length ? part.join(', ') : '\u2013');
+      if (finding.houses && finding.houses.length) {
+        taking.appendChild(el('span', 'yoga-houses',
+          (finding.houses.length > 1 ? 'houses ' : 'house ') + finding.houses.join(', ')));
+      }
+      tr.appendChild(taking);
+      body.appendChild(tr);
+    });
+    table.appendChild(body);
+    var scroll = el('div', 'table-scroll');
+    scroll.appendChild(table);
+    list.appendChild(scroll);
   }
 
   function fetchPassages(query, done) {

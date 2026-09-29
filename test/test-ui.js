@@ -862,7 +862,8 @@ ok('and every scrolling table really does head its rows with a th', (function ()
   // Two grids head their rows with what they measure - a division, a share of
   // Shadbala - and the rest with a graha. Nothing spans a group: the graha
   // table's Longitude heading is a row of its own, not a cell over three.
-  return (appSrc.match(/setAttribute\('scope', 'row'\)/g) || []).length === 6 &&
+  // Seven since the yogas became a table, its rows headed by the yoga's name.
+  return (appSrc.match(/setAttribute\('scope', 'row'\)/g) || []).length === 7 &&
     !/'rowgroup'/.test(appSrc) &&
     (appSrc.match(/el\(i === 0 \? 'th' : 'td'/g) || []).length === 1;
 })());
@@ -1261,7 +1262,18 @@ ok('the library is fetched once and searched in the page',
 ok('the yogas panel carries no explanatory passage',
    !/yoga-explanation/.test(appSrc) && !/fetchPassages\(\{ subjects:/.test(appSrc));
 ok('it still says how each yoga forms',
-   /finding\.summary/.test(appSrc) && /yoga-reasons/.test(appSrc) && /finding\.grahas\.join/.test(appSrc));
+   /finding\.summary/.test(appSrc) && /yoga-reasons/.test(appSrc) &&
+   /part\.join\(', '\)/.test(appSrc));
+/*
+ * The column the redesign is for. Whose yoga it is and who takes part in it are
+ * different questions, and the page only ever asked the second: Shubha Vesi is
+ * Mercury's doing, the Sun only marking where to count from, and listing both
+ * put it on the Sun's card as though the Sun had done something.
+ */
+ok('the table names the graha a yoga resolves to, apart from its participants',
+   /'Yoga', 'Family', 'Graha', 'Condition', 'Taking part'/.test(appSrc) &&
+   /finding\.graha \? 'yoga-graha' : 'yoga-graha is-shared'/.test(appSrc) &&
+   /finding\.grahas\.filter\(function \(g\) \{ return g !== finding\.graha; \}\)/.test(appSrc));
 ok('it points at the Lesson tab for the meaning',
    /The Lesson tab explains/.test(appSrc));
 ok('the library is still fetched for the lesson tab', /fetchPassages\(\{\}/.test(appSrc));
@@ -3588,6 +3600,39 @@ ok('every script the page loads parses', (function () {
         .forEach(function (f) { held[f.title.replace(/ yoga$/, '')] = true; });
       var want = Object.keys(held).sort().join(',');
       return marked.length > 0 && marked.sort().join(',') === want;
+    })());
+
+  /*
+   * The Graha column, driven. A source match would not catch the column being
+   * filled from the wrong field, which is the fault this replaces.
+   */
+  ok('the rendered table carries the five columns, Graha among them',
+    (function () {
+      var host = byId['yoga-list'];
+      if (!host) return false;
+      host.children.length = 0;
+      out.renderYogas(peace);
+      var heads = [];
+      (function walk(n) {
+        if (!n || !n.children) return;
+        n.children.forEach(function (kid) {
+          if (kid.tag === 'th' && kid.attrs && kid.attrs.scope === 'col') {
+            heads.push(kid.textContent);
+          }
+          walk(kid);
+        });
+      })(host);
+      return heads.join(',') === 'Yoga,Family,Graha,Condition,Taking part';
+    })());
+  ok('and a graha never appears in both the Graha column and Taking part',
+    (function () {
+      var strengths = Shadbala.compute(peace.chart,
+        { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 });
+      var found = Yogas.detect(peace.chart, strengths);
+      return found.length > 0 && found.every(function (f) {
+        var part = f.grahas.filter(function (g) { return g !== f.graha; });
+        return part.indexOf(f.graha) < 0;
+      });
     })());
 
   /*
