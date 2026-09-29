@@ -1448,22 +1448,20 @@ ok('a chart with no yoga makes no request for one', (function () {
  * This counts the detectors rather than trusting the sentence, since a detector
  * added without updating the note is exactly the drift worth catching.
  */
-ok('the page says which yogas it looks for, and the list is current', (function () {
+ok('the page lists what it looks for by name, not in a sentence', (function () {
+  // The sentence was the problem: thirty names run together read as coverage,
+  // and a reader could not tell a yoga absent from the chart from one absent
+  // from the engine. The list is built from the module instead.
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');
-  // One name per detector, in the order the note gives them. The Moon's four
-  // come from one detector, so its entry is the phrase that introduces them.
-  var named = ['Raja yoga', 'parivartana', 'neecha bhanga', 'vipareeta raja', 'Lakshmi',
-               'Gaja Kesari', 'kartari', 'Mahapurusha', 'Sunapha', 'Chandra Mangala',
-               'Adhi', 'Sakata', 'Amala', 'Budha-Aditya', 'Vesi', 'Adhama',
-               'Mahabhagya', 'Chatussagara', 'Rajalakshana', 'Malika', 'Parvata',
-               'Vasumathi', 'Vanchanachorabheethi', 'Kahala', 'Pushkala',
-               'Gauri', 'Bharathi', 'Kusuma', 'Chapa', 'Sreenatha', 'Sankha',
-               'Bheri', 'Matsya', 'Mridanga', 'Saraswati', 'Maha Raja'];
-  return named.every(function (n) { return flat.indexOf(n) >= 0; }) &&
-    /Raja yoga, parivartana, neecha bhanga, vipareeta raja, Lakshmi, Gaja Kesari, kartari, the five Mahapurusha yogas, the Moon’s own four - Sunapha, Anapha, Durudhura and Kemadruma - the Sun’s three - Vesi, Vasi and Ubhayachari - the Moon read from the Sun as Adhama, Sama or Varishtha, Chandra Mangala, Adhi, Sakata, Amala, Budha-Aditya, Mahabhagya, Chatussagara, Rajalakshana, Malika, Parvata, Vasumathi, Vanchanachorabheethi, Kahala, Pushkala, Gauri, Bharathi, Kusuma, Chapa, Sreenatha, Sankha, Bheri, Matsya, Mridanga, Saraswati and Maha Raja are checked/
-      .test(flat) &&
-    named.length === Yogas.DETECTOR_COUNT;
-})(), Yogas.DETECTOR_COUNT + ' detectors');
+  return /id="yoga-catalogue"/.test(html) &&
+    /function renderYogaCatalogue\(found, chosen\)/.test(appSrc) &&
+    /Yogas\.CATALOGUE\.forEach/.test(appSrc) &&
+    !/Bharathi, Kusuma, Chapa, Sreenatha, Sankha, Bheri, Matsya/.test(flat);
+})());
+ok('and it says how many of them this chart gave', (function () {
+  return /held \+ ' of ' \+ total \+ ' present in '/.test(appSrc) &&
+    /catalogue-count/.test(appSrc);
+})());
 ok('and the yoga check is handed the strengths it needs',
    /Yogas\.detect\(Astro\.chartInDivision\(state\.chart, chosen\.division\), strengths\)/.test(appSrc) &&
    /function strengthsFor/.test(appSrc));
@@ -3542,6 +3540,54 @@ ok('every script the page loads parses', (function () {
       // Not every chart: one rising in the Moon's own sign is not rotated at
       // all, and a few hold only yogas that no house decides.
       return tried > 20 && differed > tried * 0.8 && gained > 0 && lost > 0;
+    })());
+
+  /*
+   * And the catalogue really renders, with the chart's own findings marked.
+   * Driven rather than read off the source, since the value of the list is
+   * that the marking is right: a name shown plain when the chart holds it
+   * would be worse than no list.
+   */
+  ok('the catalogue renders every group and every name the module lists',
+    (function () {
+      var host = byId['yoga-catalogue'];
+      if (!host) return false;
+      host.children.length = 0;
+      out.renderYogas(peace);
+      var groups = host.children.filter(function (c) {
+        return c.className === 'catalogue-group';
+      });
+      var names = 0;
+      groups.forEach(function (g) {
+        (g.children || []).forEach(function (kid) {
+          if (kid.className === 'catalogue-names') names += kid.children.length;
+        });
+      });
+      var listed = Yogas.CATALOGUE.reduce(function (n, g) {
+        return n + g.names.length;
+      }, 0);
+      return groups.length === Yogas.CATALOGUE.length && names === listed;
+    })());
+  ok('and marks exactly the ones this chart gave, no more and no fewer',
+    (function () {
+      var host = byId['yoga-catalogue'];
+      host.children.length = 0;
+      out.renderYogas(peace);
+      var marked = [];
+      host.children.forEach(function (g) {
+        (g.children || []).forEach(function (kid) {
+          if (kid.className !== 'catalogue-names') return;
+          kid.children.forEach(function (li) {
+            if (/is-here/.test(li.className || '')) marked.push(li.textContent);
+          });
+        });
+      });
+      var held = {};
+      Yogas.detect(peace.chart, Shadbala.compute(peace.chart,
+        { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 }))
+        .forEach(function (f) { held[f.title.replace(/ yoga$/, '')] = true; });
+      var want = Object.keys(held).sort().join(',');
+      return marked.length > 0 && marked.sort().join(',') === want;
     })());
 
   /*

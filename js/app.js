@@ -3304,6 +3304,45 @@
              label: varga ? varga.label : '' };
   }
 
+  /*
+   * The catalogue: every yoga the module looks for, grouped, with the ones this
+   * chart gave marked. Built from Yogas.CATALOGUE rather than from a sentence
+   * kept in step by hand, so a detector added without a name here fails a test
+   * instead of quietly going unlisted.
+   */
+  function renderYogaCatalogue(found, chosen) {
+    var host = document.getElementById('yoga-catalogue');
+    if (!host) return;
+    host.innerHTML = '';
+    var here = {};
+    found.forEach(function (f) { here[f.title] = true; });
+
+    var total = 0, held = 0;
+    Yogas.CATALOGUE.forEach(function (group) {
+      total += group.names.length;
+      group.names.forEach(function (n) { if (here[n]) held++; });
+    });
+
+    var head = el('h3', 'catalogue-head', 'What this page looks for');
+    head.appendChild(el('span', 'catalogue-count',
+      held + ' of ' + total + ' present in ' + chosen.name));
+    host.appendChild(head);
+
+    Yogas.CATALOGUE.forEach(function (group) {
+      var box = el('div', 'catalogue-group');
+      box.appendChild(el('h4', null, group.group));
+      var row = el('ul', 'catalogue-names');
+      group.names.forEach(function (name) {
+        var li = el('li', here[name] ? 'catalogue-name is-here' : 'catalogue-name',
+          name.replace(/ yoga$/, ''));
+        if (here[name]) li.setAttribute('aria-label', name + ', present in the chart on screen');
+        row.appendChild(li);
+      });
+      box.appendChild(row);
+      host.appendChild(box);
+    });
+  }
+
   function renderYogas(state) {
     var list = document.getElementById('yoga-list');
     var note = document.getElementById('yoga-note');
@@ -3312,34 +3351,32 @@
     var strengths = strengthsFor(state).grahas;
     var chosen = divisionFor('yoga-division');
     var found = Yogas.detect(Astro.chartInDivision(state.chart, chosen.division), strengths);
+
+    /*
+     * What this page looks for, and which of them this chart gave.
+     *
+     * The note here used to be a thirty-name sentence, which reads as coverage
+     * when it is really a list: a reader could not tell a yoga absent from the
+     * chart from one absent from the engine, and five that had been in all
+     * along were asked for on that account. Every name the detectors can
+     * produce is now on the page, grouped, with the ones this chart holds
+     * marked - so the answer to "do you check Bhadra" is in front of the
+     * reader rather than in a sentence about Mahapurusha.
+     */
+    renderYogaCatalogue(found, chosen);
+
     if (!found.length) {
       note.textContent = 'No yoga among those this page looks for is present in ' +
-        chosen.name + '. ' +
-      'Raja yoga, parivartana, neecha bhanga, vipareeta raja, Lakshmi, Gaja Kesari, ' +
-        'kartari, the five Mahapurusha yogas, the Moon’s own four - Sunapha, Anapha, ' +
-        'Durudhura and Kemadruma - the Sun’s three - Vesi, Vasi and Ubhayachari - ' +
-        'the Moon read from the Sun as Adhama, Sama or Varishtha, Chandra Mangala, ' +
-        'Adhi, Sakata, Amala, Budha-Aditya, Mahabhagya, Chatussagara, Rajalakshana, ' +
-        'Malika, Parvata, Vasumathi, Vanchanachorabheethi, Kahala, Pushkala, Gauri, ' +
-        'Bharathi, Kusuma, Chapa, Sreenatha, Sankha, Bheri, Matsya, Mridanga, ' +
-        'Saraswati and Maha Raja ' +
-        'are checked' + ' so far; the Lesson tab ' +
-        'explains each.';
+        chosen.name + '. The list below is everything it checks; the Lesson tab ' +
+        'explains each. The Lesson tab explains what each one means.';
       return;
     }
-    note.textContent = 'Raja yoga, parivartana, neecha bhanga, vipareeta raja, Lakshmi, Gaja Kesari, ' +
-      'kartari, the five Mahapurusha yogas, the Moon’s own four - Sunapha, Anapha, ' +
-      'Durudhura and Kemadruma - the Sun’s three - Vesi, Vasi and Ubhayachari - ' +
-      'the Moon read from the Sun as Adhama, Sama or Varishtha, Chandra Mangala, ' +
-      'Adhi, Sakata, Amala, Budha-Aditya, Mahabhagya, Chatussagara, Rajalakshana, ' +
-      'Malika, Parvata, Vasumathi, Vanchanachorabheethi, Kahala, Pushkala, Gauri, ' +
-      'Bharathi, Kusuma, Chapa, Sreenatha, Sankha, Bheri, Matsya, Mridanga, ' +
-        'Saraswati and Maha Raja ' +
-      'are checked' + ' so far; more will follow. An angle-trine raja yoga ' +
-      'is common, present in roughly three charts in four, so it is read alongside the ' +
-      'strength of the grahas forming it rather than on its own. The Lesson tab explains ' +
-      'what each one means. Yogas are read in the division chosen above, which is ' +
-      'independent of what the two charts are showing.';
+    note.textContent = 'Yogas are read in the division chosen above, which is ' +
+      'independent of what the two charts are showing. An angle-trine raja yoga ' +
+      'is common, present in roughly three charts in four, so it is read ' +
+      'alongside the strength of the grahas forming it rather than on its own. ' +
+      'Everything this page checks for is listed under the findings, with what ' +
+      'this chart gave marked. The Lesson tab explains what each one means.';
 
     found.forEach(function (finding) {
       var card = el('div', 'yoga-finding');

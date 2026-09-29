@@ -2638,6 +2638,56 @@ var Yogas = (function () {
    * Mahabhagya is the only one: its test is the parity of the lagna's own sign,
    * beside the Sun's and the Moon's.
    */
+  /*
+   * Everything this module looks for, grouped as a reader would go looking.
+   *
+   * The Yogas tab used to answer only the question "what did this chart give",
+   * with what it checks for buried in a thirty-name sentence under the
+   * findings. That reads as coverage when it is really a list, and five yogas
+   * were asked for in a row that had been implemented all along - Amala, Shubha
+   * Vesi, Pushkala, Bhadra - because there was no way to see the difference
+   * between a yoga absent from a chart and a yoga absent from the engine.
+   *
+   * The names here are the titles the detectors actually produce, so the page
+   * can mark the ones a chart holds by matching on them. A sweep in the test
+   * suite asserts nothing can be produced that is missing from this list; the
+   * reverse is not asserted, since a few are rare enough that a sweep will not
+   * turn them up and their absence from a sample is not evidence they cannot
+   * form.
+   */
+  var CATALOGUE = [
+    { group: 'Raja yogas', names: ['Angle-trine raja yoga',
+      'Dharma Karmadhipati yoga', 'Maha Raja yoga', 'Neecha bhanga raja yoga',
+      'Neecha bhanga'] },
+    { group: 'Vipareeta raja yogas', names: ['Harsha yoga', 'Sarala yoga',
+      'Vimala yoga'] },
+    { group: 'Pancha Mahapurusha', names: ['Ruchaka yoga', 'Bhadra yoga',
+      'Hamsa yoga', 'Malavya yoga', 'Sasa yoga'] },
+    { group: 'Exchanges', names: ['Maha parivartana yoga',
+      'Khala parivartana yoga', 'Dainya parivartana yoga'] },
+    { group: 'The Moon’s company', names: ['Sunapha yoga', 'Anapha yoga',
+      'Durudhura yoga', 'Kemadruma yoga'] },
+    { group: 'The Sun’s company', names: ['Shubha Vesi yoga', 'Papa Vesi yoga',
+      'Vesi yoga', 'Shubha Vasi yoga', 'Papa Vasi yoga', 'Vasi yoga',
+      'Shubha Ubhayachari yoga', 'Papa Ubhayachari yoga', 'Ubhayachari yoga'] },
+    { group: 'The Moon from the Sun', names: ['Adhama yoga', 'Sama yoga',
+      'Varishtha yoga'] },
+    { group: 'Hemmed in', names: ['Shubha kartari yoga', 'Papa kartari yoga'] },
+    { group: 'Malika', names: ['Lagna Malika yoga', 'Dhana Malika yoga',
+      'Vikrama Malika yoga', 'Sukha Malika yoga', 'Putra Malika yoga',
+      'Satru Malika yoga', 'Kalatra Malika yoga', 'Randhra Malika yoga',
+      'Bhagya Malika yoga', 'Karma Malika yoga', 'Labha Malika yoga',
+      'Vraya Malika yoga'] },
+    { group: 'Raman’s combinations', names: ['Kahala yoga', 'Pushkala yoga',
+      'Gauri yoga', 'Bharathi yoga', 'Kusuma yoga', 'Chapa yoga',
+      'Sreenatha yoga', 'Sankha yoga', 'Bheri yoga', 'Matsya yoga',
+      'Mridanga yoga', 'Vanchanachorabheethi yoga'] },
+    { group: 'Others', names: ['Adhi yoga', 'Amala yoga', 'Budha-Aditya yoga',
+      'Chandra Mangala yoga', 'Chatussagara yoga', 'Gaja Kesari yoga',
+      'Kesari yoga', 'Lakshmi yoga', 'Mahabhagya yoga', 'Parvata yoga',
+      'Rajalakshana yoga', 'Sakata yoga', 'Saraswati yoga', 'Vasumathi yoga'] }
+  ];
+
   var ASCENDANT_ONLY = [mahabhagya];
 
   function detect(chart, strengths) {
@@ -2673,7 +2723,7 @@ var Yogas = (function () {
     SARASWATI_HOUSES: SARASWATI_HOUSES, SARASWATI_GRAHAS: SARASWATI_GRAHAS,
     VISHNU_HOUSES: VISHNU_HOUSES, LAKSHMI_HOUSES: LAKSHMI_HOUSES,
     VIPAREETA_NAMES: VIPAREETA_NAMES, MAHAPURUSHA: MAHAPURUSHA,
-    KENDRAS: KENDRAS,
+    KENDRAS: KENDRAS, CATALOGUE: CATALOGUE,
     // Exposed so a test can notice a detector being added without being wired
     // into the test that checks detect() gathers from all of them.
     DETECTOR_COUNT: DETECTORS.length,

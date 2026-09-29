@@ -7007,6 +7007,66 @@ console.log('\nSaraswati, Maha Raja, and the Sun’s company named by its form')
 })();
 
 
+console.log('\nEverything the detectors can produce is on the page’s own list');
+/*
+ * The catalogue is what the Yogas tab prints under its findings, and its whole
+ * value is that a name absent from it is a name the reader will never see
+ * offered. So the sweep is the test: anything a detector can put on screen has
+ * to be in the list.
+ *
+ * Not asserted in reverse. A few of these are rare enough that a sample this
+ * size will not turn them up - Sreenatha did not appear once in 25,000 charts -
+ * and absence from a sweep is not evidence that a rule cannot form.
+ */
+(function () {
+  var named = {};
+  Yogas.CATALOGUE.forEach(function (group) {
+    group.names.forEach(function (n) { named[n] = group.group; });
+  });
+  var total = Object.keys(named).length;
+  ok('the catalogue is grouped and covers every detector between its groups',
+    Yogas.CATALOGUE.length >= 10 && total > 60,
+    Yogas.CATALOGUE.length + ' groups, ' + total + ' names');
+
+  var seen = {}, missing = {}, charts = 0;
+  [[28.61, 77.21, 330], [40.71, -74.01, -300], [-33.87, 151.21, 600]]
+    .forEach(function (place) {
+      var where = { latitude: place[0], longitude: place[1],
+        tzOffsetMinutes: place[2] };
+      for (var y = 1950; y < 2010; y += 2) {
+        for (var m = 1; m <= 12; m += 3) {
+          for (var h = 2; h < 24; h += 7) {
+            var c = A.chart({ jdUT: A.julianDay(y, m, 15, h),
+              latitude: place[0], longitude: place[1],
+              tzOffsetMinutes: place[2] });
+            charts++;
+            Yogas.detect(c, Shadbala.compute(c, where)).forEach(function (f) {
+              seen[f.title] = (seen[f.title] || 0) + 1;
+              if (!named[f.title]) missing[f.title] = true;
+            });
+          }
+        }
+      }
+    });
+  ok('the sweep is wide enough to be worth something',
+    Object.keys(seen).length > 55, charts + ' charts, ' +
+      Object.keys(seen).length + ' distinct titles produced');
+  ok('and nothing a detector produces is missing from the list',
+    Object.keys(missing).length === 0, Object.keys(missing).join(', '));
+
+  /*
+   * The five that were asked for after they had been implemented. Named
+   * outright, because the point of the list is that these are findable without
+   * running a chart that happens to hold them.
+   */
+  ['Amala yoga', 'Shubha Vesi yoga', 'Pushkala yoga', 'Bhadra yoga',
+   'Saraswati yoga'].forEach(function (name) {
+    ok('the list names ' + name.replace(/ yoga$/, ''),
+      !!named[name], named[name] || 'absent');
+  });
+})();
+
+
 console.log('\nThe four lords of the birth, named rather than hunted for');
 /*
  * Abda, masa, vara and hora each hand their whole bala to one graha and nothing
