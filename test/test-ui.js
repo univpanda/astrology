@@ -5376,14 +5376,22 @@ ok('the card lists findings one line each, name and rarity',
    /li\.title = \[means, item\.why\]\.filter\(Boolean\)\.join\(' '\);/.test(appSrc) &&
    /\.graha-card-list li \+ li \{[^}]*margin-top: 0\.2rem;/.test(cssSrc.replace(/\n/g, '')));
 /*
- * And the list holds yogas only. A state is a condition the graha is in, not
- * a combination it takes part in, and listed among them Retrograde read as
- * one - a line and a rule of its own for a single word.
+ * The line holds conditions the graha is in; the list holds combinations it
+ * takes part in. Retrograde among the yogas read as though being retrograde
+ * were one, and hemming on the conditions line read as though being caught
+ * between two other grahas were not.
+ *
+ * Both kartari yogas make the crossing, though only the papa one was asked
+ * about: they are one rule read two ways, and splitting them would put the
+ * same fact in two places depending on which side of it a chart fell.
  */
-ok('and the list is yogas, the states having a line of their own',
-   !/split\(t\.getAttribute\('data-states'\)\)\.forEach\(function \(item\) \{\s*\n\s*var key/
+ok('the states line holds conditions and the list holds combinations',
+   /var KARTARI = \{ P: 'Papa kartari yoga', S: 'Shubha kartari yoga' \};/.test(appSrc) &&
+   /if \(KARTARI\[item\.term\]\) return;   \/\/ a combination, listed with the yogas/
      .test(appSrc) &&
-   (appSrc.match(/split\(t\.getAttribute\('data-states'\)\)/g) || []).length === 1);
+   /if \(!KARTARI\[item\.term\]\) return;/.test(appSrc) &&
+   /head\.appendChild\(el\('span', 'graha-card-label', KARTARI\[item\.term\]\)\)/.test(appSrc) &&
+   /rarity\(head, 'state', key\)/.test(appSrc));
 /*
  * And the detail is not merely dropped: the Yogas tab carries the summary and
  * the reasons for every finding, so the card is a shorter view of something

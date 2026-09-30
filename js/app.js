@@ -1293,6 +1293,18 @@
    */
   var DIGNITY_MARKS = { Exalted: 'E', Debilitated: 'D', Mooltrikona: 'M' };
 
+  /*
+   * Hemming is not a condition the graha is in but a combination it is caught
+   * in: two other grahas, one on either side, which is a yoga by any reading
+   * and is named as one in the texts. So it leaves the conditions line for the
+   * list below, where a finding made of several grahas belongs.
+   *
+   * Both of them, though only the papa one was asked about: they are one rule
+   * read two ways, and splitting them would put the same fact in two places
+   * depending on which side of it a chart happened to fall.
+   */
+  var KARTARI = { P: 'Papa kartari yoga', S: 'Shubha kartari yoga' };
+
   var STATE_NAMES = { R: 'Retrograde', C: 'Combust', V: 'Vargottama',
     Y: 'Yogakaraka', P: 'Papa kartari', S: 'Shubha kartari' };
 
@@ -1623,6 +1635,7 @@
        */
       var conditions = el('p', 'graha-card-conditions');
       split(t.getAttribute('data-states')).forEach(function (item) {
+        if (KARTARI[item.term]) return;   // a combination, listed with the yogas
         var chance = chanceOf('state', at + '/' + item.term);
         /*
          * The word and its mark. For a state the mark is the one the chart
@@ -1659,6 +1672,20 @@
        */
       var list = el('ul', 'graha-card-list');
       var found = [];
+
+      split(t.getAttribute('data-states')).forEach(function (item) {
+        if (!KARTARI[item.term]) return;
+        var key = at + '/' + item.term;
+        found.push({ chance: chanceOf('state', key), build: function () {
+          var li = el('li', 'graha-card-yoga');
+          var head = el('p', 'graha-card-term');
+          head.appendChild(el('span', 'graha-card-label', KARTARI[item.term]));
+          rarity(head, 'state', key);
+          li.appendChild(head);
+          if (item.why) li.title = item.why;
+          return li;
+        } });
+      });
 
       split(t.getAttribute('data-yogas')).forEach(function (item) {
         /*
