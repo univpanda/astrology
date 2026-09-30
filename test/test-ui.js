@@ -5732,6 +5732,20 @@ ok('the yoga catalogue is folded under the findings, not printed beside them',
 ok('and it still says how many of them this chart holds',
   /held \+ ' of ' \+ total \+ ' present in ' \+ chosen\.name/.test(appSrc));
 
+/*
+ * The control rows fill their width instead of packing to the left. The Yogas
+ * tab carries three selects - graha, chart, reference - and at a fixed width
+ * they bunched at one end with a third of the line empty beside them.
+ *
+ * Bounded rather than unbounded: two of the four rows hold a single select,
+ * and one control stretched across the page reads as a mistake. At three the
+ * container binds first and the row fills; at one the cap holds it.
+ */
+ok('the selects in a control row share its width, within a limit',
+  /\.varga-scheme-row select \{ width: auto; flex: 1 1 15rem; max-width: 24rem; \}/
+    .test(cssSrc) &&
+  /\.varga-scheme-row \{ display: flex;/.test(cssSrc));
+
 console.log('\nAyanamsa lives in settings');
 /*
  * The ayanamsa is not a fact about a nativity. It is a choice about how every

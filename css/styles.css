@@ -1714,7 +1714,16 @@ td.vimsopaka-poor { color: var(--retro); }
   letter-spacing: 0.08em;
   color: var(--ink-soft);
 }
-.varga-scheme-row select { width: auto; min-width: 15rem; }
+/*
+ * The selects share the row rather than packing to the left of it. With three
+ * of them - the Yogas tab has graha, chart and reference - a fixed width left
+ * a third of the line empty and the controls bunched at one end.
+ *
+ * Bounded, so the rows carrying a single select do not stretch one control
+ * across the page: at three they hit the container first and fill it, at one
+ * the cap holds it to a readable width.
+ */
+.varga-scheme-row select { width: auto; flex: 1 1 15rem; max-width: 24rem; }
 /* Four flags, four entries, laid across the width rather than run together
    down a 60ch column. A key is looked up one flag at a time, not read through,
    and centred prose makes the reader find where each sentence starts. */
