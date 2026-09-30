@@ -1452,9 +1452,17 @@ ok('ownership is a minted token, not an account',
 ok('the ownership capability never falls back to predictable randomness',
    /getRandomValues/.test(appSrc) &&
    !/Date\.now\(\)\.toString\(36\) \+ Math\.random/.test(appSrc));
-ok('an orphan that fails to sync stays in the browser',
-   /var failed = \[\]/.test(appSrc) && /if \(!entries\) failed\.push\(entry\)/.test(appSrc) &&
-   /failed\.forEach/.test(appSrc));
+ok('the database replaces the cache instead of uploading old local-only charts', (function () {
+  var sync = appSrc.slice(appSrc.indexOf('(function syncSavedCharts()'),
+                          appSrc.indexOf('if (!Geo.historicalZonesSupported())'));
+  return /action: 'list'/.test(sync) && /writeSaved\(entries\.map\(fromRow\)\)/.test(sync) &&
+    !/action: 'save'/.test(sync) && !/orphans|failed|merged/.test(sync);
+})());
+ok('if the database cannot answer, the last cache stays visible', (function () {
+  var sync = appSrc.slice(appSrc.indexOf('(function syncSavedCharts()'),
+                          appSrc.indexOf('if (!Geo.historicalZonesSupported())'));
+  return /if \(!entries\) return;/.test(sync);
+})());
 ok('entries are keyed on name, place, date and time',
    /entry\.name, entry\.placeLabel, entry\.date, entry\.time/.test(appSrc));
 ok('a local copy is written first so the panel works offline',

@@ -5218,37 +5218,15 @@
   seedStudyCharts();
   renderSaved();
   /*
-   * Charts saved before this browser could reach the database have no id. Push
-   * them up once, then take the server's list as the truth. Without this they
-   * would sit in localStorage forever, invisible from anywhere else, which is
-   * exactly what someone who pressed save would not expect.
+   * The database is the saved list. localStorage is only its fast/offline
+   * cache: once the server answers, discard anything that has no row there
+   * instead of reviving an old browser-only chart by uploading it.
    */
   (function syncSavedCharts() {
-    var local = readSaved();
-    var orphans = local.filter(function (entry) { return !entry.id; });
-    var remaining = orphans.length;
-    var failed = [];
-
-    var listThenRender = function () {
-      callKundaliApi({ action: 'list' }, function (entries) {
-        if (!entries) return;
-        var merged = entries.map(fromRow);
-        var known = {};
-        merged.forEach(function (entry) { known[keyOf(entry)] = true; });
-        failed.forEach(function (entry) {
-          if (!known[keyOf(entry)]) merged.push(entry);
-        });
-        writeSaved(merged);
-        renderSaved();
-      });
-    };
-
-    if (!remaining) return listThenRender();
-    orphans.forEach(function (entry) {
-      callKundaliApi({ action: 'save', entry: entry }, function (entries) {
-        if (!entries) failed.push(entry);
-        if (--remaining === 0) listThenRender();
-      });
+    callKundaliApi({ action: 'list' }, function (entries) {
+      if (!entries) return; // no answer: leave the last known cache visible
+      writeSaved(entries.map(fromRow));
+      renderSaved();
     });
   })();
   if (!Geo.historicalZonesSupported()) {
