@@ -8540,17 +8540,18 @@ console.log('\nThe settings notes do not argue from what software does');
    * reader there rather than leaving the capability unfindable.
    */
   /*
-   * It sits under the time of birth now rather than in a fold of its own. That
-   * is where it belongs: unlike the ayanamsa, which left this form because it
-   * is a choice about how every nativity is read, the standard is a fact about
-   * this one - which clock the recorded reading was taken off.
+   * It is a setting rather than a field on the form. Zone time is the answer
+   * for almost every chart - it is what a clock and a birth certificate give,
+   * and the timezone database already applies the rules in force on the day -
+   * so asking everybody was asking a question with one answer. What it cannot
+   * settle is where in a country a pre-standard-time birth was, and that is
+   * the reading the option is kept for.
    */
   ok('local mean time is still selectable as a birth-time standard',
-    /<select id="time-standard" class="time-standard">/.test(page) &&
-    /<option value="lmt">Local mean time \(from longitude\)<\/option>/.test(page));
-  ok('and it sits inside the time of birth rather than in a fold of its own',
-    page.indexOf('id="time-standard"') > page.indexOf('id="birth-second"') &&
-    page.indexOf('id="time-standard"') < page.indexOf('id="place"') &&
+    /<select id="time-standard" aria-describedby="why-time-standard">/.test(page) &&
+    /<option value="lmt">Local mean time, from the longitude<\/option>/.test(page));
+  ok('and it is not asked of everybody on the form',
+    !/id="time-standard"/.test(page.slice(page.indexOf('id="birth-form"'), page.indexOf('</form>'))) &&
     !/<details class="options">/.test(page) && !/Calculation options/.test(page));
   /*
    * And the drawing choice went to settings with the rest. It is a choice about
@@ -8562,7 +8563,7 @@ console.log('\nThe settings notes do not argue from what software does');
     /<select id="chart-style" aria-describedby="why-chart-style">/.test(page) &&
     !/class="style-field"/.test(page));
   ok('and the nata note points at it instead of duplicating it',
-    /recorded in local mean time, as Indian times were before 1906, is a separate question: set that on the birth form under time standard/
+    /recorded in local mean time, as Indian times were before 1906, is a separate question: that is the time standard, in Chart settings/
       .test(panel.replace(/\s+/g, ' ')));
   ok('and the comparator work is kept where it belongs, in the lessons',
     /Drik Panchang/.test(seed));
@@ -8594,12 +8595,13 @@ console.log('\nThe settings run from the chart outward');
       .map(function (m) { return m.slice('<label for="'.length, -2); });
   };
   /*
-   * Drawing comes before reading. The style is the one choice here that changes
-   * nothing computed, only how the same figures are laid out, so it opens the
-   * tab and the readings follow in the order a reading is built in.
+   * Drawing comes before reading, and the moment before the zodiac. The style
+   * changes nothing computed, only how the same figures are laid out, so it
+   * opens the tab; then which clock the birth time was read off, then where
+   * the zodiac is measured from, then where the nodes are.
    */
   ok('the chart-wide choices come first, and open the first tab',
-    idsIn(chartPanel).slice(0, 3).join(',') === 'chart-style,ayanamsa,node-type',
+    idsIn(chartPanel).slice(0, 4).join(',') === 'chart-style,time-standard,ayanamsa,node-type',
     idsIn(chartPanel).join(', '));
 
   /*
@@ -8609,7 +8611,8 @@ console.log('\nThe settings run from the chart outward');
    */
   ok('Chart settings holds the readings that change the chart',
     idsIn(chartPanel).join(',') ===
-      'chart-style,ayanamsa,node-type,combustion,tatkalika,hora-dignity,budha-floor,mercury-nature',
+      'chart-style,time-standard,ayanamsa,node-type,combustion,tatkalika,' +
+      'hora-dignity,budha-floor,mercury-nature',
     idsIn(chartPanel).join(', '));
   ok('and Test settings holds the shadbala variants, the clock with them',
     idsIn(testPanel).join(',') ===
@@ -8620,7 +8623,7 @@ console.log('\nThe settings run from the chart outward');
     idsIn(testPanel).length + ' settings');
   ok('between them they hold every setting, none lost in the split',
     idsIn(chartPanel).length + idsIn(testPanel).length === order.length &&
-    order.length === 23, order.length + ' settings');
+    order.length === 24, order.length + ' settings');
 
   /*
    * The two that are not shadbala at all sit in the other tab now. One settles

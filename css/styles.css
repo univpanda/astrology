@@ -599,16 +599,6 @@ input::placeholder { color: #a9bdb2; }
 
 .options { margin-top: 1.5rem; border-top: 1px solid var(--line-soft); padding-top: 1rem; }
 
-/* Under the clock rather than beside it: it says how the reading above is to
-   be taken, and almost nobody changes it, so it is set quiet and small. */
-.time-standard {
-  margin-top: 0.45rem;
-  font-size: 0.85rem;
-  height: auto;
-  padding-top: 0.35rem;
-  padding-bottom: 0.35rem;
-  color: var(--ink-soft);
-}
 .options summary, .technical summary, .flag-legend summary {
   cursor: pointer;
   color: var(--ink-soft);

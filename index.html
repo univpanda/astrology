@@ -101,11 +101,6 @@
                  maxlength="2" placeholder="ss" aria-describedby="seconds-hint">
           <p class="seconds-hint" id="seconds-hint">Seconds are optional, and count as 00.</p>
         </div>
-        <label class="visually-hidden" for="time-standard">How that time is to be read</label>
-        <select id="time-standard" class="time-standard">
-          <option value="zone" selected>Zone time (from the place's timezone)</option>
-          <option value="lmt">Local mean time (from longitude)</option>
-        </select>
       </fieldset>
 
       <div class="field field-wide">
@@ -454,6 +449,30 @@
         </div>
       </div>
       <div class="field">
+        <label for="time-standard">Time standard</label>
+        <select id="time-standard" aria-describedby="why-time-standard">
+          <option value="zone" selected>Zone time, from the place's timezone</option>
+          <option value="lmt">Local mean time, from the longitude</option>
+        </select>
+        <div class="field-why" id="why-time-standard">
+          <p class="field-note">Which clock the recorded birth time was read
+          off. Zone time is the answer for almost every chart: it is what a
+          clock on the wall and a birth certificate give, and the timezone
+          database applies the rules that were actually in force on the day, so
+          a birth before standard time reached a country is already handled
+          rather than assumed away.
+          <br><br>
+          What it cannot handle is where in that country the birth was. For the
+          years before standard time, the database keeps one local mean time for
+          the whole zone, the one its reference city kept, which is out by up to
+          an hour at the far end of a wide zone and an hour moves the ascendant
+          fifteen degrees. Local mean time here means the birthplace&rsquo;s own
+          meridian, four minutes of time to the degree. It is the right reading
+          for a birth recorded by the Sun where it happened, and the wrong one
+          for any clock time.</p>
+        </div>
+      </div>
+      <div class="field">
         <label for="ayanamsa">Ayanamsa</label>
         <select id="ayanamsa" aria-describedby="why-ayanamsa"></select>
         <div class="field-why" id="why-ayanamsa">
@@ -707,8 +726,8 @@
           Use apparent time, the default. Noon here means the Sun on the
           meridian, so it is what the measure is made of rather than a
           refinement of it. A birth time recorded in local mean time, as Indian
-          times were before 1906, is a separate question: set that on the birth
-          form under time standard.</p>
+          times were before 1906, is a separate question: that is the time
+          standard, in Chart settings.</p>
         </div>
       </div>
       <div class="field">
