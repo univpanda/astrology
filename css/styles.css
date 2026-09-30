@@ -380,6 +380,18 @@ main, .site-header, .site-footer { max-width: 1120px; margin: 0 auto; }
 .field-wide { grid-column: 1 / -1; }
 .field { display: flex; flex-direction: column; min-width: 0; }
 
+/*
+ * And hidden when it says it is hidden. The browser's own rule for [hidden] is
+ * display: none, and any class rule here that sets a display of its own beats
+ * it, the UA stylesheet losing to an author one. That is how the manual
+ * coordinates came to sit open under the form and the saved count to show a
+ * zero over an empty list: both were marked hidden and both were drawn anyway.
+ *
+ * Set narrowly rather than with !important on [hidden], which the print styles
+ * rely on being able to override when they open every panel at once.
+ */
+.field[hidden], .tab-count[hidden] { display: none; }
+
 label, legend {
   font-size: 0.74rem;
   text-transform: uppercase;

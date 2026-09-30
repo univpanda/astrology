@@ -7148,6 +7148,56 @@ console.log('\nEvery member of a family defines itself');
 })();
 
 console.log('\nThe graha card survives the chart being redrawn');
+console.log('\nNothing marked hidden is drawn anyway');
+/*
+ * The browser hides [hidden] with display: none, and that rule comes from the
+ * UA stylesheet, so any class rule in this file that sets a display of its own
+ * beats it. Two elements were caught by it at once: the manual coordinates sat
+ * open under the form, and an empty saved list still showed a count of zero.
+ *
+ * Swept rather than spot-checked. The fault is invisible in the source - the
+ * markup says hidden and means it - and it arrives whenever somebody gives a
+ * class a display, which is most of them.
+ */
+(function () {
+  var display = {};
+  cssSrc.replace(/([^{}]+)\{([^{}]*)\}/g, function (all, sel, body) {
+    var d = /(?:^|;|\s)display\s*:\s*([a-z-]+)/.exec(body);
+    if (!d) return all;
+    sel.split(',').forEach(function (one) {
+      one = one.trim();
+      if (/^\.[A-Za-z0-9_-]+$/.test(one)) {
+        (display[one.slice(1)] || (display[one.slice(1)] = [])).push(d[1]);
+      }
+    });
+    return all;
+  });
+  var drawn = [];
+  html.replace(/<\w+([^>]*\bhidden\b[^>]*)>/g, function (all, attrs) {
+    var cls = /class="([^"]+)"/.exec(attrs);
+    var id = /id="([^"]+)"/.exec(attrs);
+    if (!cls) return all;
+    cls[1].split(/\s+/).forEach(function (c) {
+      var set = display[c] || [];
+      var shown = set.length > 0 && set.indexOf('none') < 0;
+      // Unless the class says outright what to do when it is hidden.
+      var answered = new RegExp('\\.' + c + '\\[hidden\\][^{]*\\{[^}]*display: none').test(cssSrc);
+      if (shown && !answered) drawn.push((id ? '#' + id[1] : '?') + ' by .' + c);
+    });
+    return all;
+  });
+  ok('every element marked hidden is actually hidden', drawn.length === 0, drawn.join(', '));
+  ok('and the two that were not are answered by name',
+    /\.field\[hidden\], \.tab-count\[hidden\] \{ display: none; \}/.test(cssSrc));
+  /*
+   * Narrowly, not with !important on [hidden]: printing deliberately opens
+   * every panel at once, and an !important here would take that away.
+   */
+  ok('and printing can still open what the page keeps shut',
+    !/\[hidden\] \{ display: none !important/.test(cssSrc) &&
+    /#panel-chart\[hidden\] \{ display: block; \}/.test(cssSrc));
+})();
+
 var fnSrc = fs.readFileSync(path.join(root, 'supabase/functions/kundalis/index.ts'), 'utf8');
 console.log('\nA chart whose details are in doubt can be flagged');
 /*
