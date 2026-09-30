@@ -7033,11 +7033,70 @@ ok('a zone chosen by hand is never overwritten by the guess',
    /if \(zoneChosenByHand\) return;/.test(appSrc) &&
    /zoneChosenByHand = true;/.test(appSrc));
 ok('and resetting the form forgets that choice',
-   /zoneChosenByHand = false;\s*\n\s*document\.getElementById\('zone-note'\)\.textContent = '';/.test(appSrc));
+   /function blankForm[\s\S]*?zoneChosenByHand = false;[\s\S]*?zoneResolvedFor = '';/.test(appSrc));
+ok('restoring either kind of chart also forgets an older manual zone choice',
+   /function applyEntryToForm[\s\S]*?zoneChosenByHand = false;/.test(appSrc) &&
+   /function fillForm[\s\S]*?zoneChosenByHand = false;/.test(appSrc));
+ok('manual coordinates cannot submit before their timezone belongs to those coordinates',
+   /zoneResolvedFor !== coordinateKey\(lat\.value, lon\.value\)/.test(appSrc) &&
+   /Wait for the timezone to be filled in/.test(appSrc));
+ok('an older timezone lookup cannot overwrite a newer coordinate or a hand choice',
+   /var request = \+\+zoneRequest;/.test(appSrc) &&
+   /request !== zoneRequest \|\| zoneChosenByHand/.test(appSrc));
 ok('deriving runs whenever a coordinate box changes', (function () {
   var wiring = appSrc.slice(appSrc.indexOf("['lat', 'lon'].forEach(function (which) {"),
                             appSrc.indexOf('function writeCoords'));
   return /showDecimal\(which, max\);\s*\n\s*deriveZone\(\);/.test(wiring);
+})());
+
+console.log('\nShareable chart URLs');
+ok('a shared chart carries every input that changes its calculation or readings',
+   /'ay=' \+ encodeURIComponent\(state\.ayanamsa\)/.test(appSrc) &&
+   /'node=' \+ \(state\.trueNode \? 'true' : 'mean'\)/.test(appSrc) &&
+   /'g=' \+ encodeURIComponent\(state\.gender \|\| 'unstated'\)/.test(appSrc));
+ok('and a written URL restores those choices before it submits', (function () {
+  var share = appSrc.slice(appSrc.indexOf('function writeHash'),
+                           appSrc.indexOf('/* ------------------------------------------------------------------ init'));
+  var fields = {
+    name: { value: '', focus: function () {} },
+    'time-standard': { value: 'zone' },
+    ayanamsa: { value: 'lahiri', options: [{ value: 'lahiri' }, { value: 'raman' }] },
+    'node-type': { value: 'true' }, gender: { value: '' }
+  };
+  var location = { hash: '' }, submitted = 0, restoredDate = '', restoredTime = [];
+  var history = { replaceState: function (_a, _b, hash) { location.hash = hash; } };
+  var document = { getElementById: function (id) { return fields[id]; } };
+  var placeInput = { value: '' }, placeNote = { textContent: '' };
+  var form = { requestSubmit: function () { submitted += 1; } };
+  var mod = new Function('history', 'location', 'document', 'placeInput', 'placeNote', 'form',
+    'var selectedCity = null, reopeningSaved = false;\n' +
+    'function placeLabelOf(p) { return p.label; }\n' +
+    'function writeDate(v) { restoredDate = v; }\n' +
+    'function writeTime(h, m, s) { restoredTime = [h, m, s]; }\n' +
+    'var restoredDate = "", restoredTime = [];\n' + share +
+    '\nreturn { writeHash: writeHash, readHash: readHash, result: function () {' +
+    'return { selectedCity: selectedCity, reopeningSaved: reopeningSaved,' +
+    'restoredDate: restoredDate, restoredTime: restoredTime }; } };')(
+      history, location, document, placeInput, placeNote, form);
+  mod.writeHash({ y: 1946, mo: 6, d: 14, h: 10, mi: 54, time: { second: 12 },
+    place: { lat: 40.6915, lon: -73.8057, zone: 'America/New_York', label: 'Queens, New York' },
+    standard: 'lmt', name: 'Donald Trump', ayanamsa: 'raman', trueNode: false, gender: 'female' });
+  fields.ayanamsa.value = 'lahiri'; fields['node-type'].value = 'true'; fields.gender.value = '';
+  mod.readHash();
+  var result = mod.result();
+  return submitted === 1 && result.restoredDate === '1946-06-14' &&
+    result.restoredTime.join(':') === '10:54:12' && fields.ayanamsa.value === 'raman' &&
+    fields['node-type'].value === 'mean' && fields.gender.value === 'female' &&
+    fields['time-standard'].value === 'lmt' && result.selectedCity.zone === 'America/New_York';
+})());
+ok('old shared links with no gender still cast as legacy unstated charts', (function () {
+  var restore = appSrc.slice(appSrc.indexOf('function readHash'), appSrc.indexOf('/* ------------------------------------------------------------------ init'));
+  return /if \(!document\.getElementById\('gender'\)\.value\) reopeningSaved = true;/.test(restore);
+})());
+ok('merely opening manual coordinates does not discard a city already chosen', (function () {
+  var toggle = appSrc.slice(appSrc.indexOf("manualToggle.addEventListener('click'"),
+                            appSrc.indexOf('/* ------------------------------------------------------------ date field'));
+  return !/selectedCity = null;/.test(toggle);
 })());
 
 ok('the degree boxes allow the decimals and negatives the parser accepts', (function () {

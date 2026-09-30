@@ -306,7 +306,6 @@
     manualFields.hidden = !show;
     manualToggle.setAttribute('aria-expanded', String(show));
     if (show) {
-      selectedCity = null;
       document.getElementById('manual-lat-d').focus();
       // Swap the placeholder list for every zone real places actually use.
       Geo.ensure(function (err) { if (!err) fillZones(Geo.zones()); });
@@ -530,8 +529,17 @@
    * someone's deliberate choice is worse than not guessing.
    */
   var zoneChosenByHand = false;
+  var zoneResolvedFor = '';
+  var zoneRequest = 0;
+
+  function coordinateKey(lat, lon) {
+    return lat.toFixed(7) + ',' + lon.toFixed(7);
+  }
+
   document.getElementById('manual-zone').addEventListener('change', function () {
     zoneChosenByHand = true;
+    zoneResolvedFor = '';
+    zoneRequest += 1; // any lookup already in flight must not overwrite this choice
     document.getElementById('zone-note').textContent = '';
   });
 
@@ -548,13 +556,28 @@
     if (zoneChosenByHand) return;
     var note = document.getElementById('zone-note');
     var lat = readDms('lat', 90), lon = readDms('lon', 180);
-    if (lat.error || lon.error) { note.textContent = ''; return; }
+    if (lat.error || lon.error) { zoneResolvedFor = ''; note.textContent = ''; return; }
+    var key = coordinateKey(lat.value, lon.value);
+    var request = ++zoneRequest;
+    zoneResolvedFor = '';
+    note.textContent = 'Finding the timezone…';
+    note.className = 'dms-decimal';
     Geo.ensure(function (err) {
-      if (err || zoneChosenByHand) return;
+      if (request !== zoneRequest || zoneChosenByHand) return;
+      if (err) {
+        note.textContent = 'The timezone could not be found. Choose it from the list.';
+        note.className = 'dms-decimal dms-bad';
+        return;
+      }
       var city = Geo.nearest(lat.value, lon.value);
-      if (!city) return;
+      if (!city) {
+        note.textContent = 'The timezone could not be found. Choose it from the list.';
+        note.className = 'dms-decimal dms-bad';
+        return;
+      }
       fillZones(Geo.zones());
       document.getElementById('manual-zone').value = city.zone;
+      zoneResolvedFor = key;
       /*
        * Distance is the thing to say out loud. A near match is almost always
        * right; a far one means the closest populated place may be across a
@@ -660,6 +683,10 @@
     if (lat.error) return { error: lat.error };
     var lon = readDms('lon', 180);
     if (lon.error) return { error: lon.error };
+
+    if (!zoneChosenByHand && zoneResolvedFor !== coordinateKey(lat.value, lon.value)) {
+      return { error: 'Wait for the timezone to be filled in, or choose it from the list.' };
+    }
 
     return { place: {
       name: placeInput.value.trim() || 'Custom location',
@@ -4637,6 +4664,9 @@
     };
     placeInput.value = entry.placeLabel;
     placeNote.textContent = entry.latitude.toFixed(4) + ', ' + entry.longitude.toFixed(4) + '  ·  ' + entry.zone;
+    zoneChosenByHand = false;
+    zoneResolvedFor = '';
+    zoneRequest += 1;
     writeCoords(entry.latitude, entry.longitude, entry.zone);
     manualFields.hidden = true;
   }
@@ -5060,6 +5090,8 @@
       document.getElementById(which + '-decimal').textContent = '';
     });
     zoneChosenByHand = false;
+    zoneResolvedFor = '';
+    zoneRequest += 1;
     document.getElementById('zone-note').textContent = '';
     manualFields.hidden = true;
     manualToggle.setAttribute('aria-expanded', 'false');
@@ -5084,6 +5116,9 @@
     placeInput.value = placeLabelOf(state.place);
     placeNote.textContent = state.place.lat.toFixed(4) + ', ' + state.place.lon.toFixed(4) +
       '  \u00b7  ' + state.place.zone;
+    zoneChosenByHand = false;
+    zoneResolvedFor = '';
+    zoneRequest += 1;
     writeCoords(state.place.lat, state.place.lon, state.place.zone);
     manualFields.hidden = true;
     manualToggle.setAttribute('aria-expanded', 'false');
@@ -5119,7 +5154,10 @@
       't=' + String(state.h).padStart(2, '0') + ':' + String(state.mi).padStart(2, '0') +
         (state.time.second ? ':' + String(state.time.second).padStart(2, '0') : ''),
       'lat=' + p.lat.toFixed(4), 'lon=' + p.lon.toFixed(4), 'tz=' + encodeURIComponent(p.zone),
-      'place=' + encodeURIComponent(placeLabelOf(p))
+      'place=' + encodeURIComponent(placeLabelOf(p)),
+      'ay=' + encodeURIComponent(state.ayanamsa),
+      'node=' + (state.trueNode ? 'true' : 'mean'),
+      'g=' + encodeURIComponent(state.gender || 'unstated')
     ];
     if (state.standard === 'lmt') parts.push('std=lmt');
     parts.push('n=' + encodeURIComponent(state.name));
@@ -5140,6 +5178,13 @@
     writeTime(+t[0], +(t[1] || 0), +(t[2] || 0));
     document.getElementById('name').value = q.n || '';
     document.getElementById('time-standard').value = q.std === 'lmt' ? 'lmt' : 'zone';
+    if (q.ay && Array.prototype.some.call(document.getElementById('ayanamsa').options,
+      function (option) { return option.value === q.ay; })) {
+      document.getElementById('ayanamsa').value = q.ay;
+    }
+    document.getElementById('node-type').value = q.node === 'mean' ? 'mean' : 'true';
+    document.getElementById('gender').value =
+      q.g === 'female' || q.g === 'male' || q.g === 'other' ? q.g : '';
     selectedCity = {
       name: (q.place || 'Saved location').split(',')[0],
       region: '', nation: '',
@@ -5152,6 +5197,9 @@
       document.getElementById('name').focus();
       return;
     }
+    // Old links predate gender in the URL. Treat them like an old saved chart:
+    // cast with gender unstated instead of making a formerly working link stop.
+    if (!document.getElementById('gender').value) reopeningSaved = true;
     form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit'));
   }
 
