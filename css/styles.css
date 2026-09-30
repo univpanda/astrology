@@ -426,7 +426,7 @@ main, .site-header, .site-footer { max-width: 1120px; margin: 0 auto; }
  */
 .field[hidden], .tab-count[hidden] { display: none; }
 
-label, legend {
+label, legend, .dms-label {
   font-size: 0.74rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -634,14 +634,14 @@ input::placeholder { color: #a9bdb2; }
 /* Degrees, minutes, seconds and a hemisphere on one line, so the coordinate reads
    as the single value it is rather than four unrelated boxes. The marks sit
    between them for the same reason. */
-.dms-label {
-  display: block;
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--ink-soft);
-  margin-bottom: 0.35rem;
-}
+/*
+ * Only the display, now. It named a group of four boxes rather than one
+ * control, so it is a span rather than a <label for>, and having missed the
+ * label rule it had drifted into a style of its own: bigger, darker and less
+ * spaced than the timezone label beside it and the legend above it. Three
+ * labels in one panel, none of them matching.
+ */
+.dms-label { display: block; }
 .dms-row { display: flex; align-items: center; gap: 0.2rem; }
 .dms-row input { width: 100%; min-width: 0; padding: 0 0.4rem; text-align: center; }
 .dms-row select { width: auto; padding: 0 0.4rem; flex: 0 0 auto; }

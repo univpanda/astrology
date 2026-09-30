@@ -6536,6 +6536,19 @@ ok('gender shows only when it was stated',
  * half on the card behind it, with the dashed border passing through the
  * words. Floated, it is an ordinary block inside the panel.
  */
+/*
+ * And the three labels in that panel are one style. Latitude and Longitude
+ * name a group of four boxes rather than one control, so they are spans rather
+ * than <label for>, and having missed the label rule they had drifted: bigger,
+ * darker, less spaced and lighter in weight than the timezone label beside
+ * them and the legend above them.
+ */
+ok('latitude and longitude are labelled like every other label',
+   /label, legend, \.dms-label \{/.test(cssSrc) &&
+   /\.dms-label \{ display: block; \}/.test(cssSrc) &&
+   // Nothing of its own left to diverge with.
+   (cssSrc.match(/^\.dms-label \{[^}]*\}/m) || [''])[0] === '.dms-label { display: block; }');
+
 ok('the legend sits on one colour, not across the panel edge',
    /\.manual-coords legend \{[^}]*float: left;[^}]*width: 100%;/
      .test(cssSrc.replace(/\n/g, '')) &&
