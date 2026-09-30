@@ -614,6 +614,21 @@ input::placeholder { color: #a9bdb2; }
   border-radius: var(--radius-sm);
   padding: 1rem;
 }
+
+/*
+ * A legend sits over the top border by default, which is right for a plain
+ * rule and wrong for a panel with a fill: half of every letter stood on the
+ * tint and half on the card behind it, with the border passing through. This
+ * is the float trick, which makes the legend an ordinary block inside the
+ * panel, so the dashed border runs unbroken and the words sit on one colour.
+ */
+.manual-coords legend {
+  float: left;
+  width: 100%;
+  padding: 0;
+  margin-bottom: 0.8rem;
+}
+.manual-coords::after { content: ''; display: table; clear: both; }
 .manual-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1rem; }
 
 /* Degrees, minutes, seconds and a hemisphere on one line, so the coordinate reads

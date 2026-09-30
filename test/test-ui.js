@@ -6529,6 +6529,18 @@ ok('gender shows only when it was stated',
  * place, entered another way; after the note they were a field away from the
  * thing they replace, with something unrelated in between.
  */
+/*
+ * And their legend sits inside the panel rather than over its edge. A legend
+ * straddles the top border by default, which is right for a plain rule and
+ * wrong for a panel with a fill: half of every letter stood on the tint and
+ * half on the card behind it, with the dashed border passing through the
+ * words. Floated, it is an ordinary block inside the panel.
+ */
+ok('the legend sits on one colour, not across the panel edge',
+   /\.manual-coords legend \{[^}]*float: left;[^}]*width: 100%;/
+     .test(cssSrc.replace(/\n/g, '')) &&
+   /\.manual-coords::after \{ content: ''; display: table; clear: both; \}/.test(cssSrc));
+
 ok('the manual coordinates sit between the place and the note',
    html.indexOf('id="manual-coords"') > html.indexOf('id="place-combobox"') &&
    html.indexOf('id="manual-coords"') < html.indexOf('id="person-note"'));
