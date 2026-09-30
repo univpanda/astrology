@@ -230,14 +230,31 @@ if (process.env.KUNDALI_API) {
     var row = edited.entries.filter(function (e) { return e.id === editId; })[0];
     return row && row.name === 'Renamed Person' && String(row.birth_time).slice(0, 8) === '11:30:00';
   })());
-  ok('another token cannot patch a row by naming its id', (function () {
-    JSON.parse(execFileSync('curl', ['-sS', '-X', 'POST', process.env.KUNDALI_API,
+  /*
+   * An id that is not theirs falls through to an insert, so the attempt leaves
+   * the intruder holding a chart of their own. That is harmless - it is their
+   * row, under their token - but it is a row in the live table, and this suite
+   * had been leaving one behind on every run since it was written. One sat
+   * there for two days looking like a saved chart with no gender.
+   */
+  var intruder = 'intruder-token-0123456789';
+  var asIntruder = function (payload) {
+    return JSON.parse(execFileSync('curl', ['-sS', '-X', 'POST', process.env.KUNDALI_API,
       '-H', 'Content-Type: application/json',
-      '-d', JSON.stringify({ ownerToken: 'intruder-token-0123456789', action: 'save', id: editId,
-        entry: Object.assign({}, entry, { name: 'Hijacked' }) })], { encoding: 'utf8' }));
+      '-d', JSON.stringify(Object.assign({ ownerToken: intruder }, payload))],
+      { encoding: 'utf8' }));
+  };
+  ok('another token cannot patch a row by naming its id', (function () {
+    asIntruder({ action: 'save', id: editId,
+      entry: Object.assign({}, entry, { name: 'Hijacked' }) });
     var mine = call({ action: 'list' }).entries.filter(function (e) { return e.id === editId; })[0];
     return mine && mine.name === 'Renamed Person';
   })());
+  (asIntruder({ action: 'list' }).entries || []).forEach(function (row) {
+    asIntruder({ action: 'delete', id: row.id });
+  });
+  ok('and the attempt leaves nothing of itself behind',
+     (asIntruder({ action: 'list' }).entries || []).length === 0);
   // Put it back so the rest of the suite reads as before.
   call({ action: 'save', id: editId, entry: entry });
 
