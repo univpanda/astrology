@@ -6677,8 +6677,38 @@ console.log('\nManual coordinates');
   put('lon', 82, 58, 26, 'E');
   ok('and east is positive', near(readDms('lon', 180), 82 + 58 / 60 + 26 / 3600));
 
+  put('lat', 23, 19, '', 'N');
+  ok('the seconds may be left empty', near(readDms('lat', 90), 23 + 19 / 60));
+
+  /*
+   * The minutes may not. A whole degree on its own is up to 60 nautical miles
+   * from the birthplace: measured over 13,992 charts, that moves the lagna
+   * about half a degree, the lagna sign in 2% of them and the navamsa lagna in
+   * one in six, which is the same error as being three minutes out about the
+   * birth time. Far too much to take from a box left empty because nothing
+   * said it mattered.
+   */
   put('lat', 23, '', '', 'N');
-  ok('minutes and seconds may be left empty', near(readDms('lat', 90), 23));
+  ok('the minutes may not', /needs its minutes/.test(readDms('lat', 90).error || ''),
+    readDms('lat', 90).error);
+  ok('and the refusal says what it costs and how to mean it',
+    /can be 60 miles from the birthplace/.test(readDms('lat', 90).error || '') &&
+    /Type 0 if the record gives none/.test(readDms('lat', 90).error || ''));
+
+  /*
+   * Zero, typed, is accepted. A record that really gives a whole degree is a
+   * real thing and refusing it outright would leave no way to say so.
+   */
+  put('lat', 23, 0, '', 'N');
+  ok('a typed zero is taken at its word', near(readDms('lat', 90), 23));
+
+  /*
+   * And a decimal is exempt, carrying its own minutes. Requiring them of it
+   * would have broken the one shorthand the note advertises.
+   */
+  put('lat', 23.3176, '', '', 'N');
+  ok('a decimal in the degrees box still stands on its own',
+    near(readDms('lat', 90), 23.3176));
   /*
    * And the note under the boxes says only what the boxes cannot. It used to
    * open by arguing for the design - degrees and a letter rather than a signed
@@ -6695,8 +6725,10 @@ console.log('\nManual coordinates');
    * that waves at both invites the wrong one.
    */
   ok('the note offers the seconds and not the minutes',
-    /<p class="varga-note">Seconds may be left empty\. Leaving the minutes out\s+moves the lagna about half a degree, and the navamsa lagna one time in six\.\s+A decimal typed into the degrees box on its own works too\.<\/p>/
+    /<p class="varga-note">Seconds may be left empty; the minutes are worth half a\s+degree of lagna, so they are not\. A decimal typed into the degrees box on its\s+own works too\.<\/p>/
       .test(html) &&
+    /id="manual-lat-m"[^>]* required>/.test(html) &&
+    /id="manual-lon-m"[^>]* required>/.test(html) &&
     !/the way an atlas or a birth record/.test(html) &&
     !/Minutes and seconds may be left empty/.test(html));
   put('lat', 23.55, '', '', 'N');

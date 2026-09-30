@@ -164,7 +164,7 @@
                      inputmode="decimal" aria-describedby="lat-decimal">
               <span class="dms-mark">&deg;</span>
               <label class="visually-hidden" for="manual-lat-m">Latitude minutes</label>
-              <input type="number" id="manual-lat-m" min="0" max="59" step="1" placeholder="19">
+              <input type="number" id="manual-lat-m" min="0" max="59" step="1" placeholder="19" required>
               <span class="dms-mark">&prime;</span>
               <label class="visually-hidden" for="manual-lat-s">Latitude seconds</label>
               <input type="number" id="manual-lat-s" min="0" max="59.999" step="any" placeholder="03">
@@ -185,7 +185,7 @@
                      inputmode="decimal" aria-describedby="lon-decimal">
               <span class="dms-mark">&deg;</span>
               <label class="visually-hidden" for="manual-lon-m">Longitude minutes</label>
-              <input type="number" id="manual-lon-m" min="0" max="59" step="1" placeholder="58">
+              <input type="number" id="manual-lon-m" min="0" max="59" step="1" placeholder="58" required>
               <span class="dms-mark">&prime;</span>
               <label class="visually-hidden" for="manual-lon-s">Longitude seconds</label>
               <input type="number" id="manual-lon-s" min="0" max="59.999" step="any" placeholder="26">
@@ -204,9 +204,9 @@
             <p class="dms-decimal" id="zone-note" role="status"></p>
           </div>
         </div>
-        <p class="varga-note">Seconds may be left empty. Leaving the minutes out
-          moves the lagna about half a degree, and the navamsa lagna one time in six.
-          A decimal typed into the degrees box on its own works too.</p>
+        <p class="varga-note">Seconds may be left empty; the minutes are worth half a
+          degree of lagna, so they are not. A decimal typed into the degrees box on its
+          own works too.</p>
       </fieldset>
 
       <div class="field field-wide">

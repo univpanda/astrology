@@ -485,6 +485,23 @@
         'minutes and seconds, or a decimal on its own.' };
     }
 
+    /*
+     * The minutes are required where the degrees are whole. A degree on its own
+     * is up to 60 nautical miles from the birthplace, which moves the lagna
+     * about half a degree and the navamsa lagna in one chart in six: the same
+     * error as being three minutes out about the birth time, and far too much
+     * to take from a box somebody left empty because it looked optional. A
+     * decimal carries its own minutes, so it is exempt.
+     *
+     * Zero is accepted, typed. A record that genuinely gives a whole degree is
+     * a real thing, and refusing it outright would leave no way to say so.
+     */
+    if (deg % 1 === 0 && minText === '') {
+      return { error: name + ' needs its minutes. A whole degree on its own can be 60 ' +
+        'miles from the birthplace, which moves the lagna about half a degree. Type 0 ' +
+        'if the record gives none.' };
+    }
+
     var total = deg + min / 60 + sec / 3600;
     if (total > maxDegrees) {
       return { error: name + ' cannot be more than ' + maxDegrees + '\u00b0.' };
