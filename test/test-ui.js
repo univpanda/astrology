@@ -1463,6 +1463,9 @@ ok('if the database cannot answer, the last cache stays visible', (function () {
                           appSrc.indexOf('if (!Geo.historicalZonesSupported())'));
   return /if \(!entries\) return;/.test(sync);
 })());
+ok('the failed-save message no longer promises a browser-only save',
+   !/Saved in this browser\. Syncing was not possible\./.test(appSrc) &&
+   /saveFeedback\.textContent = 'Not saved\.';/.test(appSrc));
 ok('entries are keyed on name, place, date and time',
    /entry\.name, entry\.placeLabel, entry\.date, entry\.time/.test(appSrc));
 ok('a local copy is written first so the panel works offline',
@@ -3650,6 +3653,8 @@ ok('every script the page loads parses', (function () {
     '  __out.rotatedOnto = rotatedOnto;\n' +
     '  __out.rulingAndAspects = rulingAndAspects;\n' +
     '  __out.renderSaved = renderSaved; __out.setFlag = setFlag;\n' +
+    '  __out.saveCurrent = saveCurrent; __out.setLastChart = function (v) { lastChart = v; };\n' +
+    '  __out.savedNote = savedNote;\n' +
     '  __out.readSaved = readSaved; __out.writeSaved = writeSaved;\n' +
     '  __out.savedList = savedList; __out.STORAGE_KEY = STORAGE_KEY;\n' +
     '  __out.readDate = readDate; __out.writeDate = writeDate;\n' +
@@ -3676,6 +3681,17 @@ ok('every script the page loads parses', (function () {
   global.appExports = out;
 
   if (!loaded) return;
+  ok('a new chart whose database save fails is removed from the optimistic cache', (function () {
+    out.writeSaved([]);
+    out.setLastChart({
+      name: 'Offline Chart', y: 1990, mo: 1, d: 2, h: 3, mi: 4,
+      time: { second: 5 }, place: { label: 'Delhi, India', lat: 28.6, lon: 77.2,
+        zone: 'Asia/Kolkata' }, standard: 'zone', ayanamsa: 'lahiri', trueNode: true,
+      gender: 'male', celebrity: false, flagged: false, note: ''
+    });
+    out.saveCurrent(true); // this harness has no fetch, so the API fails synchronously
+    return out.readSaved().length === 0 && /^Not saved\./.test(out.savedNote.textContent);
+  })());
   var chart = Astro.chart({ jdUT: Astro.julianDay(1946, 7, 6, 19 + 20 / 60 + 4),
                             latitude: 40.7143, longitude: -74.006, tzOffsetMinutes: -240 });
   var state = { chart: chart, place: { lat: 40.7143, lon: -74.006, label: 'New York' },

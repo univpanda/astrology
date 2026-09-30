@@ -4588,12 +4588,13 @@
     if (at >= 0) entry.flagged = list[at].flagged === true;
     state.flagged = entry.flagged;
 
+    var previous = at >= 0 ? list[at] : null;
     if (at >= 0) list[at] = entry; else list.unshift(entry);
 
     var storedLocally = writeSaved(list);
     renderSaved();
     saveFeedback.textContent = storedLocally
-      ? (at >= 0 ? 'Updated in your saved kundalis' : 'Saved to your kundalis')
+      ? 'Saving to your kundalis…'
       : 'This browser would not let the chart be saved.';
 
     // The local copy is written first so the panel updates immediately and keeps
@@ -4602,6 +4603,9 @@
       if (entries) {
         writeSaved(entries.map(fromRow));
         renderSaved();
+        saveFeedback.textContent = at >= 0
+          ? 'Updated in your saved kundalis'
+          : 'Saved to your kundalis';
         savedNote.textContent = 'Saved to your kundalis and synced.';
         savedNote.hidden = false;
         // Remember which row this chart is now, so a later edit updates it.
@@ -4609,9 +4613,28 @@
           return keyOf(e) === keyOf(entry);
         })[0] || currentEntry;
       } else {
-        savedNote.textContent = 'Saved in this browser. Syncing was not possible.';
+        /*
+         * The database is authoritative. The local write above is only an
+         * optimistic cache update, so a failed request must roll it back rather
+         * than promise that a row with no database id has been saved.
+         */
+        var current = readSaved();
+        var changedAt = -1;
+        for (var j = 0; j < current.length; j++) {
+          if (sameRecord(current[j], entry)) changedAt = j;
+        }
+        if (changedAt >= 0) {
+          if (previous) current[changedAt] = previous;
+          else current.splice(changedAt, 1);
+        }
+        writeSaved(current);
+        renderSaved();
+        saveFeedback.textContent = 'Not saved.';
+        savedNote.textContent = previous
+          ? 'Changes were not saved. Check your connection and try again.'
+          : 'Not saved. Check your connection and generate the chart again.';
         savedNote.hidden = false;
-        currentEntry = entry;
+        currentEntry = previous;
       }
     });
     if (!quiet) setTimeout(function () { saveFeedback.textContent = ''; }, 4000);
