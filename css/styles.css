@@ -271,6 +271,9 @@ main, .site-header, .site-footer { max-width: 1120px; margin: 0 auto; }
 /* On the chart there is room for the words, and no second chart to tell it
    apart from, so it says what it means rather than drawing a flag twice. */
 .flag-mark {
+  font: inherit;
+  cursor: pointer;
+  background: none;
   margin-left: 0.45rem;
   font-size: 0.7rem;
   font-weight: 600;
@@ -281,6 +284,10 @@ main, .site-header, .site-footer { max-width: 1120px; margin: 0 auto; }
   border-radius: 999px;
   padding: 0.15rem 0.5rem;
   vertical-align: middle;
+}
+.flag-mark:hover, .flag-mark:focus-visible {
+  color: var(--surface);
+  background: var(--queried);
 }
 
 /* The confirm step replaces the icons in place, so the row never jumps and the
@@ -579,15 +586,6 @@ input::placeholder { color: #a9bdb2; }
 .field-note { margin: 0.45rem 0 0; font-size: 0.85rem; color: var(--ink-soft); min-height: 1.2em; }
 
 .options { margin-top: 1.5rem; border-top: 1px solid var(--line-soft); padding-top: 1rem; }
-
-/* The one drawing choice, where the fold used to be: the same rule off the
-   fields above it, and no wider than it needs to be. */
-.style-field {
-  margin-top: 1.5rem;
-  border-top: 1px solid var(--line-soft);
-  padding-top: 1rem;
-  max-width: 24rem;
-}
 
 /* Under the clock rather than beside it: it says how the reading above is to
    be taken, and almost nobody changes it, so it is set quiet and small. */

@@ -189,19 +189,6 @@
       </fieldset>
     </div>
 
-    <!-- What is left of the calculation options. The time standard went up to
-         the time of birth, which is the reading it modifies; the ayanamsa and
-         the node had already gone to settings. One choice does not need a fold
-         to hide it, and a fold called "calculation options" over a single
-         drawing choice named it wrongly as well. -->
-    <div class="field style-field">
-      <label for="chart-style">Chart style</label>
-      <select id="chart-style">
-        <option value="north" selected>North Indian (diamond)</option>
-        <option value="south">South Indian (square)</option>
-      </select>
-    </div>
-
     <div class="actions">
       <button type="submit" class="primary">Generate chart</button>
       <p class="form-error" id="form-error" role="alert"></p>
@@ -446,6 +433,26 @@
   <section class="panel settings-panel" id="panel-settings" role="tabpanel" aria-labelledby="tab-settings" hidden>
     <div class="card">
       <div class="settings-grid">
+      <div class="field">
+        <label for="chart-style">Chart style</label>
+        <select id="chart-style" aria-describedby="why-chart-style">
+          <option value="north" selected>North Indian diamond</option>
+          <option value="south">South Indian square</option>
+        </select>
+        <div class="field-why" id="why-chart-style">
+          <p class="field-note">The same chart, drawn two ways. In the North Indian
+          diamond the houses keep their places, the first house always the top
+          centre, and the signs move around them, so the eye reads bhavas first.
+          In the South Indian square the signs keep their places, Mesha always
+          the second cell of the top row, and the lagna is marked wherever it
+          falls, so the eye reads rashis first.
+          <br><br>
+          Nothing computed changes. The same grahas sit in the same signs and
+          the same houses either way, and every table on the page reads the
+          same. Pick whichever you learned to read: a chart in the other style
+          takes a moment longer to parse and tells you nothing different.</p>
+        </div>
+      </div>
       <div class="field">
         <label for="ayanamsa">Ayanamsa</label>
         <select id="ayanamsa" aria-describedby="why-ayanamsa"></select>

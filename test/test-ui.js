@@ -1433,8 +1433,11 @@ ok('the save status reserves no space when silent',
 ok('the page claims nothing about data staying put',
    !/sent nowhere|No data leaves this page|never leave the machine/.test(html + appSrc));
 
+// The guard is against a possessive heading, "Barack Obama's chart", which is
+// what the page is anyway. Matched on the apostrophe rather than on the letter
+// before the space, which any sentence ending in "this chart" tripped.
 ok('the chart heading is the name alone',
-   /heading\.textContent = state\.name;/.test(appSrc) && !/s chart'/.test(appSrc));
+   /heading\.textContent = state\.name;/.test(appSrc) && !/'s chart/.test(appSrc));
 
 ok('editing refills the form from the chart on screen',
    /function fillForm/.test(appSrc) && /} else if \(lastChart\) \{\s*\n\s*fillForm\(lastChart\);/.test(appSrc));
@@ -7224,9 +7227,24 @@ console.log('\nA chart whose details are in doubt can be flagged');
  */
 ok('the chart heading answers the flag too',
    /var FLAG_MARK = 'needs checking';/.test(appSrc) &&
-   /el\('span', 'flag-mark', FLAG_MARK\)/.test(appSrc) &&
+   /el\('button', 'flag-mark', FLAG_MARK\)/.test(appSrc) &&
    /id="flag-button"/.test(html) &&
    /showFlagOnChart\(\);/.test(appSrc));
+/*
+ * And the words are the way to take it back. Anyone wanting the flag gone
+ * reaches for the thing they can see saying it is there, not for an icon in
+ * the line below it, so the mark clears the flag itself. Both it and the icon
+ * go through one function, so there is one way the state can change.
+ */
+ok('the mark on the heading clears the flag it reports',
+   /mark\.addEventListener\('click', function \(\) \{ flagThisChart\(false\); \}\)/.test(appSrc) &&
+   /mark\.setAttribute\('aria-label', 'Clear the flag on this chart'\)/.test(appSrc) &&
+   /if \(lastChart\) flagThisChart\(!lastChart\.flagged\);/.test(appSrc) &&
+   (appSrc.match(/function flagThisChart\(on\)/g) || []).length === 1);
+ok('and it reads as something to press, not as a label',
+   /\.flag-mark \{[^}]*cursor: pointer;/.test(cssSrc.replace(/\n/g, '')) &&
+   /\.flag-mark:hover, \.flag-mark:focus-visible \{/.test(cssSrc) &&
+   /mark\.type = 'button';/.test(appSrc));
 ok('and the button on the chart says which way it is set',
    /button\.setAttribute\('aria-pressed', on \? 'true' : 'false'\)/.test(appSrc) &&
    /aria-pressed="false"/.test(html));
@@ -8484,11 +8502,15 @@ console.log('\nThe settings notes do not argue from what software does');
     page.indexOf('id="time-standard"') > page.indexOf('id="birth-second"') &&
     page.indexOf('id="time-standard"') < page.indexOf('id="place"') &&
     !/<details class="options">/.test(page) && !/Calculation options/.test(page));
-  ok('and the one drawing choice left behind keeps the rule above it',
-    /<div class="field style-field">/.test(page) &&
-    /<select id="chart-style">/.test(page) &&
-    /\.style-field \{[^}]*border-top: 1px solid var\(--line-soft\)/
-      .test(fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8').replace(/\n/g, '')));
+  /*
+   * And the drawing choice went to settings with the rest. It is a choice about
+   * how every chart is laid out, which is the same ground the ayanamsa left on;
+   * what a nativity is has nothing to do with which grid it is drawn in.
+   */
+  ok('the chart style is a setting rather than part of a birth record',
+    !/id="chart-style"/.test(page.slice(page.indexOf('id="birth-form"'), page.indexOf('</form>'))) &&
+    /<select id="chart-style" aria-describedby="why-chart-style">/.test(page) &&
+    !/class="style-field"/.test(page));
   ok('and the nata note points at it instead of duplicating it',
     /recorded in local mean time, as Indian times were before 1906, is a separate question: set that on the birth form under time standard/
       .test(panel.replace(/\s+/g, ' ')));
@@ -8521,8 +8543,13 @@ console.log('\nThe settings run from the chart outward');
     return (p.match(/<label for="([a-z-]+)">/g) || [])
       .map(function (m) { return m.slice('<label for="'.length, -2); });
   };
+  /*
+   * Drawing comes before reading. The style is the one choice here that changes
+   * nothing computed, only how the same figures are laid out, so it opens the
+   * tab and the readings follow in the order a reading is built in.
+   */
   ok('the chart-wide choices come first, and open the first tab',
-    idsIn(chartPanel).slice(0, 2).join(',') === 'ayanamsa,node-type',
+    idsIn(chartPanel).slice(0, 3).join(',') === 'chart-style,ayanamsa,node-type',
     idsIn(chartPanel).join(', '));
 
   /*
@@ -8532,7 +8559,7 @@ console.log('\nThe settings run from the chart outward');
    */
   ok('Chart settings holds the readings that change the chart',
     idsIn(chartPanel).join(',') ===
-      'ayanamsa,node-type,combustion,tatkalika,hora-dignity,budha-floor,mercury-nature',
+      'chart-style,ayanamsa,node-type,combustion,tatkalika,hora-dignity,budha-floor,mercury-nature',
     idsIn(chartPanel).join(', '));
   ok('and Test settings holds the shadbala variants, the clock with them',
     idsIn(testPanel).join(',') ===
@@ -8543,7 +8570,7 @@ console.log('\nThe settings run from the chart outward');
     idsIn(testPanel).length + ' settings');
   ok('between them they hold every setting, none lost in the split',
     idsIn(chartPanel).length + idsIn(testPanel).length === order.length &&
-    order.length === 22, order.length + ' settings');
+    order.length === 23, order.length + ' settings');
 
   /*
    * The two that are not shadbala at all sit in the other tab now. One settles

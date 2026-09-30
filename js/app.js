@@ -3819,12 +3819,7 @@
    * is written to the saved record, which is where it will still be tomorrow.
    */
   document.getElementById('flag-button').addEventListener('click', function () {
-    if (!lastChart) return;
-    var on = !lastChart.flagged;
-    lastChart.flagged = on;
-    // The chart is saved the moment it is cast, so there is nearly always a row
-    // to write to; if there is not, the next save carries the flag instead.
-    if (currentEntry) setFlag(currentEntry, on); else showFlagOnChart();
+    if (lastChart) flagThisChart(!lastChart.flagged);
   });
 
   /* --------------------------------------------------- saved kundalis */
@@ -4182,9 +4177,22 @@
     }
   }
 
+  /** Raise or lower the flag on whatever chart is on screen. */
+  function flagThisChart(on) {
+    if (!lastChart) return;
+    lastChart.flagged = on;
+    // The chart is saved the moment it is cast, so there is nearly always a row
+    // to write to; if there is not, the next save carries the flag instead.
+    if (currentEntry) setFlag(currentEntry, on); else showFlagOnChart();
+  }
+
   /*
    * The heading's answer: the words rather than the icon, because here there is
    * room for them and no second chart to tell it apart from.
+   *
+   * The words are also the way to take it back. Anyone wanting the flag gone
+   * reaches for the thing they can see saying it is there, not for an icon in
+   * the line below, so the mark itself clears it.
    */
   function showFlagOnChart() {
     var button = document.getElementById('flag-button');
@@ -4193,7 +4201,14 @@
     if (heading) {
       var was = heading.querySelector('.flag-mark');
       if (was) was.parentNode.removeChild(was);
-      if (on) heading.appendChild(el('span', 'flag-mark', FLAG_MARK));
+      if (on) {
+        var mark = el('button', 'flag-mark', FLAG_MARK);
+        mark.type = 'button';
+        mark.title = 'Clear the flag';
+        mark.setAttribute('aria-label', 'Clear the flag on this chart');
+        mark.addEventListener('click', function () { flagThisChart(false); });
+        heading.appendChild(mark);
+      }
     }
     if (button) {
       button.classList[on ? 'add' : 'remove']('is-flagged');
