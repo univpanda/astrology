@@ -7122,6 +7122,85 @@ console.log('\nSaraswati, Maha Raja, and the Sun’s company named by its form')
 })();
 
 
+console.log('\nMercury in the hora, and what the verse says against its own note');
+/*
+ * Chapter 7 covers six grahas plainly: they "give (pronounced) effects" in
+ * their own hora. The seventh is not covered plainly, and the clause about it
+ * is a weaker claim than the six get, not a stronger one - Budh "is effective
+ * in both the Horas". Santhanam's note on the same verse says the opposite,
+ * "Mercury is powerful in any Hora whether an odd sign or otherwise", so the
+ * disagreement is inside one book and both readings are offered.
+ */
+(function () {
+  var G = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+
+  /* Cancer is the Moon's hora sign, Leo the Sun's; the rashi decides which half
+     is the powerful one, so both are tried under each reading. */
+  ok('the four readings really are four, and only Mercury sees them',
+    A.horaEffect('Mercury', 3, 3, 'friend') === 'mitra' &&
+    A.horaEffect('Mercury', 4, 3, 'friend') === 'mitra' &&
+    A.horaEffect('Mercury', 3, 3, 'both') === 'adhimitra' &&
+    A.horaEffect('Mercury', 4, 3, 'both') === 'adhimitra' &&
+    ['Sun', 'Moon', 'Mars', 'Jupiter', 'Venus', 'Saturn'].every(function (g) {
+      return A.horaEffect(g, 3, 3, 'friend') === A.horaEffect(g, 3, 3, 'both');
+    }));
+
+  /*
+   * Barack Obama, 4 August 1961 at 19:24 in Honolulu, against a published
+   * vimsopaka column for that chart. On the verse's reading all seven land.
+   *
+   * Six of them land outright. Mercury lands on 12.250, which is the only tie
+   * among the seven and the one figure whose printed form depends on how the
+   * reckoning rounds a half: 12.2 to the even, 12.3 away from zero. Every other
+   * figure is unambiguous, so the reading is consistent with the whole column
+   * and the tie is the one thing it cannot settle by itself. That is worth
+   * stating rather than claiming a clean match.
+   */
+  var place = { latitude: 21.3069, longitude: -157.8583, tzOffsetMinutes: -600 };
+  var chart = A.chart({ jdUT: A.julianDay(1961, 8, 4, 19 + 24 / 60 + 10),
+    latitude: place.latitude, longitude: place.longitude,
+    tzOffsetMinutes: place.tzOffsetMinutes });
+  var d1 = {};
+  chart.planets.forEach(function (p) { d1[p.name] = p; });
+  var scheme = A.VARGA_SCHEMES.dasavarga;
+  var WANT = [11.8, 11.5, 12.6, 12.2, 12.9, 15.3, 15.8];
+  var scored = function (rule) {
+    return G.map(function (g) {
+      return A.vimsopaka(g, d1[g].longitude, scheme, d1, 'varga', 'effects', rule).total;
+    });
+  };
+  var half = function (x, even) {
+    var y = x * 10, f = Math.floor(y), d = y - f;
+    var r = d > 0.5 ? f + 1 : d < 0.5 ? f : (even ? (f % 2 === 0 ? f : f + 1) : f + 1);
+    return r / 10;
+  };
+  var verse = scored('friend'), note = scored('both');
+  ok('on the verse’s reading six of the seven land outright',
+    G.filter(function (g, i) { return Math.abs(half(verse[i], false) - WANT[i]) < 1e-9; })
+      .length === 6,
+    verse.map(function (x) { return x.toFixed(3); }).join(', '));
+  ok('and the seventh is Mercury, the only tie among them',
+    Math.abs(verse[3] - 12.25) < 1e-9 &&
+    G.every(function (g, i) {
+      var tie = Math.abs(verse[i] * 10 - Math.floor(verse[i] * 10) - 0.5) < 1e-9;
+      return (i === 3) === tie;
+    }));
+  ok('so the whole column agrees once the tie is taken to the even',
+    verse.every(function (x, i) { return Math.abs(half(x, true) - WANT[i]) < 1e-9; }),
+    verse.map(function (x) { return half(x, true); }).join(', '));
+
+  /*
+   * And the note's reading does not reach it. Mercury comes out 12.475 there,
+   * which prints 12.5 whichever way a half is taken, so the two readings are
+   * told apart by this chart rather than by argument.
+   */
+  ok('where the note’s reading misses Mercury by a quarter of a point',
+    Math.abs(note[3] - 12.475) < 1e-9 &&
+    Math.abs(half(note[3], true) - WANT[3]) > 0.2,
+    note[3].toFixed(3));
+})();
+
+
 console.log('\nThe saptavargaja ladder, and what each of the two reproduces');
 /*
  * The two texts part below the second rung, and the choice decides which

@@ -358,10 +358,25 @@ console.log('\nThe tatkalika setting, end to end');
      /<option value="solar" selected>/.test(page.slice(page.indexOf('id="hora-mercury"'))) &&
      (page.slice(page.indexOf('id="hora-mercury"'),
        page.indexOf('</select>', page.indexOf('id="hora-mercury"'))).match(/<option /g) || [])
-       .length === 3);
-  ok('and it says plainly that no text asks for that default',
-     /No classical text asks for it/.test(page.slice(page.indexOf('id="why-hora-mercury"'),
-       page.indexOf('</div>', page.indexOf('id="why-hora-mercury"') + 400))));
+       .length === 4);
+  ok('and it says plainly that no text asks for that default', (function () {
+    // Whitespace-normalised: the sentence wraps across lines in the markup.
+    var at = page.indexOf('id="why-hora-mercury"');
+    var note = page.slice(at, page.indexOf('</p>', at)).replace(/\s+/g, ' ');
+    return /No classical text asks for it/.test(note);
+  })());
+  /*
+   * The fourth reading is the verse's own wording against its translator's
+   * note: the six "give pronounced effects" where Budh "is effective", which is
+   * a weaker claim and not a stronger one. Both are offered because the two
+   * disagree inside one book.
+   */
+  ok('and the verse’s own wording is offered against the note on it',
+     /<option value="friend">/.test(page) &&
+     Astro.HORA_MERCURY.FRIEND === 'friend' &&
+     Astro.horaEffect('Mercury', 3, 3, 'friend') === 'mitra' &&
+     Astro.horaEffect('Mercury', 4, 3, 'friend') === 'mitra' &&
+     Astro.horaEffect('Mercury', 3, 3, 'both') === 'adhimitra');
   ok('the page reads it, and hands it everywhere the hora reading goes',
      /function horaMercurySetting\(\)/.test(src) &&
      (src.match(/horaMercurySetting\(\)/g) || []).length >= 6);

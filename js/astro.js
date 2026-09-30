@@ -1372,7 +1372,18 @@ var Astro = (function () {
    * only one that agrees with every worked hora row this site has been checked
    * against, where the other two each disagree with one.
    */
-  var HORA_MERCURY = { ORDINARY: 'ordinary', BOTH: 'both', SOLAR: 'solar' };
+  /*
+   * A fourth reading, taken from the wording the verse itself uses. Six grahas
+   * "give (pronounced) effects" in their own hora; Budh "is effective in both
+   * the Horas". Read strictly that is a weaker claim, not a stronger one: the
+   * six reach the pronounced grade where Mercury reaches the ordinary
+   * effective one, in either hora and never more. Santhanam's note goes the
+   * other way - "Mercury is powerful in any Hora whether an odd sign or
+   * otherwise" - which is the 'both' reading below, so the verse and its
+   * translator's own gloss disagree and both are offered.
+   */
+  var HORA_MERCURY = { ORDINARY: 'ordinary', BOTH: 'both', SOLAR: 'solar',
+    FRIEND: 'friend' };
 
   /*
    * Which grahas the Sun's hora favours and which the Moon's, and Mercury in
@@ -1414,6 +1425,7 @@ var Astro = (function () {
     var byStrength = powerful ? 'adhimitra' : 'mitra';
     if (group === 'both') {
       var rule = mercury || HORA_MERCURY.SOLAR;
+      if (rule === HORA_MERCURY.FRIEND) return 'mitra';
       if (rule === HORA_MERCURY.BOTH) return 'adhimitra';
       if (rule === HORA_MERCURY.SOLAR && horaOf === 'Sun') return 'adhimitra';
       return byStrength;
