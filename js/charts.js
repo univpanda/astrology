@@ -35,6 +35,17 @@ var Charts = (function () {
     [0.10, 0.75], [0.25, 0.90], [0.50, 0.77], [0.75, 0.90],
     [0.90, 0.75], [0.77, 0.50], [0.90, 0.25], [0.75, 0.10]
   ];
+  /*
+   * Sign numbers gather at the four places where three houses meet. At each
+   * side the two corner-house signs sit along the rim and the angle-house sign
+   * sits just inside the midpoint: the same three-part pattern rotated four
+   * times, rather than twelve labels competing with twelve occupant stacks.
+   */
+  var NORTH_SIGN_ANCHORS = [
+    [0.500, 0.080], [0.445, 0.033], [0.033, 0.445], [0.080, 0.500],
+    [0.033, 0.555], [0.445, 0.967], [0.500, 0.920], [0.555, 0.967],
+    [0.967, 0.555], [0.920, 0.500], [0.967, 0.445], [0.555, 0.033]
+  ];
   // Grid position (col, row) of each sign in the South Indian layout.
   var SOUTH_CELLS = [
     [1, 0], [2, 0], [3, 0], [3, 1], [3, 2], [3, 3],
@@ -361,38 +372,16 @@ var Charts = (function () {
       var a = NORTH_ANCHORS[h];
       var cx = m + a[0] * s, cy = m + a[1] * s;
       var g = el('g', { class: 'house' + (h === 0 ? ' first-house' : '') });
-      /*
-       * Occupants first, because the sign number has to clear them.
-       *
-       * The stack is centred on its anchor and grows in both directions, so it
-       * climbs towards the number as a house fills. At three rows the gap was
-       * seven pixels against fourteen-pixel text and the number was struck
-       * through; at four it sat behind the first graha entirely.
-       *
-       * The stack stays where it is - it is centred for balance, and pushing it
-       * down would run it out of the triangle in the lower houses - and the
-       * number steps up instead, only as far as it must, and never out of the
-       * box.
-       */
       var occ = data.bySign[sign];
-      var rowCount = Math.ceil(occ.length / (occ.length > 3 ? 2 : 1)) || 1;
-      var idealTop = cy + 4 - ((rowCount - 1) * LINE_HEIGHT) / 2;
-      var numY = Math.min(cy - 20, idealTop - LINE_HEIGHT);
-      /*
-       * In the corner houses the anchor sits close to the top edge, so a tall
-       * stack can want the number further up than the box allows. Where that
-       * happens the stack gives way instead and slides down by the shortfall:
-       * there is always room below a corner anchor and never above it. The gap
-       * is then one line height in every house, at every count.
-       */
-      var shortfall = Math.max(0, (m + 12) - numY);
-      numY += shortfall;
-      drawOccupants(g, occ, cx, cy + 4 + shortfall, 0.20 * s,
+      drawOccupants(g, occ, cx, cy + 4, 0.20 * s,
         { sign: sign, house: h + 1, yogas: yogas,
           dignities: dignities,
           hemming: hemming, ruling: ruling });
+      var numberAt = NORTH_SIGN_ANCHORS[h];
       g.appendChild(el('text', {
-        x: cx, y: numY.toFixed(1), class: 'sign-num', 'text-anchor': 'middle'
+        x: (m + numberAt[0] * s).toFixed(1),
+        y: (m + numberAt[1] * s).toFixed(1),
+        class: 'sign-num', 'text-anchor': 'middle'
       }, String(sign + 1)));
       svg.appendChild(g);
     }
