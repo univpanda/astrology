@@ -5648,14 +5648,38 @@ ok('and holds the six the grid draws, the other three being the card\u2019s',
          .every(function (f) { return key.indexOf(f) < 0; });
    })());
 /*
- * And it borrows the summary styling the other two folds already use, rather
- * than growing a third look.
+ * And it borrows the summary styling the other folds already use, rather than
+ * growing a look of its own. Four of them share the rule now, the catalogue
+ * having joined them.
  */
 ok('and wears the same summary as the other folds', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-  return /\.options summary, \.technical summary, \.flag-legend summary \{/.test(css) &&
+  return /\.options summary, \.technical summary, \.flag-legend summary, \.catalogue-fold summary \{/
+      .test(css) &&
     /\.flag-legend \{/.test(css);
 })());
+
+/*
+ * The Yogas tab is what this chart has, and the catalogue is folded under it.
+ *
+ * A hundred and eight names, most of them absent from any one chart, sat
+ * below a table of eight: the tab read as a list of yogas with a chart's
+ * findings on top rather than as the chart's findings. It stays one click
+ * away because the question it answers is real - without it a reader cannot
+ * tell a yoga missing from the chart from one missing from the engine.
+ */
+ok('the yoga catalogue is folded under the findings, not printed beside them',
+  (function () {
+    var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+    var panel = page.slice(page.indexOf('id="panel-yogas"'),
+                           page.indexOf('id="panel-aspects"'));
+    return /<details class="catalogue-fold">/.test(panel) &&
+      /<summary>What else this page checks for<\/summary>/.test(panel) &&
+      panel.indexOf('id="yoga-list"') < panel.indexOf('catalogue-fold') &&
+      !/<details[^>]*open/.test(panel);
+  })());
+ok('and it still says how many of them this chart holds',
+  /held \+ ' of ' \+ total \+ ' present in ' \+ chosen\.name/.test(appSrc));
 
 console.log('\nAyanamsa lives in settings');
 /*
