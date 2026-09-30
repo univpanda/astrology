@@ -1090,7 +1090,15 @@
            * the point.
            */
           list.push({ title: yoga.title, summary: yoga.summary || '',
-            subject: yoga.subject || '', condition: yoga.condition || '' });
+            subject: yoga.subject || '', condition: yoga.condition || '',
+            /*
+             * Whose it is, carried so the card can say when it is not this
+             * graha's. A graha stays listed for every yoga it takes part in -
+             * the Sun does mark where Vesi is counted from and a reader wants
+             * to see that - but the card now says the combination is Mercury's,
+             * which is the whole of the complaint this answers.
+             */
+            graha: yoga.graha || '' });
         }
       });
     });
@@ -1283,7 +1291,8 @@
       return (raw || '').split(REC).filter(Boolean).map(function (r) {
         var bits = r.split(FLD);
         return { term: bits[0], why: bits[1] || '',
-                 subject: bits[2] || '', condition: bits[3] || '' };
+                 subject: bits[2] || '', condition: bits[3] || '',
+                 graha: bits[4] || '' };
       });
     };
 
@@ -1415,6 +1424,18 @@
           var li = el('li', 'graha-card-yoga');
           var head = el('p', 'graha-card-term');
           head.appendChild(el('span', 'graha-card-label', item.term));
+          /*
+           * Whose combination this is, said out loud when it is not the graha
+           * being pointed at. Shubha Vesi is Mercury standing in the sign after
+           * the Sun: the Sun marks where to count from and did nothing, and a
+           * card that listed it under the Sun with no more said read as though
+           * the Sun had. The graha stays listed, because taking part is worth
+           * knowing; it is the silence about whose it was that misled.
+           */
+          var whose = t.getAttribute('data-graha');
+          if (item.graha && item.graha !== whose) {
+            head.appendChild(el('span', 'graha-card-whose', item.graha + '\u2019s'));
+          }
           rarity(head, kind, key);
           li.appendChild(head);
           var means = meaningOf(item);

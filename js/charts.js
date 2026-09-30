@@ -162,14 +162,23 @@ var Charts = (function () {
       seenBy: (ruling && ruling[p.name] && ruling[p.name].seenBy) || '',
       states: states.map(function (k) { return k + FLD + (why[k] || ''); }).join(REC),
       yogas: mine.map(function (y) {
-        // title, why it holds here, and the pair that names its passage
-        return [y.title, y.summary || '', y.subject || '', y.condition || '']
-          .join(FLD);
+        // title, why it holds here, the pair that names its passage, and the
+        // graha whose yoga it is - which is not always the one being hovered.
+        return [y.title, y.summary || '', y.subject || '', y.condition || '',
+          y.graha || ''].join(FLD);
       }).join(REC),
       /* One flat sentence, for anyone reading by ear rather than by hover. */
       label: p.name + ' in ' + where +
         (states.length ? '. ' + states.map(function (k) { return STATE_NAMES[k]; }).join(', ') : '') +
-        (mine.length ? '. ' + mine.map(function (y) { return y.title; }).join(', ') : '')
+        /*
+         * Whose each yoga is, spoken as well as shown. The card says "Mercury's"
+         * beside a combination that is not this graha's; a label that read the
+         * titles out flat would leave a listener with the fault the card had
+         * just lost.
+         */
+        (mine.length ? '. ' + mine.map(function (y) {
+          return y.title + (y.graha && y.graha !== p.name ? ', ' + y.graha + '\u2019s' : '');
+        }).join(', ') : '')
     };
   }
 

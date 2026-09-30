@@ -3603,6 +3603,57 @@ ok('every script the page loads parses', (function () {
     })());
 
   /*
+   * The card was where the complaint came from and the table fix did not reach
+   * it. A graha is still listed for every yoga it takes part in, which is worth
+   * knowing; what was missing is the line saying whose the combination is, so
+   * the Sun's card carried Shubha Vesi with nothing to show Mercury had made
+   * it.
+   */
+  var chartsSrc = fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8');
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var src = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
+  ok('the card carries whose yoga it is, through the renderer and out the other end',
+    /y\.graha \|\| ''\]\.join\(FLD\)/.test(chartsSrc) &&
+    /graha: bits\[4\] \|\| ''/.test(src) &&
+    /item\.graha && item\.graha !== whose/.test(src) &&
+    /graha-card-whose/.test(src) && /\.graha-card-whose \{/.test(css));
+  ok('and the map it reads from carries the owner in the first place',
+    /graha: yoga\.graha \|\| ''/.test(src));
+  /*
+   * And spoken, not only shown. A label that read the titles out flat would
+   * leave a listener with exactly the fault the card had just lost.
+   */
+  ok('the graha’s accessible label says whose each yoga is too',
+    /y\.graha && y\.graha !== p\.name \? ', ' \+ y\.graha/.test(chartsSrc));
+  /*
+   * The stacked cards are gone, and their rules went with them rather than
+   * sitting in the sheet unreferenced. A selector nothing produces is a claim
+   * about a layout that no longer exists.
+   */
+  ok('no rule is left for the card layout the table replaced',
+    !/\.yoga-finding \{/.test(css) && !/\.yoga-grahas \{/.test(css) &&
+    !/'yoga-finding'/.test(src) && !/'yoga-grahas'/.test(src));
+  /*
+   * Driven, on the chart that shows it: the Sun and Mercury placed so Vesi
+   * forms, then the Sun's own entry read back. It has to name Mercury.
+   */
+  ok('the Sun’s entry for Shubha Vesi says the yoga is Mercury’s',
+    (function () {
+      var vesi = { ascendant: { longitude: 5 }, planets: [
+        { name: 'Sun', sign: 1, longitude: 35, house: 2 },
+        { name: 'Mercury', sign: 2, longitude: 65, house: 3 },
+        { name: 'Moon', sign: 6, longitude: 185, house: 7 },
+        { name: 'Mars', sign: 8, longitude: 245, house: 9 },
+        { name: 'Jupiter', sign: 9, longitude: 275, house: 10 },
+        { name: 'Venus', sign: 10, longitude: 305, house: 11 },
+        { name: 'Saturn', sign: 11, longitude: 335, house: 12 }] };
+      var f = Yogas.sunCompany(vesi)[0];
+      if (!f || f.graha !== 'Mercury') return false;
+      // the Sun is a participant and so is listed, but the yoga is not its own
+      return f.grahas.indexOf('Sun') >= 0 && f.graha !== 'Sun';
+    })());
+
+  /*
    * The Graha column, driven. A source match would not catch the column being
    * filled from the wrong field, which is the fault this replaces.
    */
