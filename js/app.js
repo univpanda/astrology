@@ -4169,6 +4169,12 @@
     var list = !term ? all : all.filter(function (entry) {
       return (entry.name || '').toLowerCase().indexOf(term) >= 0;
     });
+    var key = document.getElementById('saved-key');
+    if (key) {
+      var anyStarred = list.some(function (entry) { return entry.celebrity; });
+      key.hidden = !anyStarred;
+      key.textContent = CELEBRITY_STAR + ' a ' + CELEBRITY_MARK + ', kept for study.';
+    }
     if (none) {
       none.hidden = !term || list.length > 0;
       none.textContent = 'Nothing saved matches \u201c' + term + '\u201d.';
@@ -4204,7 +4210,18 @@
       var open = el('button', 'saved-open');
       open.type = 'button';
       open.appendChild(el('span', 'saved-name', entry.name));
-      if (entry.celebrity) open.appendChild(el('span', 'celebrity-mark', CELEBRITY_MARK));
+      /*
+       * A star in the list and the words on the chart. The pill was the same
+       * width as some of the names beside it, which on a card is most of the
+       * line spent on a flag that is true of a third of them. The star marks
+       * the card; opening it says what the star meant, in full, under the name.
+       */
+      if (entry.celebrity) {
+        var star = el('span', 'celebrity-star', CELEBRITY_STAR);
+        star.title = 'A ' + CELEBRITY_MARK + ', kept for study';
+        star.setAttribute('aria-label', CELEBRITY_MARK);
+        open.appendChild(star);
+      }
       open.addEventListener('click', function () { loadSaved(entry); });
       li.appendChild(open);
       li.appendChild(el('p', 'saved-born', formatSavedMoment(entry)));
@@ -4325,12 +4342,14 @@
         writeSaved(entries.map(fromRow));
         renderSaved();
         savedNote.textContent = 'Saved to your kundalis and synced.';
+        savedNote.hidden = false;
         // Remember which row this chart is now, so a later edit updates it.
         currentEntry = entries.map(fromRow).filter(function (e) {
           return keyOf(e) === keyOf(entry);
         })[0] || currentEntry;
       } else {
         savedNote.textContent = 'Saved in this browser. Syncing was not possible.';
+        savedNote.hidden = false;
         currentEntry = entry;
       }
     });
@@ -4449,6 +4468,8 @@
    * label, and each read as a different thing about the same tick.
    */
   var CELEBRITY_MARK = 'public figure';
+  /* The same fact at a glance, for a list where the words are most of a line. */
+  var CELEBRITY_STAR = '\u2217';
 
   var emptyChart = document.getElementById('empty-chart');
   var savedCount = document.getElementById('saved-count');

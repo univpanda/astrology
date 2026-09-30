@@ -47,7 +47,12 @@
       <p class="saved-none" id="saved-none" hidden></p>
       <ul class="saved-list" id="saved-list"></ul>
       <button type="button" class="add-kundali" id="add-kundali">+ Add a kundali</button>
-      <p class="saved-note" id="saved-note">Charts are saved as soon as they are generated.</p>
+      <!-- Says what the star on a card means. Hidden until one carries it. -->
+      <p class="saved-key" id="saved-key" hidden></p>
+      <!-- The sync status, and nothing until there is something to report. The
+           sentence about when a chart is saved moved to the form, which is
+           where it is about to happen rather than where it already has. -->
+      <p class="saved-note" id="saved-note" hidden></p>
     </div>
   </section>
 
@@ -203,6 +208,7 @@
       <button type="submit" class="primary">Generate chart</button>
       <p class="form-error" id="form-error" role="alert"></p>
     </div>
+    <p class="form-note" id="add-note">Charts are saved as soon as they are generated.</p>
   </form>
 
   </section>

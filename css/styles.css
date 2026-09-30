@@ -138,6 +138,14 @@ main, .site-header, .site-footer { max-width: 1120px; margin: 0 auto; }
   margin: 0;
 }
 .saved-note { margin-top: 0.9rem; padding-top: 0.8rem; border-top: 1px solid var(--line-soft); }
+.saved-note[hidden] { display: none; }
+
+/* Under the button it describes, which is where it is about to be true. */
+.form-note {
+  margin: 0.75rem 0 0;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
 
 /*
  * A card for each saved chart, several to a row. A row across the page gave
@@ -385,6 +393,22 @@ textarea::placeholder { color: #a9bdb2; }
   color: var(--ink-soft);
   max-width: 70ch;
   white-space: pre-wrap;
+}
+
+/*
+ * In a list, the flag is a star: the words are the width of some of the names
+ * they sit beside, and on a card that is most of a line spent on something true
+ * of a third of them. The chart itself still spells it out.
+ */
+.celebrity-star {
+  margin-left: 0.25rem;
+  color: var(--green-deep);
+  font-weight: 700;
+}
+.saved-key {
+  margin: 0.6rem 0 0;
+  font-size: 0.78rem;
+  color: var(--ink-faint);
 }
 
 .celebrity-mark {

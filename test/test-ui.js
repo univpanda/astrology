@@ -1361,14 +1361,29 @@ ok('and the separator between them went with them', (function () {
 })());
 
 /*
- * The badge is drawn twice, on the saved row and on the chart heading, and the
- * two had drifted: "study" in one and "public figure" in the other, each being
- * half of the form's own label. One constant now.
+ * The flag is drawn twice and no longer the same way: a star on the card, the
+ * words on the chart. The pill was the width of some of the names beside it,
+ * which on a card is most of a line spent on something true of a third of them.
+ *
+ * Both still come from one constant, which is what stopped them drifting when
+ * one said "study" and the other "public figure" - each half of the form's own
+ * label - and the star's title and label spell the same words out for anyone
+ * who cannot see it or does not know what it means.
  */
-ok('the celebrity badge reads the same in both places',
+ok('the chart spells the flag out and the card stars it',
    /var CELEBRITY_MARK = 'public figure';/.test(appSrc) &&
-   (appSrc.match(/el\('span', 'celebrity-mark', CELEBRITY_MARK\)/g) || []).length === 2 &&
+   (appSrc.match(/el\('span', 'celebrity-mark', CELEBRITY_MARK\)/g) || []).length === 1 &&
+   /var CELEBRITY_STAR = '\\u2217';/.test(appSrc) &&
+   /el\('span', 'celebrity-star', CELEBRITY_STAR\)/.test(appSrc) &&
    !/'celebrity-mark', 'study'/.test(appSrc));
+ok('and the star says what it means, to a pointer and to a reader alike',
+   /star\.title = 'A ' \+ CELEBRITY_MARK \+ ', kept for study'/.test(appSrc) &&
+   /star\.setAttribute\('aria-label', CELEBRITY_MARK\)/.test(appSrc) &&
+   /id="saved-key"/.test(html) &&
+   /key\.textContent = CELEBRITY_STAR \+ ' a ' \+ CELEBRITY_MARK/.test(appSrc));
+ok('and the key appears only when some card carries the star',
+   /key\.hidden = !anyStarred;/.test(appSrc) &&
+   /list\.some\(function \(entry\) \{ return entry\.celebrity; \}\)/.test(appSrc));
 ok('and it matches what the form asks',
    /A public figure, kept for study/.test(html));
 
