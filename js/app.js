@@ -885,7 +885,12 @@
     return document.getElementById('tatkalika').value;
   }
 
-  function dignitiesByGraha(state, division, tatkalika) {
+  /** How the hora is judged: by chapter 7's own rule, or by the sign's lord. */
+  function horaSetting() {
+    return document.getElementById('hora-dignity').value;
+  }
+
+  function dignitiesByGraha(state, division, tatkalika, horaRule) {
     var d1 = {};
     state.chart.planets.forEach(function (p) { d1[p.name] = p; });
 
@@ -894,7 +899,7 @@
     };
     var map = {};
     state.chart.planets.forEach(function (p) {
-      var standing = Astro.vargaDignity(p.name, p.longitude, division, d1, tatkalika);
+      var standing = Astro.vargaDignity(p.name, p.longitude, division, d1, tatkalika, horaRule);
       if (!standing) {
         /*
          * Nodes are deliberately outside the varga-viswa scale, but the card
@@ -1510,7 +1515,7 @@
       division: set.division,
       reference: set.reference,
       yogas: yogasByGraha(state, set.division, set.reference),
-      dignities: dignitiesByGraha(state, set.division, tatkalikaSetting()),
+      dignities: dignitiesByGraha(state, set.division, tatkalikaSetting(), horaSetting()),
       hemming: hemmingByGraha(state, set.division),
       ruling: rulingAndAspects(state, set.division, set.reference),
       combustion: document.getElementById('combustion').value
@@ -2858,7 +2863,8 @@
     var sun = positionsD1.Sun;
     // Rahu and Ketu keep no friendships, so they have no column to head.
     var planets = state.chart.planets.filter(function (p) {
-      return Astro.vargaDignity(p.name, p.longitude, 1, positionsD1, tatkalikaSetting());
+      return Astro.vargaDignity(p.name, p.longitude, 1, positionsD1, tatkalikaSetting(),
+        horaSetting());
     });
     renderVargasHead(table, scheme, planets, sun);
 
@@ -2893,7 +2899,7 @@
 
       planets.forEach(function (planet) {
         var d = Astro.vargaDignity(planet.name, planet.longitude, division, positionsD1,
-          tatkalikaSetting());
+          tatkalikaSetting(), horaSetting());
         var td = el('td', 'varga-cell');
         if (!d) { td.textContent = '\u2013'; tr.appendChild(td); return; }
 
@@ -2973,7 +2979,7 @@
         * way under a row read the other would be a column that does not add up.
         */
       var score = Astro.vimsopaka(planet.name, planet.longitude, scheme, positionsD1,
-        tatkalikaSetting());
+        tatkalikaSetting(), horaSetting());
       var td = el('td', 'vimsopaka' + (score ? ' vimsopaka-' + score.band.key : ''),
         score ? score.total.toFixed(2) : '\u2013');
       if (score) {
@@ -3002,20 +3008,20 @@
    */
   var GOOD_KEYS = ['exalted', 'moolatrikona', 'own', 'adhimitra', 'mitra'];
 
-  function vargaSummary(state, scheme, tatkalika) {
+  function vargaSummary(state, scheme, tatkalika, horaRule) {
     var positionsD1 = {};
     state.chart.planets.forEach(function (p) { positionsD1[p.name] = p; });
 
     return state.chart.planets.map(function (planet) {
       var score = Astro.vimsopaka(planet.name, planet.longitude, scheme, positionsD1,
-        tatkalika);
+        tatkalika, horaRule);
       if (!score) return null;                     // the nodes keep no friendships
       var rashi = Astro.signOf(planet.longitude);
       var benefics = Astro.naturalBenefics(state.chart);
       var good = 0, marks = { V: 0, X: 0, S: 0, P: 0, D: 0, N: 0 };
       scheme.divisions.forEach(function (division) {
         var d = Astro.vargaDignity(planet.name, planet.longitude, division, positionsD1,
-          tatkalika);
+          tatkalika, horaRule);
         if (!d) return;
         if (GOOD_KEYS.indexOf(d.key) >= 0) good++;
         var chart = Astro.chartInDivision(state.chart, division);
@@ -3240,7 +3246,7 @@
   function renderVargaCharts(state, scheme) {
     var host = document.getElementById('vargas-charts');
     host.innerHTML = '';
-    var rows = vargaSummary(state, scheme, tatkalikaSetting());
+    var rows = vargaSummary(state, scheme, tatkalikaSetting(), horaSetting());
     if (!rows.length) return;
 
     /*
@@ -4420,7 +4426,9 @@
    ['ishta-kashta', { sripati: 'Ishta and kashta are the square roots Sripatipaddhati asks for.',
                       parashara: 'Ishta and kashta now halve a fixed sixty between them, as Parashara has it.' }],
    ['tatkalika', { varga: 'Tatkalika is now counted in the division being read.',
-                   rashi: 'Tatkalika is now counted in the rashi and carried into every division.' }]
+                   rashi: 'Tatkalika is now counted in the rashi and carried into every division.' }],
+   ['hora-dignity', { effects: 'The hora now reads by the grahas it favours, as chapter 7 has it.',
+                      lord: 'The hora now reads by the lord of its sign, as the other divisions do.' }]
   ].forEach(function (pair) {
     document.getElementById(pair[0]).addEventListener('change', function () {
       var status = document.getElementById('settings-status');

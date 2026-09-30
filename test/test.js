@@ -2063,8 +2063,12 @@ ok('and no short form has a key the full list does not',
   /*
    * The hora yields only Cancer and Leo, so most of the ladder is unreachable
    * there: own sign by the Moon and Sun alone, exaltation by Jupiter alone,
-   * debilitation by Mars alone. That is a property of the division, not a reason
-   * to read it on a different scale, and these are the cases worth naming.
+   * debilitation by Mars alone.
+   *
+   * Read by the lord of the sign, which is now the setting rather than the
+   * default: chapter 7 gives the hora a reading of its own and the page takes
+   * it. This is the ladder the other reading still offers, and the cases worth
+   * naming in it.
    */
   ok('the hora reaches exaltation, debilitation and own sign only through the right graha',
      (function () {
@@ -2073,7 +2077,7 @@ ok('and no short form has a key the full list does not',
          return null;
        };
        var cancer = find(3), leo = find(4);
-       var read = function (g, lon) { return A.vargaDignity(g, lon, 2, pos).key; };
+       var read = function (g, lon) { return A.vargaDignity(g, lon, 2, pos, null, 'lord').key; };
        /*
         * The Sun reads 'own' in his Leo hora, not 'moolatrikona'. Moolatrikona
         * is a span of degrees inside a sign, and a varga position is a place
@@ -2139,7 +2143,8 @@ ok('and no short form has a key the full list does not',
     return Object.keys(his).every(function (g) {
       var sum = 0;
       [1, 2, 3, 7, 9, 12, 30].forEach(function (d) {
-        var vd = A.vargaDignity(g, at[g], d, p, 'rashi');
+        // Swavarga in Hora - 30, so the lord reading, not chapter 7's.
+        var vd = A.vargaDignity(g, at[g], d, p, 'rashi', 'lord');
         var rel = vd && vd.relation;
         // moolatrikona counts in the rashi only, Raman section 30
         if (rel === 'moolatrikona' && d !== 1) rel = 'own';
@@ -2166,11 +2171,13 @@ ok('and no short form has a key the full list does not',
   /*
    * The two must agree wherever they use the same scale, which is every division
    * except the two Parashara singles out in chapter 7. Shadbala's saptavargaja is
-   * a different reckoning and keeps the ordinary relation for trimsamsa, where the
-   * grid lets the luminaries stand in. So that exclusion is the point of this test,
-   * not a hole in it.
+   * a different reckoning and keeps the ordinary relation for both of them: the
+   * trimsamsa, where the grid lets the luminaries stand in, and now the hora,
+   * where the grid reads verses 13-16 and this does not. Raman scores his own
+   * Sun's hora as Swavarga, so saptavargaja is right to keep the lord there.
+   * Those two exclusions are the point of this test, not a hole in it.
    */
-  var SHARED = [1, 2, 3, 7, 9, 12];
+  var SHARED = [1, 3, 7, 9, 12];
   ok('the underlying relation agrees with saptavargaja bala where both use the same scale',
      Shadbala.GRAHAS.every(function (g) {
        return detail.grahas[g].saptavargajaDetail.every(function (row) {
@@ -2179,9 +2186,9 @@ ok('and no short form has a key the full list does not',
          return vd && vd.relation === row.relation && vd.sign === row.sign && vd.lord === row.lord;
        });
      }));
-  ok('and trimsamsa is the only division left out, for its stand-in',
-     SHARED.indexOf(30) < 0 &&
-     [1, 2, 3, 7, 9, 12].every(function (d) { return SHARED.indexOf(d) >= 0; }));
+  ok('and the two left out are the two chapter 7 singles out',
+     SHARED.indexOf(30) < 0 && SHARED.indexOf(2) < 0 &&
+     [1, 3, 7, 9, 12].every(function (d) { return SHARED.indexOf(d) >= 0; }));
 
   /*
    * Exaltation outranks the relation on display but must not erase it, because
@@ -7977,6 +7984,93 @@ console.log('\nWhich chart tatkalika is counted in');
        return A.vimsopaka(g, at[g], scheme, pos).total ===
               A.vimsopaka(g, at[g], scheme, pos, 'varga').total;
      }));
+})();
+
+console.log('\nThe hora read as chapter 7 reads it');
+/*
+ * D2 has two signs, so read by lordship the whole division becomes one question
+ * about the Sun and the Moon. Chapter 7 verses 13-16 ask a different one, and
+ * both halves of the verse count: which grahas the hora favours, and whether
+ * that hora is the powerful one for the sign the graha came from.
+ */
+(function () {
+  var SHORT = { adhimitra: 'GF', mitra: 'Fr', sama: 'Nu' };
+  var G = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+
+  function horaRow(y, mo, d, h, mi, off, lat, lon) {
+    var c = A.chart({ jdUT: A.julianDay(y, mo, d, (h * 60 + mi - off) / 60),
+      latitude: lat, longitude: lon, tzOffsetMinutes: off });
+    var pos = {};
+    c.planets.forEach(function (p) { pos[p.name] = p; });
+    return G.map(function (g) {
+      return SHORT[A.vargaDignity(g, pos[g].longitude, 2, pos).key];
+    });
+  }
+
+  /*
+   * Two charts whose hora rows are known independently. Gates is the one that
+   * proves the second half of the verse: Mars, Venus and Saturn all stand in
+   * the hora their own group favours and still come out a rung down, because
+   * Virgo and Libra fall the wrong way for it.
+   */
+  ok('Bill Gates: the hora row comes out as the verse gives it',
+     horaRow(1955, 10, 28, 21, 26, -480, 47 + 36 / 60 + 22 / 3600,
+             -(122 + 19 / 60 + 56 / 3600)).join(',') === 'GF,GF,Fr,GF,GF,Fr,Fr',
+     horaRow(1955, 10, 28, 21, 26, -480, 47 + 36 / 60 + 22 / 3600,
+             -(122 + 19 / 60 + 56 / 3600)).join(','));
+  ok('Alan Dershowitz: and so does his, where four grahas fall outside their group',
+     horaRow(1938, 9, 1, 23, 28, -240, 40 + 47 / 60,
+             -(73 + 57 / 60 + 59 / 3600)).join(',') === 'Nu,Nu,GF,GF,GF,Nu,Nu',
+     horaRow(1938, 9, 1, 23, 28, -240, 40 + 47 / 60,
+             -(73 + 57 / 60 + 59 / 3600)).join(','));
+
+  // The verse, stated directly rather than through a chart.
+  ok('a graha outside the group takes the middle rung whichever way the sign falls',
+     A.horaEffect('Saturn', 4, 0) === 'sama' && A.horaEffect('Saturn', 4, 1) === 'sama' &&
+     A.horaEffect('Mars', 3, 0) === 'sama' && A.horaEffect('Mars', 3, 1) === 'sama');
+  ok('and inside it the powerful hora is the top rung and the other one below',
+     A.horaEffect('Mars', 4, 0) === 'adhimitra' &&   // Sun's hora from an odd rashi
+     A.horaEffect('Mars', 4, 1) === 'mitra' &&       // Sun's hora from an even one
+     A.horaEffect('Venus', 3, 1) === 'adhimitra' &&  // Moon's hora from an even rashi
+     A.horaEffect('Venus', 3, 0) === 'mitra');
+  ok('Mercury is effective in both horas, so it never drops',
+     [0, 1].every(function (r) {
+       return [3, 4].every(function (h) { return A.horaEffect('Mercury', h, r) === 'adhimitra'; });
+     }));
+  ok('the groups are the ones the verse names',
+     A.HORA_GROUP.Jupiter === 'Sun' && A.HORA_GROUP.Sun === 'Sun' &&
+     A.HORA_GROUP.Mars === 'Sun' && A.HORA_GROUP.Moon === 'Moon' &&
+     A.HORA_GROUP.Venus === 'Moon' && A.HORA_GROUP.Saturn === 'Moon' &&
+     A.HORA_GROUP.Mercury === 'both');
+  ok('and the nodes have no answer here either', A.horaEffect('Rahu', 4, 0) === null);
+
+  /*
+   * It is a reading of effects and not of dignity, so it answers for the whole
+   * cell. The Sun is not reported as owning the Leo hora he gives pronounced
+   * effects in, which is the visible difference from the other setting.
+   */
+  var leo = null, cancer = null;
+  for (var l = 0; l < 360 && (leo === null || cancer === null); l += 0.05) {
+    var sgn = A.vargaPosition(l, 2).sign;
+    if (sgn === 4 && leo === null) leo = l;
+    if (sgn === 3 && cancer === null) cancer = l;
+  }
+  var pos1 = {};
+  ['Sun', 'Moon', 'Jupiter'].forEach(function (g) { pos1[g] = { sign: 0, longitude: 0 }; });
+  ok('the Sun does not own the hora he merely tells in',
+     A.vargaDignity('Sun', leo, 2, pos1).key === 'adhimitra' &&
+     A.vargaDignity('Sun', leo, 2, pos1, null, 'lord').key === 'own');
+  ok('nor is Jupiter exalted in a Cancer hora under this reading',
+     A.vargaDignity('Jupiter', cancer, 2, pos1).key !== 'exalted' &&
+     A.vargaDignity('Jupiter', cancer, 2, pos1, null, 'lord').key === 'exalted');
+  ok('the effects reading is the default, the lord reading the setting',
+     A.vargaDignity('Sun', leo, 2, pos1).key ===
+     A.vargaDignity('Sun', leo, 2, pos1, null, 'effects').key &&
+     A.HORA_DIGNITY.EFFECTS === 'effects' && A.HORA_DIGNITY.LORD === 'lord');
+  ok('and it reaches no division but the hora', [1, 3, 7, 9, 12, 30, 60].every(function (d) {
+    return A.vargaDignity('Sun', leo, d, pos1).key ===
+           A.vargaDignity('Sun', leo, d, pos1, null, 'lord').key;
+  }));
 })();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');

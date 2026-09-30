@@ -1298,11 +1298,11 @@ var Astro = (function () {
    * Returns null for a graha the scheme cannot judge - the nodes, which own no
    * sign and keep no friendships.
    */
-  function vimsopaka(graha, longitude, scheme, positionsD1, tatkalika) {
+  function vimsopaka(graha, longitude, scheme, positionsD1, tatkalika, horaRule) {
     var total = 0, parts = [];
     for (var i = 0; i < scheme.divisions.length; i++) {
       var division = scheme.divisions[i];
-      var d = vargaDignity(graha, longitude, division, positionsD1, tatkalika);
+      var d = vargaDignity(graha, longitude, division, positionsD1, tatkalika, horaRule);
       if (!d || !d.relation) return null;
       var kept = VARGA_VISWA[d.relation];
       var share = scheme.weights[division] * kept / 20;
@@ -1347,6 +1347,50 @@ var Astro = (function () {
    * Temporal friendship is counted in the rashi chart even when the sign being
    * judged belongs to a division, which is where the classical rule puts it.
    */
+  var HORA_DIGNITY = { EFFECTS: 'effects', LORD: 'lord' };
+
+  /*
+   * Which grahas the Sun's hora favours and which the Moon's, and Mercury in
+   * both. Chapter 7, verses 13-16.
+   */
+  var HORA_GROUP = { Sun: 'Sun', Mars: 'Sun', Jupiter: 'Sun',
+    Moon: 'Moon', Venus: 'Moon', Saturn: 'Moon', Mercury: 'both' };
+
+  /*
+   * The hora read the way its own chapter reads it, rather than as a relation
+   * to the lord of a sign.
+   *
+   * D2 has only two signs, so every lord is the Sun or the Moon and the
+   * ordinary reading says little: it turns the whole division into one question
+   * about two grahas. Chapter 7 asks a different one. "Guru, Surya and Mangal
+   * give (pronounced) effects in the Hora of Surya. Candr, Sukr and Sani do so,
+   * when in Candr's Horas; Budh is effective in both the Horas. In the case of
+   * an even Rasi the Hora of Candr will be powerful in effects, while Surya's
+   * Hora in an odd Rasi will be so."
+   *
+   * Both halves count. A graha in the hora its own group favours takes the top
+   * rung when that hora is also the powerful one for the sign it came from, and
+   * the rung below when it is not. A graha outside its group takes the middle
+   * whichever way the sign falls. Mercury is effective in both, so it takes the
+   * top either way.
+   *
+   * This is a reading of effects and not of dignity, so it answers for the
+   * whole cell: the Sun in Leo hora is not reported as owning it. Those are the
+   * terms the chapter sets, and the ordinary reading remains available as a
+   * setting for anyone reconciling against a table built the other way.
+   */
+  function horaEffect(graha, horaSign, rashiSign) {
+    var group = HORA_GROUP[graha];
+    if (!group) return null;                       // the nodes, as everywhere
+    var horaOf = horaSign === 4 ? 'Sun' : 'Moon';  // Leo is the Sun's, Cancer the Moon's
+    if (group === 'both') return 'adhimitra';
+    if (group !== horaOf) return 'sama';
+    // Aries counts as odd, so an even sign index is an odd rashi.
+    var oddRashi = rashiSign % 2 === 0;
+    var powerful = horaOf === 'Sun' ? oddRashi : !oddRashi;
+    return powerful ? 'adhimitra' : 'mitra';
+  }
+
   var TATKALIKA = { VARGA: 'varga', RASHI: 'rashi' };
 
   /*
@@ -1382,7 +1426,7 @@ var Astro = (function () {
     return ((lordSign - from) % 12 + 12) % 12 + 1;
   }
 
-  function vargaDignity(graha, longitude, division, positionsD1, tatkalika) {
+  function vargaDignity(graha, longitude, division, positionsD1, tatkalika, horaRule) {
     var position = vargaPosition(longitude, division);
     if (!position) return null;
     /*
@@ -1394,6 +1438,22 @@ var Astro = (function () {
      */
     if (NODES.indexOf(graha) >= 0) return null;
     var lord = SIGN_LORDS[position.sign];
+
+    /*
+     * The hora answers from its own chapter unless asked for the ordinary
+     * reading. It replaces the whole cell rather than the relation half: this
+     * is a judgement about effects, and a graha is not reported as owning a
+     * hora it merely gives pronounced effects in.
+     */
+    if (division === 2 && horaRule !== HORA_DIGNITY.LORD) {
+      var effect = horaEffect(graha, position.sign, signOf(longitude));
+      if (!effect) return null;
+      return {
+        key: effect, label: VARGA_DIGNITY_LABELS[effect], sign: position.sign,
+        lord: lord, relation: effect, relationLabel: VARGA_DIGNITY_LABELS[effect],
+        viaProxy: null
+      };
+    }
 
     /*
      * A rashi longitude is a real degree in a sign, so its degree-bounded
@@ -2197,6 +2257,9 @@ var Astro = (function () {
     compoundRelation: compoundRelation,
     tatkalikaHouses: tatkalikaHouses,
     TATKALIKA: TATKALIKA,
+    horaEffect: horaEffect,
+    HORA_DIGNITY: HORA_DIGNITY,
+    HORA_GROUP: HORA_GROUP,
     NATURAL_FRIENDS: NATURAL_FRIENDS,
     RELATION_LABELS: RELATION_LABELS,
     titleCase: titleCase,

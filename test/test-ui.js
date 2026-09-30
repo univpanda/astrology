@@ -300,7 +300,7 @@ console.log('\nWhat a chart slot recomputes when it is rotated');
    * Stated as a test so a later change does not rotate them by symmetry.
    */
   ok('dignity and hemming stay out of it, being rotation-independent',
-     /dignities: dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\)\)/.test(src) &&
+     /dignities: dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\), horaSetting\(\)\)/.test(src) &&
      /hemming: hemmingByGraha\(state, set\.division\)/.test(src));
   ok('the Yogas tab is unaffected, reading the whole chart from the ascendant',
      /function renderYogas\(state\)/.test(src) &&
@@ -324,9 +324,9 @@ console.log('\nThe tatkalika setting, end to end');
    * page would show one reading and score another.
    */
   ok('the vimsopaka grid takes it',
-     /Astro\.vargaDignity\(planet\.name, planet\.longitude, division, positionsD1,\s*\n\s*tatkalikaSetting\(\)\)/.test(src));
-  ok('the chart card takes it', /dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\)\)/.test(src));
-  ok('the varga summary takes it', /vargaSummary\(state, scheme, tatkalikaSetting\(\)\)/.test(src));
+     /Astro\.vargaDignity\(planet\.name, planet\.longitude, division, positionsD1,\s*\n\s*tatkalikaSetting\(\), horaSetting\(\)\)/.test(src));
+  ok('the chart card takes it', /dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\), horaSetting\(\)\)/.test(src));
+  ok('the varga summary takes it', /vargaSummary\(state, scheme, tatkalikaSetting\(\), horaSetting\(\)\)/.test(src));
   // Including the figure at the foot of the grid, which is scored over the
   // same cells and would otherwise be a total of a column nobody is looking at.
   ok('and so does the vimsopaka total beneath the cells',
@@ -338,6 +338,17 @@ console.log('\nThe tatkalika setting, end to end');
    * Changing it changes figures rather than wording, so the cached strengths
    * have to be dropped. It rides with the settings that already do that.
    */
+  /* The hora setting rides the same wiring, and has to reach the same places. */
+  ok('the page offers the hora reading too, opening on the verse',
+     /<select id="hora-dignity"/.test(page) &&
+     /<option value="effects" selected>/.test(page.slice(page.indexOf('id="hora-dignity"'))));
+  ok('and it is read in one place, like the other',
+     /function horaSetting\(\) \{\s*\n\s*return document\.getElementById\('hora-dignity'\)\.value;/.test(src));
+  ok('the grid, the card, the summary and the total all take it',
+     /positionsD1,\s*\n\s*tatkalikaSetting\(\), horaSetting\(\)\)/.test(src) &&
+     /dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\), horaSetting\(\)\)/.test(src) &&
+     /vargaSummary\(state, scheme, tatkalikaSetting\(\), horaSetting\(\)\)/.test(src));
+  ok('changing the hora reading redraws too', /\['hora-dignity', \{ effects:/.test(src));
   ok('changing it drops the cached strengths and redraws',
      /\['tatkalika', \{ varga:/.test(src) &&
      src.indexOf("['tatkalika', { varga:") < src.indexOf('lastChart.shadbala = null;',
@@ -3925,7 +3936,7 @@ ok('Rashi is priced differently in every one of the four', (function () {
 ok('the total is one cell under its graha\'s column',
    !/rowspan/.test(appSrc.slice(appSrc.indexOf('function renderVargas(state)'),
                                 appSrc.indexOf('function vargaSummary'))) &&
-   /Astro\.vimsopaka\(planet\.name, planet\.longitude, scheme, positionsD1,\s*\n\s*tatkalikaSetting\(\)\)/.test(appSrc));
+   /Astro\.vimsopaka\(planet\.name, planet\.longitude, scheme, positionsD1,\s*\n\s*tatkalikaSetting\(\), horaSetting\(\)\)/.test(appSrc));
 /*
  * The total sits second, beside the name, not last. Sixteen columns scroll, so
  * last put the one number the grid is adding up off the right-hand edge: the
@@ -4196,7 +4207,7 @@ ok('and the sixteen are derived from VARGAS rather than retyped beside it', (fun
 ok('grahas keep the order of the tables beside it',
    /var planets = state\.chart\.planets\.filter\(function \(p\) \{/.test(appSrc));
 ok('a graha with no reading anywhere is dropped, not shown as a column of dashes',
-   /return Astro\.vargaDignity\(p\.name, p\.longitude, 1, positionsD1, tatkalikaSetting\(\)\);/.test(appSrc) &&
+   /return Astro\.vargaDignity\(p\.name, p\.longitude, 1, positionsD1, tatkalikaSetting\(\),\s*\n\s*horaSetting\(\)\);/.test(appSrc) &&
    /\/\/ Rahu and Ketu keep no friendships, so they have no column to head\./
      .test(appSrc));
 /*
@@ -4492,7 +4503,7 @@ ok('and its name is a row header',
 ok('both lines read one and the same varga position', (function () {
   var at = appSrc.indexOf('function renderVargas(state)');
   var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
-  return /var d = Astro\.vargaDignity\(planet\.name, planet\.longitude, division, positionsD1,\s*\n\s*tatkalikaSetting\(\)\);/
+  return /var d = Astro\.vargaDignity\(planet\.name, planet\.longitude, division, positionsD1,\s*\n\s*tatkalikaSetting\(\), horaSetting\(\)\);/
     .test(block) && (block.match(/Astro\.vargaDignity\(planet\.name/g) || []).length === 1;
 })());
 
@@ -7097,8 +7108,8 @@ console.log('\nThe card says how the graha stands in its sign');
   var out = global.appExports || {};
 
   ok('the map is built and handed to the renderer with the yogas',
-    /function dignitiesByGraha\(state, division, tatkalika\)/.test(src) &&
-    /dignities: dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\)\)/.test(src));
+    /function dignitiesByGraha\(state, division, tatkalika, horaRule\)/.test(src) &&
+    /dignities: dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\), horaSetting\(\)\)/.test(src));
   ok('and the renderer carries it onto the graha',
     /ctx\.division, ctx\.dignities, ctx\.hemming, ctx\.ruling\)/.test(chartsSrc) &&
     /t\.setAttribute\('data-dignity', d\.dignity\)/.test(chartsSrc));
@@ -7190,9 +7201,9 @@ console.log('\nThe card says how the graha stands in its sign');
    * Run the real thing rather than trust the source. Pull the builder out of
    * app.js and check both halves answer on a chart that has each case.
    */
-  var body = src.match(/function dignitiesByGraha\(state, division, tatkalika\) \{[\s\S]*?\n  \}/)[0];
+  var body = src.match(/function dignitiesByGraha\(state, division, tatkalika, horaRule\) \{[\s\S]*?\n  \}/)[0];
   ok('the card reads the same varga dignity as the grid',
-    /Astro\.vargaDignity\(p\.name, p\.longitude, division, d1, tatkalika\)/.test(body));
+    /Astro\.vargaDignity\(p\.name, p\.longitude, division, d1, tatkalika, horaRule\)/.test(body));
   var withArticle = function (label) {
     if (label === 'neutral') return 'neutral';
     return (label.charAt(0) === 'e' ? 'an ' : 'a ') + label;
@@ -7201,7 +7212,7 @@ console.log('\nThe card says how the graha stands in its sign');
     Astro, withArticle);
   // Every assertion below is about dignity, not about tatkalika, so it names
   // the reading rather than inheriting whichever way the default happens to go.
-  var built = function (state, division) { return build(state, division, 'rashi'); };
+  var built = function (state, division) { return build(state, division, 'rashi', 'lord'); };
 
   var chart = Astro.chart({ jdUT: Astro.julianDay(1975, 8, 20, 3), latitude: 28.61,
     longitude: 77.21, tzOffsetMinutes: 330 });
