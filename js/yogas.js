@@ -2884,37 +2884,91 @@ var Yogas = (function () {
   }
 
   /*
-   * Combination 28. "The lord of the Navamsa occupied by the lord of the 10th
-   * should join the 10th in exaltation and combined with the lord of Lagna."
+   * Combination 28, which Raman states three times and loosens each time.
    *
-   * Raman notes a second definition in circulation - "Here again two
-   * definitions are to be found" - but the scan breaks before giving it, so
-   * only the one above is implemented.
+   * The definition on p.60: "The lord of the Navamsa occupied by the lord of
+   * the 10th should join the 10th in exaltation and combined with the lord of
+   * Lagna."
+   *
+   * His own remarks on the same page, choosing between the versions in
+   * circulation: "We shall stick to the definition we have first propounded
+   * and deem that in order to cause Gauri Yoga, the lord of the Navamsa
+   * occupied by the 10th lord be in the 10th exalted." The lagna lord has
+   * gone, and he adds that this "does not exclude the possibility of some
+   * other planet occupying the 10th house".
+   *
+   * And the summary chapter: "The elevated position of the lord of the
+   * Navamsa held by the lord of the 10th produces Gauri Yoga." The 10th house
+   * has gone too.
+   *
+   * So all three are reported, as the grade that was actually met, rather than
+   * one of them chosen and the others silently refused. The strict form is the
+   * one his opening sentence gives; it is also the one his own illustration,
+   * chart 29, fails - there the lagna lord Venus stands in Gemini while
+   * Jupiter is exalted in the 10th - so a detector that tested only it would
+   * reject the author's example of his own yoga.
+   *
+   * Raman's second definition is a separate rule and not a grade of this one:
+   * "another school of Astrologers hold that Gauri Yoga is produced if the
+   * lord of the 9th and the Moon be posited in their own or exaltation signs
+   * identical with a trine or quadrant." He reports it without argument and
+   * sets it aside. It is Phaladeepika's, sloka 21, minus that text's
+   * requirement that Jupiter aspect the Moon. Neither is tested here.
    */
+  var GAURI_GRADES = {
+    strict: 'Gauri yoga (strict)',
+    medium: 'Gauri yoga (medium)',
+    weak: 'Gauri yoga (weak)'
+  };
+
   function gauri(chart) {
     var c = lordship(chart);
     var tenth = c.lordOf(10), lagnaLord = c.lordOf(1);
     var amsaLord = c.navamsaLord(tenth);
     if (!amsaLord || !c.at[amsaLord]) return [];
-    if (c.houseOf(amsaLord) !== 10) return [];
     if (!c.exalted(amsaLord)) return [];
-    if (amsaLord !== lagnaLord && !c.together(amsaLord, lagnaLord)) return [];
 
-    return finding('Gauri Yoga', 'Gauri yoga', [
-      amsaLord + ' rules the navamsa that ' + tenth + ', lord of the 10th, ' +
-        'occupies',
-      amsaLord + ' stands in the 10th himself and exalted there',
-      amsaLord === lagnaLord
-        ? amsaLord + ' is also ' + firstLord(chart, 'the ') + 'lord of ' + firstHouse(chart, 'the ascendant') + firstLord(chart, '') + ', which satisfies the ' +
-          'last clause in one graha'
-        : 'and with ' + lagnaLord + ', ' + firstLord(chart, 'the ') + 'lord of ' + firstHouse(chart, 'the ascendant') + firstLord(chart, ''),
-      'Raman records a second definition in circulation without giving it in ' +
-        'the text available here, so only this one is tested'
-    ], amsaLord + ', who rules the navamsa ' + tenth + ' occupies, is exalted ' +
-       'in the 10th' + (amsaLord === lagnaLord
-         ? ' and rules ' + firstHouse(chart, 'the ascendant') + ' himself'
-         : ' with ' + named(lagnaLord) + ', ' + firstLord(chart, 'the ascendant lord')) +
-       '. That is Gauri yoga.', [amsaLord, tenth, lagnaLord], [10]);
+    var inTenth = c.houseOf(amsaLord) === 10;
+    var withLagnaLord = amsaLord === lagnaLord || c.together(amsaLord, lagnaLord);
+    var grade = inTenth && withLagnaLord ? 'strict' : inTenth ? 'medium' : 'weak';
+
+    var holds = [
+      amsaLord + ' rules the navamsa that ' + tenth + ', lord of the 10th, occupies',
+      amsaLord + ' is exalted' + (inTenth ? ' in the 10th' : ' in the ' +
+        ordinal(c.houseOf(amsaLord)) + ', not the 10th')
+    ];
+    if (grade === 'strict') {
+      holds.push(amsaLord === lagnaLord
+        ? amsaLord + ' is also ' + firstLord(chart, 'the ') + 'lord of ' +
+          firstHouse(chart, 'the ascendant') + firstLord(chart, '') +
+          ', which satisfies the last clause in one graha'
+        : 'and with ' + lagnaLord + ', ' + firstLord(chart, 'the ') + 'lord of ' +
+          firstHouse(chart, 'the ascendant') + firstLord(chart, ''));
+      holds.push('That is the definition Raman gives first, and the strictest of ' +
+        'the three he states');
+    } else if (grade === 'medium') {
+      holds.push('The lagna lord is elsewhere, so this is the form Raman settles ' +
+        'on in his remarks rather than the one his opening sentence gives');
+    } else {
+      holds.push('Neither in the 10th nor with the lagna lord, so this is only ' +
+        'the form his summary chapter states');
+    }
+
+    var summary = amsaLord + ', who rules the navamsa ' + tenth + ' occupies, is ' +
+      'exalted' + (inTenth ? ' in the 10th' : ' in the ' + ordinal(c.houseOf(amsaLord))) +
+      (grade === 'strict'
+        ? (amsaLord === lagnaLord
+          ? ' and rules ' + firstHouse(chart, 'the ascendant') + ' himself'
+          : ' with ' + named(lagnaLord) + ', ' + firstLord(chart, 'the ascendant lord'))
+        : '') + '. That is Gauri yoga, ' + grade + '.';
+
+    /*
+     * One subject and one condition for all three, so they share the passage
+     * that explains the ladder; the title tells them apart, and the card takes
+     * its rarity from the title where there is one.
+     */
+    return finding('Gauri Yoga', GAURI_GRADES[grade], holds, summary,
+      [amsaLord, tenth, lagnaLord], inTenth ? [10] : []);
   }
 
   /*
@@ -3320,7 +3374,8 @@ var Yogas = (function () {
       'Bhagya Malika yoga', 'Karma Malika yoga', 'Labha Malika yoga',
       'Vraya Malika yoga'] },
     { group: 'Raman’s combinations', names: ['Kahala yoga', 'Pushkala yoga',
-      'Gauri yoga', 'Bharathi yoga', 'Kusuma yoga', 'Chapa yoga',
+      'Gauri yoga (strict)', 'Gauri yoga (medium)', 'Gauri yoga (weak)',
+      'Bharathi yoga', 'Kusuma yoga', 'Chapa yoga',
       'Sreenatha yoga', 'Sankha yoga', 'Bheri yoga', 'Matsya yoga',
       'Mridanga yoga', 'Vanchanachorabheethi yoga'] },
     { group: 'Wealth and want', names: ['Dhana yoga', 'Daridra yoga'] },

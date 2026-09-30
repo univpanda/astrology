@@ -673,11 +673,14 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
  null, 990),
 
 ('yoga', 'Gauri Yoga', 'general',
- 'Gauri - the navamsa lord of the 10th lord, exalted in the 10th',
+ 'Gauri - the navamsa lord of the 10th lord, exalted',
  array[
-   'Raman''s combination 28: "The lord of the Navamsa occupied by the lord of the 10th should join the 10th in exaltation and combined with the lord of Lagna."',
-   'A chain of three steps: find the 10th lord, find which navamsa it occupies, take that navamsa''s ruler - and that ruler must stand exalted in the 10th house, with the ascendant lord beside it.',
-   'Raman notes "here again two definitions are to be found" and the scan available here breaks before giving the second, so only this one is tested.'
+   'A chain of three steps: find the 10th lord, find which navamsa it occupies, take that navamsa''s ruler - and that ruler must be exalted. How much more is required is the question Raman answers three different ways.',
+   'Strict, his combination 28 as first given: "The lord of the Navamsa occupied by the lord of the 10th should join the 10th in exaltation and combined with the lord of Lagna." One chart in five hundred.',
+   'Medium, the form he settles on in the remarks on that same page: "We shall stick to the definition we have first propounded and deem that in order to cause Gauri Yoga, the lord of the Navamsa occupied by the 10th lord be in the 10th exalted." The ascendant lord has gone, and he adds that this "does not exclude the possibility of some other planet occupying the 10th house". A further one chart in three hundred.',
+   'Weak, his summary chapter: "The elevated position of the lord of the Navamsa held by the lord of the 10th produces Gauri Yoga." The 10th house has gone too, and with it most of the rarity: one chart in sixteen.',
+   'All three are reported, marked by which was met, rather than one chosen and the rest refused. The strict form is the one his opening sentence gives - and the one his own illustration, chart 29, fails, the ascendant lord Venus standing in Gemini while Jupiter is exalted in the 10th.',
+   'A second and separate rule is in circulation, which Raman reports without arguing against and then sets aside: "another school of Astrologers hold that Gauri Yoga is produced if the lord of the 9th and the Moon be posited in their own or exaltation signs identical with a trine or quadrant." It is Phaladeepika sloka 21 without that text''s further requirement that Jupiter aspect the Moon. Neither is tested here.'
  ],
  null, 991),
 
