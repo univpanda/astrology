@@ -5373,9 +5373,17 @@ ok('the library is fetched once, ahead of the hover',
  */
 ok('the card lists findings one line each, name and rarity',
    !/graha-card-why|graha-card-means/.test(appSrc + cssSrc) &&
-   /li\.title = item\.why;/.test(appSrc) &&
    /li\.title = \[means, item\.why\]\.filter\(Boolean\)\.join\(' '\);/.test(appSrc) &&
    /\.graha-card-list li \+ li \{[^}]*margin-top: 0\.2rem;/.test(cssSrc.replace(/\n/g, '')));
+/*
+ * And the list holds yogas only. A state is a condition the graha is in, not
+ * a combination it takes part in, and listed among them Retrograde read as
+ * one - a line and a rule of its own for a single word.
+ */
+ok('and the list is yogas, the states having a line of their own',
+   !/split\(t\.getAttribute\('data-states'\)\)\.forEach\(function \(item\) \{\s*\n\s*var key/
+     .test(appSrc) &&
+   (appSrc.match(/split\(t\.getAttribute\('data-states'\)\)/g) || []).length === 1);
 /*
  * And the detail is not merely dropped: the Yogas tab carries the summary and
  * the reasons for every finding, so the card is a shorter view of something
@@ -7327,10 +7335,16 @@ console.log('\nThe card prints the figure beside the finding');
 (function () {
   var src = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
   var F = global.FREQUENCIES;
-  ok('the card asks the table for both kinds of line',
-    /chanceOf\('state', key\)/.test(src) && /rarity\(head, 'state', key\)/.test(src) &&
+/*
+ * Both kinds still ask, but they ask for different places to put the answer.
+ * A yoga prints its figure beside its name; a state has no line of its own
+ * any more, so its figure goes on the title with its reason.
+ */
+ok('the card asks the table for both kinds of line',
+    /chanceOf\('state', at \+ '\/' \+ item\.term\)/.test(src) &&
     /chanceOf\(kind, key\)/.test(src) && /rarity\(head, kind, key\)/.test(src) &&
-    /var key = t\.getAttribute\('data-graha'\) \+ '\/' \+ item\.term;/.test(src));
+    /'In ' \+\s*\n?\s*\(chance >= 10 \? Math\.round\(chance\) : chance\) \+ '% of charts\.'/
+      .test(src));
   /*
    * A yoga asks by the name printed on it first and by the library key second.
    * Nabhasa's thirty-two figures share one passage and so one subject, and one
@@ -8184,26 +8198,32 @@ console.log('\nThe card says how the graha stands in its sign');
    * the chart position with the lords of ownership, then the finer lords, then
    * what looks at it.
    */
-  ok('and the card follows identity, conditions, position, seat, lords, aspects',
+  ok('and the card follows identity, position, seat, lords, aspects, conditions',
     /fact\(seat, 'Rules', t\.getAttribute\('data-rules'\)\)/.test(src) &&
     /fact\(over, 'Aspected by', t\.getAttribute\('data-seen-by'\)\)/.test(src) &&
     /\.graha-card-fact-label \{/.test(css) &&
-    src.indexOf("'graha-card-conditions'") < src.indexOf("fact(at360, ''") &&
     src.indexOf("fact(at360, ''") < src.indexOf("fact(seat, 'Dispositor'") &&
     src.indexOf("fact(seat, 'Dispositor'") < src.indexOf("fact(seat, 'Rules'") &&
     src.indexOf("fact(seat, 'Rules'") < src.indexOf("fact(inNak, 'Nakshatra lord'") &&
-    src.indexOf("fact(inNak, 'Sub lord'") < src.indexOf("fact(over, 'Aspected by'"));
+    src.indexOf("fact(inNak, 'Sub lord'") < src.indexOf("fact(over, 'Aspected by'") &&
+    src.indexOf("fact(over, 'Aspected by'") < src.indexOf("'graha-card-conditions'"));
   /*
    * Retrograde, combust and yogakaraka are not on the conditions line. The
    * list below gives each with how rare it is, which is more than the line can
    * say, and saying it twice cost the card a line for nothing.
    */
-  ok('and the conditions line does not repeat what the list already carries',
-    !/conditions\.push\(STATE_NAMES/.test(src) &&
-    /if \(\/\^\(Exalted\|Debilitated\|Mooltrikona\)\$\/i\.test\(dignity\)\) conditions\.push\(dignity\)/
-      .test(src) &&
-    /if \(t\.getAttribute\('data-directional'\) === 'true'\) conditions\.push\('Directional strength'\)/
-      .test(src));
+/*
+ * The states are on that line and nowhere else, so nothing on the card is
+ * said twice. It is ruled off above and below by the same line the findings
+ * draw between themselves: the placement is one thing, how the graha stands
+ * another, the combinations a third.
+ */
+  ok('and the conditions line carries the states, ruled off from both sides',
+    /if \(t\.getAttribute\('data-directional'\) === 'true'\) \{/.test(src) &&
+    /\.graha-card-conditions \{[^}]*border-top: 1px solid var\(--line-soft\)/
+      .test(css.replace(/\n/g, '')) &&
+    /\.graha-card-list \{[^}]*border-top: 1px solid var\(--line-soft\)/
+      .test(css.replace(/\n/g, '')));
   /*
    * And the karaka takes neither the name's weight nor the graha's colour: it
    * is a role the graha holds, not part of what it is called.
@@ -8266,10 +8286,10 @@ console.log('\nThe card says how the graha stands in its sign');
       return any > 0 && wrong.length === 0;
     })());
 
-  ok('special dignity joins the plain-English condition line',
+  ok('special dignity closes the plain-English condition line',
     /var dignity = t\.getAttribute\('data-dignity'\)/.test(src) &&
     /\^\(Exalted\|Debilitated\|Mooltrikona\)\$/.test(src) &&
-    /conditions\.push\(dignity\)/.test(src) &&
+    /conditions\.appendChild\(el\('span', 'graha-card-item', dignity\)\)/.test(src) &&
     !/graha-card-dignity/.test(src + css));
   /*
    * And is divided from the findings by the same line the findings use between

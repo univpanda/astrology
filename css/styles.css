@@ -829,7 +829,18 @@ input::placeholder { color: #a9bdb2; }
   font-size: 0.78rem;
   color: var(--ink-soft);
 }
-.graha-card-conditions { color: var(--green-deep); font-weight: 600; }
+/*
+ * Ruled off above and below: the placement is one thing, how the graha stands
+ * is another, and the yogas a third. The same rule the list draws between one
+ * finding and the next, so the card reads as one set of divisions.
+ */
+.graha-card-conditions {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--line-soft);
+  color: var(--green-deep);
+  font-weight: 600;
+}
 .graha-card-lords { font-size: 0.8rem; color: var(--ink); }
 /* A dot between items, and never before the first or after the last. */
 .graha-card-item + .graha-card-item::before {

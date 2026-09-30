@@ -1563,20 +1563,6 @@
       card.appendChild(head);
 
       /*
-       * What is remarkable about this graha, and only that. Retrograde,
-       * combust and yogakaraka are deliberately not here: the list below gives
-       * each of them with how rare it is, which is more than this line can
-       * say, and saying it twice was costing the card a line for nothing.
-       */
-      var conditions = [];
-      var dignity = t.getAttribute('data-dignity');
-      if (/^(Exalted|Debilitated|Mooltrikona)$/i.test(dignity)) conditions.push(dignity);
-      if (t.getAttribute('data-directional') === 'true') conditions.push('Directional strength');
-      if (conditions.length) {
-        card.appendChild(el('p', 'graha-card-conditions', conditions.join(' \u00b7 ')));
-      }
-
-      /*
        * The whole zodiacal position on one line: the sign, how far into it,
        * and the nakshatra and pada that degree falls in. Three ways of saying
        * one thing, which is where it stands in the 360 degrees.
@@ -1613,6 +1599,44 @@
       var over = el('p', 'graha-card-lords');
       fact(over, 'Aspected by', t.getAttribute('data-seen-by'));
       if (over.children.length) card.appendChild(over);
+
+      /*
+       * How this graha stands, on one line and ruled off from the placement
+       * above and the yogas below.
+       *
+       * These are conditions the graha is in rather than combinations it takes
+       * part in, so they read as a set and not as a list: six words about one
+       * graha against eight findings about the chart. They were in the list
+       * below until now, a line and a rule apiece, which put Retrograde among
+       * the yogas as though being retrograde were a combination.
+       *
+       * Each keeps its rarity and its reason on the title, where they cost no
+       * height, as the yogas do.
+       */
+      var conditions = el('p', 'graha-card-conditions');
+      split(t.getAttribute('data-states')).forEach(function (item) {
+        var chance = chanceOf('state', at + '/' + item.term);
+        var one = el('span', 'graha-card-item', STATE_NAMES[item.term]);
+        one.title = [item.why, chance === undefined ? '' : 'In ' +
+          (chance >= 10 ? Math.round(chance) : chance) + '% of charts.']
+          .filter(Boolean).join(' ');
+        conditions.appendChild(one);
+      });
+      if (t.getAttribute('data-directional') === 'true') {
+        var dig = el('span', 'graha-card-item', 'Directional strength');
+        dig.title = 'In the house this graha is strongest facing.';
+        conditions.appendChild(dig);
+      }
+      /*
+       * Dignity closes the line. Own sign is deliberately not here: the
+       * dispositor above already names the graha as its own, and a word
+       * repeating that is a word spent twice.
+       */
+      var dignity = t.getAttribute('data-dignity');
+      if (/^(Exalted|Debilitated|Mooltrikona)$/i.test(dignity)) {
+        conditions.appendChild(el('span', 'graha-card-item', dignity));
+      }
+      if (conditions.children.length) card.appendChild(conditions);
       /*
        * Every item is a statement with its reason beneath it: the state or the
        * yoga on one line, why it holds in this chart on the next. A name alone
@@ -1620,25 +1644,6 @@
        */
       var list = el('ul', 'graha-card-list');
       var found = [];
-
-      split(t.getAttribute('data-states')).forEach(function (item) {
-        var key = t.getAttribute('data-graha') + '/' + item.term;
-        found.push({ chance: chanceOf('state', key), build: function () {
-          var li = el('li', 'graha-card-state');
-          var head = el('p', 'graha-card-term');
-          var label = el('span', 'graha-card-label');
-          label.appendChild(el('span', 'flag flag-' + item.term.toLowerCase(),
-            '[' + item.term + ']'));
-          label.appendChild(document.createTextNode(' ' + STATE_NAMES[item.term]));
-          head.appendChild(label);
-          rarity(head, 'state', key);
-          li.appendChild(head);
-          // The reason, kept where it costs no height. The Yogas tab carries
-          // it in full, with the conditions behind it.
-          if (item.why) li.title = item.why;
-          return li;
-        } });
-      });
 
       split(t.getAttribute('data-yogas')).forEach(function (item) {
         /*
