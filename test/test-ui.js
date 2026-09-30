@@ -8220,6 +8220,11 @@ console.log('\nThe card says how the graha stands in its sign');
  */
   ok('and the conditions line carries the states, ruled off from both sides',
     /if \(t\.getAttribute\('data-directional'\) === 'true'\) \{/.test(src) &&
+    // Ruled off, and set like every other line: no weight, no colour of its own.
+    /\.graha-card-conditions \{[^}]*border-top: 1px solid var\(--line-soft\);\s*\}/
+      .test(css.replace(/\n/g, '')) &&
+    /\.graha-card-conditions,\s*\.graha-card-lords \{ font-size: 0\.8rem; color: var\(--ink\); \}/
+      .test(css) &&
     /\.graha-card-conditions \{[^}]*border-top: 1px solid var\(--line-soft\)/
       .test(css.replace(/\n/g, '')) &&
     /\.graha-card-list \{[^}]*border-top: 1px solid var\(--line-soft\)/

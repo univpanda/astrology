@@ -834,13 +834,18 @@ input::placeholder { color: #a9bdb2; }
  * is another, and the yogas a third. The same rule the list draws between one
  * finding and the next, so the card reads as one set of divisions.
  */
+/*
+ * Ruled off and nothing else. These are facts about the graha like the ones
+ * above them, so they are set like them: the rule says where the placement
+ * ends, and weight or colour on top of it would claim the line is a different
+ * kind of thing to read.
+ */
 .graha-card-conditions {
   margin-top: 0.5rem;
   padding-top: 0.5rem;
   border-top: 1px solid var(--line-soft);
-  color: var(--green-deep);
-  font-weight: 600;
 }
+.graha-card-conditions,
 .graha-card-lords { font-size: 0.8rem; color: var(--ink); }
 /* A dot between items, and never before the first or after the last. */
 .graha-card-item + .graha-card-item::before {
