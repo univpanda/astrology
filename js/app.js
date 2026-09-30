@@ -1242,32 +1242,29 @@
    * a chart that was not on screen.
    */
   function yogasByGraha(state, division, reference) {
-    var chart = rotatedOnto(division === 1 ? state.chart
-      : Astro.chartInDivision(state.chart, division), reference);
+    var base = division === 1 ? state.chart : Astro.chartInDivision(state.chart, division);
     var map = {};
-    Yogas.detect(chart, strengthsFor(state)).forEach(function (yoga) {
-      (yoga.grahas || []).forEach(function (name) {
-        var list = map[name] || (map[name] = []);
-        // The title alone says a yoga is present; the summary says why it is.
-        if (!list.some(function (y) { return y.title === yoga.title; })) {
-          /*
-           * subject and condition are the pair astro_readings is keyed by, so
-           * the card can ask the library for this yoga's own passage - and for
-           * the right one of them, which matters where a family has several.
-           * Pancha Mahapurusha has five, and only the graha that made it is to
-           * the point.
-           */
-          list.push({ title: yoga.title, summary: yoga.summary || '',
-            subject: yoga.subject || '', condition: yoga.condition || '',
-            /*
-             * Whose it is, carried so the card can say when it is not this
-             * graha's. A graha stays listed for every yoga it takes part in -
-             * the Sun does mark where Vesi is counted from and a reader wants
-             * to see that - but the card now says the combination is Mercury's,
-             * which is the whole of the complaint this answers.
-             */
-            graha: yoga.graha || '' });
-        }
+    /* Read from the chosen first house and both luminaries. Coincident anchors
+       are one house frame, so the first name wins and is detected only once. */
+    var seenSigns = {};
+    [reference || 'Ascendant', 'Moon', 'Sun'].forEach(function (from) {
+      var anchor = from === 'Ascendant' ? base.ascendant
+        : base.planets.filter(function (p) { return p.name === from; })[0];
+      if (!anchor) return;
+      var sign = Astro.signOf(anchor.longitude);
+      if (seenSigns[sign]) return;
+      seenSigns[sign] = true;
+      var chart = rotatedOnto(base, from);
+      Yogas.detect(chart, strengthsFor(state)).forEach(function (yoga) {
+        (yoga.grahas || []).forEach(function (name) {
+          var list = map[name] || (map[name] = []);
+          if (!list.some(function (y) { return y.title === yoga.title && y.from === from; })) {
+            /* The library key and the reference frame travel with the finding. */
+            list.push({ title: yoga.title, summary: yoga.summary || '',
+              subject: yoga.subject || '', condition: yoga.condition || '',
+              graha: yoga.graha || '', from: from });
+          }
+        });
       });
     });
     return map;
@@ -1480,7 +1477,7 @@
         var bits = r.split(FLD);
         return { term: bits[0], why: bits[1] || '',
                  subject: bits[2] || '', condition: bits[3] || '',
-                 graha: bits[4] || '' };
+                 graha: bits[4] || '', from: bits[5] || '' };
       });
     };
 
@@ -1701,18 +1698,10 @@
           var li = el('li', 'graha-card-yoga');
           var head = el('p', 'graha-card-term');
           head.appendChild(el('span', 'graha-card-label', item.term));
-          /*
-           * Whose combination this is, said out loud when it is not the graha
-           * being pointed at. Shubha Vesi is Mercury standing in the sign after
-           * the Sun: the Sun marks where to count from and did nothing, and a
-           * card that listed it under the Sun with no more said read as though
-           * the Sun had. The graha stays listed, because taking part is worth
-           * knowing; it is the silence about whose it was that misled.
-           */
-          var whose = t.getAttribute('data-graha');
-          if (item.graha && item.graha !== whose) {
-            head.appendChild(el('span', 'graha-card-whose', item.graha + '\u2019s'));
-          }
+          var from = item.from === 'Ascendant' ? 'from the ascendant'
+            : item.from ? 'from ' + (item.from === 'Moon' || item.from === 'Sun'
+              ? 'the ' : '') + item.from : '';
+          if (from) head.appendChild(el('span', 'graha-card-whose', from));
           rarity(head, kind, key);
           li.appendChild(head);
           var means = meaningOf(item);

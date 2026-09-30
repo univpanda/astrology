@@ -291,9 +291,12 @@ console.log('\nWhat a chart slot recomputes when it is rotated');
   var src = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
   ok('the slot hands its rotation to the yogas, not just its division',
      /yogas: yogasByGraha\(state, set\.division, set\.reference\)/.test(src));
-  ok('and yogasByGraha rotates the chart before detecting',
+  ok('and yogasByGraha detects from the chosen reference, Moon and Sun',
      /function yogasByGraha\(state, division, reference\)/.test(src) &&
-     /rotatedOnto\(division === 1 \? state\.chart/.test(src));
+     /\[reference \|\| 'Ascendant', 'Moon', 'Sun'\]/.test(src) &&
+     /rotatedOnto\(base, from\)/.test(src));
+  ok('coincident reference houses are detected only once',
+     /var seenSigns = \{\}/.test(src) && /if \(seenSigns\[sign\]\) return/.test(src));
   /*
    * Dignity, friendship and hemming are facts about a graha and its neighbours,
    * not about where the houses are counted from, so they take the division only.
@@ -3722,6 +3725,7 @@ ok('every script the page loads parses', (function () {
     '  __out.renderShadbala = renderShadbala; __out.renderYogas = renderYogas;\n' +
     '  __out.renderAspects = renderAspects;\n' +
     '  __out.rotatedOnto = rotatedOnto;\n' +
+    '  __out.yogasByGraha = yogasByGraha;\n' +
     '  __out.rulingAndAspects = rulingAndAspects;\n' +
     '  __out.renderSaved = renderSaved; __out.setFlag = setFlag; __out.removeSaved = removeSaved;\n' +
     '  __out.saveCurrent = saveCurrent; __out.setLastChart = function (v) { lastChart = v; };\n' +
@@ -3980,19 +3984,20 @@ ok('every script the page loads parses', (function () {
   var chartsSrc = fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8');
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
   var src = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
-  ok('the card carries whose yoga it is, through the renderer and out the other end',
-    /y\.graha \|\| ''\]\.join\(FLD\)/.test(chartsSrc) &&
-    /graha: bits\[4\] \|\| ''/.test(src) &&
-    /item\.graha && item\.graha !== whose/.test(src) &&
+  ok('the card carries the yoga’s reference through the renderer',
+    /y\.graha \|\| '', y\.from \|\| ''\]\.join\(FLD\)/.test(chartsSrc) &&
+    /from: bits\[5\] \|\| ''/.test(src) &&
+    /item\.from === 'Ascendant' \? 'from the ascendant'/.test(src) &&
     /graha-card-whose/.test(src) && /\.graha-card-whose \{/.test(css));
-  ok('and the map it reads from carries the owner in the first place',
-    /graha: yoga\.graha \|\| ''/.test(src));
+  ok('and the map keeps separate results from distinct reference houses',
+    /y\.title === yoga\.title && y\.from === from/.test(src) &&
+    /graha: yoga\.graha \|\| '', from: from/.test(src));
   /*
    * And spoken, not only shown. A label that read the titles out flat would
    * leave a listener with exactly the fault the card had just lost.
    */
-  ok('the graha’s accessible label says whose each yoga is too',
-    /y\.graha && y\.graha !== p\.name \? ', ' \+ y\.graha/.test(chartsSrc));
+  ok('the graha’s accessible label says where each yoga is read from too',
+    /y\.from === 'Ascendant' \? 'the ascendant'/.test(chartsSrc));
   /*
    * The stacked cards are gone, and their rules went with them rather than
    * sitting in the sheet unreferenced. A selector nothing produces is a claim
@@ -8347,6 +8352,27 @@ console.log('\nThe card says how the graha stands in its sign');
     /nakLordRelation: relationBetween\(p, nakOf\(p\)\.lord, d1\)/.test(src) &&
     /subLordRelation: relationBetween\(p, nakOf\(p\)\.subLord, d1\)/.test(src) &&
     /data-nak-lord-relation/.test(chartsSrc) && /data-sub-lord-relation/.test(chartsSrc));
+
+  ok('Moon is not repeated when it occupies the selected reference house',
+    (function () {
+      var original = Yogas.detect, calls = [];
+      Yogas.detect = function (chart) {
+        calls.push(chart.reference);
+        return [{ title: 'Test yoga', subject: 'Test', condition: 'general',
+          grahas: ['Mars'] }];
+      };
+      var fake = { ascendant: { longitude: 5 }, planets: [
+        { name: 'Moon', longitude: 41, sign: 1 },
+        { name: 'Sun', longitude: 75, sign: 2 },
+        { name: 'Venus', longitude: 48, sign: 1 },
+        { name: 'Mars', longitude: 105, sign: 3 }
+      ] };
+      var map;
+      try { map = out.yogasByGraha({ chart: fake, shadbala: {} }, 1, 'Venus'); }
+      finally { Yogas.detect = original; }
+      return calls.join(',') === 'Venus,Sun' && map.Mars.length === 2 &&
+        map.Mars.map(function (y) { return y.from; }).join(',') === 'Venus,Sun';
+    })());
 
   /*
    * And the figures are real. Driven through the same function the page calls,

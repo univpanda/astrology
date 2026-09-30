@@ -2042,11 +2042,7 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
 }
 .yoga-table .yoga-houses { display: block; margin-top: 0.2rem; }
 
-/*
- * On a graha's card, whose yoga a finding really is when it is not that graha's.
- * Set apart from the name rather than run into it: the two are different facts
- * and the card had been printing only one of them.
- */
+/* The house frame a yoga was detected from, between its name and frequency. */
 .graha-card-whose {
   margin-left: 0.4rem;
   font-size: 0.78rem;
