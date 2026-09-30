@@ -1063,7 +1063,16 @@ var Yogas = (function () {
       condition: 'general',
       title: name,
       family: 'The Moon’s company',
-      graha: 'Moon',
+      /*
+       * The mirror of the Sun's company, and it had the same fault. Grahas in
+       * the 2nd or the 12th from the Moon make Sunapha, Anapha and Durudhura;
+       * the Moon marks where to count from and does nothing herself, so naming
+       * her put these on her card as though she had. Kemadruma is the one that
+       * really is hers, being the Moon with nobody beside her at all: there is
+       * no companion to name, and the absence is the yoga.
+       */
+      graha: kind === 'kemadruma' ? 'Moon'
+        : (second.concat(twelfth).length === 1 ? second.concat(twelfth)[0] : null),
       grahas: ['Moon'].concat(second, twelfth),
       houses: [],
       reasons: reasons,
@@ -1136,7 +1145,13 @@ var Yogas = (function () {
       condition: 'general',
       title: 'Adhi yoga',
       family: null,
-      graha: 'Moon',
+      /*
+       * Benefics in the 6th, 7th and 8th from the Moon. She is the origin those
+       * three houses are counted from, not a participant, so naming her was the
+       * same mistake as naming the Sun for Vesi. The rule needs all three held,
+       * so it is theirs together and the dash says so.
+       */
+      graha: all.length === 1 ? all[0] : null,
       grahas: ['Moon'].concat(all),
       houses: [6, 7, 8],
       reasons: [
@@ -1229,8 +1244,13 @@ var Yogas = (function () {
       condition: 'general',
       title: 'Amala yoga',
       family: null,
-      /* The benefic standing in the 10th is the one doing it. */
-      graha: all[0] || null,
+      /*
+       * The benefic standing in the 10th is the one doing it, but only when
+       * there is one. Taking the first of several was arbitrary: with Jupiter
+       * and Mercury both there the column named whichever the list happened to
+       * hold first, which is a guess wearing the clothes of an answer.
+       */
+      graha: all.length === 1 ? all[0] : null,
       grahas: all,
       houses: [10],
       reasons: [
@@ -2857,7 +2877,10 @@ var Yogas = (function () {
                  ? ', while ' + listOf(others) + ' holds ' + firstHouse(chart, 'the ascendant') + ' strongly'
                  : ', and is strong in ' + firstHouse(chart, 'the ascendant') + ' himself')) +
            '. That is Pushkala yoga.';
-       })(), [dispositor, lagnaLord].concat(tenants), [1]);
+       })(), [dispositor, lagnaLord].concat(tenants), [1],
+       /* Every clause of the rule is about the Moon's dispositor: who he
+          stands with, where he sits, what he aspects. It is his. */
+       dispositor);
   }
 
   /*
@@ -3215,7 +3238,9 @@ var Yogas = (function () {
        (made.amsaLord === lagnaLord ? ', and rules ' + firstHouse(chart, 'the ascendant') + ' strongly'
          : ', with ' + named(lagnaLord) + ' strong') +
        '. That is Mridanga yoga.',
-       [made.exalted, made.amsaLord, lagnaLord], [made.house]);
+       [made.exalted, made.amsaLord, lagnaLord], [made.house],
+       /* The navamsa lord is the graha the rule places and judges. */
+       made.amsaLord);
   }
 
   var DETECTORS = [parivartana, neechaBhanga, vipareeta, lakshmi, mahapurusha, rajaYoga,

@@ -7123,6 +7123,66 @@ console.log('\nWhose yoga it is, as against who takes part in it');
     Object.keys(byName).filter(function (t) {
       return ['Pasa yoga', 'Kedara yoga', 'Dama yoga', 'Sula yoga'].indexOf(t) >= 0;
     }).every(function (t) { return byName[t] === null; }));
+
+  /*
+   * The Moon's company had the same fault as the Sun's and kept it through the
+   * first pass: grahas in the 2nd or 12th from her make Sunapha and Anapha, and
+   * she was named for both. The two families have to behave alike now, and the
+   * three cases below are the whole of the rule.
+   */
+  var mirrored = {};
+  for (var y2 = 1950; y2 < 2005; y2 += 2) {
+    for (var m2 = 1; m2 <= 12; m2 += 2) {
+      for (var h2 = 2; h2 < 24; h2 += 7) {
+        var c2 = A.chart({ jdUT: A.julianDay(y2, m2, 15, h2), latitude: 28.61,
+          longitude: 77.21, tzOffsetMinutes: 330 });
+        Yogas.detect(c2, Shadbala.compute(c2, place)).forEach(function (f) {
+          var box = mirrored[f.title] || (mirrored[f.title] = { one: 0, many: 0 });
+          /*
+           * The companions are everyone taking part but the graha counted from,
+           * which is the first in the list for both families.
+           */
+          var company = f.grahas.slice(1);
+          if (company.length === 1 && f.graha === company[0]) box.one++;
+          else if (company.length > 1 && f.graha === null) box.many++;
+          else box.bad = (box.bad || 0) + 1;
+        });
+      }
+    }
+  }
+  var FAMILIES = ['Sunapha yoga', 'Anapha yoga', 'Shubha Vesi yoga',
+    'Papa Vesi yoga', 'Shubha Vasi yoga', 'Papa Vasi yoga'];
+  var wrong = FAMILIES.filter(function (t) {
+    return mirrored[t] && mirrored[t].bad;
+  });
+  ok('the Sun’s company and the Moon’s resolve by the same rule, one or none',
+    wrong.length === 0 && FAMILIES.every(function (t) {
+      return mirrored[t] && mirrored[t].one > 0 && mirrored[t].many > 0;
+    }),
+    FAMILIES.map(function (t) {
+      var b = mirrored[t] || {};
+      return t.replace(' yoga', '') + ' ' + (b.one || 0) + '/' + (b.many || 0) +
+        (b.bad ? ' BAD ' + b.bad : '');
+    }).join(', '));
+
+  /*
+   * Kemadruma is the exception inside that family and has to stay one. It is
+   * the Moon with nobody beside her: there is no companion to name, and the
+   * absence is the yoga, so it really is hers.
+   */
+  ok('but Kemadruma is the Moon’s own, the absence of company being the yoga',
+    byName['Kemadruma yoga'] === 'Moon');
+
+  /*
+   * And the three that can never resolve, because each needs more than one
+   * graha by definition: Durudhura wants both sides of the Moon, Ubhayachari
+   * both sides of the Sun, Adhi all three of the 6th, 7th and 8th from her.
+   */
+  ['Durudhura yoga', 'Shubha Ubhayachari yoga', 'Adhi yoga'].forEach(function (t) {
+    if (!(t in byName)) return;
+    ok('and ' + t.replace(' yoga', '') + ' resolves to nobody, needing more than one',
+      byName[t] === null, String(byName[t]));
+  });
 })();
 
 
