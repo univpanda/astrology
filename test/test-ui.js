@@ -300,7 +300,7 @@ console.log('\nWhat a chart slot recomputes when it is rotated');
    * Stated as a test so a later change does not rotate them by symmetry.
    */
   ok('dignity and hemming stay out of it, being rotation-independent',
-     /dignities: dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\), horaSetting\(\)\)/.test(src) &&
+     /dignities: dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src) &&
      /hemming: hemmingByGraha\(state, set\.division\)/.test(src));
   ok('the Yogas tab is unaffected, reading the whole chart from the ascendant',
      /function renderYogas\(state\)/.test(src) &&
@@ -324,9 +324,9 @@ console.log('\nThe tatkalika setting, end to end');
    * page would show one reading and score another.
    */
   ok('the vimsopaka grid takes it',
-     /Astro\.vargaDignity\(planet\.name, planet\.longitude, division, positionsD1,\s*\n\s*tatkalikaSetting\(\), horaSetting\(\)\)/.test(src));
-  ok('the chart card takes it', /dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\), horaSetting\(\)\)/.test(src));
-  ok('the varga summary takes it', /vargaSummary\(state, scheme, tatkalikaSetting\(\), horaSetting\(\)\)/.test(src));
+     /Astro\.vargaDignity\(planet\.name, planet\.longitude, division, positionsD1,\s*\n\s*tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src));
+  ok('the chart card takes it', /dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src));
+  ok('the varga summary takes it', /vargaSummary\(state, scheme, tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src));
   // Including the figure at the foot of the grid, which is scored over the
   // same cells and would otherwise be a total of a column nobody is looking at.
   ok('and so does the vimsopaka total beneath the cells',
@@ -345,13 +345,26 @@ console.log('\nThe tatkalika setting, end to end');
   ok('and it is read in one place, like the other',
      /function horaSetting\(\) \{\s*\n\s*return document\.getElementById\('hora-dignity'\)\.value;/.test(src));
   ok('the grid, the card, the summary and the total all take it',
-     /positionsD1,\s*\n\s*tatkalikaSetting\(\), horaSetting\(\)\)/.test(src) &&
-     /dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\), horaSetting\(\)\)/.test(src) &&
-     /vargaSummary\(state, scheme, tatkalikaSetting\(\), horaSetting\(\)\)/.test(src));
+     /positionsD1,\s*\n\s*tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src) &&
+     /dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src) &&
+     /vargaSummary\(state, scheme, tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src));
   // Shadbala takes it too, so saptavargaja grades its hora the way the grid does.
   ok('and shadbala takes the hora reading as well as the tatkalika one',
-     /tatkalika: tatkalikaSetting\(\),\s*\n\s*horaDignity: horaSetting\(\)/.test(src));
+     /tatkalika: tatkalikaSetting\(\),\s*\n\s*horaDignity: horaSetting\(\),\s*\n\s*horaMercury: horaMercurySetting\(\)/.test(src));
   ok('changing the hora reading redraws too', /\['hora-dignity', \{ effects:/.test(src));
+  /* Mercury's own clause is a setting of its own, in the test tab. */
+  ok('Mercury in the hora is offered too, defaulting to the fitted reading',
+     /<select id="hora-mercury"/.test(page) &&
+     /<option value="solar" selected>/.test(page.slice(page.indexOf('id="hora-mercury"'))) &&
+     (page.slice(page.indexOf('id="hora-mercury"'),
+       page.indexOf('</select>', page.indexOf('id="hora-mercury"'))).match(/<option /g) || [])
+       .length === 3);
+  ok('and it says plainly that no text asks for that default',
+     /No classical text asks for it/.test(page.slice(page.indexOf('id="why-hora-mercury"'),
+       page.indexOf('</div>', page.indexOf('id="why-hora-mercury"') + 400))));
+  ok('the page reads it, and hands it everywhere the hora reading goes',
+     /function horaMercurySetting\(\)/.test(src) &&
+     (src.match(/horaMercurySetting\(\)/g) || []).length >= 6);
   ok('changing it drops the cached strengths and redraws',
      /\['tatkalika', \{ varga:/.test(src) &&
      src.indexOf("['tatkalika', { varga:") < src.indexOf('lastChart.shadbala = null;',
@@ -3939,7 +3952,7 @@ ok('Rashi is priced differently in every one of the four', (function () {
 ok('the total is one cell under its graha\'s column',
    !/rowspan/.test(appSrc.slice(appSrc.indexOf('function renderVargas(state)'),
                                 appSrc.indexOf('function vargaSummary'))) &&
-   /Astro\.vimsopaka\(planet\.name, planet\.longitude, scheme, positionsD1,\s*\n\s*tatkalikaSetting\(\), horaSetting\(\)\)/.test(appSrc));
+   /Astro\.vimsopaka\(planet\.name, planet\.longitude, scheme, positionsD1,\s*\n\s*tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(appSrc));
 /*
  * The total sits second, beside the name, not last. Sixteen columns scroll, so
  * last put the one number the grid is adding up off the right-hand edge: the
@@ -4210,7 +4223,7 @@ ok('and the sixteen are derived from VARGAS rather than retyped beside it', (fun
 ok('grahas keep the order of the tables beside it',
    /var planets = state\.chart\.planets\.filter\(function \(p\) \{/.test(appSrc));
 ok('a graha with no reading anywhere is dropped, not shown as a column of dashes',
-   /return Astro\.vargaDignity\(p\.name, p\.longitude, 1, positionsD1, tatkalikaSetting\(\),\s*\n\s*horaSetting\(\)\);/.test(appSrc) &&
+   /return Astro\.vargaDignity\(p\.name, p\.longitude, 1, positionsD1, tatkalikaSetting\(\),\s*\n\s*horaSetting\(\), horaMercurySetting\(\)\);/.test(appSrc) &&
    /\/\/ Rahu and Ketu keep no friendships, so they have no column to head\./
      .test(appSrc));
 /*
@@ -4506,7 +4519,7 @@ ok('and its name is a row header',
 ok('both lines read one and the same varga position', (function () {
   var at = appSrc.indexOf('function renderVargas(state)');
   var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
-  return /var d = Astro\.vargaDignity\(planet\.name, planet\.longitude, division, positionsD1,\s*\n\s*tatkalikaSetting\(\), horaSetting\(\)\);/
+  return /var d = Astro\.vargaDignity\(planet\.name, planet\.longitude, division, positionsD1,\s*\n\s*tatkalikaSetting\(\), horaSetting\(\), horaMercurySetting\(\)\);/
     .test(block) && (block.match(/Astro\.vargaDignity\(planet\.name/g) || []).length === 1;
 })());
 
@@ -7120,8 +7133,8 @@ console.log('\nThe card says how the graha stands in its sign');
   var out = global.appExports || {};
 
   ok('the map is built and handed to the renderer with the yogas',
-    /function dignitiesByGraha\(state, division, tatkalika, horaRule\)/.test(src) &&
-    /dignities: dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\), horaSetting\(\)\)/.test(src));
+    /function dignitiesByGraha\(state, division, tatkalika, horaRule, horaMercury\)/.test(src) &&
+    /dignities: dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src));
   ok('and the renderer carries it onto the graha',
     /ctx\.division, ctx\.dignities, ctx\.hemming, ctx\.ruling\)/.test(chartsSrc) &&
     /t\.setAttribute\('data-dignity', d\.dignity\)/.test(chartsSrc));
@@ -7213,9 +7226,9 @@ console.log('\nThe card says how the graha stands in its sign');
    * Run the real thing rather than trust the source. Pull the builder out of
    * app.js and check both halves answer on a chart that has each case.
    */
-  var body = src.match(/function dignitiesByGraha\(state, division, tatkalika, horaRule\) \{[\s\S]*?\n  \}/)[0];
+  var body = src.match(/function dignitiesByGraha\(state, division, tatkalika, horaRule, horaMercury\) \{[\s\S]*?\n  \}/)[0];
   ok('the card reads the same varga dignity as the grid',
-    /Astro\.vargaDignity\(p\.name, p\.longitude, division, d1, tatkalika, horaRule\)/.test(body));
+    /Astro\.vargaDignity\(p\.name, p\.longitude, division, d1, tatkalika, horaRule,\s*\n\s*horaMercury\)/.test(body));
   var withArticle = function (label) {
     if (label === 'neutral') return 'neutral';
     return (label.charAt(0) === 'e' ? 'an ' : 'a ') + label;
@@ -8213,13 +8226,13 @@ console.log('\nThe settings run from the chart outward');
     idsIn(chartPanel).join(', '));
   ok('and Test settings holds the shadbala variants, the clock with them',
     idsIn(testPanel).join(',') ===
-      'nat-clock,moon-paksha,paksha-doubled,hora-length,ayana-constant,kranti,' +
-      'ayana-doubled,cheshta-method,kendra-method,mean-source,luminary-rule,' +
+      'nat-clock,hora-mercury,moon-paksha,paksha-doubled,hora-length,ayana-constant,' +
+      'kranti,ayana-doubled,cheshta-method,kendra-method,mean-source,luminary-rule,' +
       'luminary-cheshta,ishta-kashta',
     idsIn(testPanel).length + ' settings');
   ok('between them they hold every setting, none lost in the split',
     idsIn(chartPanel).length + idsIn(testPanel).length === order.length &&
-    order.length === 20, order.length + ' settings');
+    order.length === 21, order.length + ' settings');
 
   /*
    * The two that are not shadbala at all sit in the other tab now. One settles

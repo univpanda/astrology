@@ -97,7 +97,7 @@ var Shadbala = (function () {
     sama: 7.5, shatru: 3.75, adhishatru: 1.875
   };
 
-  function saptavargajaBala(graha, chart, positionsD1, tatkalika, horaRule) {
+  function saptavargajaBala(graha, chart, positionsD1, tatkalika, horaRule, horaMercury) {
     var planet = chart.planets.filter(function (p) { return p.name === graha; })[0];
     var total = 0, detail = [];
     SAPTAVARGA.forEach(function (division) {
@@ -117,7 +117,8 @@ var Shadbala = (function () {
        * hora as Swavarga at 30, and the tests that reproduce him say so.
        */
       var horaEffect = division === 2 && horaRule !== Astro.HORA_DIGNITY.LORD
-        ? Astro.horaEffect(graha, position.sign, Astro.signOf(planet.longitude)) : null;
+        ? Astro.horaEffect(graha, position.sign, Astro.signOf(planet.longitude), horaMercury)
+        : null;
       /*
        * Moolatrikona first, and not behind ownership, because for one graha the
        * two part company. The Moon's moolatrikona is Taurus 3 to 30, and Taurus
@@ -981,6 +982,8 @@ var Shadbala = (function () {
     /* And how the hora is graded, on the same setting the grid takes. */
     var horaRule = (options && options.horaDignity) === Astro.HORA_DIGNITY.LORD
       ? Astro.HORA_DIGNITY.LORD : Astro.HORA_DIGNITY.EFFECTS;
+    /* And which reading of Mercury being effective in both horas. */
+    var horaMercury = options && options.horaMercury;
     var moonPaksha = (options && options.moonPaksha) === MOON_PAKSHA.BENEFIC
       ? MOON_PAKSHA.BENEFIC : MOON_PAKSHA.GROUP;
     var cheshtaMethod = (options && options.cheshtaMethod) === CHESHTA.MOTION
@@ -1092,7 +1095,8 @@ var Shadbala = (function () {
       var dec = Astro.declination(tropical, latitude,
         ayanaConstant.obliquity === null ? eps : ayanaConstant.obliquity);
 
-      var saptavargaja = saptavargajaBala(graha, chart, positions, tatkalika, horaRule);
+      var saptavargaja = saptavargajaBala(graha, chart, positions, tatkalika, horaRule,
+        horaMercury);
       var ojha = ojhayugmaBala(graha, p);
       var sthana = {
         uchcha: uchchaBala(graha, p.longitude),

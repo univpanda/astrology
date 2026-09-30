@@ -1298,11 +1298,13 @@ var Astro = (function () {
    * Returns null for a graha the scheme cannot judge - the nodes, which own no
    * sign and keep no friendships.
    */
-  function vimsopaka(graha, longitude, scheme, positionsD1, tatkalika, horaRule) {
+  function vimsopaka(graha, longitude, scheme, positionsD1, tatkalika, horaRule,
+                     horaMercury) {
     var total = 0, parts = [];
     for (var i = 0; i < scheme.divisions.length; i++) {
       var division = scheme.divisions[i];
-      var d = vargaDignity(graha, longitude, division, positionsD1, tatkalika, horaRule);
+      var d = vargaDignity(graha, longitude, division, positionsD1, tatkalika, horaRule,
+        horaMercury);
       if (!d || !d.relation) return null;
       var kept = VARGA_VISWA[d.relation];
       var share = scheme.weights[division] * kept / 20;
@@ -1350,6 +1352,22 @@ var Astro = (function () {
   var HORA_DIGNITY = { EFFECTS: 'effects', LORD: 'lord' };
 
   /*
+   * Three readings of "Budh is effective in both the Horas", which is the one
+   * clause of verses 13-16 that does not say what it does to the strength test.
+   *
+   *   ordinary  it means only that Mercury is never an outsider, so the test
+   *             applies to it as to the other six. The plainest reading.
+   *   both      being effective in both puts it beyond the test, so it never
+   *             takes the lesser rung.
+   *   solar     full in the Sun's hora, and the ordinary rule in the Moon's.
+   *
+   * No classical text asks for the third. It is the default because it is the
+   * only one that agrees with every worked hora row this site has been checked
+   * against, where the other two each disagree with one.
+   */
+  var HORA_MERCURY = { ORDINARY: 'ordinary', BOTH: 'both', SOLAR: 'solar' };
+
+  /*
    * Which grahas the Sun's hora favours and which the Moon's, and Mercury in
    * both. Chapter 7, verses 13-16.
    */
@@ -1379,16 +1397,22 @@ var Astro = (function () {
    * terms the chapter sets, and the ordinary reading remains available as a
    * setting for anyone reconciling against a table built the other way.
    */
-  function horaEffect(graha, horaSign, rashiSign) {
+  function horaEffect(graha, horaSign, rashiSign, mercury) {
     var group = HORA_GROUP[graha];
     if (!group) return null;                       // the nodes, as everywhere
     var horaOf = horaSign === 4 ? 'Sun' : 'Moon';  // Leo is the Sun's, Cancer the Moon's
-    if (group === 'both') return 'adhimitra';
-    if (group !== horaOf) return 'sama';
     // Aries counts as odd, so an even sign index is an odd rashi.
     var oddRashi = rashiSign % 2 === 0;
     var powerful = horaOf === 'Sun' ? oddRashi : !oddRashi;
-    return powerful ? 'adhimitra' : 'mitra';
+    var byStrength = powerful ? 'adhimitra' : 'mitra';
+    if (group === 'both') {
+      var rule = mercury || HORA_MERCURY.SOLAR;
+      if (rule === HORA_MERCURY.BOTH) return 'adhimitra';
+      if (rule === HORA_MERCURY.SOLAR && horaOf === 'Sun') return 'adhimitra';
+      return byStrength;
+    }
+    if (group !== horaOf) return 'sama';
+    return byStrength;
   }
 
   var TATKALIKA = { VARGA: 'varga', RASHI: 'rashi' };
@@ -1426,7 +1450,8 @@ var Astro = (function () {
     return ((lordSign - from) % 12 + 12) % 12 + 1;
   }
 
-  function vargaDignity(graha, longitude, division, positionsD1, tatkalika, horaRule) {
+  function vargaDignity(graha, longitude, division, positionsD1, tatkalika, horaRule,
+                        horaMercury) {
     var position = vargaPosition(longitude, division);
     if (!position) return null;
     /*
@@ -1446,7 +1471,7 @@ var Astro = (function () {
      * hora it merely gives pronounced effects in.
      */
     if (division === 2 && horaRule !== HORA_DIGNITY.LORD) {
-      var effect = horaEffect(graha, position.sign, signOf(longitude));
+      var effect = horaEffect(graha, position.sign, signOf(longitude), horaMercury);
       if (!effect) return null;
       return {
         key: effect, label: VARGA_DIGNITY_LABELS[effect], sign: position.sign,
@@ -2259,6 +2284,7 @@ var Astro = (function () {
     TATKALIKA: TATKALIKA,
     horaEffect: horaEffect,
     HORA_DIGNITY: HORA_DIGNITY,
+    HORA_MERCURY: HORA_MERCURY,
     HORA_GROUP: HORA_GROUP,
     NATURAL_FRIENDS: NATURAL_FRIENDS,
     RELATION_LABELS: RELATION_LABELS,

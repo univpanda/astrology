@@ -890,7 +890,12 @@
     return document.getElementById('hora-dignity').value;
   }
 
-  function dignitiesByGraha(state, division, tatkalika, horaRule) {
+  /** And which reading of Mercury being effective in both horas. */
+  function horaMercurySetting() {
+    return document.getElementById('hora-mercury').value;
+  }
+
+  function dignitiesByGraha(state, division, tatkalika, horaRule, horaMercury) {
     var d1 = {};
     state.chart.planets.forEach(function (p) { d1[p.name] = p; });
 
@@ -899,7 +904,8 @@
     };
     var map = {};
     state.chart.planets.forEach(function (p) {
-      var standing = Astro.vargaDignity(p.name, p.longitude, division, d1, tatkalika, horaRule);
+      var standing = Astro.vargaDignity(p.name, p.longitude, division, d1, tatkalika, horaRule,
+        horaMercury);
       if (!standing) {
         /*
          * Nodes are deliberately outside the varga-viswa scale, but the card
@@ -1515,7 +1521,8 @@
       division: set.division,
       reference: set.reference,
       yogas: yogasByGraha(state, set.division, set.reference),
-      dignities: dignitiesByGraha(state, set.division, tatkalikaSetting(), horaSetting()),
+      dignities: dignitiesByGraha(state, set.division, tatkalikaSetting(), horaSetting(),
+        horaMercurySetting()),
       hemming: hemmingByGraha(state, set.division),
       ruling: rulingAndAspects(state, set.division, set.reference),
       combustion: document.getElementById('combustion').value
@@ -2069,7 +2076,8 @@
            luminaryCheshta: document.getElementById('luminary-cheshta').value,
            ishtaKashta: document.getElementById('ishta-kashta').value,
            tatkalika: tatkalikaSetting(),
-           horaDignity: horaSetting() });
+           horaDignity: horaSetting(),
+           horaMercury: horaMercurySetting() });
     }
     return state.shadbala;
   }
@@ -2865,7 +2873,7 @@
     // Rahu and Ketu keep no friendships, so they have no column to head.
     var planets = state.chart.planets.filter(function (p) {
       return Astro.vargaDignity(p.name, p.longitude, 1, positionsD1, tatkalikaSetting(),
-        horaSetting());
+        horaSetting(), horaMercurySetting());
     });
     renderVargasHead(table, scheme, planets, sun);
 
@@ -2900,7 +2908,7 @@
 
       planets.forEach(function (planet) {
         var d = Astro.vargaDignity(planet.name, planet.longitude, division, positionsD1,
-          tatkalikaSetting(), horaSetting());
+          tatkalikaSetting(), horaSetting(), horaMercurySetting());
         var td = el('td', 'varga-cell');
         if (!d) { td.textContent = '\u2013'; tr.appendChild(td); return; }
 
@@ -2980,7 +2988,7 @@
         * way under a row read the other would be a column that does not add up.
         */
       var score = Astro.vimsopaka(planet.name, planet.longitude, scheme, positionsD1,
-        tatkalikaSetting(), horaSetting());
+        tatkalikaSetting(), horaSetting(), horaMercurySetting());
       var td = el('td', 'vimsopaka' + (score ? ' vimsopaka-' + score.band.key : ''),
         score ? score.total.toFixed(2) : '\u2013');
       if (score) {
@@ -3009,20 +3017,20 @@
    */
   var GOOD_KEYS = ['exalted', 'moolatrikona', 'own', 'adhimitra', 'mitra'];
 
-  function vargaSummary(state, scheme, tatkalika, horaRule) {
+  function vargaSummary(state, scheme, tatkalika, horaRule, horaMercury) {
     var positionsD1 = {};
     state.chart.planets.forEach(function (p) { positionsD1[p.name] = p; });
 
     return state.chart.planets.map(function (planet) {
       var score = Astro.vimsopaka(planet.name, planet.longitude, scheme, positionsD1,
-        tatkalika, horaRule);
+        tatkalika, horaRule, horaMercury);
       if (!score) return null;                     // the nodes keep no friendships
       var rashi = Astro.signOf(planet.longitude);
       var benefics = Astro.naturalBenefics(state.chart);
       var good = 0, marks = { V: 0, X: 0, S: 0, P: 0, D: 0, N: 0 };
       scheme.divisions.forEach(function (division) {
         var d = Astro.vargaDignity(planet.name, planet.longitude, division, positionsD1,
-          tatkalika, horaRule);
+          tatkalika, horaRule, horaMercury);
         if (!d) return;
         if (GOOD_KEYS.indexOf(d.key) >= 0) good++;
         var chart = Astro.chartInDivision(state.chart, division);
@@ -3247,7 +3255,8 @@
   function renderVargaCharts(state, scheme) {
     var host = document.getElementById('vargas-charts');
     host.innerHTML = '';
-    var rows = vargaSummary(state, scheme, tatkalikaSetting(), horaSetting());
+    var rows = vargaSummary(state, scheme, tatkalikaSetting(), horaSetting(),
+      horaMercurySetting());
     if (!rows.length) return;
 
     /*
@@ -4442,7 +4451,10 @@
    ['tatkalika', { varga: 'Tatkalika is now counted in the division being read.',
                    rashi: 'Tatkalika is now counted in the rashi and carried into every division.' }],
    ['hora-dignity', { effects: 'The hora now reads by the grahas it favours, as chapter 7 has it.',
-                      lord: 'The hora now reads by the lord of its sign, as the other divisions do.' }]
+                      lord: 'The hora now reads by the lord of its sign, as the other divisions do.' }],
+   ['hora-mercury', { solar: 'Mercury is full in the Sun\u2019s hora and read by strength in the Moon\u2019s.',
+                      ordinary: 'Mercury now loses a rung in the weaker hora, as the other six do.',
+                      both: 'Mercury is now full in either hora.' }]
   ].forEach(function (pair) {
     document.getElementById(pair[0]).addEventListener('change', function () {
       var status = statusFor(this);

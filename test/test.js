@@ -8054,10 +8054,73 @@ console.log('\nThe hora read as chapter 7 reads it');
      A.horaEffect('Mars', 4, 1) === 'mitra' &&       // Sun's hora from an even one
      A.horaEffect('Venus', 3, 1) === 'adhimitra' &&  // Moon's hora from an even rashi
      A.horaEffect('Venus', 3, 0) === 'mitra');
-  ok('Mercury is effective in both horas, so it never drops',
+  /*
+   * "Budh is effective in both the Horas" is the one clause that does not say
+   * what it does to the strength test, so it is a setting rather than a
+   * decision. Each reading is held to what it claims.
+   */
+  ok('read as the others are, Mercury drops in the weaker hora',
+     A.horaEffect('Mercury', 4, 0, 'ordinary') === 'adhimitra' &&
+     A.horaEffect('Mercury', 4, 1, 'ordinary') === 'mitra' &&
+     A.horaEffect('Mercury', 3, 1, 'ordinary') === 'adhimitra' &&
+     A.horaEffect('Mercury', 3, 0, 'ordinary') === 'mitra');
+  ok('read as beyond the test, it never drops in either',
      [0, 1].every(function (r) {
-       return [3, 4].every(function (h) { return A.horaEffect('Mercury', h, r) === 'adhimitra'; });
+       return [3, 4].every(function (h) {
+         return A.horaEffect('Mercury', h, r, 'both') === 'adhimitra';
+       });
      }));
+  ok('and by default it is full in the Sun\u2019s hora and read by strength in the Moon\u2019s',
+     A.horaEffect('Mercury', 4, 0, 'solar') === 'adhimitra' &&
+     A.horaEffect('Mercury', 4, 1, 'solar') === 'adhimitra' &&   // the Sun's, either way
+     A.horaEffect('Mercury', 3, 1, 'solar') === 'adhimitra' &&
+     A.horaEffect('Mercury', 3, 0, 'solar') === 'mitra');        // the Moon's, weaker half
+  ok('which is what an unnamed reading gives',
+     [0, 1].every(function (r) {
+       return [3, 4].every(function (h) {
+         return A.horaEffect('Mercury', h, r) === A.horaEffect('Mercury', h, r, 'solar');
+       });
+     }));
+  /*
+   * The setting can only ever move Mercury, and only in the hora. If it reached
+   * anything else it would be changing a rule it has no business in.
+   */
+  ok('and no other graha hears it', ['Sun', 'Moon', 'Mars', 'Jupiter', 'Venus', 'Saturn']
+     .every(function (g) {
+       return ['ordinary', 'both', 'solar'].every(function (rule) {
+         return [0, 1].every(function (r) {
+           return [3, 4].every(function (h) {
+             return A.horaEffect(g, h, r, rule) === A.horaEffect(g, h, r);
+           });
+         });
+       });
+     }));
+
+  /*
+   * The three readings against the three hora rows this site has been checked
+   * against. Each of the other two disagrees with exactly one of them, which is
+   * why the default is the one it is and why the note says it was fitted rather
+   * than taken from a text.
+   */
+  ok('the default is the only reading that agrees with all three known rows', (function () {
+    var want = { Trump: 'mitra', Gates: 'adhimitra', Dershowitz: 'adhimitra' };
+    var at = { Trump: [1946, 6, 14, 10, 54, -240, 40.6915, -73.8057],
+      Gates: [1955, 10, 28, 21, 26, -480, 47 + 36 / 60 + 22 / 3600, -(122 + 19 / 60 + 56 / 3600)],
+      Dershowitz: [1938, 9, 1, 23, 28, -240, 40 + 47 / 60, -(73 + 57 / 60 + 59 / 3600)] };
+    var scores = { ordinary: 0, both: 0, solar: 0 };
+    Object.keys(at).forEach(function (name) {
+      var c = at[name];
+      var ch = A.chart({ jdUT: A.julianDay(c[0], c[1], c[2], (c[3] * 60 + c[4] - c[5]) / 60),
+        latitude: c[6], longitude: c[7], tzOffsetMinutes: c[5] });
+      var m = ch.planets.filter(function (x) { return x.name === 'Mercury'; })[0];
+      Object.keys(scores).forEach(function (rule) {
+        if (A.vargaDignity('Mercury', m.longitude, 2, {}, null, null, rule).key === want[name]) {
+          scores[rule]++;
+        }
+      });
+    });
+    return scores.solar === 3 && scores.ordinary === 2 && scores.both === 2;
+  })());
   ok('the groups are the ones the verse names',
      A.HORA_GROUP.Jupiter === 'Sun' && A.HORA_GROUP.Sun === 'Sun' &&
      A.HORA_GROUP.Mars === 'Sun' && A.HORA_GROUP.Moon === 'Moon' &&
