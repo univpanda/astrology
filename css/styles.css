@@ -832,6 +832,23 @@ input::placeholder { color: #a9bdb2; }
   color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
 }
+/*
+ * The chara karaka, beside the degree that decides it. Assigned by how far
+ * into its sign a graha has travelled, so the figure to its left is the
+ * reason for it, and the two belong on one line.
+ */
+.graha-card-karaka {
+  margin-left: 0.5rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--flag-yogakaraka);
+  border: 1px solid var(--flag-yogakaraka);
+  border-radius: 999px;
+  padding: 0.05rem 0.4rem;
+  vertical-align: middle;
+}
 /* Every item is a statement with its reason beneath it, so the list is the
    card's body rather than a tail on the end of it. */
 /*

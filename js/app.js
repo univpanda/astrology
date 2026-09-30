@@ -1529,6 +1529,13 @@
        */
       var head = el('h4', 'graha-card-name', at);
       head.appendChild(el('span', 'graha-card-degree', t.getAttribute('data-degree')));
+      /*
+       * The chara karaka, beside the degree that decides it: the karakas are
+       * assigned by how far into its sign each graha has travelled, so the
+       * figure on the left is the reason for the word on the right.
+       */
+      var karaka = t.getAttribute('data-karaka');
+      if (karaka) head.appendChild(el('span', 'graha-card-karaka', karaka));
       card.appendChild(head);
 
       var where = el('p', 'graha-card-where');
@@ -1560,9 +1567,19 @@
       }
       fact(lords, 'Nakshatra lord', t.getAttribute('data-nak-lord'));
       fact(lords, 'Sub lord', t.getAttribute('data-sub-lord'));
-      fact(lords, 'Rules', t.getAttribute('data-rules'));
-      fact(lords, 'Aspected by', t.getAttribute('data-seen-by'));
       if (lords.firstChild) card.appendChild(lords);
+
+      /*
+       * What it answers for, on a line of its own. The three lords above are
+       * grahas a reading passes through to reach this one; these two are what
+       * this one reaches - the houses it owns, and the grahas looking at it.
+       * Both counted from house 1 of the chart on screen, so they move with
+       * the division and with the rotation.
+       */
+      var over = el('p', 'graha-card-lords');
+      fact(over, 'Rules', t.getAttribute('data-rules'));
+      fact(over, 'Aspected by', t.getAttribute('data-seen-by'));
+      if (over.firstChild) card.appendChild(over);
       /*
        * Every item is a statement with its reason beneath it: the state or the
        * yoga on one line, why it holds in this chart on the next. A name alone
@@ -1683,6 +1700,11 @@
         horaMercurySetting()),
       hemming: hemmingByGraha(state, set.division),
       ruling: rulingAndAspects(state, set.division, set.reference),
+      /*
+       * Read in the rashi and so the same in every chart here, which is why it
+       * is built from the state rather than from the division being drawn.
+       */
+      karakas: Astro.charaKarakas(state.chart),
       combustion: document.getElementById('combustion').value
     });
     wireGrahaCard(document.getElementById('chart-' + slot));

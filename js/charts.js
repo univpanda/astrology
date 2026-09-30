@@ -109,7 +109,7 @@ var Charts = (function () {
   var REC = '\u001e', FLD = '\u001f';
 
   function describeOccupant(p, sign, house, yogas, division, dignities,
-                            hemming, ruling) {
+                            hemming, ruling, karakas) {
     var states = [];
     /*
      * Each state says why it applies here, not merely that it does. The chart
@@ -163,9 +163,13 @@ var Charts = (function () {
     var placed = Astro.vargaPosition(p.longitude, division || 1);
     var within = placed ? Astro.norm360(placed.longitude) % 30 : p.longitude % 30;
     var deg = Math.floor(within);
-    var min = Math.round((within - deg) * 60);
+    var rest = (within - deg) * 60;
+    var min = Math.floor(rest);
+    var sec = Math.round((rest - min) * 60);
+    if (sec === 60) { sec = 0; min += 1; }
     if (min === 60) { min = 0; deg += 1; }
-    var degree = deg + '\u00b0' + String(min).padStart(2, '0') + '\u2032';
+    var degree = deg + '\u00b0' + String(min).padStart(2, '0') + '\u2032' +
+      String(sec).padStart(2, '0') + '\u2033';
 
     /*
      * Nakshatra, its lord and the KP sub lord, all read from the rashi
@@ -189,11 +193,12 @@ var Charts = (function () {
       where: where,
       degree: degree,
       house: p.name === 'Ascendant' ? '' : 'House ' + house,
-      signName: Astro.SIGNS_SA[sign],
+      signName: Astro.SIGNS[sign] + ' (' + Astro.SIGNS_SA[sign] + ')',
       nakshatra: nak.name + ' ' + nak.pada,
       nakLord: nak.lord,
       subLord: nak.subLord,
       dispositor: dispositor || '',
+      karaka: (karakas && karakas[p.name]) || '',
       dispositorRelation: standing.relation || '',
       /*
        * How the graha stands in the sign it occupies: its dignity where it has
@@ -253,7 +258,7 @@ var Charts = (function () {
         }, planetText(p));
         if (ctx) {
           var d = describeOccupant(p, ctx.sign, ctx.house, ctx.yogas,
-            ctx.division, ctx.dignities, ctx.hemming, ctx.ruling);
+            ctx.division, ctx.dignities, ctx.hemming, ctx.ruling, ctx.karakas);
           t.setAttribute('data-graha', d.graha);
           t.setAttribute('data-where', d.where);
           t.setAttribute('data-degree', d.degree);
@@ -262,6 +267,7 @@ var Charts = (function () {
           t.setAttribute('data-nakshatra', d.nakshatra);
           t.setAttribute('data-nak-lord', d.nakLord);
           t.setAttribute('data-sub-lord', d.subLord);
+          if (d.karaka) t.setAttribute('data-karaka', d.karaka);
           if (d.dispositor) t.setAttribute('data-dispositor', d.dispositor);
           if (d.dispositorRelation) {
             t.setAttribute('data-dispositor-relation', d.dispositorRelation);
@@ -386,7 +392,7 @@ var Charts = (function () {
   }
 
   function renderNorth(container, planets, ascLongitude, division, reference, yogas,
-                       dignities, hemming, ruling, combustion) {
+                       dignities, hemming, ruling, combustion, karakas) {
     var data = occupantsBySign(planets, ascLongitude, division, reference, combustion);
     var svg = svgRoot('north');
     var m = 4, s = SIZE - 2 * m;
@@ -424,6 +430,7 @@ var Charts = (function () {
       drawOccupants(g, occ, cx, cy + 4, 0.20 * s,
         { sign: sign, house: h + 1, yogas: yogas,
           dignities: dignities,
+          karakas: karakas,
           hemming: hemming, ruling: ruling });
       var numberAt = NORTH_SIGN_ANCHORS[h];
       g.appendChild(el('text', {
@@ -438,7 +445,7 @@ var Charts = (function () {
   }
 
   function renderSouth(container, planets, ascLongitude, division, reference, yogas,
-                       dignities, hemming, ruling, combustion) {
+                       dignities, hemming, ruling, combustion, karakas) {
     var data = occupantsBySign(planets, ascLongitude, division, reference, combustion);
     var svg = svgRoot('south');
     var m = 4, cell = (SIZE - 2 * m) / 4;
@@ -464,6 +471,7 @@ var Charts = (function () {
       drawOccupants(g, data.bySign[i], x + cell / 2, y + cell / 2 + 6, cell * 0.82,
         { sign: i, house: house, yogas: yogas,
           dignities: dignities,
+          karakas: karakas,
           hemming: hemming, ruling: ruling });
       svg.appendChild(g);
     }
@@ -476,7 +484,8 @@ var Charts = (function () {
   function render(container, opts) {
     var fn = opts.style === 'south' ? renderSouth : renderNorth;
     fn(container, opts.planets, opts.ascendant, opts.division || 1, opts.reference,
-       opts.yogas, opts.dignities, opts.hemming, opts.ruling, opts.combustion);
+       opts.yogas, opts.dignities, opts.hemming, opts.ruling, opts.combustion,
+       opts.karakas);
   }
 
   return { render: render };

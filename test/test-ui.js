@@ -8026,7 +8026,7 @@ console.log('\nThe card says how the graha stands in its sign');
     /function dignitiesByGraha\(state, division, tatkalika, horaRule, horaMercury\)/.test(src) &&
     /dignities: dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src));
   ok('and the renderer carries it onto the graha',
-    /ctx\.division, ctx\.dignities, ctx\.hemming, ctx\.ruling\)/.test(chartsSrc) &&
+    /ctx\.division, ctx\.dignities, ctx\.hemming, ctx\.ruling, ctx\.karakas\)/.test(chartsSrc) &&
     /t\.setAttribute\('data-dignity', d\.dignity\)/.test(chartsSrc));
   /*
    * What a graha rules and what looks at it, both on the card. Lordship is a
@@ -8061,7 +8061,7 @@ console.log('\nThe card says how the graha stands in its sign');
     var box = makeNode('div');
     Charts.render(box, { style: 'north', planets: chart.planets,
       ascendant: chart.ascendant.longitude, division: 1, reference: 'Ascendant',
-      yogas: {}, dignities: dig, ruling: {} });
+      yogas: {}, dignities: dig, ruling: {}, karakas: Astro.charaKarakas(chart) });
     var marks = [];
     (function walk(n) {
       if (n.tag === 'text' && n.attrs['data-graha']) marks.push(n);
@@ -8070,10 +8070,24 @@ console.log('\nThe card says how the graha stands in its sign');
     var by = {};
     marks.forEach(function (t) { by[t.attrs['data-graha']] = t.attrs; });
 
-    ok('the degree rides with the name, to the minute',
-      /^\d{1,2}°\d{2}′$/.test(by.Moon['data-degree'] || ''), by.Moon['data-degree']);
+    ok('the degree rides with the name, to the second',
+      /^\d{1,2}°\d{2}′\d{2}″$/.test(by.Moon['data-degree'] || ''), by.Moon['data-degree']);
+    /*
+     * And the chara karaka beside it, which is the word the degree decides:
+     * the karakas are assigned by how far into its sign each graha has
+     * travelled. Ketu is outside the scheme and the ascendant is not a graha,
+     * so neither carries one.
+     */
+    ok('the chara karaka rides beside the degree that decides it',
+      by.Jupiter['data-karaka'] === 'Atmakaraka' &&
+      by.Ketu['data-karaka'] === undefined &&
+      by.Ascendant['data-karaka'] === undefined,
+      by.Jupiter['data-karaka']);
+    ok('and it is read in the rashi, so it does not move with the division',
+      /karakas: Astro\.charaKarakas\(state\.chart\)/.test(src));
     ok('house, sign and nakshatra are all carried',
-      by.Moon['data-house'] === 'House 4' && by.Moon['data-sign'] === 'Makara' &&
+      by.Moon['data-house'] === 'House 4' &&
+      by.Moon['data-sign'] === 'Capricorn (Makara)' &&
       /^Shravana [1-4]$/.test(by.Moon['data-nakshatra'] || ''),
       [by.Moon['data-house'], by.Moon['data-sign'], by.Moon['data-nakshatra']].join(' / '));
     ok('and the nakshatra is read from the rashi, which is the only place it exists',
@@ -8101,10 +8115,16 @@ console.log('\nThe card says how the graha stands in its sign');
       by.Moon['data-dignity'] === undefined, by.Mercury['data-dignity']);
   })();
 
+  /*
+   * On a line of their own, below the three lords. Those are grahas a reading
+   * passes through to reach this one; these two are what this one reaches.
+   */
   ok('and the card prints them as a label and a value, not as prose',
-    /fact\(lords, 'Rules', t\.getAttribute\('data-rules'\)\)/.test(src) &&
-    /fact\(lords, 'Aspected by', t\.getAttribute\('data-seen-by'\)\)/.test(src) &&
-    /\.graha-card-fact-label \{/.test(css));
+    /var over = el\('p', 'graha-card-lords'\);/.test(src) &&
+    /fact\(over, 'Rules', t\.getAttribute\('data-rules'\)\)/.test(src) &&
+    /fact\(over, 'Aspected by', t\.getAttribute\('data-seen-by'\)\)/.test(src) &&
+    /\.graha-card-fact-label \{/.test(css) &&
+    src.indexOf("fact(lords, 'Sub lord'") < src.indexOf("fact(over, 'Rules'"));
 
   /*
    * And the figures are real. Driven through the same function the page calls,
