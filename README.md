@@ -213,6 +213,13 @@ the working tree, so push and deploy are separate acts. Only `index.html`,
 `css/`, `js/` and `data/` go into the bundle; tests and generator scripts stay
 out.
 
+Separate acts in both directions, which is the part that catches people. GitHub
+Pages serves a mirror at <https://univpanda.github.io/astrology/> and rebuilds
+itself from `main` on every push, so a push makes the Pages copy current and
+leaves Amplify exactly where it was. The live site is the Amplify one. If a
+change is pushed and not shipped, the mirror shows it and the site does not, and
+checking the wrong URL reports that everything is fine.
+
 | | |
 |---|---|
 | Account | 914979267255, us-east-1 |
