@@ -877,9 +877,9 @@ ok('edit and download sit on the birth details line',
    /class="birth-row"/.test(html) &&
    html.indexOf('id="edit-button"') > html.indexOf('id="result-birth"') &&
    html.indexOf('id="edit-button"') < html.indexOf('id="chart-a"'));
-ok('both icon buttons are labelled for screen readers', (function () {
+ok('every icon button is labelled for screen readers', (function () {
   var buttons = html.match(/<button[^>]*class="icon-button"[^>]*>/g) || [];
-  return buttons.length === 2 && buttons.every(function (b) {
+  return buttons.length === 3 && buttons.every(function (b) {
     return /aria-label="[^"]+"/.test(b) && /title="[^"]+"/.test(b);
   });
 })());
@@ -1270,9 +1270,9 @@ ok('and each card stacks the name, the moment and the place in that order',
     return name > 0 && born > name && place > born;
   })());
 /*
- * The two icons sit over the card's corner rather than taking a column, so the
- * card's own padding keeps the name clear of them - except while the delete is
- * asking, when the pair needs the width of a sentence and takes the card.
+ * The three icons sit over the card's corner rather than taking a column, so
+ * the card's own padding keeps the name clear of them - except while the delete
+ * is asking, when the pair needs the width of a sentence and takes the card.
  */
 ok('and the icons sit on the card rather than in a column of their own',
   (function () {
@@ -1280,7 +1280,7 @@ ok('and the icons sit on the card rather than in a column of their own',
     var block = css.slice(css.indexOf('.saved-actions {'), css.indexOf('.saved-icon {'));
     return /position: absolute;/.test(block) &&
       /\.saved-actions\.confirming \{[^}]*position: static;/.test(css) &&
-      /\.saved-card \{[^}]*padding-right: 3\.6rem;/.test(css.replace(/\n/g, ''));
+      /\.saved-card \{[^}]*padding-right: 5\.4rem;/.test(css.replace(/\n/g, ''));
   })());
 /*
  * And only the name opens it. The whole left half used to be one button, so
@@ -1380,10 +1380,17 @@ ok('and the star says what it means, to a pointer and to a reader alike',
    /star\.title = 'A ' \+ CELEBRITY_MARK \+ ', kept for study'/.test(appSrc) &&
    /star\.setAttribute\('aria-label', CELEBRITY_MARK\)/.test(appSrc) &&
    /id="saved-key"/.test(html) &&
-   /key\.textContent = CELEBRITY_STAR \+ ' a ' \+ CELEBRITY_MARK/.test(appSrc));
-ok('and the key appears only when some card carries the star',
-   /key\.hidden = !anyStarred;/.test(appSrc) &&
-   /list\.some\(function \(entry\) \{ return entry\.celebrity; \}\)/.test(appSrc));
+   /CELEBRITY_STAR \+ ' a ' \+ CELEBRITY_MARK \+ ', kept for study\.'/.test(appSrc));
+/*
+ * The key explains the marks that are on the cards and no others: a line about
+ * the star when something is starred, a line about the flag when something is
+ * flagged, and nothing at all when neither is.
+ */
+ok('and the key carries a line per mark actually in use',
+   /key\.hidden = !key\.firstChild;/.test(appSrc) &&
+   /list\.some\(function \(entry\) \{ return entry\.celebrity; \}\)/.test(appSrc) &&
+   /list\.some\(function \(entry\) \{ return entry\.flagged; \}\)/.test(appSrc) &&
+   /\.saved-key-item \{ display: block; \}/.test(cssSrc));
 ok('and it matches what the form asks',
    /A public figure, kept for study/.test(html));
 
@@ -3569,8 +3576,14 @@ ok('every script the page loads parses', (function () {
       documentElement: loose('html')
     },
     window: {
-      localStorage: { getItem: function () { return null; }, setItem: function () {},
-                      removeItem: function () {} },
+      localStorage: (function () {
+        var store = {};
+        return {
+          getItem: function (k) { return Object.prototype.hasOwnProperty.call(store, k) ? store[k] : null; },
+          setItem: function (k, v) { store[k] = String(v); },
+          removeItem: function (k) { delete store[k]; }
+        };
+      })(),
       addEventListener: function () {},
       matchMedia: function () { return { matches: false, addEventListener: function () {} }; },
       crypto: { randomUUID: function () { return 'test'; } },
@@ -3591,6 +3604,9 @@ ok('every script the page loads parses', (function () {
     '  __out.renderAspects = renderAspects;\n' +
     '  __out.rotatedOnto = rotatedOnto;\n' +
     '  __out.rulingAndAspects = rulingAndAspects;\n' +
+    '  __out.renderSaved = renderSaved; __out.setFlag = setFlag;\n' +
+    '  __out.readSaved = readSaved; __out.writeSaved = writeSaved;\n' +
+    '  __out.savedList = savedList; __out.STORAGE_KEY = STORAGE_KEY;\n' +
     appSrc.slice(close);
 
   var out = {};
@@ -5419,11 +5435,13 @@ ok('the ayanamsa select sits in the settings panel', (function () {
   var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   var at = html.indexOf('id="panel-settings"');
   var panel = html.slice(at, html.indexOf('</section>', html.indexOf('id="panel-testing"')));
-  var options = html.slice(html.indexOf('class="options-grid"'),
-    html.indexOf('</details>'));
+  // The form itself, which is where it used to sit. The fold it sat in is gone
+  // as well, so the check is against the whole form rather than that slice.
+  var form = html.slice(html.indexOf('id="birth-form"'), html.indexOf('</form>'));
   return at > 0 &&
     /<select id="ayanamsa"/.test(panel) &&
-    !/id="ayanamsa"/.test(options) &&
+    !/id="ayanamsa"/.test(form) &&
+    !/id="node-type"/.test(form) &&
     /id="node-type"/.test(panel);
 })());
 /*
@@ -7127,6 +7145,117 @@ console.log('\nEvery member of a family defines itself');
 })();
 
 console.log('\nThe graha card survives the chart being redrawn');
+var fnSrc = fs.readFileSync(path.join(root, 'supabase/functions/kundalis/index.ts'), 'utf8');
+console.log('\nA chart whose details are in doubt can be flagged');
+/*
+ * The flag is about the record and not the reading: a birth time taken from
+ * memory, a place that is one of two of that name, a date off a document nobody
+ * has checked. Nothing it says changes a calculation, which is the point - the
+ * chart still draws, and the flag is the note that it may be drawn from the
+ * wrong moment.
+ *
+ * Driven rather than read, because the thing worth checking is that raising it
+ * on a card writes to the row and not to the copy the card was drawn from.
+ */
+(function () {
+  var out = global.appExports || {};
+  if (!out.renderSaved || !out.setFlag) {
+    ok('the saved list is reachable from the tests', false);
+    return;
+  }
+  var rows = [
+    { name: 'Uncertain', placeLabel: 'Varanasi, India', date: '1948-03-04',
+      time: '10:15:00', latitude: 25.3, longitude: 83, zone: 'Asia/Kolkata',
+      standard: 'zone', ayanamsa: 'lahiri', trueNode: true, gender: 'unstated',
+      celebrity: false, flagged: false, note: '' },
+    { name: 'Certain', placeLabel: 'Delhi, India', date: '1970-01-01',
+      time: '06:00:00', latitude: 28.6, longitude: 77.2, zone: 'Asia/Kolkata',
+      standard: 'zone', ayanamsa: 'lahiri', trueNode: true, gender: 'unstated',
+      celebrity: true, flagged: false, note: '' }
+  ];
+  out.writeSaved(rows);
+  out.renderSaved();
+
+  var cards = out.savedList.children;
+  ok('every card carries three icons: flag, edit, delete', cards.length === 2 &&
+    cards.every(function (card) {
+      var actions = card.children.filter(function (c) { return c.tag === 'div'; })[0];
+      return actions && actions.children.length === 3;
+    }), cards.length + ' cards');
+
+  /*
+   * Raised from the card, it is the stored row that changes. Writing only to
+   * the object the card closed over would show a raised flag until the next
+   * redraw and lose it after, which is the worst of both.
+   */
+  out.setFlag(rows[0], true);
+  var stored = out.readSaved();
+  ok('raising it from a card writes to the stored row',
+    stored[0].flagged === true && stored[1].flagged === false);
+
+  /*
+   * And it draws as a state rather than as a third identical outline. The icon
+   * fills; nothing else on the card does.
+   */
+  var flagOf = function (card) {
+    return card.children.filter(function (c) { return c.tag === 'div'; })[0].children[0];
+  };
+  out.renderSaved();
+  ok('and the raised flag is drawn apart from the lowered one',
+    /is-flagged/.test(flagOf(out.savedList.children[0]).className) &&
+    !/is-flagged/.test(flagOf(out.savedList.children[1]).className) &&
+    flagOf(out.savedList.children[0]).attrs['aria-pressed'] === 'true');
+
+  ok('and it is a button a reader can find by name',
+    /Clear the flag on Uncertain/.test(flagOf(out.savedList.children[0]).attrs['aria-label']) &&
+    /Flag Certain as needs checking/.test(flagOf(out.savedList.children[1]).attrs['aria-label']));
+
+  // Lowered again, it leaves nothing behind.
+  out.setFlag(rows[0], false);
+  ok('and lowering it clears the row', out.readSaved()[0].flagged === false);
+  out.writeSaved([]);
+  out.renderSaved();
+})();
+
+/*
+ * The same flag on the chart, where the doubt usually arrives. It says the
+ * words there rather than drawing the icon twice: there is room for them, and
+ * no second chart to tell it apart from.
+ */
+ok('the chart heading answers the flag too',
+   /var FLAG_MARK = 'needs checking';/.test(appSrc) &&
+   /el\('span', 'flag-mark', FLAG_MARK\)/.test(appSrc) &&
+   /id="flag-button"/.test(html) &&
+   /showFlagOnChart\(\);/.test(appSrc));
+ok('and the button on the chart says which way it is set',
+   /button\.setAttribute\('aria-pressed', on \? 'true' : 'false'\)/.test(appSrc) &&
+   /aria-pressed="false"/.test(html));
+/*
+ * Both drawings are one control, so both fill the same path when raised. The
+ * banner is the second path in either, which is why the CSS reaches it by
+ * position rather than by a class the inline copy would have to repeat.
+ */
+ok('the card icon and the chart icon are the same drawing',
+   /flag: \['M6 21V3\.5', 'M6 4\.5h11l-2\.5 4 2\.5 4H6z'\]/.test(appSrc) &&
+   /<path d="M6 21V3\.5"\/>/.test(html) &&
+   /\.saved-flag\.is-flagged svg path \+ path \{ fill: currentColor; \}/.test(cssSrc) &&
+   /\.icon-button\.is-flagged svg path \+ path \{ fill: currentColor; \}/.test(cssSrc));
+/*
+ * And it survives being cast again. The form has no flag on it, so a state
+ * built from the form says nothing about one; taking the form's word for it
+ * would drop the flag the moment anybody regenerated the chart.
+ */
+ok('casting the same chart again does not drop the flag',
+   /if \(at >= 0\) entry\.flagged = list\[at\]\.flagged === true;/.test(appSrc) &&
+   /var flagged = pendingFlagged;/.test(appSrc) &&
+   /pendingFlagged = entry\.flagged === true;/.test(appSrc));
+// It reaches the database as a column of its own, not as a word inside the note.
+ok('the flag is stored and synced beside the rest of the record',
+   /flagged: row\.flagged === true,/.test(appSrc) &&
+   /flagged: state\.flagged === true,/.test(appSrc) &&
+   /flagged: entry\.flagged === true,/.test(fnSrc) &&
+   /ayanamsa,true_node,gender,celebrity,flagged,note/.test(fnSrc));
+
 /*
  * It did not. The renderer empties its container on every draw and the card
  * lives in that container, so each redraw threw the card away - while the
@@ -8342,9 +8471,24 @@ console.log('\nThe settings notes do not argue from what software does');
    * Where mean time does belong, it is still offered - and the note sends the
    * reader there rather than leaving the capability unfindable.
    */
+  /*
+   * It sits under the time of birth now rather than in a fold of its own. That
+   * is where it belongs: unlike the ayanamsa, which left this form because it
+   * is a choice about how every nativity is read, the standard is a fact about
+   * this one - which clock the recorded reading was taken off.
+   */
   ok('local mean time is still selectable as a birth-time standard',
-    /<select id="time-standard">/.test(page) &&
+    /<select id="time-standard" class="time-standard">/.test(page) &&
     /<option value="lmt">Local mean time \(from longitude\)<\/option>/.test(page));
+  ok('and it sits inside the time of birth rather than in a fold of its own',
+    page.indexOf('id="time-standard"') > page.indexOf('id="birth-second"') &&
+    page.indexOf('id="time-standard"') < page.indexOf('id="place"') &&
+    !/<details class="options">/.test(page) && !/Calculation options/.test(page));
+  ok('and the one drawing choice left behind keeps the rule above it',
+    /<div class="field style-field">/.test(page) &&
+    /<select id="chart-style">/.test(page) &&
+    /\.style-field \{[^}]*border-top: 1px solid var\(--line-soft\)/
+      .test(fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8').replace(/\n/g, '')));
   ok('and the nata note points at it instead of duplicating it',
     /recorded in local mean time, as Indian times were before 1906, is a separate question: set that on the birth form under time standard/
       .test(panel.replace(/\s+/g, ' ')));

@@ -52,6 +52,7 @@ function clean(entry: Record<string, unknown>, token: string) {
     // check constraint and lose the whole save.
     gender: ['female', 'male', 'other'].includes(String(entry.gender)) ? String(entry.gender) : 'unstated',
     celebrity: entry.celebrity === true,
+    flagged: entry.flagged === true,
     note: entry.note ? text(entry.note, 2000) : null,
     updated_at: new Date().toISOString(),
   };
@@ -67,7 +68,7 @@ Deno.serve(async (req) => {
 
     const query = `?owner_token=eq.${encodeURIComponent(token)}` +
       '&select=id,name,place_label,latitude,longitude,zone,birth_date,birth_time,time_standard,' +
-      'ayanamsa,true_node,gender,celebrity,note' +
+      'ayanamsa,true_node,gender,celebrity,flagged,note' +
       '&order=updated_at.desc&limit=200';
 
     if (body.action === 'list') {

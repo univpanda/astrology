@@ -43,6 +43,7 @@
    * reorders the list under the reader.
    */
   var reopeningSaved = false;
+  var pendingFlagged = false;
 
   /*
    * The saved row the chart on screen came from, if any. Editing keeps it, so
@@ -656,6 +657,10 @@
     // flag set and swallow the save of whatever is generated next.
     var reopening = reopeningSaved;
     reopeningSaved = false;
+    // Read and cleared in the same breath, for the same reason: the flag
+    // belongs to the record being reopened, not to whatever is cast next.
+    var flagged = pendingFlagged;
+    pendingFlagged = false;
 
     var button = form.querySelector('button.primary');
     button.disabled = true;
@@ -667,6 +672,7 @@
         ayanamsa: params.ayanamsa, trueNode: params.trueNode,
         gender: genderValue,
         celebrity: document.getElementById('celebrity').checked,
+        flagged: flagged,
         note: document.getElementById('person-note').value.trim(),
         y: y, mo: mo, d: d, h: h, mi: mi
       };
@@ -778,6 +784,7 @@
     var heading = document.getElementById('result-name');
     heading.textContent = state.name;
     if (state.celebrity) heading.appendChild(el('span', 'celebrity-mark', CELEBRITY_MARK));
+    showFlagOnChart();
 
     var noteLine = document.getElementById('result-note');
     noteLine.textContent = state.note || '';
@@ -3806,6 +3813,20 @@
 
   document.getElementById('print-button').addEventListener('click', function () { window.print(); });
 
+  /*
+   * The same flag as the one on the card. Doubt about a birth time usually
+   * arrives while reading the chart it produced, so it can be raised here; it
+   * is written to the saved record, which is where it will still be tomorrow.
+   */
+  document.getElementById('flag-button').addEventListener('click', function () {
+    if (!lastChart) return;
+    var on = !lastChart.flagged;
+    lastChart.flagged = on;
+    // The chart is saved the moment it is cast, so there is nearly always a row
+    // to write to; if there is not, the next save carries the flag instead.
+    if (currentEntry) setFlag(currentEntry, on); else showFlagOnChart();
+  });
+
   /* --------------------------------------------------- saved kundalis */
 
   /*
@@ -4075,6 +4096,7 @@
       trueNode: row.true_node,
       gender: row.gender || 'unstated',
       celebrity: row.celebrity === true,
+      flagged: row.flagged === true,
       note: row.note || ''
     };
   }
@@ -4119,13 +4141,80 @@
     return [entry.name, entry.placeLabel, entry.date, entry.time].join('\u0000').toLowerCase();
   }
 
+  /** The same saved chart, by id where there is one and by the four keys where not. */
+  function sameRecord(a, b) {
+    if (!a || !b) return false;
+    return a.id && b.id ? a.id === b.id : keyOf(a) === keyOf(b);
+  }
+
+  /*
+   * What the flag says, in one place. It is about the record and not the
+   * reading: a time taken from memory, a place that is one of two of that name,
+   * a date off a document nobody has checked. The chart still draws; the flag
+   * is the note that it may be drawn from the wrong moment.
+   */
+  var FLAG_MARK = 'needs checking';
+
+  /*
+   * Raise or lower it. Doubt arrives while reading a chart as often as while
+   * looking down the list, so it is settable from either, and both write the
+   * same field on the same row.
+   */
+  function setFlag(entry, on) {
+    var list = readSaved();
+    var at = -1;
+    for (var i = 0; i < list.length; i++) if (sameRecord(list[i], entry)) at = i;
+    entry.flagged = on;
+    if (at >= 0) {
+      list[at].flagged = on;
+      writeSaved(list);
+    }
+    // The chart on screen is the same record, so its heading answers too.
+    if (lastChart && sameRecord(currentEntry, entry)) {
+      lastChart.flagged = on;
+      showFlagOnChart();
+    }
+    renderSaved();
+    if (at >= 0) {
+      callKundaliApi({ action: 'save', entry: list[at], id: list[at].id }, function (entries) {
+        if (entries) { writeSaved(entries.map(fromRow)); renderSaved(); }
+      });
+    }
+  }
+
+  /*
+   * The heading's answer: the words rather than the icon, because here there is
+   * room for them and no second chart to tell it apart from.
+   */
+  function showFlagOnChart() {
+    var button = document.getElementById('flag-button');
+    var heading = document.getElementById('result-name');
+    var on = !!(lastChart && lastChart.flagged);
+    if (heading) {
+      var was = heading.querySelector('.flag-mark');
+      if (was) was.parentNode.removeChild(was);
+      if (on) heading.appendChild(el('span', 'flag-mark', FLAG_MARK));
+    }
+    if (button) {
+      button.classList[on ? 'add' : 'remove']('is-flagged');
+      button.setAttribute('aria-pressed', on ? 'true' : 'false');
+      button.title = on ? 'Clear the flag' : 'Flag this chart as ' + FLAG_MARK;
+      button.setAttribute('aria-label', button.title);
+    }
+  }
+
   /** A small inline-SVG icon button for a row in the saved list. */
   function iconButton(kind, label, onClick) {
     var paths = {
       edit: ['M4 20h4L19 9a2.5 2.5 0 0 0-3.5-3.5L4.5 16.5V20Z', 'M14.5 6.5 17.5 9.5'],
-      remove: ['M5 7h14', 'M10 7V5h4v2', 'M6.5 7l.8 12h9.4l.8-12', 'M10 10.5v5.5', 'M14 10.5v5.5']
+      remove: ['M5 7h14', 'M10 7V5h4v2', 'M6.5 7l.8 12h9.4l.8-12', 'M10 10.5v5.5', 'M14 10.5v5.5'],
+      // The pole first and the banner second, in that order: raised, the banner
+      // fills, and the CSS reaches it as the second path rather than by a class
+      // the inline copy on the chart would have to repeat.
+      flag: ['M6 21V3.5', 'M6 4.5h11l-2.5 4 2.5 4H6z']
     }[kind];
-    var button = el('button', 'saved-icon' + (kind === 'remove' ? ' saved-remove' : ''));
+    var button = el('button', 'saved-icon' + (kind === 'remove' ? ' saved-remove' :
+      kind === 'flag' ? ' saved-flag' : ''));
     button.type = 'button';
     button.title = label;
     button.setAttribute('aria-label', label);
@@ -4171,9 +4260,16 @@
     });
     var key = document.getElementById('saved-key');
     if (key) {
-      var anyStarred = list.some(function (entry) { return entry.celebrity; });
-      key.hidden = !anyStarred;
-      key.textContent = CELEBRITY_STAR + ' a ' + CELEBRITY_MARK + ', kept for study.';
+      key.innerHTML = '';
+      if (list.some(function (entry) { return entry.celebrity; })) {
+        key.appendChild(el('span', 'saved-key-item',
+          CELEBRITY_STAR + ' a ' + CELEBRITY_MARK + ', kept for study.'));
+      }
+      if (list.some(function (entry) { return entry.flagged; })) {
+        key.appendChild(el('span', 'saved-key-item',
+          'A raised flag is a chart whose details want checking.'));
+      }
+      key.hidden = !key.firstChild;
     }
     if (none) {
       none.hidden = !term || list.length > 0;
@@ -4228,6 +4324,15 @@
       li.appendChild(el('p', 'saved-place', entry.placeLabel));
 
       var actions = el('div', 'saved-actions');
+      var raised = entry.flagged === true;
+      var flag = iconButton('flag',
+        (raised ? 'Clear the flag on ' : 'Flag ') + entry.name +
+          (raised ? '' : ' as ' + FLAG_MARK),
+        function () { setFlag(entry, !raised); });
+      if (raised) flag.className += ' is-flagged';
+      flag.setAttribute('aria-pressed', raised ? 'true' : 'false');
+      actions.appendChild(flag);
+
       actions.appendChild(iconButton('edit', 'Edit ' + entry.name, function () {
         editSaved(entry);
       }));
@@ -4310,6 +4415,7 @@
       trueNode: state.trueNode,
       gender: state.gender,
       celebrity: state.celebrity,
+      flagged: state.flagged === true,
       note: state.note
     };
 
@@ -4327,6 +4433,15 @@
         : keyOf(list[i]) === keyOf(entry);
       if (same) at = i;
     }
+    /*
+     * The flag is the record's and not the reading's. It is raised from the
+     * list or from the chart's heading and never from the form, so casting the
+     * same nativity again must not quietly drop a question somebody put against
+     * it - which is what would happen if this took the form's word for it.
+     */
+    if (at >= 0) entry.flagged = list[at].flagged === true;
+    state.flagged = entry.flagged;
+
     if (at >= 0) list[at] = entry; else list.unshift(entry);
 
     var storedLocally = writeSaved(list);
@@ -4370,6 +4485,7 @@
       (!entry.gender || entry.gender === 'unstated') ? '' : entry.gender;
     document.getElementById('celebrity').checked = entry.celebrity === true;
     document.getElementById('person-note').value = entry.note || '';
+    pendingFlagged = entry.flagged === true;
 
     selectedCity = {
       name: entry.placeLabel.split(',')[0],
@@ -4790,6 +4906,7 @@
     document.getElementById('gender').value = '';
     document.getElementById('celebrity').checked = false;
     document.getElementById('person-note').value = '';
+    pendingFlagged = false;
     selectedCity = null;
     ['lat', 'lon'].forEach(function (which) {
       ['d', 'm', 's'].forEach(function (part) {
@@ -4818,6 +4935,7 @@
       (!state.gender || state.gender === 'unstated') ? '' : state.gender;
     document.getElementById('celebrity').checked = state.celebrity === true;
     document.getElementById('person-note').value = state.note || '';
+    pendingFlagged = state.flagged === true;
     selectedCity = state.place;
     placeInput.value = placeLabelOf(state.place);
     placeNote.textContent = state.place.lat.toFixed(4) + ', ' + state.place.lon.toFixed(4) +

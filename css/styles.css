@@ -32,6 +32,9 @@
   /* Light enough that the row rules still read through it. */
   --varga-key: #ebf6ef;
   --retro: #b8483a;
+  /* A chart with a question against it: amber, because the reading still
+     stands and it is the record that wants checking. */
+  --queried: #b0761a;
   --flag-vargottama: #6d4aa8;
   --flag-yogakaraka: #a8710c;
   --flag-combust: #7a8a99;
@@ -171,9 +174,9 @@ main, .site-header, .site-footer { max-width: 1120px; margin: 0 auto; }
   border-radius: var(--radius-sm);
   padding: 0.7rem 0.8rem;
   background: var(--surface);
-  /* Room at the right for the two icons, which sit over the card's top corner
+  /* Room at the right for the three icons, which sit over the card's top corner
      rather than taking a column of their own. */
-  padding-right: 3.6rem;
+  padding-right: 5.4rem;
   transition: border-color 0.12s ease, background 0.12s ease;
 }
 .saved-card:hover { border-color: var(--green); background: var(--green-soft); }
@@ -250,6 +253,35 @@ main, .site-header, .site-footer { max-width: 1120px; margin: 0 auto; }
 }
 .saved-icon:hover { color: var(--green-deep); background: var(--surface); }
 .saved-remove:hover { color: var(--retro); }
+
+/* Raised, the banner fills. An outline flag sitting among two other outline
+   icons is not a state anybody would notice, and the fill is what makes the
+   two drawings - the card's and the chart's - read as one control. */
+.saved-flag:hover { color: var(--queried); }
+.saved-flag.is-flagged { color: var(--queried); }
+.saved-flag.is-flagged svg path + path { fill: currentColor; }
+.icon-button.is-flagged {
+  color: var(--queried);
+  border-color: var(--queried);
+  background: var(--surface);
+}
+.icon-button.is-flagged:hover { color: var(--queried); border-color: var(--queried); }
+.icon-button.is-flagged svg path + path { fill: currentColor; }
+
+/* On the chart there is room for the words, and no second chart to tell it
+   apart from, so it says what it means rather than drawing a flag twice. */
+.flag-mark {
+  margin-left: 0.45rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--queried);
+  border: 1px solid var(--queried);
+  border-radius: 999px;
+  padding: 0.15rem 0.5rem;
+  vertical-align: middle;
+}
 
 /* The confirm step replaces the icons in place, so the row never jumps and the
    answer sits where the question was asked. */
@@ -417,6 +449,9 @@ textarea::placeholder { color: #a9bdb2; }
   font-size: 0.78rem;
   color: var(--ink-faint);
 }
+/* One line per mark actually on a card, so the key never explains a mark that
+   is not there to see. */
+.saved-key-item { display: block; }
 
 .celebrity-mark {
   margin-left: 0.45rem;
@@ -544,6 +579,26 @@ input::placeholder { color: #a9bdb2; }
 .field-note { margin: 0.45rem 0 0; font-size: 0.85rem; color: var(--ink-soft); min-height: 1.2em; }
 
 .options { margin-top: 1.5rem; border-top: 1px solid var(--line-soft); padding-top: 1rem; }
+
+/* The one drawing choice, where the fold used to be: the same rule off the
+   fields above it, and no wider than it needs to be. */
+.style-field {
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--line-soft);
+  padding-top: 1rem;
+  max-width: 24rem;
+}
+
+/* Under the clock rather than beside it: it says how the reading above is to
+   be taken, and almost nobody changes it, so it is set quiet and small. */
+.time-standard {
+  margin-top: 0.45rem;
+  font-size: 0.85rem;
+  height: auto;
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+  color: var(--ink-soft);
+}
 .options summary, .technical summary, .flag-legend summary {
   cursor: pointer;
   color: var(--ink-soft);
@@ -1720,6 +1775,7 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
     --green-soft: #21362b;
     --varga-key: #1e2f26;
     --retro: #e8867a;
+    --queried: #e0a94f;
     /* Both flag hues need lifting off a dark ground, as the graha colours do. */
     --flag-vargottama: #b69ae0;
     --flag-yogakaraka: #e0b563;
