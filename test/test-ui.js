@@ -1245,14 +1245,43 @@ function stripHtml(label) {
  * One row per person. It was three lines - name, place, moment - which made a
  * list of ten charts a wall three times taller than it needed to be.
  */
-ok('a saved entry lays out as one row, wrapping only when it must', (function () {
+/*
+ * A card, not a row. Three short facts given a whole screen width made a list
+ * of ten into ten lines of mostly empty space, with the edit and the delete at
+ * the far edge of each. The cards find their own number per row.
+ */
+ok('saved charts are cards that fit several to a row', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-  // The row is laid out by the block holding the three parts, which is the
-  // detail wrapper now that only the name is a button.
-  var block = css.slice(css.indexOf('.saved-detail {'), css.indexOf('.saved-open {'));
-  return /display: flex;/.test(block) && /flex-wrap: wrap;/.test(block) &&
-    !/display: grid;/.test(block);
+  var block = css.slice(css.indexOf('.saved-list {'), css.indexOf('.saved-card {'));
+  return /display: grid;/.test(block) &&
+    /grid-template-columns: repeat\(auto-fill, minmax\(14rem, 1fr\)\);/.test(block) &&
+    /el\('li', 'saved-card'\)/.test(appSrc);
 })());
+/*
+ * Who, when, where, reading down in the order anyone asks them.
+ */
+ok('and each card stacks the name, the moment and the place in that order',
+  (function () {
+    var at = appSrc.indexOf('function renderSaved()');
+    var block = appSrc.slice(at, appSrc.indexOf('function removeSaved', at));
+    var name = block.indexOf("el('span', 'saved-name', entry.name)");
+    var born = block.indexOf("el('p', 'saved-born', formatSavedMoment(entry))");
+    var place = block.indexOf("el('p', 'saved-place', entry.placeLabel)");
+    return name > 0 && born > name && place > born;
+  })());
+/*
+ * The two icons sit over the card's corner rather than taking a column, so the
+ * card's own padding keeps the name clear of them - except while the delete is
+ * asking, when the pair needs the width of a sentence and takes the card.
+ */
+ok('and the icons sit on the card rather than in a column of their own',
+  (function () {
+    var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+    var block = css.slice(css.indexOf('.saved-actions {'), css.indexOf('.saved-icon {'));
+    return /position: absolute;/.test(block) &&
+      /\.saved-actions\.confirming \{[^}]*position: static;/.test(css) &&
+      /\.saved-card \{[^}]*padding-right: 3\.6rem;/.test(css.replace(/\n/g, ''));
+  })());
 /*
  * And only the name opens it. The whole left half used to be one button, so
  * aiming at the place or the date opened a chart, and nothing in the row said
@@ -1266,21 +1295,17 @@ ok('the name is the only thing in the row, and the only thing that opens it',
        /open\.addEventListener\('click', function \(\) \{ loadSaved\(entry\); \}\)/.test(block) &&
        !/saved-meta/.test(block);
    })());
+
 /*
- * The place and the moment are not thrown away with the line they were on. They
- * are the only thing telling two charts of one person apart, so they move to
- * the row's title where they cost nothing until wanted.
+ * The card lights up, and the name underlines. The card is the thing being
+ * pointed at; the name is the thing that will act on a click, and the two
+ * affordances say so separately.
  */
-ok('and the place and moment survive on the row’s title', (function () {
-  var at = appSrc.indexOf('function renderSaved()');
-  var block = appSrc.slice(at, appSrc.indexOf('function removeSaved', at));
-  return /open\.title = entry\.name \+ ', ' \+ entry\.placeLabel \+ ', ' \+/.test(block) &&
-    /formatSavedMoment\(entry\)/.test(block);
-})());
-ok('and the hover marks the name rather than the whole row', (function () {
+ok('the card marks the hover and the name marks the click', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
   return /\.saved-open:hover,\n\.saved-open:focus-visible \{ border-bottom-color: currentColor; \}/
-    .test(css) && !/\.saved-item:hover \{ background:/.test(css.split('@media')[0]);
+    .test(css) && /\.saved-card:hover \{ border-color: var\(--green\)/.test(css) &&
+    !/\.saved-item/.test(css);
 })());
 
 /*

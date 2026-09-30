@@ -139,34 +139,34 @@ main, .site-header, .site-footer { max-width: 1120px; margin: 0 auto; }
 }
 .saved-note { margin-top: 0.9rem; padding-top: 0.8rem; border-top: 1px solid var(--line-soft); }
 
-.saved-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.4rem; }
-
-.saved-item {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  border-radius: var(--radius-sm);
-  border: 1px solid transparent;
-  transition: background 0.12s ease, border-color 0.12s ease;
-}
-.saved-item:hover { border-color: var(--line); }
-
 /*
- * The row is no longer one target. The name opens the chart and the place and
- * the moment sit beside it as text, so the hover marks the name rather than
- * the whole row, which used to promise that any of it could be clicked.
+ * A card for each saved chart, several to a row. A row across the page gave
+ * three short facts a full screen width to sit in, so a list of ten was ten
+ * lines of mostly empty space with the edit and the delete at the far edge.
+ * The cards find their own number per row: as many as fit at a readable width.
  */
-.saved-detail {
-  min-width: 0;
-  padding: 0.55rem 0.6rem;
-  /* One row per person. It wraps only when the row genuinely runs out of width,
-     which is the narrow-screen case rather than the normal one. */
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  column-gap: 0.55rem;
-  row-gap: 0.1rem;
+.saved-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 0.6rem;
 }
+
+.saved-card {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 0.8rem;
+  background: var(--surface);
+  /* Room at the right for the two icons, which sit over the card's top corner
+     rather than taking a column of their own. */
+  padding-right: 3.6rem;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.saved-card:hover { border-color: var(--green); background: var(--green-soft); }
+
 .saved-open {
   font: inherit;
   text-align: left;
@@ -175,39 +175,44 @@ main, .site-header, .site-footer { max-width: 1120px; margin: 0 auto; }
   padding: 0;
   cursor: pointer;
   color: var(--ink);
-  flex: 0 0 auto;
   font-weight: 600;
-  font-size: 0.93rem;
-  white-space: nowrap;
+  font-size: 0.95rem;
+  display: block;
+  max-width: 100%;
   border-bottom: 1px solid transparent;
 }
 .saved-open:hover,
 .saved-open:focus-visible { border-bottom-color: currentColor; }
 .saved-name { font: inherit; }
 
-/* Filtering the list, shown only once there are enough rows to need it. */
-.saved-search { margin-bottom: 0.6rem; }
-.saved-search input {
-  width: 100%;
-  font: inherit;
-  padding: 0.4rem 0.6rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--ink);
-}
-.saved-none {
-  margin: 0 0 0.6rem;
-  font-size: 0.85rem;
+/* When first, then where: the order anyone asks them in. */
+.saved-born,
+.saved-place {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
   color: var(--ink-soft);
 }
-/*
- * The place and the moment are no longer printed in the row - they are on its
- * title instead - so the rules that sized and truncated them went with them.
- * A selector nothing emits is a claim about a layout that is gone.
- */
+.saved-place { color: var(--ink-faint); }
 
-.saved-actions { display: flex; align-items: center; gap: 0.15rem; padding-right: 0.35rem; }
+/*
+ * Over the card's top corner rather than in a column of its own, which is why
+ * the card carries the extra right padding. When the delete asks for
+ * confirmation the pair needs the width of a sentence, so it takes the whole
+ * card at that moment rather than overflowing it.
+ */
+.saved-actions {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.45rem;
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+.saved-actions.confirming {
+  position: static;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
 
 .saved-icon {
   display: inline-flex;
@@ -1727,7 +1732,7 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
   svg.kundli .graha-saturn { fill: #7c8ba3; }
   svg.kundli .graha-rahu { fill: #e07ab8; }
   svg.kundli .graha-ketu { fill: #d9a066; }
-  .saved-item:hover { background: #21362b; }
+  .saved-card:hover { background: #21362b; border-color: var(--green); }
   .add-kundali { background: #21362b; color: var(--green-deep); }
   .add-kundali:hover { background: #2a4435; }
   tbody tr:hover { background: var(--row-hover); }

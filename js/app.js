@@ -4178,7 +4178,7 @@
       // The index the delete needs is into the stored list, not the filtered
       // one, or searching would delete the wrong row.
       var index = all.indexOf(entry);
-      var li = el('li', 'saved-item');
+      var li = el('li', 'saved-card');
 
       /*
        * The name opens the chart and nothing else does.
@@ -4191,25 +4191,24 @@
        * now plain text.
        */
       /*
-       * The name and nothing else.
+       * A card rather than a row across the page.
        *
-       * The row carried the place and the moment beside it, which is most of a
-       * line of text on every row to answer a question nobody was asking: a
-       * reader scanning this list is looking for a person by name. They are not
-       * thrown away, because they are the only thing telling two charts of one
-       * person apart - they move to the row's own title, where they cost
-       * nothing until wanted.
+       * A saved chart is three short facts - who, when, where - and a row gave
+       * them a full screen width to sit in, so a list of ten was ten lines of
+       * mostly empty space with the eye travelling to the far edge for the
+       * edit and the delete. Stacked in a card the three read down in the order
+       * anyone asks them, and the cards sit several to a row.
+       *
+       * The name is still the only thing that opens the chart.
        */
-      var detail = el('div', 'saved-detail');
       var open = el('button', 'saved-open');
       open.type = 'button';
       open.appendChild(el('span', 'saved-name', entry.name));
       if (entry.celebrity) open.appendChild(el('span', 'celebrity-mark', CELEBRITY_MARK));
-      open.title = entry.name + ', ' + entry.placeLabel + ', ' +
-        formatSavedMoment(entry);
       open.addEventListener('click', function () { loadSaved(entry); });
-      detail.appendChild(open);
-      li.appendChild(detail);
+      li.appendChild(open);
+      li.appendChild(el('p', 'saved-born', formatSavedMoment(entry)));
+      li.appendChild(el('p', 'saved-place', entry.placeLabel));
 
       var actions = el('div', 'saved-actions');
       actions.appendChild(iconButton('edit', 'Edit ' + entry.name, function () {
