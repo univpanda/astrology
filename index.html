@@ -150,12 +150,9 @@
         </label>
       </div>
 
-      <div class="field field-wide">
-        <label for="person-note">Note <span class="hint">optional, for your own reference</span></label>
-        <textarea id="person-note" rows="2" maxlength="2000"
-                  placeholder="Why this chart was cast, where the birth time came from, anything worth remembering."></textarea>
-      </div>
-
+      <!-- Between the place and the note: it is the place, entered another
+           way, and after the note it sat a field away from the thing it
+           replaces and after something unrelated to it. -->
       <fieldset class="field field-wide manual-coords" id="manual-coords" hidden>
         <legend>Manual coordinates</legend>
         <div class="manual-grid">
@@ -207,9 +204,17 @@
             <p class="dms-decimal" id="zone-note" role="status"></p>
           </div>
         </div>
-        <p class="varga-note">Minutes and seconds may be left empty, and a decimal
-          typed into the degrees box on its own works too.</p>
+        <p class="varga-note">Seconds may be left empty. Leaving the minutes out
+          moves the lagna about half a degree, and the navamsa lagna one time in six.
+          A decimal typed into the degrees box on its own works too.</p>
       </fieldset>
+
+      <div class="field field-wide">
+        <label for="person-note">Note <span class="hint">optional, for your own reference</span></label>
+        <textarea id="person-note" rows="2" maxlength="2000"
+                  placeholder="Why this chart was cast, where the birth time came from, anything worth remembering."></textarea>
+      </div>
+
     </div>
 
     <div class="actions">

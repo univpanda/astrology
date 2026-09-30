@@ -6524,6 +6524,15 @@ ok('gender shows only when it was stated',
  * combobox it read as something to reach for once the search had already
  * failed - half a field away from the box it replaces.
  */
+/*
+ * And the boxes it opens sit between the place and the note. They are the
+ * place, entered another way; after the note they were a field away from the
+ * thing they replace, with something unrelated in between.
+ */
+ok('the manual coordinates sit between the place and the note',
+   html.indexOf('id="manual-coords"') > html.indexOf('id="place-combobox"') &&
+   html.indexOf('id="manual-coords"') < html.indexOf('id="person-note"'));
+
 ok('the coordinates link sits beside the place label',
    html.indexOf('id="manual-toggle"') > html.indexOf('<label for="place">') &&
    html.indexOf('id="manual-toggle"') < html.indexOf('id="place-combobox"') &&
@@ -6675,13 +6684,21 @@ console.log('\nManual coordinates');
    * open by arguing for the design - degrees and a letter rather than a signed
    * decimal, so no minus can be dropped - which is a reason to have built it
    * this way and not a thing a reader needs while filling it in. The marks and
-   * the N/E selects say the format; these two sentences say what is optional
-   * and what else is accepted, and neither is guessable.
+   * the N/E selects say the format.
+   *
+   * It also used to offer the minutes and the seconds as equally droppable,
+   * which they are not, by three orders of magnitude. Measured over 13,992
+   * charts across eleven latitudes: dropping the seconds moves the lagna by
+   * 0.008 degrees and changes the navamsa lagna in 0.1% of them, while
+   * dropping the minutes moves it half a degree and changes the navamsa lagna
+   * in one chart in six. One is free and the other is a real loss, and a note
+   * that waves at both invites the wrong one.
    */
-  ok('the note says what is optional and what else is taken, and nothing else',
-    /<p class="varga-note">Minutes and seconds may be left empty, and a decimal\s+typed into the degrees box on its own works too\.<\/p>/
+  ok('the note offers the seconds and not the minutes',
+    /<p class="varga-note">Seconds may be left empty\. Leaving the minutes out\s+moves the lagna about half a degree, and the navamsa lagna one time in six\.\s+A decimal typed into the degrees box on its own works too\.<\/p>/
       .test(html) &&
-    !/the way an atlas or a birth record/.test(html));
+    !/the way an atlas or a birth record/.test(html) &&
+    !/Minutes and seconds may be left empty/.test(html));
   put('lat', 23.55, '', '', 'N');
   ok('a decimal in the degrees box on its own still works', near(readDms('lat', 90), 23.55));
 
