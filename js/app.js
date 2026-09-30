@@ -4426,16 +4426,6 @@
       var li = el('li', 'saved-card');
 
       /*
-       * The name opens the chart and nothing else does.
-       *
-       * The whole left half of the row used to be one button, so a reader
-       * aiming for the place or the date opened a chart instead, and the row
-       * gave no sign which part of it was the target. The name is the thing
-       * being chosen between, so it is the thing that is clickable; the place
-       * and the moment are there to tell two charts of one person apart and are
-       * now plain text.
-       */
-      /*
        * A card rather than a row across the page.
        *
        * A saved chart is three short facts - who, when, where - and a row gave
@@ -4444,7 +4434,8 @@
        * edit and the delete. Stacked in a card the three read down in the order
        * anyone asks them, and the cards sit several to a row.
        *
-       * The name is still the only thing that opens the chart.
+       * The name remains a real button for the keyboard; a pointer can use the
+       * whole card, which is the area the hover treatment presents as active.
        */
       var open = el('button', 'saved-open');
       open.type = 'button';
@@ -4461,7 +4452,6 @@
         star.setAttribute('aria-label', CELEBRITY_MARK);
         open.appendChild(star);
       }
-      open.addEventListener('click', function () { loadSaved(entry); });
       li.appendChild(open);
       li.appendChild(el('p', 'saved-born', formatSavedMoment(entry)));
       li.appendChild(el('p', 'saved-place', entry.placeLabel));
@@ -4506,6 +4496,12 @@
       }));
 
       li.appendChild(actions);
+      li.addEventListener('click', function (event) {
+        // The three action buttons have their own jobs. Everything else on the
+        // card identifies this Kundali and opens it, including date and place.
+        if (event.target.closest && event.target.closest('.saved-actions')) return;
+        loadSaved(entry);
+      });
       savedList.appendChild(li);
     });
   }

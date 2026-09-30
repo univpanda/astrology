@@ -1281,17 +1281,14 @@ ok('and the icons sit on the card rather than in a column of their own',
       /\.saved-actions\.confirming \{[^}]*position: static;/.test(css) &&
       /\.saved-card \{[^}]*padding-right: 5\.4rem;/.test(css.replace(/\n/g, ''));
   })());
-/*
- * And only the name opens it. The whole left half used to be one button, so
- * aiming at the place or the date opened a chart, and nothing in the row said
- * which part of it was the target.
- */
-ok('the name is the only thing in the row, and the only thing that opens it',
+/* The keyboard gets a real name button; a pointer gets the whole visible card. */
+ok('the whole card opens, while the name remains a keyboard button',
    (function () {
      var at = appSrc.indexOf('function renderSaved()');
      var block = appSrc.slice(at, appSrc.indexOf('function removeSaved', at));
      return /open\.appendChild\(el\('span', 'saved-name', entry\.name\)\)/.test(block) &&
-       /open\.addEventListener\('click', function \(\) \{ loadSaved\(entry\); \}\)/.test(block) &&
+       /li\.addEventListener\('click'/.test(block) && /loadSaved\(entry\);/.test(block) &&
+       /closest\('\.saved-actions'\)/.test(block) &&
        !/saved-meta/.test(block);
    })());
 
@@ -1300,10 +1297,11 @@ ok('the name is the only thing in the row, and the only thing that opens it',
  * pointed at; the name is the thing that will act on a click, and the two
  * affordances say so separately.
  */
-ok('the card marks the hover and the name marks the click', (function () {
+ok('the card marks the hover and carries the pointer', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
   return /\.saved-open:hover,\n\.saved-open:focus-visible \{ border-bottom-color: currentColor; \}/
     .test(css) && /\.saved-card:hover \{ border-color: var\(--green\)/.test(css) &&
+    /\.saved-card \{[\s\S]*?cursor: pointer;/.test(css) &&
     !/\.saved-item/.test(css);
 })());
 
