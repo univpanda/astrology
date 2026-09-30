@@ -149,46 +149,30 @@ var Shadbala = (function () {
        * Raman's worked examples want the other setting - he scores his own Sun's
        * hora as Swavarga at 30, and the tests that reproduce him say so.
        */
-      var horaEffect = division === 2 && horaRule !== Astro.HORA_DIGNITY.LORD
-        ? Astro.horaEffect(graha, position.sign, Astro.signOf(planet.longitude), horaMercury)
-        : null;
       /*
-       * Moolatrikona first, and not behind ownership, because for one graha the
-       * two part company. The Moon's moolatrikona is Taurus 3 to 30, and Taurus
-       * is Venus's sign - she is the only one of the seven whose moolatrikona
-       * sits in somebody else's house. Testing ownership first cost her the 45
-       * and handed her a relation to Venus instead, 30 virupas short, in every
-       * chart with the Moon in that arc.
+       * The facts about this cell come from one place, Astro.vargaDignity, and
+       * each bala takes the half its own ladder pays for. This one pays 45 for
+       * a moolatrikona and vimsopaka pays nothing, chapter 27 giving it a rung
+       * there and chapter 6 not giving it one in the varga viswa; both pay for
+       * ownership. Computing the facts twice is what let the two drift.
        *
-       * Raman's Example 9 could not catch it: his Moon is in Aquarius, so the
-       * case never arises, and all 49 of his cells matched regardless.
+       * The hora is already folded in by that function when the setting asks
+       * for the chapter 7 reading rather than the lord, and it replaces the
+       * whole cell: the Sun in the Leo hora then scores 22.5 rather than 30,
+       * which is what Raman's examples want the other setting for.
+       *
+       * Moolatrikona in the rashi and nowhere else. Raman section 30: "45
+       * Shashtiamsas have to be allotted for a planet only when it is in its
+       * Moolatrikona Rasi, and not when it occupies any other of the 6 vargas."
        */
-      var mool = division === 1 && Astro.dignityOf(graha, position.sign,
-        position.degreeInSign) === 'Mooltrikona';
-      if (horaEffect) {
-        relation = horaEffect;
-      } else if (mool) {
+      var cell = Astro.vargaDignity(graha, planet.longitude, division,
+        positionsD1, tatkalika, horaRule, horaMercury);
+      if (!cell) {
+        relation = 'sama';           // a node, which disposits nothing
+      } else if (cell.dignity === 'moolatrikona') {
         relation = 'moolatrikona';
-      } else if (lord === graha) {
-        /*
-         * Moolatrikona counts in the rashi and nowhere else. Raman section 30:
-         * "45 Shashtiamsas have to be allotted for a planet only when it is in
-         * its Moolatrikona Rasi, and not when it occupies any other of the 6
-         * vargas (than Rasi)."
-         *
-         * It was tested in all seven, and the test could not have meant anything
-         * in the other six: moolatrikona is a range of degrees within a sign,
-         * and vargaPosition stretches the position within a division back across
-         * the whole thirty, so the degree handed to dignityOf was not a degree
-         * of any sign the graha stands in. It claimed moolatrikona in 2.4% of
-         * varga cells outside the rashi.
-         */
-        relation = 'own';
-      } else if (!positionsD1[lord]) {
-        relation = 'sama';           // the nodes disposit nothing; treat as neutral
       } else {
-        relation = Astro.compoundRelation(graha, lord, Astro.tatkalikaHouses(
-          graha, lord, position.sign, positionsD1, division, tatkalika));
+        relation = cell.relation || 'sama';
       }
       total += rungs[relation];
       detail.push({ division: division, sign: position.sign, lord: lord, relation: relation });

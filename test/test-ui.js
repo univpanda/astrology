@@ -4258,7 +4258,15 @@ ok('only exaltation and debilitation ever fall outside the scale', (function () 
       });
     });
   }
-  return Object.keys(seen).sort().join(',') === 'debilitated,exalted';
+  /*
+   * Three now, not two. Moolatrikona joined them when the varga viswa lost the
+   * rung it never had in chapter 6: a Moon in Taurus 3 to 30 is shown in her
+   * moolatrikona, which is true, and scored as Venus's friend, which is what
+   * the ladder pays. Saptavargaja bala still pays her the 45 from its own
+   * chapter, so the word on the cell is not idle - it is worth something in one
+   * reckoning and nothing in the other.
+   */
+  return Object.keys(seen).sort().join(',') === 'debilitated,exalted,moolatrikona';
 })());
 ok('a cell title does not repeat the cell', (function () {
   var at = appSrc.indexOf('function renderVargas(state)');

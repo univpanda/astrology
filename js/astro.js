@@ -1261,8 +1261,15 @@ var Astro = (function () {
     }).slice(0, 3);
   }
 
+  /*
+   * The six rungs of chapter 6 verses 21-25 and no more. Moolatrikona had a
+   * seventh here at twenty, which that verse does not give it: "the total
+   * strength from 20 declines to 18 in extreme friend's Vargas, to 15 in
+   * friendly Vargas, to 10 in equal's divisions, to 7 in enemy's Vargas and to
+   * 5 in sworn enemy's Vargas".
+   */
   var VARGA_VISWA = {
-    moolatrikona: 20, own: 20, adhimitra: 18, mitra: 15,
+    own: 20, adhimitra: 18, mitra: 15,
     sama: 10, shatru: 7, adhishatru: 5
   };
 
@@ -1515,34 +1522,52 @@ var Astro = (function () {
     var ownsIt = lord === graha;
 
     /*
-     * Moolatrikona is a dignity in its own right, not a special case of
-     * ownership, and varga viswa gives it a rung of its own at twenty. So it is
-     * asked about before ownership rather than inside it - which matters for
-     * exactly one graha. The Moon's moolatrikona is Taurus 3 to 30 and Taurus
-     * is Venus's sign; asking only of owners left her scored as Venus's friend
-     * at fifteen when she stands in her own moolatrikona.
+     * Varga viswa has no moolatrikona rung, and this used to give it one.
      *
-     * In the rashi and nowhere else. It is a span of degrees inside a sign, and
-     * vargaPosition stretches a position within a division back across the
-     * whole thirty, so the degree a varga reports is not a degree of any sign
-     * the graha stands in: reading moolatrikona off a D60 is meaningless. It
-     * was read off one in 2.7% of varga cells.
+     * Brihat Parashara Hora Shastra ch.6 vv.21-25 lists the ladder outright:
+     * "The Vimsopaka strength remains as 20 ... only when the planet is in own
+     * house Vargas. Otherwise the total strength from 20 declines to 18 in
+     * extreme friend's Vargas, to 15 in friendly Vargas, to 10 in equal's
+     * divisions, to 7 in enemy's Vargas and to 5 in sworn enemy's Vargas.
+     * (These figures are called Varga Viswa.)" Six rungs, own down to sworn
+     * enemy, and moolatrikona is not among them.
+     *
+     * It matters for exactly one graha. The Moon's moolatrikona is Taurus 3 to
+     * 30 and Taurus is Venus's sign, so a Moon there was being scored twenty,
+     * as though she owned the sign, when the ladder asks how she stands with
+     * the graha who does. She is Venus's friend, which is fifteen.
+     *
+     * Saptavargaja bala is a different ladder and does have the rung, at 45,
+     * which is why that one still asks. Chapter 27 gives it there and chapter 6
+     * does not give it here; the asymmetry is the texts' and not an oversight.
      */
     var relation = null;
-    if (division === 1 && own === 'Mooltrikona') {
-      relation = 'moolatrikona';
-    } else if (ownsIt) {
+    if (ownsIt) {
       relation = 'own';
     } else if (positionsD1 && positionsD1[lord] && positionsD1[graha]) {
       relation = compoundRelation(graha, lord, tatkalikaHouses(
         graha, lord, position.sign, positionsD1, division, tatkalika));
     }
 
-    // Exaltation and debilitation outrank the relation when the two disagree,
-    // which is the order they are usually recited in.
-    var chosen = own === 'Exalted' ? 'exalted'
+    /*
+     * Two different facts about the cell, kept apart because the balas scored on
+     * them want different halves.
+     *
+     * `dignity` is how the graha stands in the sign itself: exalted, in its
+     * moolatrikona, in its own house, fallen, or none of those. `relation` is
+     * how it stands with the graha who owns that sign. Saptavargaja bala pays
+     * for moolatrikona and vimsopaka does not; both pay for ownership; neither
+     * has a rung for exaltation. Running the two together as one value is what
+     * put a moolatrikona rung on a ladder whose own verse lists six.
+     */
+    var dignity = own === 'Exalted' ? 'exalted'
       : own === 'Debilitated' ? 'debilitated'
-      : relation;
+      : (division === 1 && own === 'Mooltrikona') ? 'moolatrikona'
+      : ownsIt ? 'own' : null;
+
+    // What the grid prints: the dignity where there is one, the relation
+    // otherwise. Ownership is left to the relation, the two agreeing there.
+    var chosen = dignity && dignity !== 'own' ? dignity : relation;
     if (!chosen) return null;                // a node, which owns nothing and befriends nobody
 
     return {
@@ -1550,6 +1575,7 @@ var Astro = (function () {
       label: VARGA_DIGNITY_LABELS[chosen],
       sign: position.sign,
       lord: lord,
+      dignity: dignity,
       relation: relation,
       relationLabel: relation ? VARGA_DIGNITY_LABELS[relation] : null,
       viaProxy: division === 30 && TRIMSAMSA_PROXY[graha] === lord

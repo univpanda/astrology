@@ -35,18 +35,22 @@ var rt = A.calendarDate(2436116.31);
 ok('calendarDate round-trip', rt.y === 1957 && rt.m === 10 && rt.d === 4 &&
    Math.abs(rt.hours - 19.44) < 0.01, rt.y + '-' + rt.m + '-' + rt.d + ' ' + rt.hours.toFixed(3) + 'h');
 
-console.log('\nMoolatrikona as a dignity, in the rashi and nowhere else');
+console.log('\nVarga viswa has no moolatrikona rung, and saptavargaja does');
 /*
- * Moolatrikona is a dignity in its own right rather than a special case of
- * ownership, and varga viswa gives it a rung of its own at twenty. Asking
- * about it only of owners left out the one graha it matters for: the Moon's
- * moolatrikona is Taurus 3 to 30 and Taurus is Venus's, so she scored fifteen
- * as Venus's friend while standing in her own moolatrikona.
+ * This grid once gave moolatrikona a rung of its own at twenty, which the
+ * ladder it is scored on does not have. Brihat Parashara Hora Shastra ch.6
+ * vv.21-25 names the whole of it: "The Vimsopaka strength remains as 20 ...
+ * only when the planet is in own house Vargas. Otherwise the total strength
+ * from 20 declines to 18 in extreme friend's Vargas, to 15 in friendly Vargas,
+ * to 10 in equal's divisions, to 7 in enemy's Vargas and to 5 in sworn enemy's
+ * Vargas." Six rungs, own down to sworn enemy.
  *
- * Still the rashi only. It is a span of degrees inside a sign, and a varga
- * position is a place within a division stretched back across the whole
- * thirty, so the degree a D60 reports is not a degree of any sign the graha
- * stands in.
+ * It matters for one graha. The Moon's moolatrikona is Taurus 3 to 30 and
+ * Taurus is Venus's, so a Moon there scored twenty as though she owned the
+ * sign, where the ladder asks how she stands with the graha who does.
+ *
+ * Saptavargaja bala is a different ladder and does have the rung, at 45, from
+ * chapter 27. The asymmetry is the texts' and both halves are checked here.
  */
 (function () {
   var place = { latitude: 21.3069, longitude: -157.8583, tzOffsetMinutes: -600 };
@@ -56,11 +60,25 @@ console.log('\nMoolatrikona as a dignity, in the rashi and nowhere else');
   var pos = {};
   chart.planets.forEach(function (p) { pos[p.name] = p; });
   var moon = A.vargaDignity('Moon', pos.Moon.longitude, 1, pos);
-  ok('the Moon reaches moolatrikona in a sign she does not own',
-    moon.relation === 'moolatrikona' && A.SIGN_LORDS[moon.sign] === 'Venus',
+  ok('the Moon in her moolatrikona is scored by how she stands with its lord',
+    moon.relation === 'mitra' && A.SIGN_LORDS[moon.sign] === 'Venus',
     moon.relation + ' in ' + A.SIGN_LORDS[moon.sign] + "'s sign");
-  ok('and varga viswa scores it the full twenty',
-    A.VARGA_VISWA.moolatrikona === 20 && A.VARGA_VISWA.mitra === 15);
+  ok('and the ladder it is scored on has the six rungs the verse names',
+    A.VARGA_VISWA.own === 20 && A.VARGA_VISWA.adhimitra === 18 &&
+    A.VARGA_VISWA.mitra === 15 && A.VARGA_VISWA.sama === 10 &&
+    A.VARGA_VISWA.shatru === 7 && A.VARGA_VISWA.adhishatru === 5 &&
+    A.VARGA_VISWA.moolatrikona === undefined,
+    JSON.stringify(A.VARGA_VISWA));
+
+  /*
+   * And the other ladder does keep it. Raman prints 161.25 for this Moon's
+   * saptavargaja, which is the 45 of a moolatrikona and six more cells; score
+   * her fifteen there instead and the figure cannot be reached.
+   */
+  ok('while saptavargaja still pays her the 45 its own chapter gives',
+    Math.abs(Shadbala.compute(chart, place, { tatkalika: 'rashi',
+      horaDignity: 'lord', saptavargajaLadder: 'raman' })
+      .grahas.Moon.sthana.saptavargaja - 161.25) < 0.01);
 
   /*
    * And never outside the rashi, in any of the sixteen.
@@ -72,7 +90,6 @@ console.log('\nMoolatrikona as a dignity, in the rashi and nowhere else');
     var p2 = {};
     ch.planets.forEach(function (p) { p2[p.name] = p; });
     A.SHODASAVARGA.forEach(function (d) {
-      if (d === 1) return;
       ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn']
         .forEach(function (g) {
           var vd = A.vargaDignity(g, p2[g].longitude, d, p2);
@@ -80,7 +97,7 @@ console.log('\nMoolatrikona as a dignity, in the rashi and nowhere else');
         });
     });
   }
-  ok('and no division above the rashi ever claims it',
+  ok('and no division claims the rung at all, the rashi included',
     leaked.length === 0, leaked.slice(0, 3).join(', ') || 'none');
 
   /*
@@ -2179,14 +2196,27 @@ ok('and no short form has a key the full list does not',
    * Those two exclusions are the point of this test, not a hole in it.
    */
   var SHARED = [1, 3, 7, 9, 12];
-  ok('the underlying relation agrees with saptavargaja bala where both use the same scale',
+  /*
+   * Both now read the same cell from the same function, so the sign and the
+   * lord must agree everywhere. The rung need not: saptavargaja pays 45 for a
+   * moolatrikona where the varga viswa has no such step, so that one cell is
+   * allowed to differ and is checked for rather than waved through.
+   */
+  var divergences = [];
+  ok('both read the same cell, and differ only where their ladders do',
      Shadbala.GRAHAS.every(function (g) {
        return detail.grahas[g].saptavargajaDetail.every(function (row) {
          if (SHARED.indexOf(row.division) < 0) return true;
          var vd = A.vargaDignity(g, pos[g].longitude, row.division, pos);
-         return vd && vd.relation === row.relation && vd.sign === row.sign && vd.lord === row.lord;
+         if (!vd || vd.sign !== row.sign || vd.lord !== row.lord) return false;
+         if (vd.relation === row.relation) return true;
+         if (row.relation === 'moolatrikona' && vd.dignity === 'moolatrikona') {
+           divergences.push(g + ' D' + row.division);
+           return true;
+         }
+         return false;
        });
-     }));
+     }), divergences.join(', ') || 'no cell diverged on this chart');
   ok('and the two left out are the two chapter 7 singles out',
      SHARED.indexOf(30) < 0 && SHARED.indexOf(2) < 0 &&
      [1, 3, 7, 9, 12].every(function (d) { return SHARED.indexOf(d) >= 0; }));
@@ -4140,8 +4170,16 @@ console.log('\nVimsopaka bala');
     });
   })());
 
-  ok('moolatrikona keeps the same twenty as an own sign, the text giving it no rung',
-     A.VARGA_VISWA.moolatrikona === 20 && A.VARGA_VISWA.own === 20);
+  /*
+   * The text gives it no rung and the table now has none. This assertion used
+   * to read the other way, mapping moolatrikona onto the twenty an own sign
+   * gets, which is a rung the verse does not list: "the total strength from 20
+   * declines to 18 ... 15 ... 10 ... 7 ... 5". Six steps, own at the top.
+   */
+  ok('the table has the six steps the verse lists and no seventh',
+     A.VARGA_VISWA.moolatrikona === undefined &&
+     Object.keys(A.VARGA_VISWA).length === 6 && A.VARGA_VISWA.own === 20,
+     Object.keys(A.VARGA_VISWA).join(', '));
   ok('the varga viswa figures are Parashara\'s six',
      A.VARGA_VISWA.adhimitra === 18 && A.VARGA_VISWA.mitra === 15 &&
      A.VARGA_VISWA.sama === 10 && A.VARGA_VISWA.shatru === 7 &&
