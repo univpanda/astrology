@@ -1298,11 +1298,11 @@ var Astro = (function () {
    * Returns null for a graha the scheme cannot judge - the nodes, which own no
    * sign and keep no friendships.
    */
-  function vimsopaka(graha, longitude, scheme, positionsD1) {
+  function vimsopaka(graha, longitude, scheme, positionsD1, tatkalika) {
     var total = 0, parts = [];
     for (var i = 0; i < scheme.divisions.length; i++) {
       var division = scheme.divisions[i];
-      var d = vargaDignity(graha, longitude, division, positionsD1);
+      var d = vargaDignity(graha, longitude, division, positionsD1, tatkalika);
       if (!d || !d.relation) return null;
       var kept = VARGA_VISWA[d.relation];
       var share = scheme.weights[division] * kept / 20;

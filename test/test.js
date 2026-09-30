@@ -7949,6 +7949,34 @@ console.log('\nWhich chart tatkalika is counted in');
      Shadbala.saptavargajaBala('Sun', chart, pos).value === byVarga);
   // Raman prints 90 for this Sun, which is the rashi reading and nothing else.
   ok('while the rashi reading is the one Raman prints', byRashi === 90, byRashi);
+
+  /*
+   * The total has to be scored the same way the cells under it were drawn. It
+   * was not, at first: vimsopaka called vargaDignity without passing the
+   * reading on, so moving the setting changed every cell of the grid and left
+   * the figure at its foot alone, a column that did not add up.
+   */
+  var scheme = A.VARGA_SCHEMES.dasavarga;
+  ok('the vimsopaka total follows the reading its cells were drawn with',
+     G.some(function (g) {
+       return A.vimsopaka(g, at[g], scheme, pos).total !==
+              A.vimsopaka(g, at[g], scheme, pos, 'rashi').total;
+     }));
+  ok('and the total is what the cells themselves come to', G.every(function (g) {
+    return ['varga', 'rashi'].every(function (reading) {
+      var sum = 0;
+      scheme.divisions.forEach(function (d) {
+        var cell = A.vargaDignity(g, at[g], d, pos, reading);
+        sum += scheme.weights[d] * A.VARGA_VISWA[cell.relation] / 20;
+      });
+      return Math.abs(sum - A.vimsopaka(g, at[g], scheme, pos, reading).total) < 1e-9;
+    });
+  }));
+  ok('and the total defaults to the division like everything else',
+     G.every(function (g) {
+       return A.vimsopaka(g, at[g], scheme, pos).total ===
+              A.vimsopaka(g, at[g], scheme, pos, 'varga').total;
+     }));
 })();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');

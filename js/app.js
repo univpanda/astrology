@@ -2968,7 +2968,12 @@
     head.appendChild(el('span', 'varga-weight', ' 20'));
     totals.appendChild(head);
     planets.forEach(function (planet) {
-      var score = Astro.vimsopaka(planet.name, planet.longitude, scheme, positionsD1);
+      /*
+        * The same reading the cells above were drawn with. A total scored one
+        * way under a row read the other would be a column that does not add up.
+        */
+      var score = Astro.vimsopaka(planet.name, planet.longitude, scheme, positionsD1,
+        tatkalikaSetting());
       var td = el('td', 'vimsopaka' + (score ? ' vimsopaka-' + score.band.key : ''),
         score ? score.total.toFixed(2) : '\u2013');
       if (score) {
@@ -3002,7 +3007,8 @@
     state.chart.planets.forEach(function (p) { positionsD1[p.name] = p; });
 
     return state.chart.planets.map(function (planet) {
-      var score = Astro.vimsopaka(planet.name, planet.longitude, scheme, positionsD1);
+      var score = Astro.vimsopaka(planet.name, planet.longitude, scheme, positionsD1,
+        tatkalika);
       if (!score) return null;                     // the nodes keep no friendships
       var rashi = Astro.signOf(planet.longitude);
       var benefics = Astro.naturalBenefics(state.chart);

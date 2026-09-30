@@ -327,6 +327,12 @@ console.log('\nThe tatkalika setting, end to end');
      /Astro\.vargaDignity\(planet\.name, planet\.longitude, division, positionsD1,\s*\n\s*tatkalikaSetting\(\)\)/.test(src));
   ok('the chart card takes it', /dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\)\)/.test(src));
   ok('the varga summary takes it', /vargaSummary\(state, scheme, tatkalikaSetting\(\)\)/.test(src));
+  // Including the figure at the foot of the grid, which is scored over the
+  // same cells and would otherwise be a total of a column nobody is looking at.
+  ok('and so does the vimsopaka total beneath the cells',
+     (src.match(/Astro\.vimsopaka\(planet\.name, planet\.longitude, scheme, positionsD1,/g) || [])
+       .length === 2 &&
+     !/Astro\.vimsopaka\(planet\.name, planet\.longitude, scheme, positionsD1\)/.test(src));
   ok('and shadbala takes it', /tatkalika: tatkalikaSetting\(\)/.test(src));
   /*
    * Changing it changes figures rather than wording, so the cached strengths
@@ -3919,7 +3925,7 @@ ok('Rashi is priced differently in every one of the four', (function () {
 ok('the total is one cell under its graha\'s column',
    !/rowspan/.test(appSrc.slice(appSrc.indexOf('function renderVargas(state)'),
                                 appSrc.indexOf('function vargaSummary'))) &&
-   /Astro\.vimsopaka\(planet\.name, planet\.longitude, scheme, positionsD1\)/.test(appSrc));
+   /Astro\.vimsopaka\(planet\.name, planet\.longitude, scheme, positionsD1,\s*\n\s*tatkalikaSetting\(\)\)/.test(appSrc));
 /*
  * The total sits second, beside the name, not last. Sixteen columns scroll, so
  * last put the one number the grid is adding up off the right-hand edge: the
