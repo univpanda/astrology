@@ -312,21 +312,6 @@ main, .site-header, .site-footer { max-width: 1120px; margin: 0 auto; }
 
 /* ------------------------------------------------- add, and save status */
 
-.add-kundali {
-  font: inherit;
-  font-weight: 600;
-  font-size: 0.9rem;
-  width: 100%;
-  margin-top: 0.85rem;
-  color: var(--green-deep);
-  background: var(--green-soft);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  padding: 0.6rem 0.9rem;
-  cursor: pointer;
-  transition: background 0.12s ease, border-color 0.12s ease;
-}
-.add-kundali:hover { background: #cfe9da; border-color: var(--green); }
 
 /* Takes no room until it has something to say; a reserved empty line was most
    of the spare height in this card. */
@@ -485,20 +470,6 @@ textarea::placeholder { color: #a9bdb2; }
   white-space: pre-wrap;
 }
 
-/*
- * In a list, the flag is a star: the words are the width of some of the names
- * they sit beside, and on a card that is most of a line spent on something true
- * of a third of them. The chart itself still spells it out.
- */
-.celebrity-star {
-  margin-left: 0.3rem;
-  /* A star carries more ink than the letters beside it, so it is set smaller
-     and lifted off the baseline to sit against the cap height. */
-  font-size: 0.74em;
-  vertical-align: 0.14em;
-  line-height: 1;
-  color: var(--green);
-}
 .saved-key {
   margin: 0.6rem 0 0;
   font-size: 0.78rem;
@@ -1884,8 +1855,6 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
   svg.kundli .graha-rahu { fill: #e07ab8; }
   svg.kundli .graha-ketu { fill: #d9a066; }
   .saved-card:hover { background: #21362b; border-color: var(--green); }
-  .add-kundali { background: #21362b; color: var(--green-deep); }
-  .add-kundali:hover { background: #2a4435; }
   tbody tr:hover { background: var(--row-hover); }
   tr.current-dasha { background: rgba(88, 192, 138, 0.13); }
 }

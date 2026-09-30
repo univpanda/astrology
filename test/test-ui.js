@@ -851,8 +851,11 @@ ok('every querySelector root exists in index.html', selMissing.length === 0, sel
   ok('index.html links ' + asset, html.indexOf(asset) >= 0);
   ok(asset + ' exists on disk', fs.existsSync(path.join(root, asset)));
 });
+// The table is 60,000 places. What matters is that no script tag pulls it in
+// at load; naming the file in a comment is not loading it.
 ok('cities.js is loaded lazily, not in index.html',
-   html.indexOf('data/cities.js') < 0 && fs.readFileSync(path.join(root, 'js/geo.js'), 'utf8').indexOf("'data/cities.js'") > 0);
+   !/<script[^>]*src="[^"]*cities\.js/.test(html) &&
+   fs.readFileSync(path.join(root, 'js/geo.js'), 'utf8').indexOf("'data/cities.js'") > 0);
 
 // Accessibility wiring for the combobox.
 ok('combobox declares role and controls', /role="combobox"/.test(html) && /aria-controls="place-listbox"/.test(html));
@@ -1180,7 +1183,7 @@ function stripHtml(label) {
      !/id="panel-grahas"[^>]*hidden/.test(html));
   ok('one tab implementation still serves every strip',
      (appSrc.match(/function setupTabs/g) || []).length === 1 &&
-     (appSrc.match(/setupTabs\(/g) || []).length === 3 &&
+     (appSrc.match(/setupTabs\(/g) || []).length === 4 &&
      /setupTabs\(\['grahas', 'shadbala', 'vargas', 'yogas', 'aspects'\]/.test(appSrc));
   // Two chart slots, and one table reading both of them plus the rashi.
   ok('there are two chart slots, each with two selects', ['a', 'b'].every(function (slot) {
@@ -1261,8 +1264,8 @@ ok('saved charts are cards that fit several to a row', (function () {
  */
 ok('and each card stacks the name, the moment and the place in that order',
   (function () {
-    var at = appSrc.indexOf('function renderSaved()');
-    var block = appSrc.slice(at, appSrc.indexOf('function removeSaved', at));
+    var at = appSrc.indexOf('function savedCard(entry)');
+    var block = appSrc.slice(at, appSrc.indexOf('function renderSaved()', at));
     var name = block.indexOf("el('span', 'saved-name', entry.name)");
     var born = block.indexOf("el('p', 'saved-born', formatSavedMoment(entry))");
     var place = block.indexOf("el('p', 'saved-place', entry.placeLabel)");
@@ -1284,8 +1287,8 @@ ok('and the icons sit on the card rather than in a column of their own',
 /* The keyboard gets a real name button; a pointer gets the whole visible card. */
 ok('the whole card opens, while the name remains a keyboard button',
    (function () {
-     var at = appSrc.indexOf('function renderSaved()');
-     var block = appSrc.slice(at, appSrc.indexOf('function removeSaved', at));
+     var at = appSrc.indexOf('function savedCard(entry)');
+     var block = appSrc.slice(at, appSrc.indexOf('function renderSaved()', at));
      return /open\.appendChild\(el\('span', 'saved-name', entry\.name\)\)/.test(block) &&
        /li\.addEventListener\('click'/.test(block) && /loadSaved\(entry\);/.test(block) &&
        /closest\('\.saved-actions'\)/.test(block) &&
@@ -1370,25 +1373,26 @@ ok('and the separator between them went with them', (function () {
  * label - and the star's title and label spell the same words out for anyone
  * who cannot see it or does not know what it means.
  */
-ok('the chart spells the flag out and the card stars it',
+/*
+ * The chart says it in words; the list says it by which tab the card is in.
+ *
+ * The star is gone, and so is the key line that explained it. A mark that is
+ * true of every card in a tab and of none in the other carries no information:
+ * it was answering the question the tab now answers, in a second place and in
+ * a way that needed a legend underneath to be read at all.
+ */
+ok('the chart spells it out and the list sorts by it instead',
    /var CELEBRITY_MARK = 'public figure';/.test(appSrc) &&
    (appSrc.match(/el\('span', 'celebrity-mark', CELEBRITY_MARK\)/g) || []).length === 1 &&
-   /var CELEBRITY_STAR = '\\u2605';/.test(appSrc) &&
-   /el\('span', 'celebrity-star', CELEBRITY_STAR\)/.test(appSrc) &&
+   !/CELEBRITY_STAR/.test(appSrc) && !/celebrity-star/.test(appSrc + cssSrc) &&
    !/'celebrity-mark', 'study'/.test(appSrc));
-ok('and the star says what it means, to a pointer and to a reader alike',
-   /star\.title = 'A ' \+ CELEBRITY_MARK;/.test(appSrc) &&
-   /star\.setAttribute\('aria-label', CELEBRITY_MARK\)/.test(appSrc) &&
-   /id="saved-key"/.test(html) &&
-   /CELEBRITY_STAR \+ ' a ' \+ CELEBRITY_MARK \+ '\.'/.test(appSrc));
 /*
  * The key explains the marks that are on the cards and no others: a line about
  * the star when something is starred, a line about the flag when something is
  * flagged, and nothing at all when neither is.
  */
-ok('and the key carries a line per mark actually in use',
+ok('and the key explains the one mark that is left',
    /key\.hidden = !key\.firstChild;/.test(appSrc) &&
-   /list\.some\(function \(entry\) \{ return entry\.celebrity; \}\)/.test(appSrc) &&
    /list\.some\(function \(entry\) \{ return entry\.flagged; \}\)/.test(appSrc) &&
    /\.saved-key-item \{ display: block; \}/.test(cssSrc));
 /*
@@ -1396,8 +1400,15 @@ ok('and the key carries a line per mark actually in use',
  * qualification that used to follow - "kept for study" - said the same thing a
  * second time in a longer way, and said it three times over.
  */
-ok('and it matches what the form asks',
-   /<span>A public figure<\/span>/.test(html) && !/kept for study/.test(html + appSrc));
+ok('and it matches what the form asks and the tab that collects them',
+   /<span>A public figure<\/span>/.test(html) &&
+   // What a reader can see: markup outside comments, and quoted strings. The
+   // phrase still explains the split in the comments, which is where it earns
+   // its keep.
+   !/kept for study/.test(html.replace(/<!--[\s\S]*?-->/g, '') +
+     (appSrc.match(/'[^'\n]*'/g) || []).join(' ')) &&
+   /id="tab-figures"[^>]*>Public figures/.test(html.replace(/\s+/g, ' ')) &&
+   /id="tab-mine"[^>]*>Your kundalis/.test(html.replace(/\s+/g, ' ')));
 /*
  * And the tick shares the place's row rather than trailing the note. It is one
  * of the things a chart is filed by, not an afterthought to a paragraph.
@@ -1418,8 +1429,27 @@ ok('and it is levelled against the inputs rather than the labels',
 // Saved kundalis: the list, and the four keys that identify an entry.
 ok('the saved list and its empty state are both present',
    /id="saved-list"/.test(html) && /id="saved-empty"/.test(html));
-ok('an "add a kundali" button sits under the saved list',
-   html.indexOf('id="add-kundali"') > html.indexOf('id="saved-list"'));
+/*
+ * The button under the saved list is gone: the tab strip already carries "Add
+ * a kundali", and two ways in that look different and do the same thing is one
+ * too many.
+ *
+ * What it uniquely did has to survive it, though. It was the only caller of
+ * showForm(true), which clears currentEntry; without that, generating after an
+ * edit would have patched the row the last chart came from instead of making
+ * its own, silently rewriting somebody else's record. Reaching for the tab
+ * yourself now does it, and only then - editSaved and the chart's edit button
+ * arrive in code and both mean to keep the row they came from.
+ */
+ok('the add button is gone, the tab having always been there',
+   !/id="add-kundali"/.test(html) && !/add-kundali/.test(cssSrc) &&
+   !/addButton/.test(appSrc));
+ok('and asking for the form yourself still starts a new chart',
+   /if \(name === 'add' && byUser\) \{\s*\n\s*blankForm\(\);\s*\n\s*currentEntry = null;/
+     .test(appSrc) &&
+   /buttons\[name\]\.addEventListener\('click', function \(\) \{ activate\(name, false, true\); \}\)/
+     .test(appSrc) &&
+   /options\.onChange\(name, byUser === true\)/.test(appSrc));
 ok('the saved tab shows how many are stored', /id="saved-count"/.test(html) && /savedCount/.test(appSrc));
 ok('generating saves without a separate button', /saveCurrent\(true\)/.test(appSrc) && !/id="save-button"/.test(html));
 // Reopening a saved chart must not write it back: that would bump updated_at
@@ -1430,7 +1460,7 @@ ok('the reopen flag is cleared synchronously on submit',
    /var reopening = reopeningSaved;\s*\n\s*reopeningSaved = false;/.test(appSrc));
 ok('the form gives way to the chart and can be brought back',
    /function showChart/.test(appSrc) && /function showForm/.test(appSrc) &&
-   /addButton\.addEventListener/.test(appSrc) && /editButton\.addEventListener/.test(appSrc));
+   /editButton\.addEventListener/.test(appSrc));
 ok('saved charts sync to the database as well as this browser',
    /astro_charts|functions\/v1\/kundalis/.test(appSrc) && /action: 'save'/.test(appSrc) &&
    /action: 'list'/.test(appSrc) && /action: 'delete'/.test(appSrc));
@@ -1471,6 +1501,18 @@ ok('a local copy is written first so the panel works offline',
 // A privacy claim that has stopped being true is worse than none.
 ok('the save status reserves no space when silent',
    /\.save-feedback:empty \{ display: none; \}/.test(fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8')));
+
+/*
+ * The credit is a licence condition, not a footnote. data/cities.js is the
+ * GeoNames table, used under CC BY 4.0, which requires attribution wherever
+ * the data goes. The rest of what stood in the footer was discretionary and is
+ * gone; this line cannot be.
+ */
+ok('the GeoNames credit survives whatever else leaves the footer',
+   /Place data from <a href="https:\/\/www\.geonames\.org\/"[^>]*>GeoNames<\/a>, CC BY 4\.0\./
+     .test(html) &&
+   !/Whole-sign \(Parashari\) houses/.test(html) &&
+   !/clearing site data unlinks them/.test(html));
 
 ok('the page claims nothing about data staying put',
    !/sent nowhere|No data leaves this page|never leave the machine/.test(html + appSrc));
@@ -3654,6 +3696,8 @@ ok('every script the page loads parses', (function () {
     '  __out.savedNote = savedNote;\n' +
     '  __out.readSaved = readSaved; __out.writeSaved = writeSaved;\n' +
     '  __out.savedList = savedList; __out.STORAGE_KEY = STORAGE_KEY;\n' +
+    '  __out.figuresList = document.getElementById("figures-list");\n' +
+    '  __out.byId = function (id) { return document.getElementById(id); };\n' +
     '  __out.readDate = readDate; __out.writeDate = writeDate;\n' +
     '  __out.dateBoxes = function () { return [dayInput, monthInput, yearInput]; };\n' +
     appSrc.slice(close);
@@ -7521,6 +7565,85 @@ var fnSrc = fs.readFileSync(path.join(root, 'supabase/functions/kundalis/index.t
 ok('a failed post-mutation refresh is an error, never an authoritative empty list',
    (fnSrc.match(/if \(!listed\.ok\) return json\(\{ error: await listed\.text\(\) \}, 502\);/g) || []).length === 4 &&
    !/listed\.ok \? await listed\.json\(\) : \[\]/.test(fnSrc));
+console.log('\nYour own kundalis and the public figures sit apart');
+/*
+ * Twenty-six charts kept for study against three of your own, all in one list:
+ * the few that matter most to the person who saved them were the hardest to
+ * find. Two tabs split them on the one fact that already distinguishes them.
+ *
+ * Yours open first. They are the reason the list exists; the study charts are
+ * material to check a technique against, and they are the crowd.
+ */
+(function () {
+  var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  var panel = page.slice(page.indexOf('id="panel-saved"'),
+                         page.indexOf('</section>', page.indexOf('id="panel-saved"')));
+  ok('the saved panel carries two tabs, yours selected',
+    /<div class="tabs subtabs" role="tablist" aria-label="Saved kundalis">/.test(panel) &&
+    /id="tab-mine"[^>]*aria-selected="true"/.test(panel.replace(/\s+/g, ' ')) &&
+    /id="tab-figures"[^>]*aria-selected="false"/.test(panel.replace(/\s+/g, ' ')) &&
+    /id="panel-figures"[^>]*hidden/.test(panel.replace(/\s+/g, ' ')) &&
+    !/id="panel-mine"[^>]*hidden/.test(panel.replace(/\s+/g, ' ')));
+  ok('and they are driven by the same tab code as every other strip',
+    /setupTabs\(\['mine', 'figures'\]/.test(appSrc) &&
+    /document\.querySelector\('#panel-saved \.subtabs'\)/.test(appSrc));
+
+  var out = global.appExports || {};
+  if (!out.renderSaved || !out.figuresList) {
+    ok('the two lists are reachable from the tests', false);
+    return;
+  }
+  var row = function (name, celebrity) {
+    return { name: name, placeLabel: 'Delhi, India', date: '1970-01-01', time: '06:00:00',
+      latitude: 28.6, longitude: 77.2, zone: 'Asia/Kolkata', standard: 'zone',
+      ayanamsa: 'lahiri', trueNode: true, gender: 'male', celebrity: celebrity,
+      flagged: false, note: '', openedAt: null };
+  };
+  var drawn = function (ul) {
+    return ul.children.map(function (card) {
+      return card.children.filter(function (c) { return c.className === 'saved-open'; })[0]
+        .children[0].textContent;
+    }).join(' ') || '(none)';
+  };
+  // Six, so the search box is past the threshold that hides it.
+  out.writeSaved([row('Priyanka', false), row('Barack Obama', true),
+    row('Sumit', false), row('Donald Trump', true),
+    row('Anita', false), row('Tony Blair', true)]);
+  out.renderSaved();
+  ok('a card goes to one list or the other, never both',
+    drawn(out.savedList) === 'Priyanka Sumit Anita' &&
+    drawn(out.figuresList) === 'Barack Obama Donald Trump Tony Blair',
+    drawn(out.savedList) + ' | ' + drawn(out.figuresList));
+  ok('and each tab counts what is under it, the outer one the lot',
+    String(out.byId('mine-count').textContent) === '3' &&
+    String(out.byId('figures-count').textContent) === '3' &&
+    String(out.byId('saved-count').textContent) === '6');
+
+  /*
+   * The case the split creates: a reader searches, the tab they are on empties,
+   * and what they asked for is sitting one tab away with nothing on screen to
+   * say so. The count on the other tab says how many, and so does the line
+   * where the list would have been.
+   */
+  var field = out.byId('saved-filter');
+  field.value = 'obama';
+  out.renderSaved();
+  ok('a search that empties one tab says where the matches went',
+    drawn(out.savedList) === '(none)' &&
+    drawn(out.figuresList) === 'Barack Obama' &&
+    /Nothing here matches “obama”\. 1 match is under Public figures\./
+      .test(out.byId('mine-none').textContent),
+    out.byId('mine-none').textContent);
+  field.value = 'zzz';
+  out.renderSaved();
+  ok('and says nothing about the other tab when there is nothing there either',
+    /^Nothing here matches “zzz”\.$/.test(out.byId('mine-none').textContent) &&
+    /^Nothing here matches “zzz”\.$/.test(out.byId('figures-none').textContent));
+  field.value = '';
+  out.writeSaved([]);
+  out.renderSaved();
+})();
+
 console.log('\nThe saved list puts the last chart read at the top');
 /*
  * The order a reader wants is the one they were working in. updated_at answers
@@ -7593,6 +7716,9 @@ console.log('\nA chart whose details are in doubt can be flagged');
   out.renderSaved();
 
   var cards = out.savedList.children;
+  // Split across the two tabs now: Certain is a public figure, Uncertain is not.
+  var figures = (out.figuresList || { children: [] }).children;
+  cards = cards.concat(figures);
   ok('every card carries three icons: flag, edit, delete', cards.length === 2 &&
     cards.every(function (card) {
       var actions = card.children.filter(function (c) { return c.tag === 'div'; })[0];
@@ -7618,14 +7744,16 @@ console.log('\nA chart whose details are in doubt can be flagged');
     return card.children.filter(function (c) { return c.tag === 'div'; })[0].children[0];
   };
   out.renderSaved();
+  // One to a tab: Uncertain is your own, Certain is a public figure.
+  var mine = out.savedList.children[0], figure = out.figuresList.children[0];
   ok('and the rolled-back flag is drawn lowered again',
-    !/is-flagged/.test(flagOf(out.savedList.children[0]).className) &&
-    !/is-flagged/.test(flagOf(out.savedList.children[1]).className) &&
-    flagOf(out.savedList.children[0]).attrs['aria-pressed'] === 'false');
+    !/is-flagged/.test(flagOf(mine).className) &&
+    !/is-flagged/.test(flagOf(figure).className) &&
+    flagOf(mine).attrs['aria-pressed'] === 'false');
 
   ok('and it is again a button a reader can find by name',
-    /Flag Uncertain as needs checking/.test(flagOf(out.savedList.children[0]).attrs['aria-label']) &&
-    /Flag Certain as needs checking/.test(flagOf(out.savedList.children[1]).attrs['aria-label']));
+    /Flag Uncertain as needs checking/.test(flagOf(mine).attrs['aria-label']) &&
+    /Flag Certain as needs checking/.test(flagOf(figure).attrs['aria-label']));
 
   // Lowered again, it leaves nothing behind.
   out.setFlag(rows[0], false);

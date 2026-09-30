@@ -44,10 +44,31 @@
         <input type="search" id="saved-filter" placeholder="Search by name"
                autocomplete="off" spellcheck="false">
       </div>
-      <p class="saved-none" id="saved-none" hidden></p>
-      <ul class="saved-list" id="saved-list"></ul>
-      <button type="button" class="add-kundali" id="add-kundali">+ Add a kundali</button>
-      <!-- Says what the star on a card means. Hidden until one carries it. -->
+      <!-- Your own charts and the ones kept for study, apart. They are read for
+           different reasons - one is people you know, the other is material to
+           check a technique against - and mixed together the few of your own
+           are lost among the many of the others. Yours open first. -->
+      <div class="tabs subtabs" role="tablist" aria-label="Saved kundalis">
+        <button type="button" class="tab" role="tab" id="tab-mine"
+                aria-controls="panel-mine" aria-selected="true">Your kundalis
+          <span class="tab-count" id="mine-count" hidden></span></button>
+        <button type="button" class="tab" role="tab" id="tab-figures"
+                aria-controls="panel-figures" aria-selected="false" tabindex="-1">Public figures
+          <span class="tab-count" id="figures-count" hidden></span></button>
+      </div>
+
+      <div id="panel-mine" role="tabpanel" aria-labelledby="tab-mine">
+        <p class="saved-none" id="mine-none" hidden></p>
+        <ul class="saved-list" id="saved-list"></ul>
+      </div>
+      <div id="panel-figures" role="tabpanel" aria-labelledby="tab-figures" hidden>
+        <p class="saved-none" id="figures-none" hidden></p>
+        <ul class="saved-list" id="figures-list"></ul>
+      </div>
+
+      <!-- Says what a raised flag means. Hidden until a card carries one. The
+           star is gone: the tab a card is in now says whether it is a public
+           figure, and a mark true of every card in a tab says nothing. -->
       <p class="saved-key" id="saved-key" hidden></p>
       <!-- The sync status, and nothing until there is something to report. The
            sentence about when a chart is saved moved to the form, which is
@@ -1179,13 +1200,13 @@
 
 </main>
 
+<!-- The houses, the zodiac and the storage note are gone: the first two are
+     settable on the Chart tab and the third said what it said whether or not
+     anybody was going to clear their site data. What is left is not a choice.
+     The place table in data/cities.js is GeoNames, used under CC BY 4.0, and
+     that licence requires the credit to be given wherever the data is. -->
 <footer class="site-footer">
-  <p>
-    Whole-sign (Parashari) houses, sidereal zodiac. Place data from
-    <a href="https://www.geonames.org/" rel="noopener">GeoNames</a> (CC BY 4.0).
-    Charts are computed from a stored ephemeris and saved against a token this
-    browser keeps; clearing site data unlinks them.
-  </p>
+  <p>Place data from <a href="https://www.geonames.org/" rel="noopener">GeoNames</a>, CC BY 4.0.</p>
 </footer>
 
 <script src="data/perturbations.js"></script>

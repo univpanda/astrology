@@ -3951,7 +3951,6 @@
   var savedEmpty = document.getElementById('saved-empty');
   var savedNote = document.getElementById('saved-note');
   var saveFeedback = document.getElementById('save-feedback');
-  var addButton = document.getElementById('add-kundali');
   var editButton = document.getElementById('edit-button');
 
   /*
@@ -4384,16 +4383,90 @@
     return x < y ? 1 : -1;
   }
 
+  /*
+   * One card. Built here rather than inline because there are two lists to put
+   * them in now, and a card that differed between the two would be a second
+   * place for every later change to go wrong.
+   */
+  function savedCard(entry) {
+    var li = el('li', 'saved-card');
+
+    /*
+     * A card rather than a row across the page.
+     *
+     * A saved chart is three short facts - who, when, where - and a row gave
+     * them a full screen width to sit in, so a list of ten was ten lines of
+     * mostly empty space with the eye travelling to the far edge for the
+     * edit and the delete. Stacked in a card the three read down in the order
+     * anyone asks them, and the cards sit several to a row.
+     *
+     * The name remains a real button for the keyboard; a pointer can use the
+     * whole card, which is the area the hover treatment presents as active.
+     */
+    var open = el('button', 'saved-open');
+    open.type = 'button';
+    open.appendChild(el('span', 'saved-name', entry.name));
+    li.appendChild(open);
+    li.appendChild(el('p', 'saved-born', formatSavedMoment(entry)));
+    li.appendChild(el('p', 'saved-place', entry.placeLabel));
+
+    var actions = el('div', 'saved-actions');
+    var raised = entry.flagged === true;
+    var flag = iconButton('flag',
+      (raised ? 'Clear the flag on ' : 'Flag ') + entry.name +
+        (raised ? '' : ' as ' + FLAG_MARK),
+      function () { setFlag(entry, !raised); });
+    flag.disabled = !!pendingFlagChanges[entry.id || keyOf(entry)];
+    if (raised) flag.className += ' is-flagged';
+    flag.setAttribute('aria-pressed', raised ? 'true' : 'false');
+    actions.appendChild(flag);
+
+    actions.appendChild(iconButton('edit', 'Edit ' + entry.name, function () {
+      editSaved(entry);
+    }));
+
+    /*
+     * Deleting asks first, in the row rather than through a browser dialog:
+     * the list is the only record of these charts, the button sits a few
+     * pixels from the one that opens them, and there is no undo.
+     */
+    actions.appendChild(iconButton('remove', 'Delete ' + entry.name, function () {
+      actions.innerHTML = '';
+      actions.className = 'saved-actions confirming';
+      actions.appendChild(el('span', 'saved-confirm-label', 'Delete?'));
+
+      var yes = el('button', 'saved-confirm', 'Delete');
+      yes.type = 'button';
+      yes.setAttribute('aria-label', 'Confirm deleting ' + entry.name);
+      yes.addEventListener('click', function () { removeSaved(entry); });
+      actions.appendChild(yes);
+
+      var no = el('button', 'saved-cancel', 'Cancel');
+      no.type = 'button';
+      no.setAttribute('aria-label', 'Keep ' + entry.name);
+      no.addEventListener('click', renderSaved);
+      actions.appendChild(no);
+      yes.focus();
+    }));
+
+    li.appendChild(actions);
+    li.addEventListener('click', function (event) {
+      // The three action buttons have their own jobs. Everything else on the
+      // card identifies this Kundali and opens it, including date and place.
+      if (!event.target.closest || event.target.closest('.saved-actions')) return;
+      loadSaved(entry);
+    });
+    return li;
+  }
+
   function renderSaved() {
     var all = readSaved().slice().sort(byLastOpened);
-    savedList.innerHTML = '';
     savedEmpty.hidden = all.length > 0;
     savedCount.textContent = all.length;
     savedCount.hidden = all.length === 0;
 
     var box = document.getElementById('saved-search');
     var field = document.getElementById('saved-filter');
-    var none = document.getElementById('saved-none');
     if (box) box.hidden = all.length < SEARCH_FROM;
     var term = (box && !box.hidden && field ? field.value : '').trim().toLowerCase();
 
@@ -4404,106 +4477,58 @@
     var list = !term ? all : all.filter(function (entry) {
       return (entry.name || '').toLowerCase().indexOf(term) >= 0;
     });
+
+    /*
+     * Your own charts and the ones kept for study, apart. The counts on the
+     * tabs are of what the search actually found, so a search that empties one
+     * side says so on the tab rather than only inside it.
+     */
+    var groups = [
+      { list: savedList, none: 'mine-none', count: 'mine-count', other: 'Public figures',
+        empty: 'None of your own yet. Add a kundali and it will appear here.',
+        of: list.filter(function (entry) { return !entry.celebrity; }) },
+      { list: document.getElementById('figures-list'), none: 'figures-none',
+        count: 'figures-count', other: 'Your kundalis',
+        empty: 'No public figures saved yet.',
+        of: list.filter(function (entry) { return entry.celebrity === true; }) }
+    ];
+
+    groups.forEach(function (group) {
+      if (!group.list) return;
+      group.list.innerHTML = '';
+      group.of.forEach(function (entry) { group.list.appendChild(savedCard(entry)); });
+
+      var count = document.getElementById(group.count);
+      if (count) {
+        count.textContent = group.of.length;
+        count.hidden = all.length === 0;
+      }
+
+      /*
+       * Nothing here, and why. A search that matched on the other tab is the
+       * case worth naming: the reader is looking at an empty list while what
+       * they asked for sits one tab away, and nothing on screen would say so.
+       */
+      var none = document.getElementById(group.none);
+      if (!none) return;
+      var elsewhere = list.length - group.of.length;
+      none.hidden = group.of.length > 0;
+      none.textContent = term
+        ? 'Nothing here matches \u201c' + term + '\u201d.' +
+          (elsewhere ? ' ' + elsewhere + (elsewhere === 1 ? ' match is' : ' matches are') +
+            ' under ' + group.other + '.' : '')
+        : group.empty;
+    });
+
     var key = document.getElementById('saved-key');
     if (key) {
       key.innerHTML = '';
-      if (list.some(function (entry) { return entry.celebrity; })) {
-        key.appendChild(el('span', 'saved-key-item',
-          CELEBRITY_STAR + ' a ' + CELEBRITY_MARK + '.'));
-      }
       if (list.some(function (entry) { return entry.flagged; })) {
         key.appendChild(el('span', 'saved-key-item',
           'A raised flag is a chart whose details want checking.'));
       }
       key.hidden = !key.firstChild;
     }
-    if (none) {
-      none.hidden = !term || list.length > 0;
-      none.textContent = 'Nothing saved matches \u201c' + term + '\u201d.';
-    }
-
-    list.forEach(function (entry) {
-      var li = el('li', 'saved-card');
-
-      /*
-       * A card rather than a row across the page.
-       *
-       * A saved chart is three short facts - who, when, where - and a row gave
-       * them a full screen width to sit in, so a list of ten was ten lines of
-       * mostly empty space with the eye travelling to the far edge for the
-       * edit and the delete. Stacked in a card the three read down in the order
-       * anyone asks them, and the cards sit several to a row.
-       *
-       * The name remains a real button for the keyboard; a pointer can use the
-       * whole card, which is the area the hover treatment presents as active.
-       */
-      var open = el('button', 'saved-open');
-      open.type = 'button';
-      open.appendChild(el('span', 'saved-name', entry.name));
-      /*
-       * A star in the list and the words on the chart. The pill was the same
-       * width as some of the names beside it, which on a card is most of the
-       * line spent on a flag that is true of a third of them. The star marks
-       * the card; opening it says what the star meant, in full, under the name.
-       */
-      if (entry.celebrity) {
-        var star = el('span', 'celebrity-star', CELEBRITY_STAR);
-        star.title = 'A ' + CELEBRITY_MARK;
-        star.setAttribute('aria-label', CELEBRITY_MARK);
-        open.appendChild(star);
-      }
-      li.appendChild(open);
-      li.appendChild(el('p', 'saved-born', formatSavedMoment(entry)));
-      li.appendChild(el('p', 'saved-place', entry.placeLabel));
-
-      var actions = el('div', 'saved-actions');
-      var raised = entry.flagged === true;
-      var flag = iconButton('flag',
-        (raised ? 'Clear the flag on ' : 'Flag ') + entry.name +
-          (raised ? '' : ' as ' + FLAG_MARK),
-        function () { setFlag(entry, !raised); });
-      flag.disabled = !!pendingFlagChanges[entry.id || keyOf(entry)];
-      if (raised) flag.className += ' is-flagged';
-      flag.setAttribute('aria-pressed', raised ? 'true' : 'false');
-      actions.appendChild(flag);
-
-      actions.appendChild(iconButton('edit', 'Edit ' + entry.name, function () {
-        editSaved(entry);
-      }));
-
-      /*
-       * Deleting asks first, in the row rather than through a browser dialog:
-       * the list is the only record of these charts, the button sits a few
-       * pixels from the one that opens them, and there is no undo.
-       */
-      actions.appendChild(iconButton('remove', 'Delete ' + entry.name, function () {
-        actions.innerHTML = '';
-        actions.className = 'saved-actions confirming';
-        actions.appendChild(el('span', 'saved-confirm-label', 'Delete?'));
-
-        var yes = el('button', 'saved-confirm', 'Delete');
-        yes.type = 'button';
-        yes.setAttribute('aria-label', 'Confirm deleting ' + entry.name);
-        yes.addEventListener('click', function () { removeSaved(entry); });
-        actions.appendChild(yes);
-
-        var no = el('button', 'saved-cancel', 'Cancel');
-        no.type = 'button';
-        no.setAttribute('aria-label', 'Keep ' + entry.name);
-        no.addEventListener('click', renderSaved);
-        actions.appendChild(no);
-        yes.focus();
-      }));
-
-      li.appendChild(actions);
-      li.addEventListener('click', function (event) {
-        // The three action buttons have their own jobs. Everything else on the
-        // card identifies this Kundali and opens it, including date and place.
-        if (event.target.closest && event.target.closest('.saved-actions')) return;
-        loadSaved(entry);
-      });
-      savedList.appendChild(li);
-    });
   }
 
   (function () {
@@ -4758,7 +4783,7 @@
       panels[name] = document.getElementById('panel-' + name);
     });
 
-    function activate(name, moveFocus) {
+    function activate(name, moveFocus, byUser) {
       active = name;
       names.forEach(function (other) {
         var selected = other === name;
@@ -4768,18 +4793,18 @@
       });
       if (moveFocus) buttons[name].focus();
       if (options && options.scrollToTop) window.scrollTo({ top: 0, behavior: 'smooth' });
-      if (options && options.onChange) options.onChange(name);
+      if (options && options.onChange) options.onChange(name, byUser === true);
     }
 
     names.forEach(function (name) {
-      buttons[name].addEventListener('click', function () { activate(name); });
+      buttons[name].addEventListener('click', function () { activate(name, false, true); });
     });
 
     strip.addEventListener('keydown', function (e) {
       var step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
       if (step) {
         e.preventDefault();
-        activate(names[(names.indexOf(active) + step + names.length) % names.length], true);
+        activate(names[(names.indexOf(active) + step + names.length) % names.length], true, true);
       } else if (e.key === 'Home') {
         e.preventDefault(); activate(names[0], true);
       } else if (e.key === 'End') {
@@ -4796,19 +4821,28 @@
    * label, and each read as a different thing about the same tick.
    */
   var CELEBRITY_MARK = 'public figure';
-  /*
-   * The same fact at a glance, for a list where the words are most of a line.
-   * A star rather than the asterisk operator: at this size the operator reads
-   * as a footnote mark or a typo, where a star reads as a mark somebody meant.
-   */
-  var CELEBRITY_STAR = '\u2605';
 
   var emptyChart = document.getElementById('empty-chart');
   var savedCount = document.getElementById('saved-count');
 
   var sections = setupTabs(['add', 'saved', 'chart', 'lesson', 'settings', 'testing'],
-    document.querySelector('.tabs:not(.subtabs)'), { scrollToTop: true, onChange: function (name) {
+    document.querySelector('.tabs:not(.subtabs)'), { scrollToTop: true, onChange: function (name, byUser) {
       if (name === 'lesson') loadLessons();
+      /*
+       * Reaching for the form from the tab strip means a new chart, which is
+       * the job the "+ Add a kundali" button under the saved list used to do.
+       * Without it, currentEntry would still point at the last chart saved and
+       * the next one generated would overwrite that row instead of making its
+       * own - a silent edit of somebody else's record.
+       *
+       * Only when a person asked. editSaved and the chart's own edit button
+       * arrive here in code, and both mean to keep the row they came from.
+       */
+      if (name === 'add' && byUser) {
+        blankForm();
+        currentEntry = null;
+        document.getElementById('name').focus();
+      }
     } });
 
   /*
@@ -5100,6 +5134,14 @@
    * panel has a strip of its own now, and document order is a poor thing to
    * rest on when the two are a few lines apart.
    */
+  /*
+   * Your own charts and the ones kept for study. They are read for different
+   * reasons, and with 26 public figures against 3 of your own the few that are
+   * yours were lost in the crowd. Yours open first.
+   */
+  setupTabs(['mine', 'figures'],
+    document.querySelector('#panel-saved .subtabs'), {});
+
   var tableTabs = setupTabs(['grahas', 'shadbala', 'vargas', 'yogas', 'aspects'],
     document.querySelector('.tabs.subtabs:not(.graha-charts)'));
   wireGrahaChartKeys();
@@ -5180,7 +5222,6 @@
     activateTab('chart');
   }
 
-  addButton.addEventListener('click', function () { showForm(true); });
   editButton.addEventListener('click', function () { showForm(false); });
 
   /* ------------------------------------------- shareable URL for a chart */
