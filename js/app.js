@@ -3651,6 +3651,19 @@
         if (id === 'yoga-division') renderYogas(lastChart); else renderAspects(lastChart);
       });
     });
+
+    /*
+     * The graha filter redraws the same table rather than the chart, so it is
+     * wired here beside the picker it sits next to. Its options are rebuilt on
+     * every draw from what the chart actually gave, so there is nothing to
+     * fill in now.
+     */
+    var byGraha = document.getElementById('yoga-graha');
+    if (byGraha) {
+      byGraha.addEventListener('change', function () {
+        if (lastChart) renderYogas(lastChart);
+      });
+    }
   }
 
   /** The division a panel is set to. */
@@ -3752,10 +3765,56 @@
      * ascendant and the luminaries together: naming any one of them would be
      * the same mistake in the other direction.
      */
+    /*
+     * Which graha the table is narrowed to.
+     *
+     * The list is built from whoever this chart actually gave a finding to, so
+     * the control can never offer a name that would empty the table. A chosen
+     * graha that the next chart or division has nothing for falls back to all
+     * rather than showing an empty table under a name that is still selected.
+     *
+     * The shared findings - an exchange between two lords, a Nabhasa figure
+     * made by all seven - belong to nobody, so they are kept in every view:
+     * they are as true of the graha being looked at as of any other, and
+     * dropping them would answer "what has Venus got" by leaving out things
+     * Venus is in.
+     */
+    var grahaPick = document.getElementById('yoga-graha');
+    var whoHas = [];
+    found.forEach(function (f) {
+      if (f.graha && whoHas.indexOf(f.graha) < 0) whoHas.push(f.graha);
+    });
+    whoHas.sort(function (a, b) {
+      return Astro.GRAHA_ORDER.indexOf(a) - Astro.GRAHA_ORDER.indexOf(b);
+    });
+    var wanted = grahaPick ? grahaPick.value : '';
+    if (wanted && whoHas.indexOf(wanted) < 0) wanted = '';
+    if (grahaPick) {
+      grahaPick.innerHTML = '';
+      var all = el('option', null, 'Every graha');
+      all.value = '';
+      grahaPick.appendChild(all);
+      whoHas.forEach(function (name) {
+        var option = el('option', null, name);
+        option.value = name;
+        grahaPick.appendChild(option);
+      });
+      grahaPick.value = wanted;
+      grahaPick.disabled = whoHas.length === 0;
+    }
+    var shown = !wanted ? found : found.filter(function (f) {
+      return f.graha === wanted || !f.graha;
+    });
+
     var table = el('table', 'yoga-table');
     var head = document.createElement('thead');
     var headRow = document.createElement('tr');
-    ['Yoga', 'Family', 'Graha', 'Condition', 'Taking part'].forEach(function (h) {
+    /*
+     * Graha first. The question this table is read with is "what has this
+     * graha got", and the column answering it was third, behind two that
+     * describe the finding rather than place it.
+     */
+    ['Graha', 'Yoga', 'Family', 'Condition', 'Taking part'].forEach(function (h) {
       var th = el('th', null, h);
       th.setAttribute('scope', 'col');
       headRow.appendChild(th);
@@ -3764,24 +3823,24 @@
     table.appendChild(head);
     var body = document.createElement('tbody');
 
-    found.forEach(function (finding) {
+    shown.forEach(function (finding) {
       var tr = document.createElement('tr');
-      var name = el('th', 'yoga-name', finding.title);
-      name.setAttribute('scope', 'row');
-      tr.appendChild(name);
-      tr.appendChild(el('td', 'yoga-family', finding.family || '\u2013'));
 
       /*
        * The resolved graha, or a dash where the yoga is nobody's in particular.
        * Held apart from the list beside it so the two cannot be read as one.
        */
-      var whose = el('td', finding.graha ? 'yoga-graha' : 'yoga-graha is-shared',
+      var whose = el('th', finding.graha ? 'yoga-graha' : 'yoga-graha is-shared',
         finding.graha || '\u2013');
+      whose.setAttribute('scope', 'row');
       if (!finding.graha) {
         whose.title = finding.title + ' is not one graha\u2019s: it is made by ' +
           (finding.grahas.length > 1 ? 'these together' : 'the chart as a whole') + '.';
       }
       tr.appendChild(whose);
+
+      tr.appendChild(el('td', 'yoga-name', finding.title));
+      tr.appendChild(el('td', 'yoga-family', finding.family || '\u2013'));
 
       /*
        * What holds in this chart, with the reasons behind it. The reasons are

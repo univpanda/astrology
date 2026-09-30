@@ -1591,8 +1591,13 @@ ok('it still says how each yoga forms',
  * Mercury's doing, the Sun only marking where to count from, and listing both
  * put it on the Sun's card as though the Sun had done something.
  */
+/*
+ * Graha first. The question the table is read with is "what has this graha
+ * got", and the column answering it was third, behind two that describe the
+ * finding rather than place it.
+ */
 ok('the table names the graha a yoga resolves to, apart from its participants',
-   /'Yoga', 'Family', 'Graha', 'Condition', 'Taking part'/.test(appSrc) &&
+   /'Graha', 'Yoga', 'Family', 'Condition', 'Taking part'/.test(appSrc) &&
    /finding\.graha \? 'yoga-graha' : 'yoga-graha is-shared'/.test(appSrc) &&
    /finding\.grahas\.filter\(function \(g\) \{ return g !== finding\.graha; \}\)/.test(appSrc));
 ok('it points at the Lesson tab for the meaning',
@@ -1817,7 +1822,8 @@ ok('both directions get a column', (function () {
   return !!m;
 })());
 ok('the columns a graha casts sit together, receiving last', (function () {
-  var m = appSrc.match(/\[('Graha'[^\]]*)\]\s*\n?\s*\.forEach\(function \(h\)/);
+  // The aspects table, which is the one with an Aspects column.
+  var m = appSrc.match(/\[('Graha'[^\]]*'Aspects'[^\]]*)\]\s*\n?\s*\.forEach\(function \(h\)/);
   if (!m) return false;
   var cols = m[1];
   return cols.indexOf("'Aspects'") < cols.indexOf("'Also aspects, from previous sign'") &&
@@ -4035,8 +4041,73 @@ ok('every script the page loads parses', (function () {
           walk(kid);
         });
       })(host);
-      return heads.join(',') === 'Yoga,Family,Graha,Condition,Taking part';
+      return heads.join(',') === 'Graha,Yoga,Family,Condition,Taking part';
     })());
+  /*
+   * And the table narrows to one graha.
+   *
+   * The options are built from whoever this chart actually gave a finding to,
+   * so the control can never offer a name that would empty the table, and a
+   * name the next chart has nothing for falls back to every graha rather than
+   * leaving an empty table under a heading still selected.
+   *
+   * The shared findings stay in every view. An exchange belongs to two lords,
+   * a Nabhasa figure to all seven: they are as true of the graha being looked
+   * at as of any other, and dropping them would answer "what has Venus got"
+   * by leaving out things Venus is in.
+   */
+  ok('the filter offers only grahas this chart has findings for',
+    (function () {
+      var pick = byId['yoga-graha'];
+      if (!pick) return false;
+      pick.value = '';
+      out.renderYogas(peace);
+      var offered = pick.children.map(function (o) { return o.textContent; });
+      var strengths = Shadbala.compute(peace.chart,
+        { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 });
+      var real = {};
+      Yogas.detect(peace.chart, strengths).forEach(function (f) {
+        if (f.graha) real[f.graha] = true;
+      });
+      return offered[0] === 'Every graha' &&
+        offered.slice(1).every(function (n) { return real[n]; }) &&
+        Object.keys(real).every(function (n) { return offered.indexOf(n) > 0; });
+    })(),
+    (byId['yoga-graha'].children || []).map(function (o) { return o.textContent; }).join(', '));
+
+  ok('and choosing one keeps that graha’s findings and the shared ones',
+    (function () {
+      var pick = byId['yoga-graha'], host = byId['yoga-list'];
+      var who = pick.children.length > 1 ? pick.children[1].value : '';
+      if (!who) return false;
+      pick.value = who;
+      host.children.length = 0;
+      out.renderYogas(peace);
+      var whose = [];
+      (function walk(n) {
+        if (!n || !n.children) return;
+        n.children.forEach(function (kid) {
+          if (kid.tag === 'th' && kid.attrs && kid.attrs.scope === 'row') {
+            whose.push(kid.textContent);
+          }
+          walk(kid);
+        });
+      })(host);
+      pick.value = '';
+      return whose.length > 0 && whose.every(function (name) {
+        return name === who || name === '–';
+      });
+    })());
+
+  ok('and a name the chart has nothing for falls back to every graha',
+    (function () {
+      var pick = byId['yoga-graha'], host = byId['yoga-list'];
+      pick.value = 'NotAGraha';
+      host.children.length = 0;
+      out.renderYogas(peace);
+      return pick.value === '';
+    })());
+
   ok('and a graha never appears in both the Graha column and Taking part',
     (function () {
       var strengths = Shadbala.compute(peace.chart,
