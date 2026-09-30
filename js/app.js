@@ -4278,7 +4278,7 @@
       key.innerHTML = '';
       if (list.some(function (entry) { return entry.celebrity; })) {
         key.appendChild(el('span', 'saved-key-item',
-          CELEBRITY_STAR + ' a ' + CELEBRITY_MARK + ', kept for study.'));
+          CELEBRITY_STAR + ' a ' + CELEBRITY_MARK + '.'));
       }
       if (list.some(function (entry) { return entry.flagged; })) {
         key.appendChild(el('span', 'saved-key-item',
@@ -4329,7 +4329,7 @@
        */
       if (entry.celebrity) {
         var star = el('span', 'celebrity-star', CELEBRITY_STAR);
-        star.title = 'A ' + CELEBRITY_MARK + ', kept for study';
+        star.title = 'A ' + CELEBRITY_MARK;
         star.setAttribute('aria-label', CELEBRITY_MARK);
         open.appendChild(star);
       }

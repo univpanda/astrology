@@ -103,7 +103,7 @@
         </div>
       </fieldset>
 
-      <div class="field field-wide">
+      <div class="field field-place">
         <label for="place">Place of birth</label>
         <div class="combobox" id="place-combobox">
           <input type="text" id="place" name="place" role="combobox" autocomplete="off"
@@ -117,14 +117,21 @@
         </button>
       </div>
 
+      <!-- Beside the place rather than under the note. It is one of the four
+           things a chart is filed by, not an afterthought to a paragraph, and
+           the empty label keeps it level with the inputs on its own row. -->
+      <div class="field field-mark">
+        <span class="label-spacer" aria-hidden="true"></span>
+        <label class="checkbox-field" for="celebrity">
+          <input type="checkbox" id="celebrity">
+          <span>A public figure</span>
+        </label>
+      </div>
+
       <div class="field field-wide">
         <label for="person-note">Note <span class="hint">optional, for your own reference</span></label>
         <textarea id="person-note" rows="2" maxlength="2000"
                   placeholder="Why this chart was cast, where the birth time came from, anything worth remembering."></textarea>
-        <label class="checkbox-field" for="celebrity">
-          <input type="checkbox" id="celebrity">
-          <span>A public figure, kept for study</span>
-        </label>
       </div>
 
       <fieldset class="field field-wide manual-coords" id="manual-coords" hidden>

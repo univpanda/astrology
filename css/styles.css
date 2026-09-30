@@ -378,6 +378,23 @@ main, .site-header, .site-footer { max-width: 1120px; margin: 0 auto; }
 }
 
 .field-wide { grid-column: 1 / -1; }
+
+/*
+ * The place needs room for a town, a region and a country, and no more. A full
+ * row gave that string the width of the whole card and left the public figure
+ * tick orphaned under the note, so the two share a row: two columns for the
+ * place, one for the tick.
+ */
+.field-place { grid-column: span 2; }
+
+/*
+ * A tick has no label of its own, so it would ride up level with the labels
+ * beside it. The spacer gives its cell the row that a label would occupy, and
+ * the control height centres the tick against the inputs rather than the top
+ * of them. Empty and aria-hidden: it is alignment, not anything to read.
+ */
+.label-spacer { display: block; height: 0.9rem; margin-bottom: 0.4rem; }
+.field-mark .checkbox-field { margin: 0; min-height: var(--control-height); }
 .field { display: flex; flex-direction: column; min-width: 0; }
 
 /*

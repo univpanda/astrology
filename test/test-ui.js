@@ -1377,10 +1377,10 @@ ok('the chart spells the flag out and the card stars it',
    /el\('span', 'celebrity-star', CELEBRITY_STAR\)/.test(appSrc) &&
    !/'celebrity-mark', 'study'/.test(appSrc));
 ok('and the star says what it means, to a pointer and to a reader alike',
-   /star\.title = 'A ' \+ CELEBRITY_MARK \+ ', kept for study'/.test(appSrc) &&
+   /star\.title = 'A ' \+ CELEBRITY_MARK;/.test(appSrc) &&
    /star\.setAttribute\('aria-label', CELEBRITY_MARK\)/.test(appSrc) &&
    /id="saved-key"/.test(html) &&
-   /CELEBRITY_STAR \+ ' a ' \+ CELEBRITY_MARK \+ ', kept for study\.'/.test(appSrc));
+   /CELEBRITY_STAR \+ ' a ' \+ CELEBRITY_MARK \+ '\.'/.test(appSrc));
 /*
  * The key explains the marks that are on the cards and no others: a line about
  * the star when something is starred, a line about the flag when something is
@@ -1391,8 +1391,29 @@ ok('and the key carries a line per mark actually in use',
    /list\.some\(function \(entry\) \{ return entry\.celebrity; \}\)/.test(appSrc) &&
    /list\.some\(function \(entry\) \{ return entry\.flagged; \}\)/.test(appSrc) &&
    /\.saved-key-item \{ display: block; \}/.test(cssSrc));
+/*
+ * The form, the star's tooltip and the key all say the same three words. The
+ * qualification that used to follow - "kept for study" - said the same thing a
+ * second time in a longer way, and said it three times over.
+ */
 ok('and it matches what the form asks',
-   /A public figure, kept for study/.test(html));
+   /<span>A public figure<\/span>/.test(html) && !/kept for study/.test(html + appSrc));
+/*
+ * And the tick shares the place's row rather than trailing the note. It is one
+ * of the things a chart is filed by, not an afterthought to a paragraph.
+ */
+ok('the public figure tick sits beside the place, not under the note',
+   html.indexOf('id="celebrity"') > html.indexOf('id="place"') &&
+   html.indexOf('id="celebrity"') < html.indexOf('id="person-note"') &&
+   /\.field-place \{ grid-column: span 2; \}/.test(cssSrc));
+/*
+ * A tick carries no label, so without a stand-in for the row a label occupies
+ * it would ride up level with the labels beside it instead of the inputs.
+ */
+ok('and it is levelled against the inputs rather than the labels',
+   /<span class="label-spacer" aria-hidden="true"><\/span>/.test(html) &&
+   /\.label-spacer \{ display: block; height: 0\.9rem; margin-bottom: 0\.4rem; \}/.test(cssSrc) &&
+   /\.field-mark \.checkbox-field \{ margin: 0; min-height: var\(--control-height\); \}/.test(cssSrc));
 
 // Saved kundalis: the list, and the four keys that identify an entry.
 ok('the saved list and its empty state are both present',
