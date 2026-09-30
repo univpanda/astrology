@@ -802,20 +802,51 @@ input::placeholder { color: #a9bdb2; }
   color: var(--green-deep);
   font-weight: 700;
 }
-.graha-card-where {
-  margin: 0.1rem 0 0;
+/*
+ * The three frames a graha sits in at once, run together on one line with a
+ * dot between them. Separate lines made each read as a finding of its own,
+ * where house, sign and nakshatra are one placement said three ways.
+ */
+.graha-card-where,
+.graha-card-lords {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.55rem;
+  margin: 0.25rem 0 0;
   font-size: 0.78rem;
   color: var(--ink-soft);
 }
+.graha-card-lords { font-size: 0.8rem; color: var(--ink); }
+/* A dot between items, and never before the first or after the last. */
+.graha-card-item + .graha-card-item::before {
+  content: '\00b7';
+  margin-right: 0.55rem;
+  color: var(--ink-faint);
+}
+/* The degree beside the name, in the same line and quieter than it. */
+.graha-card-degree {
+  margin-left: 0.45rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
 /* Every item is a statement with its reason beneath it, so the list is the
    card's body rather than a tail on the end of it. */
-/* Dignity belongs to the placement above it, so it sits tight under the sign
-   and house rather than joining the list of separate findings below. */
+/*
+ * Dignity stands with the sign it is about, as a mark rather than a sentence.
+ * On a line of its own the word had nothing beside it to hold on to.
+ */
 .graha-card-dignity {
-  margin: 0.2rem 0 0;
-  font-size: 0.78rem;
-  line-height: 1.45;
-  color: var(--ink);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--green-deep);
+  background: var(--green-soft);
+  border-radius: 999px;
+  padding: 0.05rem 0.4rem;
 }
 /* The list rules a line between its own items but had none above the first, so
    the placement and dignity ran straight into the findings. Same rhythm as

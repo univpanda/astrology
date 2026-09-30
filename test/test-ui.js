@@ -2573,8 +2573,11 @@ ok('and the war row appears only in a chart that has one',
    /\(war\.won \? 'Beats ' : 'Loses to '\) \+ war\.against/.test(appSrc));
 
 // What each graha rules, with the yogakaraka named.
+// Twice now: the table's column and the card's own line, which is the same
+// fact put where the eye already is. Neither is typed into the markup.
 ok('the tables carry one dispositor column each, built once',
-   (appSrc.match(/'Dispositor'/g) || []).length === 1 &&
+   (appSrc.match(/'Dispositor'/g) || []).length === 2 &&
+   /fact\(lords, 'Dispositor',/.test(appSrc) &&
    !/<th scope="col">Dispositor<\/th>/.test(html));
 ok('the dispositor is the lord of the sign shown in that column',
    /Astro\.SIGN_LORDS\[sign\]/.test(appSrc) &&
@@ -8040,9 +8043,68 @@ console.log('\nThe card says how the graha stands in its sign');
   ok('and the renderer carries both onto the graha',
     /t\.setAttribute\('data-rules', d\.rules\)/.test(chartsSrc) &&
     /t\.setAttribute\('data-seen-by', d\.seenBy\)/.test(chartsSrc));
+  /*
+   * The card in three lines, coarse to fine: which graha and where exactly,
+   * then the three frames it sits in at once, then the grahas that have a say
+   * over it and what it has a say over.
+   *
+   * Driven, because the point is what a reader ends up looking at. One fact
+   * per line ran the card to eight before the yogas began, and a placement
+   * that is one thought was spread down the height of it.
+   */
+  (function () {
+    var chart = Astro.chart({ jdUT: Astro.julianDay(1980, 9, 21, 8 + 39 / 60 - 5.5),
+      latitude: 19.0728, longitude: 72.8826, tzOffsetMinutes: 330 });
+    var dignityBody = appSrc.match(/function dignitiesByGraha\(state, division, tatkalika, horaRule, horaMercury\) \{[\s\S]*?\n  \}/)[0];
+    var dig = new Function('Astro', dignityBody + '\nreturn dignitiesByGraha;')(Astro)(
+      { chart: chart }, 1, 'rashi', 'lord');
+    var box = makeNode('div');
+    Charts.render(box, { style: 'north', planets: chart.planets,
+      ascendant: chart.ascendant.longitude, division: 1, reference: 'Ascendant',
+      yogas: {}, dignities: dig, ruling: {} });
+    var marks = [];
+    (function walk(n) {
+      if (n.tag === 'text' && n.attrs['data-graha']) marks.push(n);
+      n.children.forEach(walk);
+    })(box);
+    var by = {};
+    marks.forEach(function (t) { by[t.attrs['data-graha']] = t.attrs; });
+
+    ok('the degree rides with the name, to the minute',
+      /^\d{1,2}°\d{2}′$/.test(by.Moon['data-degree'] || ''), by.Moon['data-degree']);
+    ok('house, sign and nakshatra are all carried',
+      by.Moon['data-house'] === 'House 4' && by.Moon['data-sign'] === 'Makara' &&
+      /^Shravana [1-4]$/.test(by.Moon['data-nakshatra'] || ''),
+      [by.Moon['data-house'], by.Moon['data-sign'], by.Moon['data-nakshatra']].join(' / '));
+    ok('and the nakshatra is read from the rashi, which is the only place it exists',
+      by.Moon['data-nak-lord'] === 'Moon' && !!by.Moon['data-sub-lord']);
+    ok('the dispositor is named with how the graha regards it',
+      by.Moon['data-dispositor'] === 'Saturn' &&
+      by.Moon['data-dispositor-relation'] === 'enemy',
+      by.Moon['data-dispositor'] + ' (' + by.Moon['data-dispositor-relation'] + ')');
+
+    /*
+     * The nodes and the ascendant have a dispositor like anything else - it is
+     * the lord of the sign they occupy - and no friendship with it, being
+     * outside the scheme the relation is read from. They used to get no line
+     * at all, and the lagnesha is not a thing to leave a reader to work out.
+     */
+    ok('the nodes and the ascendant get one too, without a friendship',
+      by.Rahu['data-dispositor'] === 'Moon' && !by.Rahu['data-dispositor-relation'] &&
+      by.Ascendant['data-dispositor'] === 'Venus' &&
+      !by.Ascendant['data-dispositor-relation'],
+      by.Rahu['data-dispositor'] + ' / ' + by.Ascendant['data-dispositor']);
+    ok('and the ascendant is not given a house, being the one houses start from',
+      by.Ascendant['data-house'] === undefined);
+    ok('a formal dignity is carried apart from the dispositor',
+      by.Mercury['data-dignity'] === 'Own sign' &&
+      by.Moon['data-dignity'] === undefined, by.Mercury['data-dignity']);
+  })();
+
   ok('and the card prints them as a label and a value, not as prose',
-    /\['data-rules', 'Rules'\], \['data-seen-by', 'Aspected by'\]/.test(src) &&
-    /\.graha-card-fact \{/.test(css) && /\.graha-card-fact-label \{/.test(css));
+    /fact\(lords, 'Rules', t\.getAttribute\('data-rules'\)\)/.test(src) &&
+    /fact\(lords, 'Aspected by', t\.getAttribute\('data-seen-by'\)\)/.test(src) &&
+    /\.graha-card-fact-label \{/.test(css));
 
   /*
    * And the figures are real. Driven through the same function the page calls,
@@ -8087,9 +8149,14 @@ console.log('\nThe card says how the graha stands in its sign');
       return any > 0 && wrong.length === 0;
     })());
 
-  ok('the card prints it under the placement, not in the list of findings',
+  /*
+   * Beside the sign now rather than under it. Dignity says how a graha does in
+   * the sign named next to it, and a line of its own left the word with
+   * nothing to hold on to.
+   */
+  ok('the card stands the dignity beside the sign it is about',
     /var dignity = t\.getAttribute\('data-dignity'\)/.test(src) &&
-    /el\('p', 'graha-card-dignity', dignity\)/.test(src) &&
+    /where\.appendChild\(el\('span', 'graha-card-dignity', dignity\)\)/.test(src) &&
     /\.graha-card-dignity \{/.test(css));
   /*
    * And is divided from the findings by the same line the findings use between
@@ -8116,12 +8183,7 @@ console.log('\nThe card says how the graha stands in its sign');
   var body = src.match(/function dignitiesByGraha\(state, division, tatkalika, horaRule, horaMercury\) \{[\s\S]*?\n  \}/)[0];
   ok('the card reads the same varga dignity as the grid',
     /Astro\.vargaDignity\(p\.name, p\.longitude, division, d1, tatkalika, horaRule,\s*\n\s*horaMercury\)/.test(body));
-  var withArticle = function (label) {
-    if (label === 'neutral') return 'neutral';
-    return (label.charAt(0) === 'e' ? 'an ' : 'a ') + label;
-  };
-  var build = new Function('Astro', 'withArticle', body + '\n return dignitiesByGraha;')(
-    Astro, withArticle);
+  var build = new Function('Astro', body + '\n return dignitiesByGraha;')(Astro);
   // Every assertion below is about dignity, not about tatkalika, so it names
   // the reading rather than inheriting whichever way the default happens to go.
   var built = function (state, division) { return build(state, division, 'rashi', 'lord'); };
@@ -8130,22 +8192,31 @@ console.log('\nThe card says how the graha stands in its sign');
     longitude: 77.21, tzOffsetMinutes: 330 });
   var got = built({ chart: chart }, 1);
 
-  ok('a graha in its moolatrikona is named as such, with no dispositor clause',
-    got.Sun === 'Mooltrikona.', got.Sun);
+  /*
+   * The parts, not a sentence. The card names the dispositor on its own line
+   * and stands the dignity beside the sign, so a string reading "In Mars's
+   * sign, an enemy" would only have to be taken apart again at the other end.
+   */
+  ok('a graha in its moolatrikona is named as such, with no relation to report',
+    got.Sun.formal === 'Mooltrikona' && got.Sun.relation === '',
+    JSON.stringify(got.Sun));
   ok('a graha with no formal dignity reports the lord of its sign instead',
-    /^In Saturn’s sign, an? /.test(got.Moon || ''), got.Moon);
-  ok('the luminaries take an article when they are the dispositor',
-    /In the Sun’s sign/.test(got.Mercury || ''), got.Mercury);
+    got.Moon.formal === '' && got.Moon.lord === 'Saturn' && !!got.Moon.relation,
+    JSON.stringify(got.Moon));
+  ok('and the dispositor is named even where it is the graha itself',
+    !!got.Mercury.lord, JSON.stringify(got.Mercury));
   ok('and a debilitated node keeps its separate, sign-wide dignity',
-    (got.Rahu || '').indexOf('Debilitated') === 0, got.Rahu);
+    (got.Rahu || {}).formal === 'Debilitated', JSON.stringify(got.Rahu));
 
   /*
    * Every graha should get something: either it holds a dignity, or it sits in
    * somebody's sign and has a view of them. A blank line would mean a case the
    * builder does not cover.
    */
-  var silent = chart.planets.filter(function (p) { return !got[p.name]; })
-    .map(function (p) { return p.name; });
+  var silent = chart.planets.filter(function (p) {
+    var g = got[p.name];
+    return !g || (!g.formal && !g.lord);
+  }).map(function (p) { return p.name; });
   ok('no graha is left with nothing said about where it stands',
     silent.length === 0, silent.join(', ') || 'all nine covered');
 

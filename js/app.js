@@ -1024,9 +1024,6 @@
     var d1 = {};
     state.chart.planets.forEach(function (p) { d1[p.name] = p; });
 
-    var named = function (g) {
-      return g === 'Sun' || g === 'Moon' ? 'the ' + g : g;
-    };
     var map = {};
     state.chart.planets.forEach(function (p) {
       var standing = Astro.vargaDignity(p.name, p.longitude, division, d1, tatkalika, horaRule,
@@ -1042,23 +1039,27 @@
         var nodePosition = Astro.vargaPosition(p.longitude, division);
         var nodeDignity = Astro.dignityOf(p.name, nodePosition.sign,
           nodePosition.degreeInSign);
-        if (nodeDignity) map[p.name] = nodeDignity + '.';
+        if (nodeDignity) map[p.name] = { formal: nodeDignity, lord: '', relation: '' };
         return;
       }
-      var parts = [];
+      /*
+       * The parts rather than a sentence. The card names the dispositor on a
+       * line of its own now and stands the dignity beside the sign, so a
+       * string reading "In Mars's sign, an enemy" would have to be taken apart
+       * again at the other end.
+       */
       var formal = standing.key === 'exalted' || standing.key === 'debilitated' ||
         standing.key === 'moolatrikona' || standing.key === 'own';
-      if (formal) {
-        parts.push(standing.key === 'own' ? 'In its own sign' : standing.label);
-      }
-
       var lord = standing.lord;
-      if (lord && lord !== p.name && standing.relation &&
-          standing.relation !== 'moolatrikona') {
-        parts.push((parts.length ? 'in ' : 'In ') + named(lord) + '’s sign, ' +
-          withArticle(Astro.RELATION_LABELS[standing.relation]));
-      }
-      if (parts.length) map[p.name] = parts.join(', ') + '.';
+      var owned = lord && lord === p.name;
+      map[p.name] = {
+        formal: formal ? (standing.key === 'own' ? 'Own sign' : standing.label) : '',
+        // Its own dispositor is still its dispositor, and saying so is shorter
+        // than the reader working out that Mars in Aries has nobody to answer.
+        lord: lord || '',
+        relation: owned || !standing.relation || standing.relation === 'moolatrikona'
+          ? '' : Astro.RELATION_LABELS[standing.relation].toLowerCase()
+      };
     });
     return map;
   }
@@ -1504,32 +1505,64 @@
       head.appendChild(el('span', 'graha-card-freq', text));
     };
 
+    /* One item on a run-on line: a label, then the thing itself. */
+    var fact = function (row, label, value) {
+      if (!value) return;
+      var item = el('span', 'graha-card-item');
+      if (label) item.appendChild(el('span', 'graha-card-fact-label', label));
+      item.appendChild(document.createTextNode((label ? ' ' : '') + value));
+      row.appendChild(item);
+    };
+
     var fill = function (t) {
       card.innerHTML = '';
-      card.appendChild(el('h4', 'graha-card-name', t.getAttribute('data-graha')));
-      card.appendChild(el('p', 'graha-card-where', t.getAttribute('data-where')));
+      var at = t.getAttribute('data-graha');
+
       /*
-       * Dignity sits with the placement rather than in the list below it: it
-       * qualifies where the graha is, where every line in the list is a
-       * separate thing that is true of it.
+       * Three lines, coarse to fine. Which graha and where exactly; then the
+       * three frames it sits in at once, house, sign and nakshatra; then the
+       * grahas that have a say over it and what it has a say over.
+       *
+       * They used to arrive as one fact per line, which ran the card to eight
+       * before the yogas started, and the eye had to travel the height of it to
+       * put together a placement that is one thought.
+       */
+      var head = el('h4', 'graha-card-name', at);
+      head.appendChild(el('span', 'graha-card-degree', t.getAttribute('data-degree')));
+      card.appendChild(head);
+
+      var where = el('p', 'graha-card-where');
+      fact(where, '', t.getAttribute('data-house'));
+      fact(where, '', t.getAttribute('data-sign'));
+      fact(where, '', t.getAttribute('data-nakshatra'));
+      /*
+       * Dignity stands with the sign rather than on a line of its own: it says
+       * how the graha does in the sign named beside it, and apart from that
+       * sign it is a word with nothing to hold on to.
        */
       var dignity = t.getAttribute('data-dignity');
-      if (dignity) card.appendChild(el('p', 'graha-card-dignity', dignity));
+      if (dignity) where.appendChild(el('span', 'graha-card-dignity', dignity));
+      card.appendChild(where);
+
       /*
-       * What it rules and what looks at it. Two facts a reader would otherwise
-       * have to leave the chart for: lordship is a row in the graha table and
-       * aspects are a tab of their own, and neither is where the eye is when it
-       * is on a graha in a kundli. Both are counted from house 1 of the chart
-       * on screen, so they move with the division and with the rotation.
+       * Who answers for it, and what it answers for. The dispositor and the
+       * two lords of its nakshatra are the grahas a reading passes through to
+       * get to this one; lordship and aspect are what a reader would otherwise
+       * leave the chart for, lordship being a row in the graha table and
+       * aspects a tab of their own. All counted from house 1 of the chart on
+       * screen, so they move with the division and with the rotation.
        */
-      [['data-rules', 'Rules'], ['data-seen-by', 'Aspected by']].forEach(function (pair) {
-        var value = t.getAttribute(pair[0]);
-        if (!value) return;
-        var line = el('p', 'graha-card-fact');
-        line.appendChild(el('span', 'graha-card-fact-label', pair[1]));
-        line.appendChild(document.createTextNode(' ' + value));
-        card.appendChild(line);
-      });
+      var lords = el('p', 'graha-card-lords');
+      var dispositor = t.getAttribute('data-dispositor');
+      if (dispositor) {
+        var relation = t.getAttribute('data-dispositor-relation');
+        fact(lords, 'Dispositor', dispositor + (relation ? ' (' + relation + ')' : ''));
+      }
+      fact(lords, 'Nakshatra lord', t.getAttribute('data-nak-lord'));
+      fact(lords, 'Sub lord', t.getAttribute('data-sub-lord'));
+      fact(lords, 'Rules', t.getAttribute('data-rules'));
+      fact(lords, 'Aspected by', t.getAttribute('data-seen-by'));
+      if (lords.firstChild) card.appendChild(lords);
       /*
        * Every item is a statement with its reason beneath it: the state or the
        * yoga on one line, why it holds in this chart on the next. A name alone

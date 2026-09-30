@@ -153,10 +153,48 @@ var Charts = (function () {
     }
     var where = Astro.SIGNS[sign] + ' (' + Astro.SIGNS_SA[sign] + ')' +
       (p.name === 'Ascendant' ? '' : ', house ' + house);
+
+    /*
+     * Where it stands, to the minute, in the chart being drawn. A varga
+     * position is the rashi one stretched and wrapped, so this follows the
+     * division on screen: every figure on a chart should be a fact about that
+     * chart.
+     */
+    var placed = Astro.vargaPosition(p.longitude, division || 1);
+    var within = placed ? Astro.norm360(placed.longitude) % 30 : p.longitude % 30;
+    var deg = Math.floor(within);
+    var min = Math.round((within - deg) * 60);
+    if (min === 60) { min = 0; deg += 1; }
+    var degree = deg + '\u00b0' + String(min).padStart(2, '0') + '\u2032';
+
+    /*
+     * Nakshatra, its lord and the KP sub lord, all read from the rashi
+     * longitude whatever division is drawn. They are divisions of the 360
+     * degrees themselves rather than of a sign, so a varga has no nakshatra of
+     * its own to report.
+     */
+    var nak = Astro.nakshatraOf(p.longitude);
     var mine = (yogas && yogas[p.name]) || [];
+    var standing = (dignities && dignities[p.name]) || {};
+    /*
+     * The dispositor is the lord of the sign occupied, which is true of the
+     * nodes and of the ascendant as much as of a graha. Neither carries a
+     * friendship, being outside the scheme the relation is read from, so they
+     * get the name and no bracket - where before they got no line at all, and
+     * the lagnesha is not a thing to leave a reader to work out.
+     */
+    var dispositor = standing.lord || Astro.SIGN_LORDS[sign];
     return {
       graha: p.name,
       where: where,
+      degree: degree,
+      house: p.name === 'Ascendant' ? '' : 'House ' + house,
+      signName: Astro.SIGNS_SA[sign],
+      nakshatra: nak.name + ' ' + nak.pada,
+      nakLord: nak.lord,
+      subLord: nak.subLord,
+      dispositor: dispositor || '',
+      dispositorRelation: standing.relation || '',
       /*
        * How the graha stands in the sign it occupies: its dignity where it has
        * one, and how it regards the lord of that sign otherwise. Worked out in
@@ -164,7 +202,7 @@ var Charts = (function () {
        * temporal relation is counted in the rashi even when a division is on
        * screen, so it cannot be derived from the recast chart here.
        */
-      dignity: (dignities && dignities[p.name]) || '',
+      dignity: standing.formal || '',
       /*
        * Which houses it rules and which grahas look at it, both counted from
        * this chart's house 1. Worked out in app.js, which knows the rotation.
@@ -218,6 +256,16 @@ var Charts = (function () {
             ctx.division, ctx.dignities, ctx.hemming, ctx.ruling);
           t.setAttribute('data-graha', d.graha);
           t.setAttribute('data-where', d.where);
+          t.setAttribute('data-degree', d.degree);
+          if (d.house) t.setAttribute('data-house', d.house);
+          t.setAttribute('data-sign', d.signName);
+          t.setAttribute('data-nakshatra', d.nakshatra);
+          t.setAttribute('data-nak-lord', d.nakLord);
+          t.setAttribute('data-sub-lord', d.subLord);
+          if (d.dispositor) t.setAttribute('data-dispositor', d.dispositor);
+          if (d.dispositorRelation) {
+            t.setAttribute('data-dispositor-relation', d.dispositorRelation);
+          }
           if (d.dignity) t.setAttribute('data-dignity', d.dignity);
           if (d.rules) t.setAttribute('data-rules', d.rules);
           if (d.seenBy) t.setAttribute('data-seen-by', d.seenBy);
