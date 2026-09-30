@@ -6518,6 +6518,27 @@ ok('gender shows only when it was stated',
  * in one browser and mm/dd/yyyy in another, over an input whose value is
  * neither. Three boxes say which is which and cannot be read the other way.
  */
+/*
+ * The way out of the place search sits with the label, not under the box. It
+ * is an alternative to the field rather than a step after it, and below the
+ * combobox it read as something to reach for once the search had already
+ * failed - half a field away from the box it replaces.
+ */
+ok('the coordinates link sits beside the place label',
+   html.indexOf('id="manual-toggle"') > html.indexOf('<label for="place">') &&
+   html.indexOf('id="manual-toggle"') < html.indexOf('id="place-combobox"') &&
+   /<div class="label-row">/.test(html));
+/*
+ * Baselines, not boxes. The label is 0.74rem uppercase and the link 0.8rem
+ * sentence case, so aligning their boxes would read as two lines that happen
+ * to overlap. And align-self is named because .link-button sets flex-start
+ * for the column it usually sits in, which would beat the row.
+ */
+ok('and the two are aligned on their baselines',
+   /\.label-row \{[^}]*align-items: baseline;/.test(cssSrc.replace(/\n/g, '')) &&
+   /\.label-row \.link-button \{[^}]*align-self: baseline;/.test(cssSrc) &&
+   /\.label-row label \{ margin-bottom: 0; \}/.test(cssSrc));
+
 ok('the date is typed rather than picked',
    !/<input type="date"/.test(html) &&
    html.indexOf('id="birth-day"') < html.indexOf('id="birth-month"') &&

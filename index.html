@@ -120,7 +120,16 @@
       </fieldset>
 
       <div class="field field-place">
-        <label for="place">Place of birth</label>
+        <!-- The way out sits with the label rather than under the box. It is
+             an alternative to the field, not a step after it, and below the
+             combobox it read as something to do once the search had failed
+             and was half a field away from the box it replaces. -->
+        <div class="label-row">
+          <label for="place">Place of birth</label>
+          <button type="button" class="link-button" id="manual-toggle" aria-expanded="false">
+            Not listed? Enter coordinates
+          </button>
+        </div>
         <div class="combobox" id="place-combobox">
           <input type="text" id="place" name="place" role="combobox" autocomplete="off"
                  aria-expanded="false" aria-controls="place-listbox" aria-autocomplete="list"
@@ -128,9 +137,6 @@
           <ul id="place-listbox" role="listbox" aria-label="Matching places" hidden></ul>
         </div>
         <p class="field-note" id="place-note" aria-live="polite"></p>
-        <button type="button" class="link-button" id="manual-toggle" aria-expanded="false">
-          Not listed? Enter coordinates
-        </button>
       </div>
 
       <!-- Beside the place rather than under the note. It is one of the four

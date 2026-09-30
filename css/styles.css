@@ -394,6 +394,23 @@ main, .site-header, .site-footer { max-width: 1120px; margin: 0 auto; }
  * of them. Empty and aria-hidden: it is alignment, not anything to read.
  */
 .label-spacer { display: block; height: 0.9rem; margin-bottom: 0.4rem; }
+
+/*
+ * A label with something beside it. The row carries the gap the label used to
+ * carry, so the control below sits where it did, and the two are aligned on
+ * their baselines rather than their boxes: they are different sizes and would
+ * otherwise read as two lines that happen to overlap.
+ */
+.label-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
+}
+.label-row label { margin-bottom: 0; }
+/* align-self here because .link-button sets flex-start for the column it
+   usually sits in, and that would beat the row's baseline. */
+.label-row .link-button { font-size: 0.8rem; padding: 0; align-self: baseline; }
 .field-mark .checkbox-field { margin: 0; min-height: var(--control-height); }
 .field { display: flex; flex-direction: column; min-width: 0; }
 
