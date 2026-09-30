@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
       ? Object.fromEntries(new URL(req.url).searchParams)
       : await req.json().catch(() => ({}));
 
-    const select = 'select=topic,subject,condition,heading,points,note,source&order=sort_order.asc&limit=200';
+    const select = 'select=topic,subject,condition,heading,points,note,source,effect&order=sort_order.asc&limit=200';
     let filter = '';
 
     if (input.subjects) {

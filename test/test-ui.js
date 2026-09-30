@@ -1586,8 +1586,7 @@ ok('the library is fetched once and searched in the page',
 ok('the yogas panel carries no explanatory passage',
    !/yoga-explanation/.test(appSrc) && !/fetchPassages\(\{ subjects:/.test(appSrc));
 ok('it still says how each yoga forms',
-   /finding\.summary/.test(appSrc) && /yoga-reasons/.test(appSrc) &&
-   /part\.join\(', '\)/.test(appSrc));
+   /yogaName\.title = \[finding\.summary\]\.concat\(finding\.reasons \|\| \[\]\)/.test(appSrc));
 /*
  * The column the redesign is for. Whose yoga it is and who takes part in it are
  * different questions, and the page only ever asked the second: Shubha Vesi is
@@ -1600,9 +1599,22 @@ ok('it still says how each yoga forms',
  * finding rather than place it.
  */
 ok('the table names the graha a yoga resolves to, apart from its participants',
-   /'Graha', 'Yoga', 'Family', 'Condition', 'Taking part'/.test(appSrc) &&
+   /'Graha', 'Chart', 'From', 'Yoga', 'Family', 'Result', 'Charts'/.test(appSrc) &&
    /finding\.graha \? 'yoga-graha' : 'yoga-graha is-shared'/.test(appSrc) &&
-   /finding\.grahas\.filter\(function \(g\) \{ return g !== finding\.graha; \}\)/.test(appSrc));
+   /\(finding\.grahas \|\| \[\]\)\.join\(', '\)/.test(appSrc));
+ok('the yoga result comes from the database’s constrained effect field', (function () {
+  var migration = fs.readFileSync(path.join(root,
+    'supabase/migrations/20261001000100_astro_readings_effect.sql'), 'utf8');
+  var seed = fs.readFileSync(path.join(root, 'supabase/seed/astro_readings_yogas.sql'), 'utf8');
+  var api = fs.readFileSync(path.join(root, 'supabase/functions/readings/index.ts'), 'utf8');
+  return /effect in \('good', 'bad', 'mixed'\)/.test(migration) &&
+    /update astro_readings set effect = case/.test(seed) &&
+    /source,effect/.test(api) && /passage\.effect/.test(appSrc);
+})());
+ok('the Yogas tab offers graha, chart and reference filters in that order',
+   html.indexOf('for="yoga-graha"') < html.indexOf('for="yoga-division"') &&
+   html.indexOf('for="yoga-division"') < html.indexOf('for="yoga-reference"') &&
+   /rotatedOnto\(Astro\.chartInDivision/.test(appSrc));
 ok('it points at the Lesson tab for the meaning',
    /The Lesson tab explains/.test(appSrc));
 ok('the library is still fetched for the lesson tab', /fetchPassages\(\{\}/.test(appSrc));
@@ -1804,13 +1816,14 @@ ok('and it says how many of them this chart gave', (function () {
     /catalogue-count/.test(appSrc);
 })());
 ok('and the yoga check is handed the strengths it needs',
-   /Yogas\.detect\(Astro\.chartInDivision\(state\.chart, chosen\.division\), strengths\)/.test(appSrc) &&
+   /Yogas\.detect\(chart, strengths\)/.test(appSrc) &&
+   /rotatedOnto\(Astro\.chartInDivision\(state\.chart, chosen\.division\), reference\)/.test(appSrc) &&
    /function strengthsFor/.test(appSrc));
 ok('shadbala is computed once per chart, so the tab and the yoga agree',
    /if \(!state\.shadbala\)/.test(appSrc) &&
    (appSrc.match(/Shadbala\.compute\(/g) || []).length === 1);
 ok('a yoga resting on several conditions names the ones that applied',
-   /finding\.reasons && finding\.reasons\.length/.test(appSrc) && /yoga-reasons/.test(appSrc));
+   /\[finding\.summary\]\.concat\(finding\.reasons \|\| \[\]\)/.test(appSrc));
 
 // Aspects, both directions.
 ok('aspects have a subtab of their own',
@@ -4031,7 +4044,7 @@ ok('every script the page loads parses', (function () {
    * The Graha column, driven. A source match would not catch the column being
    * filled from the wrong field, which is the fault this replaces.
    */
-  ok('the rendered table carries the five columns, Graha among them',
+  ok('the rendered table carries the requested seven columns',
     (function () {
       var host = byId['yoga-list'];
       if (!host) return false;
@@ -4047,7 +4060,7 @@ ok('every script the page loads parses', (function () {
           walk(kid);
         });
       })(host);
-      return heads.join(',') === 'Graha,Yoga,Family,Condition,Taking part';
+      return heads.join(',') === 'Graha,Chart,From,Yoga,Family,Result,Charts';
     })());
   /*
    * And the table narrows to one graha.
@@ -4062,7 +4075,7 @@ ok('every script the page loads parses', (function () {
    * at as of any other, and dropping them would answer "what has Venus got"
    * by leaving out things Venus is in.
    */
-  ok('the filter offers only grahas this chart has findings for',
+  ok('the filter offers every graha this chart names in a finding',
     (function () {
       var pick = byId['yoga-graha'];
       if (!pick) return false;
@@ -4073,7 +4086,9 @@ ok('every script the page loads parses', (function () {
         { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 });
       var real = {};
       Yogas.detect(peace.chart, strengths).forEach(function (f) {
-        if (f.graha) real[f.graha] = true;
+        (f.graha ? [f.graha] : (f.grahas || [])).forEach(function (n) {
+          if (n) real[n] = true;
+        });
       });
       return offered[0] === 'Every graha' &&
         offered.slice(1).every(function (n) { return real[n]; }) &&
@@ -4081,7 +4096,19 @@ ok('every script the page loads parses', (function () {
     })(),
     (byId['yoga-graha'].children || []).map(function (o) { return o.textContent; }).join(', '));
 
-  ok('and choosing one keeps that graha’s findings and the shared ones',
+  /*
+   * And every row a filtered table shows names the graha asked for, whether
+   * as the one the finding resolves to or as one of the several that make it.
+   * There is no third case: over 1,804 findings, not one fails to name a
+   * graha, so the dash that used to stand for "the chart as a whole" stood
+   * for nothing.
+   */
+  /*
+   * Either as the graha the finding is for, or among those taking part in it.
+   * Shubha Vesi is Mercury's and the Sun marks where to count from, so asking
+   * for the Sun keeps it and the columns still say whose it is.
+   */
+  ok('and choosing one shows only rows that name it',
     (function () {
       var pick = byId['yoga-graha'], host = byId['yoga-list'];
       var who = pick.children.length > 1 ? pick.children[1].value : '';
@@ -4089,20 +4116,44 @@ ok('every script the page loads parses', (function () {
       pick.value = who;
       host.children.length = 0;
       out.renderYogas(peace);
-      var whose = [];
+      var rows = [];
       (function walk(n) {
         if (!n || !n.children) return;
         n.children.forEach(function (kid) {
-          if (kid.tag === 'th' && kid.attrs && kid.attrs.scope === 'row') {
-            whose.push(kid.textContent);
+          if (kid.tag === 'tr') {
+            var cells = [];
+            kid.children.forEach(function (cell) {
+              // The row's own heading and the participants; not the table's.
+              var isRowHead = cell.tag === 'th' && cell.attrs && cell.attrs.scope === 'row';
+              if (isRowHead || (cell.className || '').indexOf('yoga-part') === 0) {
+                cells.push(cell.textContent || '');
+              }
+            });
+            if (cells.length) rows.push(cells.join(', '));
           }
           walk(kid);
         });
       })(host);
       pick.value = '';
-      return whose.length > 0 && whose.every(function (name) {
-        return name === who || name === '–';
+      return rows.length > 0 && rows.every(function (names) {
+        return names.split(', ').indexOf(who) >= 0;
       });
+    })());
+  ok('and no row is left with a dash where a graha was named',
+    (function () {
+      var host = byId['yoga-list'];
+      host.children.length = 0;
+      out.renderYogas(peace);
+      var bare = [];
+      (function walk(n) {
+        if (!n || !n.children) return;
+        n.children.forEach(function (kid) {
+          if (kid.tag === 'th' && kid.attrs && kid.attrs.scope === 'row' &&
+              kid.textContent === '–') bare.push(kid);
+          walk(kid);
+        });
+      })(host);
+      return bare.length === 0;
     })());
 
   ok('and a name the chart has nothing for falls back to every graha',
@@ -5475,8 +5526,7 @@ ok('the states line holds conditions and the list holds combinations',
  * complete rather than the only view of something trimmed.
  */
 ok('and the Yogas tab still carries the summary and the reasons',
-   /el\('p', 'yoga-summary', finding\.summary\)/.test(appSrc) &&
-   /finding\.reasons\.forEach\(function \(reason\) \{/.test(appSrc));
+   /yogaName\.title = \[finding\.summary\]\.concat\(finding\.reasons \|\| \[\]\)/.test(appSrc));
 
 /*
  * And the card survives the library being absent: it loses a line, not its

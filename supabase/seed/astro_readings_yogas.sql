@@ -835,3 +835,18 @@ on conflict (topic, subject, condition) do update set
   note = excluded.note,
   sort_order = excluded.sort_order,
   updated_at = now();
+
+-- Apply after every yoga row exists. A mixed result stays mixed unless a
+-- detector has a sourced rule that resolves it for this chart.
+update astro_readings set effect = case
+  when subject = 'Parivartana' and condition = 'maha' then 'good'
+  when subject = 'Parivartana' then 'mixed'
+  when subject = 'Neecha Bhanga Raja Yoga' and condition = 'general' then 'mixed'
+  when subject in ('Kemadruma Yoga', 'Sakata Yoga', 'Daridra Yoga',
+                   'Vanchanachorabheethi Yoga') then 'bad'
+  when subject = 'Kartari Yoga' and condition = 'papa' then 'bad'
+  when subject = 'Kartari Yoga' and condition = 'general' then 'mixed'
+  when subject in ('Chandra Mangala Yoga', 'Sama Yoga', 'Nabhasa Yoga') then 'mixed'
+  else 'good'
+end
+where topic = 'yoga';

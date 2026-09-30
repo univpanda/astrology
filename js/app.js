@@ -1323,6 +1323,7 @@
     fetchPassages({}, function (passages) {
       lessonLibrary = passages || [];
       libraryPending = false;
+      if (lastChart) renderYogas(lastChart);
     });
   }
 
@@ -3654,11 +3655,20 @@
      * fill in now.
      */
     var byGraha = document.getElementById('yoga-graha');
-    if (byGraha) {
-      byGraha.addEventListener('change', function () {
-        if (lastChart) renderYogas(lastChart);
+    var byReference = document.getElementById('yoga-reference');
+    if (byReference) {
+      REFERENCES.forEach(function (name) {
+        var option = el('option', null, name === 'Ascendant' ? 'Asc' : name);
+        option.value = name;
+        byReference.appendChild(option);
       });
     }
+    [byGraha, byReference].forEach(function (picker) {
+      if (!picker) return;
+      picker.addEventListener('change', function () {
+        if (lastChart) renderYogas(lastChart);
+      });
+    });
   }
 
   /** The division a panel is set to. */
@@ -3708,6 +3718,19 @@
     });
   }
 
+  function yogaFrequency(finding) {
+    if (typeof FREQUENCIES === 'undefined') return;
+    if (typeof FREQUENCIES.yogaTitle[finding.title] === 'number') {
+      return FREQUENCIES.yogaTitle[finding.title];
+    }
+    var key = finding.subject + '|' + finding.condition;
+    if (document.getElementById('budha-floor').value === 'none' &&
+        typeof FREQUENCIES.yogaNoFloor[key] === 'number') {
+      return FREQUENCIES.yogaNoFloor[key];
+    }
+    return FREQUENCIES.yoga[key];
+  }
+
   function renderYogas(state) {
     var list = document.getElementById('yoga-list');
     var note = document.getElementById('yoga-note');
@@ -3715,7 +3738,10 @@
 
     var strengths = strengthsFor(state).grahas;
     var chosen = divisionFor('yoga-division');
-    var found = Yogas.detect(Astro.chartInDivision(state.chart, chosen.division), strengths);
+    var referencePick = document.getElementById('yoga-reference');
+    var reference = referencePick ? referencePick.value || 'Ascendant' : 'Ascendant';
+    var chart = rotatedOnto(Astro.chartInDivision(state.chart, chosen.division), reference);
+    var found = Yogas.detect(chart, strengths);
 
     /*
      * What this page looks for, and which of them this chart gave.
@@ -3777,7 +3803,12 @@
     var grahaPick = document.getElementById('yoga-graha');
     var whoHas = [];
     found.forEach(function (f) {
-      if (f.graha && whoHas.indexOf(f.graha) < 0) whoHas.push(f.graha);
+      // Everyone a finding names, not only the one it resolves to: a reader
+      // asking for Venus wants the combinations Venus is in as well as the
+      // ones that are hers.
+      (f.graha ? [f.graha] : (f.grahas || [])).forEach(function (name) {
+        if (name && whoHas.indexOf(name) < 0) whoHas.push(name);
+      });
     });
     whoHas.sort(function (a, b) {
       return Astro.GRAHA_ORDER.indexOf(a) - Astro.GRAHA_ORDER.indexOf(b);
@@ -3798,7 +3829,7 @@
       grahaPick.disabled = whoHas.length === 0;
     }
     var shown = !wanted ? found : found.filter(function (f) {
-      return f.graha === wanted || !f.graha;
+      return f.graha === wanted || (!f.graha && (f.grahas || []).indexOf(wanted) >= 0);
     });
 
     var table = el('table', 'yoga-table');
@@ -3809,7 +3840,7 @@
      * graha got", and the column answering it was third, behind two that
      * describe the finding rather than place it.
      */
-    ['Graha', 'Yoga', 'Family', 'Condition', 'Taking part'].forEach(function (h) {
+    ['Graha', 'Chart', 'From', 'Yoga', 'Family', 'Result', 'Charts'].forEach(function (h) {
       var th = el('th', null, h);
       th.setAttribute('scope', 'col');
       headRow.appendChild(th);
@@ -3822,11 +3853,19 @@
       var tr = document.createElement('tr');
 
       /*
-       * The resolved graha, or a dash where the yoga is nobody's in particular.
-       * Held apart from the list beside it so the two cannot be read as one.
-       */
+       * Whom the condition applies to in this chart: the graha the finding
+       * resolves to, or the grahas that make it between them.
+       *
+       * This column used to print a dash for the second kind, which was a
+       * true answer to "whose yoga is this" and a useless one to the question
+       * the table is actually read with. Nothing is lost by naming them:
+       * measured over 1,804 findings, not one that fails to resolve to a
+       * single graha fails to name any - the dash was never "the chart as a
+       * whole", it was always "these, together", with the names already to
+       * hand in the row.
+      */
       var whose = el('th', finding.graha ? 'yoga-graha' : 'yoga-graha is-shared',
-        finding.graha || '\u2013');
+        finding.graha || (finding.grahas || []).join(', ') || '\u2013');
       whose.setAttribute('scope', 'row');
       if (!finding.graha) {
         whose.title = finding.title + ' is not one graha\u2019s: it is made by ' +
@@ -3834,32 +3873,21 @@
       }
       tr.appendChild(whose);
 
-      tr.appendChild(el('td', 'yoga-name', finding.title));
+      tr.appendChild(el('td', 'yoga-chart', chosen.name));
+      tr.appendChild(el('td', 'yoga-from', reference === 'Ascendant' ? 'Asc' : reference));
+      var yogaName = el('td', 'yoga-name', finding.title);
+      yogaName.title = [finding.summary].concat(finding.reasons || []).filter(Boolean).join(' ');
+      tr.appendChild(yogaName);
       tr.appendChild(el('td', 'yoga-family', finding.family || '\u2013'));
-
-      /*
-       * What holds in this chart, with the reasons behind it. The reasons are
-       * the part a reader argues with, so they stay: a bare verdict hides which
-       * of several conditions did the work.
-       */
-      var why = el('td', 'yoga-condition');
-      why.appendChild(el('p', 'yoga-summary', finding.summary));
-      if (finding.reasons && finding.reasons.length) {
-        var list2 = el('ul', 'yoga-reasons');
-        finding.reasons.forEach(function (reason) {
-          list2.appendChild(el('li', null, reason));
-        });
-        why.appendChild(list2);
-      }
-      tr.appendChild(why);
-
-      var part = finding.grahas.filter(function (g) { return g !== finding.graha; });
-      var taking = el('td', 'yoga-part', part.length ? part.join(', ') : '\u2013');
-      if (finding.houses && finding.houses.length) {
-        taking.appendChild(el('span', 'yoga-houses',
-          (finding.houses.length > 1 ? 'houses ' : 'house ') + finding.houses.join(', ')));
-      }
-      tr.appendChild(taking);
+      var passage = (lessonLibrary || []).filter(function (p) {
+        return p.topic === 'yoga' && p.subject === finding.subject &&
+          p.condition === finding.condition;
+      })[0];
+      var effect = passage && passage.effect ? passage.effect : 'mixed';
+      tr.appendChild(el('td', 'yoga-effect yoga-effect-' + effect,
+        effect.charAt(0).toUpperCase() + effect.slice(1)));
+      var pct = yogaFrequency(finding);
+      tr.appendChild(el('td', 'yoga-frequency', typeof pct === 'number' ? pct + '%' : '\u2013'));
       body.appendChild(tr);
     });
     table.appendChild(body);

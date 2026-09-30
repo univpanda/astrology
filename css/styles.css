@@ -2040,6 +2040,10 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
 .yoga-table .yoga-part { color: var(--ink-soft); font-size: 0.85rem; }
 .yoga-table .yoga-graha { font-weight: 600; white-space: nowrap; }
 .yoga-table .yoga-graha.is-shared { font-weight: 400; color: var(--ink-soft); }
+.yoga-table .yoga-effect { font-weight: 600; }
+.yoga-table .yoga-effect-good { color: var(--green-deep); }
+.yoga-table .yoga-effect-bad { color: var(--red); }
+.yoga-table .yoga-effect-mixed { color: var(--ink-soft); }
 .yoga-table .yoga-summary { margin: 0; }
 .yoga-table .yoga-reasons {
   margin: 0.3rem 0 0;
