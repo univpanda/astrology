@@ -201,23 +201,11 @@ main, .site-header, .site-footer { max-width: 1120px; margin: 0 auto; }
   font-size: 0.85rem;
   color: var(--ink-soft);
 }
-.saved-meta {
-  font-size: 0.78rem;
-  color: var(--ink-soft);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-/* The place is the long part and the only one worth truncating: a clipped town
-   is still recognisable, a clipped date is not. */
-.saved-where { flex: 0 1 auto; min-width: 4rem; }
-.saved-when { flex: 0 0 auto; }
-/* A separator, so "United States 6 Jul 1946" does not read as one phrase. */
-.saved-when::before {
-  content: '\00b7';
-  margin-right: 0.55rem;
-  color: var(--ink-faint);
-}
+/*
+ * The place and the moment are no longer printed in the row - they are on its
+ * title instead - so the rules that sized and truncated them went with them.
+ * A selector nothing emits is a claim about a layout that is gone.
+ */
 
 .saved-actions { display: flex; align-items: center; gap: 0.15rem; padding-right: 0.35rem; }
 

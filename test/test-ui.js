@@ -1258,13 +1258,24 @@ ok('a saved entry lays out as one row, wrapping only when it must', (function ()
  * aiming at the place or the date opened a chart, and nothing in the row said
  * which part of it was the target.
  */
-ok('the name is the only thing that opens the chart', (function () {
+ok('the name is the only thing in the row, and the only thing that opens it',
+   (function () {
+     var at = appSrc.indexOf('function renderSaved()');
+     var block = appSrc.slice(at, appSrc.indexOf('function removeSaved', at));
+     return /open\.appendChild\(el\('span', 'saved-name', entry\.name\)\)/.test(block) &&
+       /open\.addEventListener\('click', function \(\) \{ loadSaved\(entry\); \}\)/.test(block) &&
+       !/saved-meta/.test(block);
+   })());
+/*
+ * The place and the moment are not thrown away with the line they were on. They
+ * are the only thing telling two charts of one person apart, so they move to
+ * the row's title where they cost nothing until wanted.
+ */
+ok('and the place and moment survive on the row’s title', (function () {
   var at = appSrc.indexOf('function renderSaved()');
   var block = appSrc.slice(at, appSrc.indexOf('function removeSaved', at));
-  return /open\.appendChild\(el\('span', 'saved-name', entry\.name\)\)/.test(block) &&
-    /open\.addEventListener\('click', function \(\) \{ loadSaved\(entry\); \}\)/.test(block) &&
-    /detail\.appendChild\(el\('span', 'saved-meta saved-where'/.test(block) &&
-    /detail\.appendChild\(el\('span', 'saved-meta saved-when'/.test(block);
+  return /open\.title = entry\.name \+ ', ' \+ entry\.placeLabel \+ ', ' \+/.test(block) &&
+    /formatSavedMoment\(entry\)/.test(block);
 })());
 ok('and the hover marks the name rather than the whole row', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
@@ -1276,12 +1287,16 @@ ok('and the hover marks the name rather than the whole row', (function () {
  * Searching the list, and only once there are enough rows for finding one to be
  * work. A box that never helps is a control taking space from what it filters.
  */
-ok('saved kundalis can be searched by name or by place', (function () {
+/*
+  * By name, which is what the row shows. Matching a hidden field would
+  * highlight a row with nothing in it to explain why it matched.
+  */
+ok('saved kundalis can be searched, by the one thing the row shows', (function () {
   var at = appSrc.indexOf('function renderSaved()');
   var block = appSrc.slice(at, appSrc.indexOf('function removeSaved', at));
   return /id="saved-filter"/.test(html) && /id="saved-search"/.test(html) &&
     /\(entry\.name \|\| ''\)\.toLowerCase\(\)\.indexOf\(term\) >= 0/.test(block) &&
-    /\(entry\.placeLabel \|\| ''\)\.toLowerCase\(\)\.indexOf\(term\) >= 0/.test(block) &&
+    !/placeLabel \|\| ''\)\.toLowerCase\(\)\.indexOf\(term\)/.test(block) &&
     /field\.addEventListener\('input', renderSaved\)/.test(appSrc);
 })());
 ok('and the box stays hidden until the list is long enough to need it', (function () {
@@ -1302,14 +1317,22 @@ ok('deleting while searching removes the row that was asked for', (function () {
   return /var index = all\.indexOf\(entry\);/.test(block) &&
     !/list\.forEach\(function \(entry, index\)/.test(block);
 })());
-ok('the place truncates and the moment does not', (function () {
+/*
+  * And the rules that sized those two went with them. A selector nothing emits
+  * is a claim about a layout that is gone.
+  */
+ok('no rule is left for the two the row no longer prints', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-  return /\.saved-where \{ flex: 0 1 auto/.test(css) && /\.saved-when \{ flex: 0 0 auto/.test(css) &&
-    /saved-meta saved-where/.test(appSrc) && /saved-meta saved-when/.test(appSrc);
+  return !/\.saved-where \{/.test(css) && !/\.saved-when \{/.test(css) &&
+    !/\.saved-meta \{/.test(css) && !/saved-meta/.test(appSrc);
 })());
-ok('and a separator keeps the place and the moment from reading as one phrase', (function () {
+/*
+ * Including the separator that kept them from reading as one phrase. There is
+ * no phrase any more: the title spells both out with its own commas.
+ */
+ok('and the separator between them went with them', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-  return /\.saved-when::before \{[^}]*content: '\\00b7'/.test(css);
+  return !/\.saved-when::before/.test(css) && !/saved-when/.test(css);
 })());
 
 /*

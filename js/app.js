@@ -4163,12 +4163,11 @@
     var term = (box && !box.hidden && field ? field.value : '').trim().toLowerCase();
 
     /*
-     * Name or place. A reader looking for a chart remembers one or the other,
-     * and the date is not something anyone searches by.
+     * By name. It is what the row shows and what anyone is looking for; a match
+     * on a hidden field would highlight a row with nothing in it to explain why.
      */
     var list = !term ? all : all.filter(function (entry) {
-      return (entry.name || '').toLowerCase().indexOf(term) >= 0 ||
-        (entry.placeLabel || '').toLowerCase().indexOf(term) >= 0;
+      return (entry.name || '').toLowerCase().indexOf(term) >= 0;
     });
     if (none) {
       none.hidden = !term || list.length > 0;
@@ -4191,17 +4190,25 @@
        * and the moment are there to tell two charts of one person apart and are
        * now plain text.
        */
+      /*
+       * The name and nothing else.
+       *
+       * The row carried the place and the moment beside it, which is most of a
+       * line of text on every row to answer a question nobody was asking: a
+       * reader scanning this list is looking for a person by name. They are not
+       * thrown away, because they are the only thing telling two charts of one
+       * person apart - they move to the row's own title, where they cost
+       * nothing until wanted.
+       */
       var detail = el('div', 'saved-detail');
       var open = el('button', 'saved-open');
       open.type = 'button';
       open.appendChild(el('span', 'saved-name', entry.name));
       if (entry.celebrity) open.appendChild(el('span', 'celebrity-mark', CELEBRITY_MARK));
+      open.title = entry.name + ', ' + entry.placeLabel + ', ' +
+        formatSavedMoment(entry);
       open.addEventListener('click', function () { loadSaved(entry); });
       detail.appendChild(open);
-      // The place gives way first when the row is short of room; the moment is
-      // what tells two charts of the same person apart, so it keeps its width.
-      detail.appendChild(el('span', 'saved-meta saved-where', entry.placeLabel));
-      detail.appendChild(el('span', 'saved-meta saved-when', formatSavedMoment(entry)));
       li.appendChild(detail);
 
       var actions = el('div', 'saved-actions');
