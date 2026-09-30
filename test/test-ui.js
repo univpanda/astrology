@@ -2577,7 +2577,7 @@ ok('and the war row appears only in a chart that has one',
 // fact put where the eye already is. Neither is typed into the markup.
 ok('the tables carry one dispositor column each, built once',
    (appSrc.match(/'Dispositor'/g) || []).length === 2 &&
-   /fact\(lords, 'Dispositor',/.test(appSrc) &&
+   /fact\(inSign, 'Dispositor',/.test(appSrc) &&
    !/<th scope="col">Dispositor<\/th>/.test(html));
 ok('the dispositor is the lord of the sign shown in that column',
    /Astro\.SIGN_LORDS\[sign\]/.test(appSrc) &&
@@ -8104,6 +8104,40 @@ console.log('\nThe card says how the graha stands in its sign');
      * travelled. Ketu is outside the scheme and the ascendant is not a graha,
      * so neither carries one.
      */
+    ok('the card reads the four frames in order, each naming its own lord',
+      by.Venus['data-house'] === 'House 10' &&
+      by.Venus['data-sign'] === 'Cancer (Karka)' &&
+      /^Ashlesha [1-4]$/.test(by.Venus['data-nakshatra'] || '') &&
+      by.Venus['data-dispositor'] === 'Moon' &&
+      by.Venus['data-nak-lord'] === 'Mercury' &&
+      by.Venus['data-sub-lord'] === 'Venus',
+      [by.Venus['data-house'], by.Venus['data-sign'], by.Venus['data-nakshatra']].join(' / '));
+    ok('and the nakshatra lord is read as a relation, as the dispositor is',
+      by.Venus['data-nak-lord-relation'] === 'great friend' &&
+      by.Venus['data-dispositor-relation'] === 'great enemy',
+      by.Venus['data-nak-lord-relation'] + ' / ' + by.Venus['data-dispositor-relation']);
+    /*
+     * And the sub lord by its own standing rather than by a relation: a sub is
+     * a slice of a nakshatra, and the graha has no standing in it. Swept,
+     * because which grahas land on a dignified sub lord is a fact about the
+     * chart rather than about the reading.
+     */
+    ok('the sub lord is reported by its own dignity where it has one',
+      Object.keys(by).some(function (g) { return by[g]['data-sub-lord-dignity']; }) &&
+      Object.keys(by).every(function (g) {
+        var d = by[g]['data-sub-lord-dignity'];
+        return !d || ['exalted', 'debilitated', 'own sign', 'mooltrikona'].indexOf(d) >= 0;
+      }),
+      Object.keys(by).map(function (g) {
+        return by[g]['data-sub-lord-dignity'] ? g + ':' + by[g]['data-sub-lord-dignity'] : '';
+      }).filter(Boolean).join(', '));
+    /*
+     * Ketu keeps no friendships, so its nakshatra lord is named without one,
+     * the way its dispositor is.
+     */
+    ok('a node names its lords without inventing a friendship for them',
+      !!by.Ketu['data-nak-lord'] && by.Ketu['data-nak-lord-relation'] === undefined);
+
     ok('the chara karaka rides beside the degree that decides it',
       by.Jupiter['data-karaka'] === 'Atmakaraka' &&
       by.Ketu['data-karaka'] === undefined &&
@@ -8145,12 +8179,30 @@ console.log('\nThe card says how the graha stands in its sign');
    * On a line of their own, below the three lords. Those are grahas a reading
    * passes through to reach this one; these two are what this one reaches.
    */
+  /*
+   * Lordship rides with the house it is counted from; aspects close the card.
+   * The three lines between them are the nested frames - sign, nakshatra, sub
+   * - each naming the place, then whose place it is, then how this graha
+   * stands in it.
+   */
   ok('and the card prints them as a label and a value, not as prose',
-    /var over = el\('p', 'graha-card-lords'\);/.test(src) &&
-    /fact\(over, 'Rules', t\.getAttribute\('data-rules'\)\)/.test(src) &&
+    /fact\(seat, 'Rules', t\.getAttribute\('data-rules'\)\)/.test(src) &&
     /fact\(over, 'Aspected by', t\.getAttribute\('data-seen-by'\)\)/.test(src) &&
     /\.graha-card-fact-label \{/.test(css) &&
-    src.indexOf("fact(lords, 'Sub lord'") < src.indexOf("fact(over, 'Rules'"));
+    src.indexOf("fact(seat, 'Rules'") < src.indexOf("fact(inSign, 'Dispositor'") &&
+    src.indexOf("fact(inSign, 'Dispositor'") < src.indexOf("fact(inNak, 'Lord'") &&
+    src.indexOf("fact(inNak, 'Sub lord'") < src.indexOf("fact(over, 'Aspected by'"));
+  /*
+   * Two readings new to the card, both about grahas other than the one being
+   * pointed at. The nakshatra lord is read as a relation, the way the
+   * dispositor is. The sub lord is not: a sub is a slice of a nakshatra and
+   * the graha has no standing in it, so what is worth saying is how that lord
+   * is itself placed.
+   */
+  ok('the nakshatra lord carries a relation and the sub lord its own dignity',
+    /nakLordRelation: relationBetween\(p, nakOf\(p\)\.lord, d1\)/.test(src) &&
+    /subLordDignity: dignityOfGraha\(nakOf\(p\)\.subLord, d1\)/.test(src) &&
+    /data-nak-lord-relation/.test(chartsSrc) && /data-sub-lord-dignity/.test(chartsSrc));
 
   /*
    * And the figures are real. Driven through the same function the page calls,
@@ -8200,9 +8252,13 @@ console.log('\nThe card says how the graha stands in its sign');
    * the sign named next to it, and a line of its own left the word with
    * nothing to hold on to.
    */
+  /*
+   * Dignity closes the sign's line rather than opening it: the sign is named,
+   * then whose it is, then how this graha does in it.
+   */
   ok('the card stands the dignity beside the sign it is about',
     /var dignity = t\.getAttribute\('data-dignity'\)/.test(src) &&
-    /where\.appendChild\(el\('span', 'graha-card-dignity', dignity\)\)/.test(src) &&
+    /inSign\.appendChild\(el\('span', 'graha-card-dignity', dignity\)\)/.test(src) &&
     /\.graha-card-dignity \{/.test(css));
   /*
    * And is divided from the findings by the same line the findings use between

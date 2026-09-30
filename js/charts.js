@@ -199,6 +199,8 @@ var Charts = (function () {
       subLord: nak.subLord,
       dispositor: dispositor || '',
       karaka: (karakas && karakas[p.name]) || '',
+      nakLordRelation: standing.nakLordRelation || '',
+      subLordDignity: standing.subLordDignity || '',
       dispositorRelation: standing.relation || '',
       /*
        * How the graha stands in the sign it occupies: its dignity where it has
@@ -268,6 +270,8 @@ var Charts = (function () {
           t.setAttribute('data-nak-lord', d.nakLord);
           t.setAttribute('data-sub-lord', d.subLord);
           if (d.karaka) t.setAttribute('data-karaka', d.karaka);
+          if (d.nakLordRelation) t.setAttribute('data-nak-lord-relation', d.nakLordRelation);
+          if (d.subLordDignity) t.setAttribute('data-sub-lord-dignity', d.subLordDignity);
           if (d.dispositor) t.setAttribute('data-dispositor', d.dispositor);
           if (d.dispositorRelation) {
             t.setAttribute('data-dispositor-relation', d.dispositorRelation);
