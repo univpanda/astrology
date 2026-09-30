@@ -193,7 +193,7 @@ var Charts = (function () {
       where: where,
       degree: degree,
       house: p.name === 'Ascendant' ? '' : 'House ' + house,
-      signName: Astro.SIGNS[sign] + ' (' + Astro.SIGNS_SA[sign] + ')',
+      signName: Astro.SIGNS[sign],
       nakshatra: nak.name + ' ' + nak.pada,
       nakLord: nak.lord,
       subLord: nak.subLord,

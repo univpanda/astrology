@@ -2575,9 +2575,11 @@ ok('and the war row appears only in a chart that has one',
 // What each graha rules, with the yogakaraka named.
 // Twice now: the table's column and the card's own line, which is the same
 // fact put where the eye already is. Neither is typed into the markup.
+// Twice: the table's column and the card's own line, which is the same fact
+// put where the eye already is. Neither is typed into the markup.
 ok('the tables carry one dispositor column each, built once',
-   (appSrc.match(/'Dispositor'/g) || []).length === 1 &&
-   /fact\(inSign, 'Lord',/.test(appSrc) &&
+   (appSrc.match(/'Dispositor'/g) || []).length === 2 &&
+   /fact\(seat, 'Dispositor',/.test(appSrc) &&
    !/<th scope="col">Dispositor<\/th>/.test(html));
 ok('the dispositor is the lord of the sign shown in that column',
    /Astro\.SIGN_LORDS\[sign\]/.test(appSrc) &&
@@ -8106,7 +8108,7 @@ console.log('\nThe card says how the graha stands in its sign');
      */
     ok('the card reads the four frames in order, each naming its own lord',
       by.Venus['data-house'] === 'House 10' &&
-      by.Venus['data-sign'] === 'Cancer (Karka)' &&
+      by.Venus['data-sign'] === 'Cancer' &&
       /^Ashlesha [1-4]$/.test(by.Venus['data-nakshatra'] || '') &&
       by.Venus['data-dispositor'] === 'Moon' &&
       by.Venus['data-nak-lord'] === 'Mercury' &&
@@ -8139,7 +8141,7 @@ console.log('\nThe card says how the graha stands in its sign');
       /karakas: Astro\.charaKarakas\(state\.chart\)/.test(src));
     ok('house, sign and nakshatra are all carried',
       by.Moon['data-house'] === 'House 4' &&
-      by.Moon['data-sign'] === 'Capricorn (Makara)' &&
+      by.Moon['data-sign'] === 'Capricorn' &&
       /^Shravana [1-4]$/.test(by.Moon['data-nakshatra'] || ''),
       [by.Moon['data-house'], by.Moon['data-sign'], by.Moon['data-nakshatra']].join(' / '));
     ok('and the nakshatra is read from the rashi, which is the only place it exists',
@@ -8178,19 +8180,37 @@ console.log('\nThe card says how the graha stands in its sign');
    * passes through to reach this one; these two are what this one reaches.
    */
   /*
-   * Lordship rides with the house it is counted from; aspects close the card.
-   * The three lines between them are the nested frames - sign, nakshatra, sub
-   * - each naming the place, then whose place it is, then how this graha
-   * stands in it.
+   * Identity, then what is remarkable, then the zodiacal position whole, then
+   * the chart position with the lords of ownership, then the finer lords, then
+   * what looks at it.
    */
-  ok('and the card follows identity, conditions, sign, nakshatra, house, aspects',
+  ok('and the card follows identity, conditions, position, seat, lords, aspects',
     /fact\(seat, 'Rules', t\.getAttribute\('data-rules'\)\)/.test(src) &&
     /fact\(over, 'Aspected by', t\.getAttribute\('data-seen-by'\)\)/.test(src) &&
     /\.graha-card-fact-label \{/.test(css) &&
-    src.indexOf("'graha-card-conditions'") < src.indexOf("fact(inSign, ''") &&
-    src.indexOf("fact(inSign, 'Lord'") < src.indexOf("fact(inNak, 'Lord'") &&
-    src.indexOf("fact(inNak, 'Sub lord'") < src.indexOf("fact(seat, 'Rules'") &&
-    src.indexOf("fact(seat, 'Rules'") < src.indexOf("fact(over, 'Aspected by'"));
+    src.indexOf("'graha-card-conditions'") < src.indexOf("fact(at360, ''") &&
+    src.indexOf("fact(at360, ''") < src.indexOf("fact(seat, 'Dispositor'") &&
+    src.indexOf("fact(seat, 'Dispositor'") < src.indexOf("fact(seat, 'Rules'") &&
+    src.indexOf("fact(seat, 'Rules'") < src.indexOf("fact(inNak, 'Nakshatra lord'") &&
+    src.indexOf("fact(inNak, 'Sub lord'") < src.indexOf("fact(over, 'Aspected by'"));
+  /*
+   * Retrograde, combust and yogakaraka are not on the conditions line. The
+   * list below gives each with how rare it is, which is more than the line can
+   * say, and saying it twice cost the card a line for nothing.
+   */
+  ok('and the conditions line does not repeat what the list already carries',
+    !/conditions\.push\(STATE_NAMES/.test(src) &&
+    /if \(\/\^\(Exalted\|Debilitated\|Mooltrikona\)\$\/i\.test\(dignity\)\) conditions\.push\(dignity\)/
+      .test(src) &&
+    /if \(t\.getAttribute\('data-directional'\) === 'true'\) conditions\.push\('Directional strength'\)/
+      .test(src));
+  /*
+   * And the karaka takes neither the name's weight nor the graha's colour: it
+   * is a role the graha holds, not part of what it is called.
+   */
+  ok('the karaka sits in the heading without being part of the name',
+    /head\.appendChild\(el\('span', 'graha-card-karaka', '\\u00b7 ' \+ karaka\)\)/.test(src) &&
+    /\.graha-card-karaka \{[^}]*font-weight: 400;/.test(css.replace(/\n/g, '')));
   /*
    * Two readings new to the card, both about grahas other than the one being
    * pointed at. The nakshatra lord is read as a relation, the way the

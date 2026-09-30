@@ -803,6 +803,17 @@ input::placeholder { color: #a9bdb2; }
   font-weight: 700;
 }
 /*
+ * In the heading but not of it. The chara karaka is a role the graha holds,
+ * not part of what it is called, and taking the name's weight and the graha's
+ * colour made it read as a second half of the name.
+ */
+.graha-card-karaka {
+  margin-left: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+/*
  * The three frames a graha sits in at once, run together on one line with a
  * dot between them. Separate lines made each read as a finding of its own,
  * where house, sign and nakshatra are one placement said three ways.

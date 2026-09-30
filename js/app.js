@@ -1542,50 +1542,73 @@
 
       /* Identity and conditions first; then placement from sign through
          nakshatra to house, followed by the grahas that aspect it. */
+      /*
+       * Five lines, coarse to fine and then outward:
+       *
+       *   who it is, and what it stands for in the chara scheme
+       *   anything remarkable about how it stands
+       *   where it is in the zodiac, to the pada
+       *   where it is in the chart, whose sign it sits in, what it owns
+       *   the lords of the finer frames
+       *   what looks at it
+       */
       var head = el('h4', 'graha-card-name', at);
       var karaka = t.getAttribute('data-karaka');
-      if (karaka) head.appendChild(document.createTextNode(' · ' + karaka));
+      /*
+       * The karaka in the heading but not of it. It was taking the name's
+       * weight and the graha's colour, which made it read as part of what the
+       * graha is called rather than as a role it happens to hold.
+       */
+      if (karaka) head.appendChild(el('span', 'graha-card-karaka', '\u00b7 ' + karaka));
       card.appendChild(head);
 
+      /*
+       * What is remarkable about this graha, and only that. Retrograde,
+       * combust and yogakaraka are deliberately not here: the list below gives
+       * each of them with how rare it is, which is more than this line can
+       * say, and saying it twice was costing the card a line for nothing.
+       */
       var conditions = [];
-      split(t.getAttribute('data-states')).forEach(function (item) {
-        if (item.term === 'R' || item.term === 'C' || item.term === 'Y') {
-          conditions.push(STATE_NAMES[item.term]);
-        }
-      });
       var dignity = t.getAttribute('data-dignity');
       if (/^(Exalted|Debilitated|Mooltrikona)$/i.test(dignity)) conditions.push(dignity);
       if (t.getAttribute('data-directional') === 'true') conditions.push('Directional strength');
-      if (conditions.length) card.appendChild(el('p', 'graha-card-conditions',
-        conditions.join(' · ')));
+      if (conditions.length) {
+        card.appendChild(el('p', 'graha-card-conditions', conditions.join(' \u00b7 ')));
+      }
 
-      var inSign = el('p', 'graha-card-lords');
-      fact(inSign, '', t.getAttribute('data-sign') + ' ' + t.getAttribute('data-degree'));
+      /*
+       * The whole zodiacal position on one line: the sign, how far into it,
+       * and the nakshatra and pada that degree falls in. Three ways of saying
+       * one thing, which is where it stands in the 360 degrees.
+       */
+      var at360 = el('p', 'graha-card-lords');
+      fact(at360, '', t.getAttribute('data-sign') + ' ' + t.getAttribute('data-degree'));
+      fact(at360, '', t.getAttribute('data-nakshatra'));
+      if (at360.children.length) card.appendChild(at360);
+
+      /*
+       * Where it stands in the chart, whose ground that is, and what ground it
+       * owns in return.
+       */
+      var seat = el('p', 'graha-card-where');
+      fact(seat, '', t.getAttribute('data-house'));
       var dispositor = t.getAttribute('data-dispositor');
       if (dispositor) {
         var relation = t.getAttribute('data-dispositor-relation');
-        fact(inSign, 'Lord', dispositor + (relation ? ' (' + relation + ')' : ''));
+        fact(seat, 'Dispositor', dispositor + (relation ? ' (' + relation + ')' : ''));
       }
-      if (inSign.children.length) card.appendChild(inSign);
+      fact(seat, 'Rules', t.getAttribute('data-rules'));
+      if (seat.children.length) card.appendChild(seat);
 
-      /*
-       * The same shape one frame in. Both lords are read as relationships from
-       * the graha whose card this is.
-       */
+      /* The lords of the finer frames, read as relations the way the dispositor is. */
       var inNak = el('p', 'graha-card-lords');
-      fact(inNak, '', t.getAttribute('data-nakshatra'));
       var nakRel = t.getAttribute('data-nak-lord-relation');
-      fact(inNak, 'Lord', t.getAttribute('data-nak-lord') +
+      fact(inNak, 'Nakshatra lord', t.getAttribute('data-nak-lord') +
         (nakRel ? ' (' + nakRel + ')' : ''));
       var subRel = t.getAttribute('data-sub-lord-relation');
       fact(inNak, 'Sub lord', t.getAttribute('data-sub-lord') +
         (subRel ? ' (' + subRel + ')' : ''));
       if (inNak.children.length) card.appendChild(inNak);
-
-      var seat = el('p', 'graha-card-where');
-      fact(seat, '', t.getAttribute('data-house'));
-      fact(seat, 'Rules', t.getAttribute('data-rules'));
-      if (seat.children.length) card.appendChild(seat);
 
       var over = el('p', 'graha-card-lords');
       fact(over, 'Aspected by', t.getAttribute('data-seen-by'));
