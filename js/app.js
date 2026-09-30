@@ -876,7 +876,16 @@
    * is where the classical rule puts it and why this is computed here rather
    * than inside the renderer.
    */
-  function dignitiesByGraha(state, division) {
+  /*
+   * Which chart the temporal half of a relation is counted in. Read where it is
+   * used rather than threaded through, the way every other scheme setting on
+   * this page is, so changing it needs no chart to be rebuilt by hand.
+   */
+  function tatkalikaSetting() {
+    return document.getElementById('tatkalika').value;
+  }
+
+  function dignitiesByGraha(state, division, tatkalika) {
     var d1 = {};
     state.chart.planets.forEach(function (p) { d1[p.name] = p; });
 
@@ -885,7 +894,7 @@
     };
     var map = {};
     state.chart.planets.forEach(function (p) {
-      var standing = Astro.vargaDignity(p.name, p.longitude, division, d1);
+      var standing = Astro.vargaDignity(p.name, p.longitude, division, d1, tatkalika);
       if (!standing) {
         /*
          * Nodes are deliberately outside the varga-viswa scale, but the card
@@ -1501,7 +1510,7 @@
       division: set.division,
       reference: set.reference,
       yogas: yogasByGraha(state, set.division, set.reference),
-      dignities: dignitiesByGraha(state, set.division),
+      dignities: dignitiesByGraha(state, set.division, tatkalikaSetting()),
       hemming: hemmingByGraha(state, set.division),
       ruling: rulingAndAspects(state, set.division, set.reference),
       combustion: document.getElementById('combustion').value
@@ -2053,7 +2062,8 @@
            meanSource: document.getElementById('mean-source').value,
            luminaryRule: document.getElementById('luminary-rule').value,
            luminaryCheshta: document.getElementById('luminary-cheshta').value,
-           ishtaKashta: document.getElementById('ishta-kashta').value });
+           ishtaKashta: document.getElementById('ishta-kashta').value,
+           tatkalika: tatkalikaSetting() });
     }
     return state.shadbala;
   }
@@ -2848,7 +2858,7 @@
     var sun = positionsD1.Sun;
     // Rahu and Ketu keep no friendships, so they have no column to head.
     var planets = state.chart.planets.filter(function (p) {
-      return Astro.vargaDignity(p.name, p.longitude, 1, positionsD1);
+      return Astro.vargaDignity(p.name, p.longitude, 1, positionsD1, tatkalikaSetting());
     });
     renderVargasHead(table, scheme, planets, sun);
 
@@ -2882,7 +2892,8 @@
       tr.appendChild(divisionHead(division, scheme));
 
       planets.forEach(function (planet) {
-        var d = Astro.vargaDignity(planet.name, planet.longitude, division, positionsD1);
+        var d = Astro.vargaDignity(planet.name, planet.longitude, division, positionsD1,
+          tatkalikaSetting());
         var td = el('td', 'varga-cell');
         if (!d) { td.textContent = '\u2013'; tr.appendChild(td); return; }
 
@@ -2986,7 +2997,7 @@
    */
   var GOOD_KEYS = ['exalted', 'moolatrikona', 'own', 'adhimitra', 'mitra'];
 
-  function vargaSummary(state, scheme) {
+  function vargaSummary(state, scheme, tatkalika) {
     var positionsD1 = {};
     state.chart.planets.forEach(function (p) { positionsD1[p.name] = p; });
 
@@ -2997,7 +3008,8 @@
       var benefics = Astro.naturalBenefics(state.chart);
       var good = 0, marks = { V: 0, X: 0, S: 0, P: 0, D: 0, N: 0 };
       scheme.divisions.forEach(function (division) {
-        var d = Astro.vargaDignity(planet.name, planet.longitude, division, positionsD1);
+        var d = Astro.vargaDignity(planet.name, planet.longitude, division, positionsD1,
+          tatkalika);
         if (!d) return;
         if (GOOD_KEYS.indexOf(d.key) >= 0) good++;
         var chart = Astro.chartInDivision(state.chart, division);
@@ -3222,7 +3234,7 @@
   function renderVargaCharts(state, scheme) {
     var host = document.getElementById('vargas-charts');
     host.innerHTML = '';
-    var rows = vargaSummary(state, scheme);
+    var rows = vargaSummary(state, scheme, tatkalikaSetting());
     if (!rows.length) return;
 
     /*
@@ -4400,7 +4412,9 @@
    ['luminary-cheshta', { counted: 'The Sun\u2019s and Moon\u2019s cheshta bala now counts in the total.',
                           omitted: 'The Sun\u2019s and Moon\u2019s cheshta bala is shown but not counted.' }],
    ['ishta-kashta', { sripati: 'Ishta and kashta are the square roots Sripatipaddhati asks for.',
-                      parashara: 'Ishta and kashta now halve a fixed sixty between them, as Parashara has it.' }]
+                      parashara: 'Ishta and kashta now halve a fixed sixty between them, as Parashara has it.' }],
+   ['tatkalika', { varga: 'Tatkalika is now counted in the division being read.',
+                   rashi: 'Tatkalika is now counted in the rashi and carried into every division.' }]
   ].forEach(function (pair) {
     document.getElementById(pair[0]).addEventListener('change', function () {
       var status = document.getElementById('settings-status');

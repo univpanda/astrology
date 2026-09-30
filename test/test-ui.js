@@ -300,11 +300,42 @@ console.log('\nWhat a chart slot recomputes when it is rotated');
    * Stated as a test so a later change does not rotate them by symmetry.
    */
   ok('dignity and hemming stay out of it, being rotation-independent',
-     /dignities: dignitiesByGraha\(state, set\.division\)/.test(src) &&
+     /dignities: dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\)\)/.test(src) &&
      /hemming: hemmingByGraha\(state, set\.division\)/.test(src));
   ok('the Yogas tab is unaffected, reading the whole chart from the ascendant',
      /function renderYogas\(state\)/.test(src) &&
      !/renderYogas\(state, [a-z]/.test(src));
+})();
+
+console.log('\nThe tatkalika setting, end to end');
+(function () {
+  var src = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
+  var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  ok('the page offers the setting and opens on the division',
+     /<select id="tatkalika"/.test(page) &&
+     /<option value="varga" selected>/.test(page.slice(page.indexOf('id="tatkalika"'))));
+  ok('and the rashi is the other option, not a third state',
+     (page.slice(page.indexOf('id="tatkalika"'), page.indexOf('</select>',
+       page.indexOf('id="tatkalika"'))).match(/<option /g) || []).length === 2);
+  ok('the page reads it in one place',
+     /function tatkalikaSetting\(\) \{\s*\n\s*return document\.getElementById\('tatkalika'\)\.value;/.test(src));
+  /*
+   * The grid, the chart card and shadbala all have to move together, or the
+   * page would show one reading and score another.
+   */
+  ok('the vimsopaka grid takes it',
+     /Astro\.vargaDignity\(planet\.name, planet\.longitude, division, positionsD1,\s*\n\s*tatkalikaSetting\(\)\)/.test(src));
+  ok('the chart card takes it', /dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\)\)/.test(src));
+  ok('the varga summary takes it', /vargaSummary\(state, scheme, tatkalikaSetting\(\)\)/.test(src));
+  ok('and shadbala takes it', /tatkalika: tatkalikaSetting\(\)/.test(src));
+  /*
+   * Changing it changes figures rather than wording, so the cached strengths
+   * have to be dropped. It rides with the settings that already do that.
+   */
+  ok('changing it drops the cached strengths and redraws',
+     /\['tatkalika', \{ varga:/.test(src) &&
+     src.indexOf("['tatkalika', { varga:") < src.indexOf('lastChart.shadbala = null;',
+       src.indexOf("['tatkalika', { varga:")));
 })();
 
 console.log('\nStudy charts that ship with the app');
@@ -4159,7 +4190,7 @@ ok('and the sixteen are derived from VARGAS rather than retyped beside it', (fun
 ok('grahas keep the order of the tables beside it',
    /var planets = state\.chart\.planets\.filter\(function \(p\) \{/.test(appSrc));
 ok('a graha with no reading anywhere is dropped, not shown as a column of dashes',
-   /return Astro\.vargaDignity\(p\.name, p\.longitude, 1, positionsD1\);/.test(appSrc) &&
+   /return Astro\.vargaDignity\(p\.name, p\.longitude, 1, positionsD1, tatkalikaSetting\(\)\);/.test(appSrc) &&
    /\/\/ Rahu and Ketu keep no friendships, so they have no column to head\./
      .test(appSrc));
 /*
@@ -4455,7 +4486,7 @@ ok('and its name is a row header',
 ok('both lines read one and the same varga position', (function () {
   var at = appSrc.indexOf('function renderVargas(state)');
   var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
-  return /var d = Astro\.vargaDignity\(planet\.name, planet\.longitude, division, positionsD1\);/
+  return /var d = Astro\.vargaDignity\(planet\.name, planet\.longitude, division, positionsD1,\s*\n\s*tatkalikaSetting\(\)\);/
     .test(block) && (block.match(/Astro\.vargaDignity\(planet\.name/g) || []).length === 1;
 })());
 
@@ -7060,8 +7091,8 @@ console.log('\nThe card says how the graha stands in its sign');
   var out = global.appExports || {};
 
   ok('the map is built and handed to the renderer with the yogas',
-    /function dignitiesByGraha\(state, division\)/.test(src) &&
-    /dignities: dignitiesByGraha\(state, set\.division\)/.test(src));
+    /function dignitiesByGraha\(state, division, tatkalika\)/.test(src) &&
+    /dignities: dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\)\)/.test(src));
   ok('and the renderer carries it onto the graha',
     /ctx\.division, ctx\.dignities, ctx\.hemming, ctx\.ruling\)/.test(chartsSrc) &&
     /t\.setAttribute\('data-dignity', d\.dignity\)/.test(chartsSrc));
@@ -7153,19 +7184,22 @@ console.log('\nThe card says how the graha stands in its sign');
    * Run the real thing rather than trust the source. Pull the builder out of
    * app.js and check both halves answer on a chart that has each case.
    */
-  var body = src.match(/function dignitiesByGraha\(state, division\) \{[\s\S]*?\n  \}/)[0];
+  var body = src.match(/function dignitiesByGraha\(state, division, tatkalika\) \{[\s\S]*?\n  \}/)[0];
   ok('the card reads the same varga dignity as the grid',
-    /Astro\.vargaDignity\(p\.name, p\.longitude, division, d1\)/.test(body));
+    /Astro\.vargaDignity\(p\.name, p\.longitude, division, d1, tatkalika\)/.test(body));
   var withArticle = function (label) {
     if (label === 'neutral') return 'neutral';
     return (label.charAt(0) === 'e' ? 'an ' : 'a ') + label;
   };
   var build = new Function('Astro', 'withArticle', body + '\n return dignitiesByGraha;')(
     Astro, withArticle);
+  // Every assertion below is about dignity, not about tatkalika, so it names
+  // the reading rather than inheriting whichever way the default happens to go.
+  var built = function (state, division) { return build(state, division, 'rashi'); };
 
   var chart = Astro.chart({ jdUT: Astro.julianDay(1975, 8, 20, 3), latitude: 28.61,
     longitude: 77.21, tzOffsetMinutes: 330 });
-  var got = build({ chart: chart }, 1);
+  var got = built({ chart: chart }, 1);
 
   ok('a graha in its moolatrikona is named as such, with no dispositor clause',
     got.Sun === 'Mooltrikona.', got.Sun);
@@ -7205,7 +7239,7 @@ console.log('\nThe card says how the graha stands in its sign');
     });
   });
   if (falseMool) {
-    var divided = build({ chart: chart }, falseMool.division);
+    var divided = built({ chart: chart }, falseMool.division);
     ok('a stretched varga degree cannot put moolatrikona on the card',
       !/Mooltrikona/.test(divided[falseMool.name] || ''),
       falseMool.name + ' D' + falseMool.division + ': ' + divided[falseMool.name]);

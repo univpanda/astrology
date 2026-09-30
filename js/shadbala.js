@@ -97,7 +97,7 @@ var Shadbala = (function () {
     sama: 7.5, shatru: 3.75, adhishatru: 1.875
   };
 
-  function saptavargajaBala(graha, chart, positionsD1) {
+  function saptavargajaBala(graha, chart, positionsD1, tatkalika) {
     var planet = chart.planets.filter(function (p) { return p.name === graha; })[0];
     var total = 0, detail = [];
     SAPTAVARGA.forEach(function (division) {
@@ -146,8 +146,8 @@ var Shadbala = (function () {
          * effects are read, not this arithmetic, so the Dasavarga grid follows that
          * and this does not.
          */
-        var apart = ((positionsD1[lord].sign - positionsD1[graha].sign) % 12 + 12) % 12 + 1;
-        relation = Astro.compoundRelation(graha, lord, apart);
+        relation = Astro.compoundRelation(graha, lord, Astro.tatkalikaHouses(
+          graha, lord, position.sign, positionsD1, division, tatkalika));
       }
       total += RELATION_VALUE[relation];
       detail.push({ division: division, sign: position.sign, lord: lord, relation: relation });
@@ -965,6 +965,12 @@ var Shadbala = (function () {
   var MOON_PAKSHA = { GROUP: 'group', BENEFIC: 'benefic' };
 
   function compute(chart, place, options) {
+    /*
+     * Which chart the temporal half of a relation is counted in: the division
+     * being read, or the rashi. See Astro.tatkalikaHouses.
+     */
+    var tatkalika = (options && options.tatkalika) === Astro.TATKALIKA.RASHI
+      ? Astro.TATKALIKA.RASHI : Astro.TATKALIKA.VARGA;
     var moonPaksha = (options && options.moonPaksha) === MOON_PAKSHA.BENEFIC
       ? MOON_PAKSHA.BENEFIC : MOON_PAKSHA.GROUP;
     var cheshtaMethod = (options && options.cheshtaMethod) === CHESHTA.MOTION
@@ -1076,7 +1082,7 @@ var Shadbala = (function () {
       var dec = Astro.declination(tropical, latitude,
         ayanaConstant.obliquity === null ? eps : ayanaConstant.obliquity);
 
-      var saptavargaja = saptavargajaBala(graha, chart, positions);
+      var saptavargaja = saptavargajaBala(graha, chart, positions, tatkalika);
       var ojha = ojhayugmaBala(graha, p);
       var sthana = {
         uchcha: uchchaBala(graha, p.longitude),

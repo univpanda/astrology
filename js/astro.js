@@ -1347,7 +1347,42 @@ var Astro = (function () {
    * Temporal friendship is counted in the rashi chart even when the sign being
    * judged belongs to a division, which is where the classical rule puts it.
    */
-  function vargaDignity(graha, longitude, division, positionsD1) {
+  var TATKALIKA = { VARGA: 'varga', RASHI: 'rashi' };
+
+  /*
+   * How many houses apart two grahas stand, for the temporal half of a
+   * relation, and which chart that is counted in.
+   *
+   * The natural half is a fixed table and cannot vary between two readings.
+   * The temporal half is nothing but where the two sit relative to each other,
+   * so the only question is which chart to measure it in. Counting it in the
+   * division keeps the whole relation inside one chart: the sign, its lord and
+   * the distance all belong to the varga on screen. Counting it in the rashi
+   * answers half the question in one chart and half in another, which is what
+   * verse 56 asks for when it ends "(This applies to a given Janm Kundali)".
+   *
+   * The rashi is the reading with a text behind it and the division is the
+   * default, because a varga is now read as a chart in its own right and a
+   * relation counted half in another chart is not that chart's answer. Modern
+   * practice, not authority, so it is a setting rather than a decision taken
+   * here.
+   *
+   * The cost is real and sits in the tests rather than in a comment: Raman's
+   * Examples 1, 3 and 9 are built the rashi way, as is the Drik Panchang figure
+   * this suite checks, and every one of those tests names that reading rather
+   * than relying on the default.
+   *
+   * D1 comes out the same either way, a division of one being the rashi.
+   */
+  function tatkalikaHouses(graha, lord, grahaSign, positionsD1, division, tatkalika) {
+    var rashi = tatkalika === TATKALIKA.RASHI;
+    var lordSign = rashi ? positionsD1[lord].sign
+      : vargaPosition(positionsD1[lord].longitude, division).sign;
+    var from = rashi ? positionsD1[graha].sign : grahaSign;
+    return ((lordSign - from) % 12 + 12) % 12 + 1;
+  }
+
+  function vargaDignity(graha, longitude, division, positionsD1, tatkalika) {
     var position = vargaPosition(longitude, division);
     if (!position) return null;
     /*
@@ -1414,8 +1449,8 @@ var Astro = (function () {
     } else if (ownsIt) {
       relation = 'own';
     } else if (positionsD1 && positionsD1[lord] && positionsD1[graha]) {
-      var apart = ((positionsD1[lord].sign - positionsD1[graha].sign) % 12 + 12) % 12 + 1;
-      relation = compoundRelation(graha, lord, apart);
+      relation = compoundRelation(graha, lord, tatkalikaHouses(
+        graha, lord, position.sign, positionsD1, division, tatkalika));
     }
 
     // Exaltation and debilitation outrank the relation when the two disagree,
@@ -2160,6 +2195,8 @@ var Astro = (function () {
     naturalRelation: naturalRelation,
     temporalRelation: temporalRelation,
     compoundRelation: compoundRelation,
+    tatkalikaHouses: tatkalikaHouses,
+    TATKALIKA: TATKALIKA,
     NATURAL_FRIENDS: NATURAL_FRIENDS,
     RELATION_LABELS: RELATION_LABELS,
     titleCase: titleCase,

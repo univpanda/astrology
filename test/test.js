@@ -254,14 +254,23 @@ console.log('\nThe Moon reaches her moolatrikona, which is not her own sign');
   ok('the Moon is the sole graha whose moolatrikona is not her own sign',
     odd.length === 1 && odd[0] === 'Moon', odd.join(','));
 
-  // Obama: Moon at Taurus 10, inside her moolatrikona. Drik Panchang gives
-  // 161.25 for her saptavargaja and every other graha in that chart agrees
-  // with us to the hundredth.
+  /*
+   * Obama: Moon at Taurus 10, inside her moolatrikona. Drik Panchang gives
+   * 161.25 for her saptavargaja and every other graha in that chart agrees
+   * with us to the hundredth.
+   *
+   * Counted in the rashi, named rather than left to the default. Every printed
+   * saptavargaja this suite reconciles against is built that way: Raman's
+   * Examples 1, 3 and 9 and this figure from Drik Panchang. The page counts
+   * tatkalika in the division by default, which is the commoner convention and
+   * what other software prints for the vimsopaka grid, so a test about a book
+   * has to say which reading the book used.
+   */
   var place = { latitude: 21.3069, longitude: -157.8583, tzOffsetMinutes: -600 };
   var chart = A.chart({ jdUT: A.julianDay(1961, 8, 4, 19 + 24 / 60 + 10),
     latitude: place.latitude, longitude: place.longitude,
     tzOffsetMinutes: place.tzOffsetMinutes });
-  var r = S.compute(chart, place);
+  var r = S.compute(chart, place, { tatkalika: 'rashi' });
   check('and she is scored 45 for it in the rashi',
     r.grahas.Moon.sthana.saptavargaja, 161.25, 0.01, 'virupas');
 
@@ -2130,7 +2139,7 @@ ok('and no short form has a key the full list does not',
     return Object.keys(his).every(function (g) {
       var sum = 0;
       [1, 2, 3, 7, 9, 12, 30].forEach(function (d) {
-        var vd = A.vargaDignity(g, at[g], d, p);
+        var vd = A.vargaDignity(g, at[g], d, p, 'rashi');
         var rel = vd && vd.relation;
         // moolatrikona counts in the rashi only, Raman section 30
         if (rel === 'moolatrikona' && d !== 1) rel = 'own';
@@ -6310,7 +6319,7 @@ console.log('\nSthana bala against three worked examples');
     planets.forEach(function (p) { d1[p.name] = p; });
     var out = {};
     GRAHAS.forEach(function (g) {
-      out[g] = Shadbala.saptavargajaBala(g, { planets: planets }, d1);
+      out[g] = Shadbala.saptavargajaBala(g, { planets: planets }, d1, 'rashi');
     });
     return out;
   };
@@ -6712,7 +6721,7 @@ console.log('\nOne chart end to end, from birth data to every bala');
 
   /* Its settings: the Moon always benefic, and the averaged chesta kendra. */
   var r = Shadbala.compute(chart, place,
-    { moonPaksha: 'benefic', kendraMethod: 'averaged' }).grahas;
+    { moonPaksha: 'benefic', kendraMethod: 'averaged', tatkalika: 'rashi' }).grahas;
   var GRAHAS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
   var worstOf = function (want, pick) {
     return GRAHAS.reduce(function (w, g) {
@@ -6770,7 +6779,7 @@ console.log('\nOne chart end to end, from birth data to every bala');
    * the saptavargaja slip and nothing else does.
    */
   var full = Shadbala.compute(chart, place, { moonPaksha: 'benefic',
-    kendraMethod: 'averaged', luminaryCheshta: 'counted' });
+    kendraMethod: 'averaged', luminaryCheshta: 'counted', tatkalika: 'rashi' });
   var t = full.grahas;
   var totals = { Sun: 482.80, Moon: 319.23, Mars: 349.76, Mercury: 434.59,
     Jupiter: 468.83, Venus: 301.50, Saturn: 433.29 };
@@ -7855,6 +7864,91 @@ console.log('\nYogas follow the rotation the chart is drawn in');
   // The unrotated chart has to come out exactly as it did before any of this.
   ok('rotating onto the ascendant is not a rotation at all',
      pairs(onto('Ascendant')).join('|') === fromAsc.join('|'));
+})();
+
+console.log('\nWhich chart tatkalika is counted in');
+/*
+ * The natural half of a relation is a table and cannot vary. The temporal half
+ * is only a distance, so the whole question is which chart to measure it in.
+ * Both readings are in use; the page offers them and defaults to the division.
+ */
+(function () {
+  var dms = function (d, m, sec) { return d + m / 60 + sec / 3600; };
+  // Raman's Standard Horoscope, the longitudes Example 9 prints.
+  var at = { Sun: dms(180, 53, 55), Moon: dms(311, 17, 19), Mars: dms(229, 30, 34),
+    Mercury: dms(181, 31, 34), Jupiter: dms(84, 0, 49), Venus: dms(171, 9, 56),
+    Saturn: dms(124, 22, 41) };
+  var pos = {};
+  Object.keys(at).forEach(function (g) {
+    pos[g] = { sign: Math.floor(at[g] / 30), longitude: at[g] };
+  });
+  var G = Object.keys(at);
+
+  ok('the reading is named, not a bare string', A.TATKALIKA.VARGA === 'varga' &&
+     A.TATKALIKA.RASHI === 'rashi');
+
+  /*
+   * A division of one is the rashi, so there is nothing for the setting to
+   * change there. If this ever failed, every chart on the page would move.
+   */
+  ok('D1 comes out identical under both readings', G.every(function (g) {
+    var a = A.vargaDignity(g, at[g], 1, pos, 'varga');
+    var b = A.vargaDignity(g, at[g], 1, pos, 'rashi');
+    return a.key === b.key && a.relation === b.relation;
+  }));
+
+  // And it is a real fork above D1, not a distinction without a difference.
+  var moved = 0, cells = 0;
+  A.SHODASAVARGA.forEach(function (d) {
+    if (d === 1) return;
+    G.forEach(function (g) {
+      var a = A.vargaDignity(g, at[g], d, pos, 'varga');
+      var b = A.vargaDignity(g, at[g], d, pos, 'rashi');
+      cells++;
+      if (a.relation !== b.relation) moved++;
+    });
+  });
+  ok('and the two readings part company above it', moved > cells / 5,
+     moved + ' of ' + cells + ' varga cells differ');
+
+  ok('the division is the default when none is named', G.every(function (g) {
+    return A.SHODASAVARGA.every(function (d) {
+      return A.vargaDignity(g, at[g], d, pos).relation ===
+             A.vargaDignity(g, at[g], d, pos, 'varga').relation;
+    });
+  }));
+
+  /*
+   * The helper itself, on a pair whose answer differs between the charts, so
+   * the test would catch the two arguments being swapped.
+   */
+  ok('tatkalikaHouses counts the lord from the graha, in the chart asked for', (function () {
+    var d = 9;
+    var lordInVarga = A.vargaPosition(pos.Venus.longitude, d).sign;
+    var sunInVarga = A.vargaPosition(pos.Sun.longitude, d).sign;
+    var wantVarga = ((lordInVarga - sunInVarga) % 12 + 12) % 12 + 1;
+    var wantRashi = ((pos.Venus.sign - pos.Sun.sign) % 12 + 12) % 12 + 1;
+    return A.tatkalikaHouses('Sun', 'Venus', sunInVarga, pos, d, 'varga') === wantVarga &&
+           A.tatkalikaHouses('Sun', 'Venus', sunInVarga, pos, d, 'rashi') === wantRashi;
+  })());
+
+  /*
+   * Shadbala takes the same setting and the same default. Its worked-example
+   * tests name the rashi because that is how Raman built them; this checks the
+   * option is threaded at all, by making the two readings give two answers.
+   */
+  var planets = G.map(function (g) {
+    return { name: g, longitude: at[g], sign: Math.floor(at[g] / 30) };
+  });
+  var chart = { planets: planets };
+  var byVarga = Shadbala.saptavargajaBala('Sun', chart, pos, 'varga').value;
+  var byRashi = Shadbala.saptavargajaBala('Sun', chart, pos, 'rashi').value;
+  ok('saptavargaja bala takes the setting too', byVarga !== byRashi,
+     byVarga + ' against ' + byRashi + ' virupas');
+  ok('and defaults to the division, as the page does',
+     Shadbala.saptavargajaBala('Sun', chart, pos).value === byVarga);
+  // Raman prints 90 for this Sun, which is the rashi reading and nothing else.
+  ok('while the rashi reading is the one Raman prints', byRashi === 90, byRashi);
 })();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
