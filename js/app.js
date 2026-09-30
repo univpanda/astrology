@@ -1600,7 +1600,9 @@
           head.appendChild(label);
           rarity(head, 'state', key);
           li.appendChild(head);
-          if (item.why) li.appendChild(el('p', 'graha-card-why', item.why));
+          // The reason, kept where it costs no height. The Yogas tab carries
+          // it in full, with the conditions behind it.
+          if (item.why) li.title = item.why;
           return li;
         } });
       });
@@ -1634,8 +1636,7 @@
           rarity(head, kind, key);
           li.appendChild(head);
           var means = meaningOf(item);
-          if (means) li.appendChild(el('p', 'graha-card-means', means));
-          if (item.why) li.appendChild(el('p', 'graha-card-why', item.why));
+          li.title = [means, item.why].filter(Boolean).join(' ');
           return li;
         } });
       });

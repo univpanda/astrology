@@ -5358,6 +5358,32 @@ ok('the library is fetched once, ahead of the hover',
   /function ensureLibrary\(\)/.test(appSrc) &&
   /if \(lessonLibrary \|\| libraryPending\) return;/.test(appSrc));
 /*
+ * One line per finding on the card: the name, whose it is where that is not
+ * obvious, and how rare it is. Nothing else.
+ *
+ * Eight findings at three lines apiece ran the card past the height of the
+ * chart it was drawn over. The two lines under each name were the rule and
+ * the reason, and the Yogas tab already gives both in full along with the
+ * conditions behind them, which the card never had room for. So they are kept
+ * where they cost no height - on the item's title - and the card is left with
+ * what only it can offer: what this graha is in, at a glance, without leaving
+ * the chart.
+ */
+ok('the card lists findings one line each, name and rarity',
+   !/graha-card-why|graha-card-means/.test(appSrc + cssSrc) &&
+   /li\.title = item\.why;/.test(appSrc) &&
+   /li\.title = \[means, item\.why\]\.filter\(Boolean\)\.join\(' '\);/.test(appSrc) &&
+   /\.graha-card-list li \+ li \{[^}]*margin-top: 0\.2rem;/.test(cssSrc.replace(/\n/g, '')));
+/*
+ * And the detail is not merely dropped: the Yogas tab carries the summary and
+ * the reasons for every finding, so the card is a shorter view of something
+ * complete rather than the only view of something trimmed.
+ */
+ok('and the Yogas tab still carries the summary and the reasons',
+   /el\('p', 'yoga-summary', finding\.summary\)/.test(appSrc) &&
+   /finding\.reasons\.forEach\(function \(reason\) \{/.test(appSrc));
+
+/*
  * And the card survives the library being absent: it loses a line, not its
  * contents.
  */

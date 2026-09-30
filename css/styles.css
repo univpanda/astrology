@@ -874,9 +874,16 @@ input::placeholder { color: #a9bdb2; }
   border-top: 1px solid var(--line-soft);
   list-style: none;
 }
+/*
+ * One line each. Eight findings at three lines apiece ran the card past the
+ * height of the chart it was drawn over, and the two lines under each name
+ * were the rule and the reason - both of which the Yogas tab gives in full,
+ * with the conditions the card never had room for. What is left is what the
+ * card is for: which combinations this graha is in, and how rare each is.
+ */
 .graha-card-list li + li {
-  margin-top: 0.5rem;
-  padding-top: 0.5rem;
+  margin-top: 0.2rem;
+  padding-top: 0.2rem;
   border-top: 1px solid var(--line-soft);
 }
 .graha-card-term {
@@ -901,18 +908,6 @@ input::placeholder { color: #a9bdb2; }
 }
 /* What the yoga is, from the library. Set apart from the reason it holds here,
    which is the line under it: one is the rule, the other this chart. */
-.graha-card-means {
-  margin: 0.15rem 0 0;
-  font-size: 0.76rem;
-  line-height: 1.5;
-  color: var(--ink);
-}
-.graha-card-why {
-  margin: 0.25rem 0 0;
-  font-size: 0.76rem;
-  line-height: 1.5;
-  color: var(--ink-soft);
-}
 
 /* The label is hoverable and reachable, so it needs a focus ring of its own -
    SVG text takes none by default. */
