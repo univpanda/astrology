@@ -1373,7 +1373,7 @@ ok('and the separator between them went with them', (function () {
 ok('the chart spells the flag out and the card stars it',
    /var CELEBRITY_MARK = 'public figure';/.test(appSrc) &&
    (appSrc.match(/el\('span', 'celebrity-mark', CELEBRITY_MARK\)/g) || []).length === 1 &&
-   /var CELEBRITY_STAR = '\\u2217';/.test(appSrc) &&
+   /var CELEBRITY_STAR = '\\u2605';/.test(appSrc) &&
    /el\('span', 'celebrity-star', CELEBRITY_STAR\)/.test(appSrc) &&
    !/'celebrity-mark', 'study'/.test(appSrc));
 ok('and the star says what it means, to a pointer and to a reader alike',

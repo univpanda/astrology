@@ -153,6 +153,9 @@ main, .site-header, .site-footer { max-width: 1120px; margin: 0 auto; }
  * lines of mostly empty space with the edit and the delete at the far edge.
  * The cards find their own number per row: as many as fit at a readable width.
  */
+/* Clear of the cards. The box filters them; it is not the first of them. */
+.saved-search { margin-bottom: 1rem; }
+
 .saved-list {
   list-style: none;
   margin: 0;
@@ -401,9 +404,13 @@ textarea::placeholder { color: #a9bdb2; }
  * of a third of them. The chart itself still spells it out.
  */
 .celebrity-star {
-  margin-left: 0.25rem;
-  color: var(--green-deep);
-  font-weight: 700;
+  margin-left: 0.3rem;
+  /* A star carries more ink than the letters beside it, so it is set smaller
+     and lifted off the baseline to sit against the cap height. */
+  font-size: 0.74em;
+  vertical-align: 0.14em;
+  line-height: 1;
+  color: var(--green);
 }
 .saved-key {
   margin: 0.6rem 0 0;

@@ -4468,8 +4468,12 @@
    * label, and each read as a different thing about the same tick.
    */
   var CELEBRITY_MARK = 'public figure';
-  /* The same fact at a glance, for a list where the words are most of a line. */
-  var CELEBRITY_STAR = '\u2217';
+  /*
+   * The same fact at a glance, for a list where the words are most of a line.
+   * A star rather than the asterisk operator: at this size the operator reads
+   * as a footnote mark or a typo, where a star reads as a mark somebody meant.
+   */
+  var CELEBRITY_STAR = '\u2605';
 
   var emptyChart = document.getElementById('empty-chart');
   var savedCount = document.getElementById('saved-count');
