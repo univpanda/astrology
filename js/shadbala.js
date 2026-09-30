@@ -92,12 +92,45 @@ var Shadbala = (function () {
    * The choice is not cosmetic: across 1800 sample births the two ladders differ
    * by a mean of 5.1 virupas and move one strong/weak verdict in forty.
    */
-  var RELATION_VALUE = {
-    moolatrikona: 45, own: 30, adhimitra: 22.5, mitra: 15,
-    sama: 7.5, shatru: 3.75, adhishatru: 1.875
+  /*
+   * The seven rungs a graha is scored on in each of the seven divisions, and
+   * the two texts do not agree below the second.
+   *
+   *   'parashara' - 45, 30, 20, 15, 10, 4, 2. Santhanam's translation of
+   *                 chapter 27 and Saravali both give these, and they are the
+   *                 default here. They are also what Star Jyotish computes:
+   *                 checked against its figures for one chart, all seven grahas
+   *                 come out to the unit with no error at all, where Raman's
+   *                 ladder misses every one of them.
+   *
+   *   'raman'     - 45, 30, 22.5, 15, 7.5, 3.75, 1.875, section 30 of Graha and
+   *                 Bhava Balas: thirty in an own sign and a halving at every
+   *                 step down from it. Uttara Kalamrita prints the same ladder
+   *                 as a table at slokas 3.5-5, so it is better attested than
+   *                 his name alone suggests, and it is what the K. N. Rao
+   *                 textbook works its examples on. Chapter 5 of that book is
+   *                 reproduced on this ladder and not on the other.
+   *
+   * So neither is a mistake and the choice decides which published figures a
+   * reader can check against. The halving is the more elegant and the tens are
+   * the more widely computed.
+   */
+  var LADDER = {
+    parashara: {
+      moolatrikona: 45, own: 30, adhimitra: 20, mitra: 15,
+      sama: 10, shatru: 4, adhishatru: 2
+    },
+    raman: {
+      moolatrikona: 45, own: 30, adhimitra: 22.5, mitra: 15,
+      sama: 7.5, shatru: 3.75, adhishatru: 1.875
+    }
   };
+  var SAPTAVARGAJA_LADDER = { PARASHARA: 'parashara', RAMAN: 'raman' };
+  var RELATION_VALUE = LADDER.parashara;
 
-  function saptavargajaBala(graha, chart, positionsD1, tatkalika, horaRule, horaMercury) {
+  function saptavargajaBala(graha, chart, positionsD1, tatkalika, horaRule,
+                           horaMercury, ladder) {
+    var rungs = LADDER[ladder] || LADDER.parashara;
     var planet = chart.planets.filter(function (p) { return p.name === graha; })[0];
     var total = 0, detail = [];
     SAPTAVARGA.forEach(function (division) {
@@ -157,7 +190,7 @@ var Shadbala = (function () {
         relation = Astro.compoundRelation(graha, lord, Astro.tatkalikaHouses(
           graha, lord, position.sign, positionsD1, division, tatkalika));
       }
-      total += RELATION_VALUE[relation];
+      total += rungs[relation];
       detail.push({ division: division, sign: position.sign, lord: lord, relation: relation });
     });
     return { value: total, detail: detail };
@@ -982,6 +1015,9 @@ var Shadbala = (function () {
     /* And how the hora is graded, on the same setting the grid takes. */
     var horaRule = (options && options.horaDignity) === Astro.HORA_DIGNITY.LORD
       ? Astro.HORA_DIGNITY.LORD : Astro.HORA_DIGNITY.EFFECTS;
+    /* Which of the two rungs the seven divisions are scored on. */
+    var ladder = (options && options.saptavargajaLadder) === SAPTAVARGAJA_LADDER.RAMAN
+      ? SAPTAVARGAJA_LADDER.RAMAN : SAPTAVARGAJA_LADDER.PARASHARA;
     /* And which reading of Mercury being effective in both horas. */
     var horaMercury = options && options.horaMercury;
     var moonPaksha = (options && options.moonPaksha) === MOON_PAKSHA.BENEFIC
@@ -1095,8 +1131,8 @@ var Shadbala = (function () {
       var dec = Astro.declination(tropical, latitude,
         ayanaConstant.obliquity === null ? eps : ayanaConstant.obliquity);
 
-      var saptavargaja = saptavargajaBala(graha, chart, positions, tatkalika, horaRule,
-        horaMercury);
+      var saptavargaja = saptavargajaBala(graha, chart, positions, tatkalika,
+        horaRule, horaMercury, ladder);
       var ojha = ojhayugmaBala(graha, p);
       var sthana = {
         uchcha: uchchaBala(graha, p.longitude),
@@ -1336,6 +1372,7 @@ var Shadbala = (function () {
     abdaLord: abdaLord, masaLord: masaLord,
     GRAHAS: GRAHAS,
     SAPTAVARGAJA_VALUES: RELATION_VALUE,
+    SAPTAVARGAJA_LADDER: SAPTAVARGAJA_LADDER, LADDER: LADDER,
     /*
      * Exposed so the worked examples can drive the real function rather than a
      * copy of it. It wants only chart.planets and a map of D1 positions, so a

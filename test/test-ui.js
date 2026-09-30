@@ -5204,7 +5204,7 @@ console.log('\nSettings show the choice and fold the argument');
   ok('and the code finds the status line beside the setting that changed',
     /function statusFor\(select\)/.test(appSrc) &&
     !/getElementById\('settings-status'\)/.test(appSrc) &&
-    (appSrc.match(/var status = statusFor\(this\);/g) || []).length === 13);
+    (appSrc.match(/var status = statusFor\(this\);/g) || []).length === 14);
   /*
    * And the reasoning is still there: each note argues from a named authority
    * rather than asserting. The ayanamsa note used to carry Raman's own figure
@@ -8226,13 +8226,14 @@ console.log('\nThe settings run from the chart outward');
     idsIn(chartPanel).join(', '));
   ok('and Test settings holds the shadbala variants, the clock with them',
     idsIn(testPanel).join(',') ===
-      'nat-clock,hora-mercury,moon-paksha,paksha-doubled,hora-length,ayana-constant,' +
+      'nat-clock,saptavargaja-ladder,hora-mercury,moon-paksha,paksha-doubled,' +
+      'hora-length,ayana-constant,' +
       'kranti,ayana-doubled,cheshta-method,kendra-method,mean-source,luminary-rule,' +
       'luminary-cheshta,ishta-kashta',
     idsIn(testPanel).length + ' settings');
   ok('between them they hold every setting, none lost in the split',
     idsIn(chartPanel).length + idsIn(testPanel).length === order.length &&
-    order.length === 21, order.length + ' settings');
+    order.length === 22, order.length + ' settings');
 
   /*
    * The two that are not shadbala at all sit in the other tab now. One settles

@@ -270,7 +270,8 @@ console.log('\nThe Moon reaches her moolatrikona, which is not her own sign');
   var chart = A.chart({ jdUT: A.julianDay(1961, 8, 4, 19 + 24 / 60 + 10),
     latitude: place.latitude, longitude: place.longitude,
     tzOffsetMinutes: place.tzOffsetMinutes });
-  var r = S.compute(chart, place, { tatkalika: 'rashi', horaDignity: 'lord' });
+  var r = S.compute(chart, place, { tatkalika: 'rashi', horaDignity: 'lord',
+    saptavargajaLadder: 'raman' });
   check('and she is scored 45 for it in the rashi',
     r.grahas.Moon.sthana.saptavargaja, 161.25, 0.01, 'virupas');
 
@@ -2505,8 +2506,8 @@ console.log('\nShadbala');
    * The choice moves about one strong/weak verdict in forty, so it is pinned
    * rather than left to whoever edits the file next.
    */
-  ok('saptavargaja follows Raman\'s halving ladder', (function () {
-    var v = Shadbala.SAPTAVARGAJA_VALUES;
+  ok('Raman\'s halving ladder is offered and is the halving one', (function () {
+    var v = Shadbala.LADDER.raman;
     return v.moolatrikona === 45 && v.own === 30 && v.adhimitra === 22.5 &&
       v.mitra === 15 && v.sama === 7.5 && v.shatru === 3.75 && v.adhishatru === 1.875 &&
       v.adhimitra !== 20 && v.sama !== 10;
@@ -2518,7 +2519,7 @@ console.log('\nShadbala');
    * ladder read off those seven and of no other.
    */
   ok('and reconstructs Raman\'s worked total for Guru', (function () {
-    var v = Shadbala.SAPTAVARGAJA_VALUES;
+    var v = Shadbala.LADDER.raman;
     var guru = ['adhishatru', 'sama', 'mitra', 'sama', 'sama', 'own', 'adhishatru'];
     var sukra = ['adhimitra', 'sama', 'own', 'adhishatru', 'adhishatru', 'own', 'adhimitra'];
     var sani = ['sama', 'sama', 'sama', 'adhimitra', 'adhimitra', 'adhimitra', 'sama'];
@@ -6047,7 +6048,7 @@ console.log('\nThe saptavargaja ladder is the one three texts print');
 (function () {
   var UTTARA_KALAMRITA = { moolatrikona: 45, own: 30, adhimitra: 22.5,
     mitra: 15, sama: 7.5, shatru: 3.75, adhishatru: 1.875 };
-  var ours = Shadbala.SAPTAVARGAJA_VALUES;
+  var ours = Shadbala.LADDER.raman;
   ok('every step is the figure Uttara Kalamrita tabulates',
     Object.keys(UTTARA_KALAMRITA).every(function (k) {
       return ours[k] === UTTARA_KALAMRITA[k];
@@ -6074,7 +6075,16 @@ console.log('\nThe saptavargaja ladder is the one three texts print');
     [20, 10, 4, 2].every(function (v) {
       return [ours.adhimitra, ours.sama, ours.shatru, ours.adhishatru]
         .indexOf(v) < 0;
-    }));
+    }) &&
+    /*
+     * And it is the one this site now takes, Raman's being the setting. The
+     * two have to stay distinct or the choice would describe a difference that
+     * is not there.
+     */
+    [Shadbala.LADDER.parashara.adhimitra, Shadbala.LADDER.parashara.sama,
+     Shadbala.LADDER.parashara.shatru, Shadbala.LADDER.parashara.adhishatru]
+      .join(',') === '20,10,4,2' &&
+    Shadbala.SAPTAVARGAJA_VALUES === Shadbala.LADDER.parashara);
 })();
 
 
@@ -6344,7 +6354,10 @@ console.log('\nSthana bala against three worked examples');
     planets.forEach(function (p) { d1[p.name] = p; });
     var out = {};
     GRAHAS.forEach(function (g) {
-      out[g] = Shadbala.saptavargajaBala(g, { planets: planets }, d1, 'rashi', 'lord');
+      // The book works its examples on Raman's ladder, which is the setting
+      // now that Parashara's tens are the default.
+      out[g] = Shadbala.saptavargajaBala(g, { planets: planets }, d1, 'rashi',
+        'lord', undefined, 'raman');
     });
     return out;
   };
@@ -6358,7 +6371,7 @@ console.log('\nSthana bala against three worked examples');
   var r3 = run(CHARTS.three), off3 = [];
   GRAHAS.forEach(function (g) {
     r3[g].detail.forEach(function (d, i) {
-      var v = Shadbala.SAPTAVARGAJA_VALUES[d.relation];
+      var v = Shadbala.LADDER.raman[d.relation];
       if (Math.abs(v - EX3[g][i]) > 0.01) off3.push(g + ' D-' + d.division);
     });
   });
@@ -6384,7 +6397,7 @@ console.log('\nSthana bala against three worked examples');
   var r1 = run(CHARTS.one), off1 = [];
   GRAHAS.forEach(function (g) {
     r1[g].detail.forEach(function (d, i) {
-      var v = Shadbala.SAPTAVARGAJA_VALUES[d.relation];
+      var v = Shadbala.LADDER.raman[d.relation];
       if (Math.abs(v - EX1[g][i]) > 0.01) off1.push(g + ' D-' + d.division);
     });
   });
@@ -6392,7 +6405,7 @@ console.log('\nSthana bala against three worked examples');
     off1.length === 1 && off1[0] === 'Mars D-2', off1.join(', '));
   ok('which the book’s own rules resolve in the engine’s favour',
     Astro.compoundRelation('Mars', 'Moon', 12) === 'adhimitra' &&
-    Shadbala.SAPTAVARGAJA_VALUES.adhimitra === 22.5);
+    Shadbala.LADDER.raman.adhimitra === 22.5);
 })();
 
 
@@ -6747,7 +6760,7 @@ console.log('\nOne chart end to end, from birth data to every bala');
   /* Its settings: the Moon always benefic, and the averaged chesta kendra. */
   var r = Shadbala.compute(chart, place,
     { moonPaksha: 'benefic', kendraMethod: 'averaged', tatkalika: 'rashi',
-      horaDignity: 'lord' }).grahas;
+      horaDignity: 'lord', saptavargajaLadder: 'raman' }).grahas;
   var GRAHAS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
   var worstOf = function (want, pick) {
     return GRAHAS.reduce(function (w, g) {
@@ -6804,7 +6817,8 @@ console.log('\nOne chart end to end, from birth data to every bala');
    * cheshta counted; with it omitted every total is a rupa light. Mars carries
    * the saptavargaja slip and nothing else does.
    */
-  var full = Shadbala.compute(chart, place, { moonPaksha: 'benefic',
+  var full = Shadbala.compute(chart, place, { saptavargajaLadder: 'raman',
+    moonPaksha: 'benefic',
     kendraMethod: 'averaged', luminaryCheshta: 'counted', tatkalika: 'rashi',
     horaDignity: 'lord' });
   var t = full.grahas;
@@ -7067,6 +7081,90 @@ console.log('\nSaraswati, Maha Raja, and the Sun’s company named by its form')
   ok('while the library key stays the bare name, all three being one combination',
     Object.keys(keys).sort().join(' ') === 'Ubhayachari Yoga Vasi Yoga Vesi Yoga',
     Object.keys(keys).sort().join(', '));
+})();
+
+
+console.log('\nThe saptavargaja ladder, and what each of the two reproduces');
+/*
+ * The two texts part below the second rung, and the choice decides which
+ * published figures a reader can check against. Both sides are pinned here on a
+ * worked chart, so neither can drift without a failure.
+ */
+(function () {
+  var GRAHAS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+
+  ok('the two ladders agree on the top two rungs and part below them',
+    Shadbala.LADDER.parashara.moolatrikona === 45 &&
+    Shadbala.LADDER.raman.moolatrikona === 45 &&
+    Shadbala.LADDER.parashara.own === 30 && Shadbala.LADDER.raman.own === 30 &&
+    Shadbala.LADDER.parashara.mitra === 15 && Shadbala.LADDER.raman.mitra === 15 &&
+    [Shadbala.LADDER.parashara.adhimitra, Shadbala.LADDER.parashara.sama,
+     Shadbala.LADDER.parashara.shatru, Shadbala.LADDER.parashara.adhishatru]
+      .join(',') === '20,10,4,2' &&
+    [Shadbala.LADDER.raman.adhimitra, Shadbala.LADDER.raman.sama,
+     Shadbala.LADDER.raman.shatru, Shadbala.LADDER.raman.adhishatru]
+      .join(',') === '22.5,7.5,3.75,1.875');
+
+  /*
+   * Raman's halves and Parashara's tens, and only one of them is whole numbers
+   * all the way down. That is the quickest tell for which reckoning a printed
+   * column came from, and it is worth having asserted.
+   */
+  ok('and only Parashara’s rungs are whole numbers throughout',
+    Object.keys(Shadbala.LADDER.parashara).every(function (k) {
+      return Shadbala.LADDER.parashara[k] % 1 === 0;
+    }) &&
+    Object.keys(Shadbala.LADDER.raman).some(function (k) {
+      return Shadbala.LADDER.raman[k] % 1 !== 0;
+    }));
+
+  /*
+   * Donald Trump, 14 June 1946 at 10:54 EDT in Queens, against the figures a
+   * published reckoning gives for that chart. On Parashara's ladder every one
+   * of the seven lands to the unit; on Raman's not one of them does.
+   */
+  var place = { latitude: 40.6915, longitude: -73.8057, tzOffsetMinutes: -240 };
+  var chart = A.chart({ jdUT: A.julianDay(1946, 6, 14, 10 + 54 / 60 + 4),
+    latitude: place.latitude, longitude: place.longitude,
+    tzOffsetMinutes: place.tzOffsetMinutes });
+  var WANT = { Sun: 53, Moon: 93, Mars: 125, Mercury: 118, Jupiter: 81,
+    Venus: 68, Saturn: 76 };
+  var scored = function (ladder) {
+    var r = Shadbala.compute(chart, place,
+      ladder ? { saptavargajaLadder: ladder } : undefined).grahas;
+    return GRAHAS.map(function (g) { return r[g].sthana.saptavargaja; });
+  };
+  var tens = scored('parashara'), halves = scored('raman');
+  ok('Parashara’s ladder reproduces that chart exactly, all seven',
+    GRAHAS.every(function (g, i) { return Math.abs(tens[i] - WANT[g]) < 0.005; }),
+    tens.join(', '));
+  ok('and Raman’s misses every one of them, so the two really are testable apart',
+    GRAHAS.every(function (g, i) { return Math.abs(halves[i] - WANT[g]) > 0.3; }),
+    halves.join(', '));
+  ok('and the default is the one that reproduces it',
+    scored().join(',') === tens.join(','));
+
+  /*
+   * And the other way round: the K. N. Rao textbook works its examples on
+   * Raman's, so its chapter has to come out on that setting and not on this
+   * one. Its Example 1, six of seven, Mars carrying the book's own slip.
+   */
+  var raoPlace = { latitude: 25.86, longitude: 85 + 50 / 60, tzOffsetMinutes: 330 };
+  var rao = A.chart({ jdUT: A.julianDay(1957, 9, 21, 14 - 5.5),
+    latitude: raoPlace.latitude, longitude: raoPlace.longitude,
+    tzOffsetMinutes: raoPlace.tzOffsetMinutes });
+  var BOOK = { Sun: 82.50, Moon: 142.50, Mercury: 129.38, Jupiter: 105.00,
+    Venus: 135.00, Saturn: 82.50 };
+  var onRaman = Shadbala.compute(rao, raoPlace, { moonPaksha: 'benefic',
+    kendraMethod: 'averaged', tatkalika: 'rashi', horaDignity: 'lord',
+    saptavargajaLadder: 'raman' }).grahas;
+  ok('the textbook’s chapter still comes out, on the ladder it was worked in',
+    Object.keys(BOOK).every(function (g) {
+      return Math.abs(onRaman[g].sthana.saptavargaja - BOOK[g]) < 0.05;
+    }),
+    Object.keys(BOOK).map(function (g) {
+      return g + ' ' + onRaman[g].sthana.saptavargaja.toFixed(2);
+    }).join(', '));
 })();
 
 
@@ -7969,12 +8067,15 @@ console.log('\nWhich chart tatkalika is counted in');
   });
   var chart = { planets: planets };
   // The hora is held at the lord throughout, so only one thing varies here.
-  var byVarga = Shadbala.saptavargajaBala('Sun', chart, pos, 'varga', 'lord').value;
-  var byRashi = Shadbala.saptavargajaBala('Sun', chart, pos, 'rashi', 'lord').value;
+  var byVarga = Shadbala.saptavargajaBala('Sun', chart, pos, 'varga', 'lord',
+    undefined, 'raman').value;
+  var byRashi = Shadbala.saptavargajaBala('Sun', chart, pos, 'rashi', 'lord',
+    undefined, 'raman').value;
   ok('saptavargaja bala takes the setting too', byVarga !== byRashi,
      byVarga + ' against ' + byRashi + ' virupas');
   ok('and defaults to the division, as the page does',
-     Shadbala.saptavargajaBala('Sun', chart, pos, undefined, 'lord').value === byVarga);
+     Shadbala.saptavargajaBala('Sun', chart, pos, undefined, 'lord',
+       undefined, 'raman').value === byVarga);
   // Raman prints 90 for this Sun, which is the rashi reading and nothing else.
   ok('while the rashi reading is the one Raman prints', byRashi === 90, byRashi);
 

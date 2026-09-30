@@ -895,6 +895,12 @@
     return document.getElementById('hora-mercury').value;
   }
 
+  /* Which of the two rungs saptavargaja bala is scored on. */
+  function ladderSetting() {
+    var el2 = document.getElementById('saptavargaja-ladder');
+    return el2 ? el2.value : 'parashara';
+  }
+
   function dignitiesByGraha(state, division, tatkalika, horaRule, horaMercury) {
     var d1 = {};
     state.chart.planets.forEach(function (p) { d1[p.name] = p; });
@@ -2077,7 +2083,8 @@
            ishtaKashta: document.getElementById('ishta-kashta').value,
            tatkalika: tatkalikaSetting(),
            horaDignity: horaSetting(),
-           horaMercury: horaMercurySetting() });
+           horaMercury: horaMercurySetting(),
+           saptavargajaLadder: ladderSetting() });
     }
     return state.shadbala;
   }
@@ -4512,6 +4519,24 @@
     status.textContent = inside
       ? 'Combustion is now measured inside whichever division is on screen.'
       : 'Combustion is measured in the rashi and carried into every division.';
+  });
+
+  /*
+   * The ladder changes the figures rather than the display, so the cached
+   * strengths go and the page is redrawn.
+   */
+  document.getElementById('saptavargaja-ladder').addEventListener('change', function () {
+    var status = statusFor(this);
+    var tens = this.value === 'parashara';
+    if (!lastChart) {
+      status.textContent = 'Saved. The next chart will use it.';
+      return;
+    }
+    lastChart.shadbala = null;
+    render(lastChart);
+    status.textContent = tens
+      ? 'Saptavargaja is scored on 45, 30, 20, 15, 10, 4 and 2, which Santhanam and Saravali give.'
+      : 'Saptavargaja now halves below an own sign, which is Raman\u2019s ladder.';
   });
 
   document.getElementById('mercury-nature').addEventListener('change', function () {
