@@ -808,6 +808,7 @@ input::placeholder { color: #a9bdb2; }
  * where house, sign and nakshatra are one placement said three ways.
  */
 .graha-card-where,
+.graha-card-conditions,
 .graha-card-lords {
   display: flex;
   flex-wrap: wrap;
@@ -817,6 +818,7 @@ input::placeholder { color: #a9bdb2; }
   font-size: 0.78rem;
   color: var(--ink-soft);
 }
+.graha-card-conditions { color: var(--green-deep); font-weight: 600; }
 .graha-card-lords { font-size: 0.8rem; color: var(--ink); }
 /* A dot between items, and never before the first or after the last. */
 .graha-card-item + .graha-card-item::before {
@@ -824,47 +826,8 @@ input::placeholder { color: #a9bdb2; }
   margin-right: 0.55rem;
   color: var(--ink-faint);
 }
-/* The degree beside the name, in the same line and quieter than it. */
-.graha-card-degree {
-  margin-left: 0.45rem;
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--ink-soft);
-  font-variant-numeric: tabular-nums;
-}
-/*
- * The chara karaka, beside the degree that decides it. Assigned by how far
- * into its sign a graha has travelled, so the figure to its left is the
- * reason for it, and the two belong on one line.
- */
-.graha-card-karaka {
-  margin-left: 0.5rem;
-  font-size: 0.68rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--flag-yogakaraka);
-  border: 1px solid var(--flag-yogakaraka);
-  border-radius: 999px;
-  padding: 0.05rem 0.4rem;
-  vertical-align: middle;
-}
 /* Every item is a statement with its reason beneath it, so the list is the
    card's body rather than a tail on the end of it. */
-/*
- * Dignity stands with the sign it is about, as a mark rather than a sentence.
- * On a line of its own the word had nothing beside it to hold on to.
- */
-.graha-card-dignity {
-  font-size: 0.68rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--green-deep);
-  background: var(--green-soft);
-  border-radius: 999px;
-  padding: 0.05rem 0.4rem;
-}
 /* The list rules a line between its own items but had none above the first, so
    the placement and dignity ran straight into the findings. Same rhythm as
    `li + li` below, so the whole card reads as one set of divisions. */

@@ -1034,14 +1034,6 @@
       return rel ? Astro.RELATION_LABELS[rel].toLowerCase() : '';
     };
 
-    /** Where a graha stands in its own right: exalted, debilitated, own. */
-    var dignityOfGraha = function (name, at) {
-      if (!name || !at[name]) return '';
-      var lon = at[name].longitude;
-      return (Astro.dignityOf(name, Astro.signOf(lon), Astro.norm360(lon) % 30) || '')
-        .toLowerCase();
-    };
-
     var map = {};
     state.chart.planets.forEach(function (p) {
       var standing = Astro.vargaDignity(p.name, p.longitude, division, d1, tatkalika, horaRule,
@@ -1060,13 +1052,13 @@
         map[p.name] = {
           formal: nodeDignity || '', lord: '', relation: '',
           nakLordRelation: relationBetween(p, nakOf(p).lord, d1),
-          subLordDignity: dignityOfGraha(nakOf(p).subLord, d1)
+          subLordRelation: relationBetween(p, nakOf(p).subLord, d1)
         };
         return;
       }
       /*
-       * The parts rather than a sentence. The card names the dispositor on a
-       * line of its own now and stands the dignity beside the sign, so a
+       * The parts rather than a sentence. The card names the lord beside the
+       * sign and puts special dignity among the graha's conditions, so a
        * string reading "In Mars's sign, an enemy" would have to be taken apart
        * again at the other end.
        */
@@ -1077,13 +1069,13 @@
       map[p.name] = {
         formal: formal ? (standing.key === 'own' ? 'Own sign' : standing.label) : '',
         /*
-         * How the graha regards the lord of its nakshatra, and how the sub
-         * lord itself stands. Both are about grahas other than this one, so
+         * How the graha regards the lords of its nakshatra and sub. Both are
+         * relationships from this graha to another, so
          * they are worked out here where every position is to hand rather than
          * in the renderer, which sees one graha at a time.
          */
         nakLordRelation: relationBetween(p, nakOf(p).lord, d1),
-        subLordDignity: dignityOfGraha(nakOf(p).subLord, d1),
+        subLordRelation: relationBetween(p, nakOf(p).subLord, d1),
         // Its own dispositor is still its dispositor, and saying so is shorter
         // than the reader working out that Mars in Aries has nobody to answer.
         lord: lord || '',
@@ -1548,75 +1540,52 @@
       card.innerHTML = '';
       var at = t.getAttribute('data-graha');
 
-      /*
-       * Three lines, coarse to fine. Which graha and where exactly; then the
-       * three frames it sits in at once, house, sign and nakshatra; then the
-       * grahas that have a say over it and what it has a say over.
-       *
-       * They used to arrive as one fact per line, which ran the card to eight
-       * before the yogas started, and the eye had to travel the height of it to
-       * put together a placement that is one thought.
-       */
-      /*
-       * Four lines, each one a way of placing the graha rather than a list of
-       * facts about it.
-       *
-       *   who it is, where it sits and what that makes it
-       *   the sign, whose sign it is, and how it fares there
-       *   the nakshatra, whose it is, and whose slice of it
-       *   what looks at it
-       *
-       * The first three read the same shape: a place, then the graha who owns
-       * that place, then how this graha stands in it. Sign, nakshatra and sub
-       * are three nested frames, and reading them in one column makes the
-       * nesting visible.
-       */
+      /* Identity and conditions first; then placement from sign through
+         nakshatra to house, followed by the grahas that aspect it. */
       var head = el('h4', 'graha-card-name', at);
-      head.appendChild(el('span', 'graha-card-degree', t.getAttribute('data-degree')));
+      var karaka = t.getAttribute('data-karaka');
+      if (karaka) head.appendChild(document.createTextNode(' · ' + karaka));
       card.appendChild(head);
 
-      var seat = el('p', 'graha-card-where');
-      fact(seat, '', t.getAttribute('data-house'));
-      fact(seat, 'Rules', t.getAttribute('data-rules'));
-      /*
-       * The chara karaka, on the line with the house it sits in rather than
-       * beside the degree that decides it. The degree is the reason for it,
-       * but what a reader does with it is read it against the house.
-       */
-      var karaka = t.getAttribute('data-karaka');
-      if (karaka) seat.appendChild(el('span', 'graha-card-karaka', karaka));
-      if (seat.children.length) card.appendChild(seat);
+      var conditions = [];
+      split(t.getAttribute('data-states')).forEach(function (item) {
+        if (item.term === 'R' || item.term === 'C' || item.term === 'Y') {
+          conditions.push(STATE_NAMES[item.term]);
+        }
+      });
+      var dignity = t.getAttribute('data-dignity');
+      if (/^(Exalted|Debilitated|Mooltrikona)$/i.test(dignity)) conditions.push(dignity);
+      if (t.getAttribute('data-directional') === 'true') conditions.push('Directional strength');
+      if (conditions.length) card.appendChild(el('p', 'graha-card-conditions',
+        conditions.join(' · ')));
 
       var inSign = el('p', 'graha-card-lords');
-      fact(inSign, '', t.getAttribute('data-sign'));
+      fact(inSign, '', t.getAttribute('data-sign') + ' ' + t.getAttribute('data-degree'));
       var dispositor = t.getAttribute('data-dispositor');
       if (dispositor) {
         var relation = t.getAttribute('data-dispositor-relation');
-        fact(inSign, 'Dispositor', dispositor + (relation ? ' (' + relation + ')' : ''));
+        fact(inSign, 'Lord', dispositor + (relation ? ' (' + relation + ')' : ''));
       }
-      /*
-       * Dignity closes the line rather than opening it: the sign is named,
-       * then whose it is, then how this graha does in it.
-       */
-      var dignity = t.getAttribute('data-dignity');
-      if (dignity) inSign.appendChild(el('span', 'graha-card-dignity', dignity));
       if (inSign.children.length) card.appendChild(inSign);
 
       /*
-       * The same shape one frame in. The nakshatra lord is read as a relation
-       * the way the dispositor is; the sub lord is not - a sub is a slice of a
-       * nakshatra and the graha has no standing in it, so what is worth saying
-       * is how that lord is itself placed.
+       * The same shape one frame in. Both lords are read as relationships from
+       * the graha whose card this is.
        */
       var inNak = el('p', 'graha-card-lords');
       fact(inNak, '', t.getAttribute('data-nakshatra'));
       var nakRel = t.getAttribute('data-nak-lord-relation');
       fact(inNak, 'Lord', t.getAttribute('data-nak-lord') +
         (nakRel ? ' (' + nakRel + ')' : ''));
-      var subDig = t.getAttribute('data-sub-lord-dignity');
+      var subRel = t.getAttribute('data-sub-lord-relation');
       fact(inNak, 'Sub lord', t.getAttribute('data-sub-lord') +
-        (subDig ? ' (' + subDig + ')' : ''));
+        (subRel ? ' (' + subRel + ')' : ''));
       if (inNak.children.length) card.appendChild(inNak);
+
+      var seat = el('p', 'graha-card-where');
+      fact(seat, '', t.getAttribute('data-house'));
+      fact(seat, 'Rules', t.getAttribute('data-rules'));
+      if (seat.children.length) card.appendChild(seat);
 
       var over = el('p', 'graha-card-lords');
       fact(over, 'Aspected by', t.getAttribute('data-seen-by'));

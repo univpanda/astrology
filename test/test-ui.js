@@ -2576,8 +2576,8 @@ ok('and the war row appears only in a chart that has one',
 // Twice now: the table's column and the card's own line, which is the same
 // fact put where the eye already is. Neither is typed into the markup.
 ok('the tables carry one dispositor column each, built once',
-   (appSrc.match(/'Dispositor'/g) || []).length === 2 &&
-   /fact\(inSign, 'Dispositor',/.test(appSrc) &&
+   (appSrc.match(/'Dispositor'/g) || []).length === 1 &&
+   /fact\(inSign, 'Lord',/.test(appSrc) &&
    !/<th scope="col">Dispositor<\/th>/.test(html));
 ok('the dispositor is the lord of the sign shown in that column',
    /Astro\.SIGN_LORDS\[sign\]/.test(appSrc) &&
@@ -8116,20 +8116,12 @@ console.log('\nThe card says how the graha stands in its sign');
       by.Venus['data-nak-lord-relation'] === 'great friend' &&
       by.Venus['data-dispositor-relation'] === 'great enemy',
       by.Venus['data-nak-lord-relation'] + ' / ' + by.Venus['data-dispositor-relation']);
-    /*
-     * And the sub lord by its own standing rather than by a relation: a sub is
-     * a slice of a nakshatra, and the graha has no standing in it. Swept,
-     * because which grahas land on a dignified sub lord is a fact about the
-     * chart rather than about the reading.
-     */
-    ok('the sub lord is reported by its own dignity where it has one',
-      Object.keys(by).some(function (g) { return by[g]['data-sub-lord-dignity']; }) &&
-      Object.keys(by).every(function (g) {
-        var d = by[g]['data-sub-lord-dignity'];
-        return !d || ['exalted', 'debilitated', 'own sign', 'mooltrikona'].indexOf(d) >= 0;
-      }),
+    ok('the sub lord is read as a relationship from the graha too',
+      by.Venus['data-sub-lord-relation'] === undefined &&
+      Object.keys(by).some(function (g) { return by[g]['data-sub-lord-relation']; }),
       Object.keys(by).map(function (g) {
-        return by[g]['data-sub-lord-dignity'] ? g + ':' + by[g]['data-sub-lord-dignity'] : '';
+        return by[g]['data-sub-lord-relation']
+          ? g + ':' + by[g]['data-sub-lord-relation'] : '';
       }).filter(Boolean).join(', '));
     /*
      * Ketu keeps no friendships, so its nakshatra lord is named without one,
@@ -8138,7 +8130,7 @@ console.log('\nThe card says how the graha stands in its sign');
     ok('a node names its lords without inventing a friendship for them',
       !!by.Ketu['data-nak-lord'] && by.Ketu['data-nak-lord-relation'] === undefined);
 
-    ok('the chara karaka rides beside the degree that decides it',
+    ok('the chara karaka is carried as the graha’s role',
       by.Jupiter['data-karaka'] === 'Atmakaraka' &&
       by.Ketu['data-karaka'] === undefined &&
       by.Ascendant['data-karaka'] === undefined,
@@ -8173,6 +8165,12 @@ console.log('\nThe card says how the graha stands in its sign');
     ok('a formal dignity is carried apart from the dispositor',
       by.Mercury['data-dignity'] === 'Own sign' &&
       by.Moon['data-dignity'] === undefined, by.Mercury['data-dignity']);
+    ok('directional strength is carried only where the graha attains it',
+      Object.keys(by).every(function (g) {
+        var house = by[g]['data-house'];
+        var n = house ? Number(house.replace('House ', '')) : 0;
+        return (by[g]['data-directional'] === 'true') === Astro.hasDigBala(g, n);
+      }));
   })();
 
   /*
@@ -8185,13 +8183,14 @@ console.log('\nThe card says how the graha stands in its sign');
    * - each naming the place, then whose place it is, then how this graha
    * stands in it.
    */
-  ok('and the card prints them as a label and a value, not as prose',
+  ok('and the card follows identity, conditions, sign, nakshatra, house, aspects',
     /fact\(seat, 'Rules', t\.getAttribute\('data-rules'\)\)/.test(src) &&
     /fact\(over, 'Aspected by', t\.getAttribute\('data-seen-by'\)\)/.test(src) &&
     /\.graha-card-fact-label \{/.test(css) &&
-    src.indexOf("fact(seat, 'Rules'") < src.indexOf("fact(inSign, 'Dispositor'") &&
-    src.indexOf("fact(inSign, 'Dispositor'") < src.indexOf("fact(inNak, 'Lord'") &&
-    src.indexOf("fact(inNak, 'Sub lord'") < src.indexOf("fact(over, 'Aspected by'"));
+    src.indexOf("'graha-card-conditions'") < src.indexOf("fact(inSign, ''") &&
+    src.indexOf("fact(inSign, 'Lord'") < src.indexOf("fact(inNak, 'Lord'") &&
+    src.indexOf("fact(inNak, 'Sub lord'") < src.indexOf("fact(seat, 'Rules'") &&
+    src.indexOf("fact(seat, 'Rules'") < src.indexOf("fact(over, 'Aspected by'"));
   /*
    * Two readings new to the card, both about grahas other than the one being
    * pointed at. The nakshatra lord is read as a relation, the way the
@@ -8199,10 +8198,10 @@ console.log('\nThe card says how the graha stands in its sign');
    * the graha has no standing in it, so what is worth saying is how that lord
    * is itself placed.
    */
-  ok('the nakshatra lord carries a relation and the sub lord its own dignity',
+  ok('the nakshatra lord and sub lord both carry their relationship',
     /nakLordRelation: relationBetween\(p, nakOf\(p\)\.lord, d1\)/.test(src) &&
-    /subLordDignity: dignityOfGraha\(nakOf\(p\)\.subLord, d1\)/.test(src) &&
-    /data-nak-lord-relation/.test(chartsSrc) && /data-sub-lord-dignity/.test(chartsSrc));
+    /subLordRelation: relationBetween\(p, nakOf\(p\)\.subLord, d1\)/.test(src) &&
+    /data-nak-lord-relation/.test(chartsSrc) && /data-sub-lord-relation/.test(chartsSrc));
 
   /*
    * And the figures are real. Driven through the same function the page calls,
@@ -8247,19 +8246,11 @@ console.log('\nThe card says how the graha stands in its sign');
       return any > 0 && wrong.length === 0;
     })());
 
-  /*
-   * Beside the sign now rather than under it. Dignity says how a graha does in
-   * the sign named next to it, and a line of its own left the word with
-   * nothing to hold on to.
-   */
-  /*
-   * Dignity closes the sign's line rather than opening it: the sign is named,
-   * then whose it is, then how this graha does in it.
-   */
-  ok('the card stands the dignity beside the sign it is about',
+  ok('special dignity joins the plain-English condition line',
     /var dignity = t\.getAttribute\('data-dignity'\)/.test(src) &&
-    /inSign\.appendChild\(el\('span', 'graha-card-dignity', dignity\)\)/.test(src) &&
-    /\.graha-card-dignity \{/.test(css));
+    /\^\(Exalted\|Debilitated\|Mooltrikona\)\$/.test(src) &&
+    /conditions\.push\(dignity\)/.test(src) &&
+    !/graha-card-dignity/.test(src + css));
   /*
    * And is divided from the findings by the same line the findings use between
    * themselves: the placement and its dignity are one thing, each finding
@@ -8586,8 +8577,7 @@ console.log('\nThe card leads with what is rare');
     /typeof a\.chance === 'number' \? a\.chance : Infinity/.test(src) &&
     /typeof b\.chance === 'number' \? b\.chance : Infinity/.test(src));
   ok('dignity is left out of the ordering, being part of the placement',
-    src.indexOf("el('p', 'graha-card-dignity', dignity)") <
-      src.indexOf('var found = [];'));
+    src.indexOf('conditions.push(dignity)') < src.indexOf('var found = [];'));
 
   if (!out.wireGrahaCard) { ok('the card wiring is reachable', false); return; }
 

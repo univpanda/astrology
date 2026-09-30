@@ -200,7 +200,7 @@ var Charts = (function () {
       dispositor: dispositor || '',
       karaka: (karakas && karakas[p.name]) || '',
       nakLordRelation: standing.nakLordRelation || '',
-      subLordDignity: standing.subLordDignity || '',
+      subLordRelation: standing.subLordRelation || '',
       dispositorRelation: standing.relation || '',
       /*
        * How the graha stands in the sign it occupies: its dignity where it has
@@ -216,6 +216,7 @@ var Charts = (function () {
        */
       rules: (ruling && ruling[p.name] && ruling[p.name].rules) || '',
       seenBy: (ruling && ruling[p.name] && ruling[p.name].seenBy) || '',
+      directional: p.name !== 'Ascendant' && Astro.hasDigBala(p.name, house),
       states: states.map(function (k) { return k + FLD + (why[k] || ''); }).join(REC),
       yogas: mine.map(function (y) {
         // title, why it holds here, the pair that names its passage, and the
@@ -271,7 +272,7 @@ var Charts = (function () {
           t.setAttribute('data-sub-lord', d.subLord);
           if (d.karaka) t.setAttribute('data-karaka', d.karaka);
           if (d.nakLordRelation) t.setAttribute('data-nak-lord-relation', d.nakLordRelation);
-          if (d.subLordDignity) t.setAttribute('data-sub-lord-dignity', d.subLordDignity);
+          if (d.subLordRelation) t.setAttribute('data-sub-lord-relation', d.subLordRelation);
           if (d.dispositor) t.setAttribute('data-dispositor', d.dispositor);
           if (d.dispositorRelation) {
             t.setAttribute('data-dispositor-relation', d.dispositorRelation);
@@ -279,6 +280,7 @@ var Charts = (function () {
           if (d.dignity) t.setAttribute('data-dignity', d.dignity);
           if (d.rules) t.setAttribute('data-rules', d.rules);
           if (d.seenBy) t.setAttribute('data-seen-by', d.seenBy);
+          if (d.directional) t.setAttribute('data-directional', 'true');
           t.setAttribute('data-states', d.states);
           t.setAttribute('data-yogas', d.yogas);
           // Hoverable by mouse, reachable by keyboard, legible to a reader.
