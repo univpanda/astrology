@@ -8236,13 +8236,20 @@ console.log('\nThe hora read as chapter 7 reads it');
   var SHORT = { adhimitra: 'GF', mitra: 'Fr', sama: 'Nu' };
   var G = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
 
-  function horaRow(y, mo, d, h, mi, off, lat, lon) {
+  /*
+   * The reading is named rather than inherited, because the default moved away
+   * from it. These two rows want 'solar' and a third chart wants the verse's
+   * reading; the disagreement is recorded at the end of this block rather than
+   * settled by whichever happens to be the default this week.
+   */
+  function horaRow(y, mo, d, h, mi, off, lat, lon, rule) {
     var c = A.chart({ jdUT: A.julianDay(y, mo, d, (h * 60 + mi - off) / 60),
       latitude: lat, longitude: lon, tzOffsetMinutes: off });
     var pos = {};
     c.planets.forEach(function (p) { pos[p.name] = p; });
     return G.map(function (g) {
-      return SHORT[A.vargaDignity(g, pos[g].longitude, 2, pos).key];
+      return SHORT[A.vargaDignity(g, pos[g].longitude, 2, pos, undefined,
+        undefined, rule || 'solar').key];
     });
   }
 
@@ -8262,6 +8269,31 @@ console.log('\nThe hora read as chapter 7 reads it');
              -(73 + 57 / 60 + 59 / 3600)).join(',') === 'Nu,Nu,GF,GF,GF,Nu,Nu',
      horaRow(1938, 9, 1, 23, 28, -240, 40 + 47 / 60,
              -(73 + 57 / 60 + 59 / 3600)).join(','));
+
+  /*
+   * And the three reference charts do not agree, which is the state of the
+   * evidence and is pinned as such.
+   *
+   * Gates and Dershowitz both have Mercury a great friend of its hora, which
+   * only the fitted reading gives on both - Gates is the discriminating one,
+   * his Mercury standing in the Sun's hora from an even rashi. Obama's
+   * vimsopaka column needs Mercury a plain friend, which only the verse's
+   * reading gives. Two rows against one column, and no reading fits all three.
+   */
+  ok('the three reference charts split, and no reading satisfies all of them',
+    (function () {
+      var gates = { hora: 4, rashi: 5 };          // Sun's hora, Virgo, even
+      var obama = { hora: 3, rashi: 3 };          // Moon's hora, Cancer, even
+      var fitsRows = function (r) {
+        return A.horaEffect('Mercury', gates.hora, gates.rashi, r) === 'adhimitra';
+      };
+      var fitsColumn = function (r) {
+        return A.horaEffect('Mercury', obama.hora, obama.rashi, r) === 'mitra';
+      };
+      return ['solar', 'ordinary', 'both', 'friend']
+        .every(function (r) { return !(fitsRows(r) && fitsColumn(r)); }) &&
+        fitsRows('solar') && fitsColumn('friend');
+    })());
 
   // The verse, stated directly rather than through a chart.
   ok('a graha outside the group takes the middle rung whichever way the sign falls',
@@ -8288,15 +8320,21 @@ console.log('\nThe hora read as chapter 7 reads it');
          return A.horaEffect('Mercury', h, r, 'both') === 'adhimitra';
        });
      }));
-  ok('and by default it is full in the Sun\u2019s hora and read by strength in the Moon\u2019s',
+  ok('the fitted reading is full in the Sun\u2019s hora and by strength in the Moon\u2019s',
      A.horaEffect('Mercury', 4, 0, 'solar') === 'adhimitra' &&
      A.horaEffect('Mercury', 4, 1, 'solar') === 'adhimitra' &&   // the Sun's, either way
      A.horaEffect('Mercury', 3, 1, 'solar') === 'adhimitra' &&
      A.horaEffect('Mercury', 3, 0, 'solar') === 'mitra');        // the Moon's, weaker half
-  ok('which is what an unnamed reading gives',
+  /*
+   * And the unnamed reading is the verse's, which is plainer than any of the
+   * three: effective in either hora and never pronounced, so neither half of
+   * the sign nor which hora it is makes any difference to Mercury.
+   */
+  ok('and an unnamed reading is the verse\u2019s, the same in all four cases',
      [0, 1].every(function (r) {
        return [3, 4].every(function (h) {
-         return A.horaEffect('Mercury', h, r) === A.horaEffect('Mercury', h, r, 'solar');
+         return A.horaEffect('Mercury', h, r) === 'mitra' &&
+           A.horaEffect('Mercury', h, r) === A.horaEffect('Mercury', h, r, 'friend');
        });
      }));
   /*

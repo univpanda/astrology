@@ -1424,7 +1424,13 @@ var Astro = (function () {
     var powerful = horaOf === 'Sun' ? oddRashi : !oddRashi;
     var byStrength = powerful ? 'adhimitra' : 'mitra';
     if (group === 'both') {
-      var rule = mercury || HORA_MERCURY.SOLAR;
+      /*
+       * The verse's own wording is the default: the six "give (pronounced)
+       * effects" in their hora where Budh "is effective in both", which is the
+       * weaker claim and not the stronger. The fitted reading that used to sit
+       * here is still offered and is what the worked hora rows want.
+       */
+      var rule = mercury || HORA_MERCURY.FRIEND;
       if (rule === HORA_MERCURY.FRIEND) return 'mitra';
       if (rule === HORA_MERCURY.BOTH) return 'adhimitra';
       if (rule === HORA_MERCURY.SOLAR && horaOf === 'Sun') return 'adhimitra';

@@ -353,17 +353,30 @@ console.log('\nThe tatkalika setting, end to end');
      /tatkalika: tatkalikaSetting\(\),\s*\n\s*horaDignity: horaSetting\(\),\s*\n\s*horaMercury: horaMercurySetting\(\)/.test(src));
   ok('changing the hora reading redraws too', /\['hora-dignity', \{ effects:/.test(src));
   /* Mercury's own clause is a setting of its own, in the test tab. */
-  ok('Mercury in the hora is offered too, defaulting to the fitted reading',
+  ok('Mercury in the hora is offered too, defaulting to the verse\u2019s wording',
      /<select id="hora-mercury"/.test(page) &&
-     /<option value="solar" selected>/.test(page.slice(page.indexOf('id="hora-mercury"'))) &&
+     /<option value="friend" selected>/.test(page.slice(page.indexOf('id="hora-mercury"'))) &&
      (page.slice(page.indexOf('id="hora-mercury"'),
        page.indexOf('</select>', page.indexOf('id="hora-mercury"'))).match(/<option /g) || [])
        .length === 4);
-  ok('and it says plainly that no text asks for that default', (function () {
+  /*
+   * The default is the verse's wording now, so the warning belongs to the
+   * option that has no text behind it rather than to the default. Both halves
+   * are asserted: the unsourced reading still says so, and the note still
+   * admits that the reference charts do not agree with each other.
+   */
+  ok('the unsourced reading still says no text asks for it', (function () {
     // Whitespace-normalised: the sentence wraps across lines in the markup.
     var at = page.indexOf('id="why-hora-mercury"');
     var note = page.slice(at, page.indexOf('</p>', at)).replace(/\s+/g, ' ');
-    return /No classical text asks for it/.test(note);
+    return /no classical text asks for it/i.test(note) &&
+      /fitted to observation rather than taken from an authority/.test(note);
+  })());
+  ok('and it says the reference charts disagree rather than hiding it', (function () {
+    var at = page.indexOf('id="why-hora-mercury"');
+    var note = page.slice(at, page.indexOf('</p>', at)).replace(/\s+/g, ' ');
+    return /do not agree/.test(note) &&
+      /no reading of the clause satisfies all three/.test(note);
   })());
   /*
    * The fourth reading is the verse's own wording against its translator's
@@ -371,8 +384,8 @@ console.log('\nThe tatkalika setting, end to end');
    * a weaker claim and not a stronger one. Both are offered because the two
    * disagree inside one book.
    */
-  ok('and the verse’s own wording is offered against the note on it',
-     /<option value="friend">/.test(page) &&
+  ok('and the note on it is offered against the verse',
+     /<option value="both">/.test(page) && /<option value="solar">/.test(page) &&
      Astro.HORA_MERCURY.FRIEND === 'friend' &&
      Astro.horaEffect('Mercury', 3, 3, 'friend') === 'mitra' &&
      Astro.horaEffect('Mercury', 4, 3, 'friend') === 'mitra' &&
