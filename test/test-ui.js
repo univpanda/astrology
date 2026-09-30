@@ -7810,6 +7810,30 @@ ok('casting the same chart again does not drop the flag',
  * Reading is not editing, so it touches opened_at alone. A save would have
  * bumped updated_at too and lost the difference between the two.
  */
+/*
+ * Generating a chart is reading it. Saved with no opened_at, the chart just
+ * made sorted last among the ones nobody had ever opened - which is the
+ * opposite of where the person who just made it is looking.
+ *
+ * The browser asks for the stamp and the server supplies the time. A clock
+ * that is wrong, or lying, would otherwise decide the order of somebody's
+ * list.
+ */
+ok('saving a chart counts as reading it',
+   /callKundaliApi\(\{ action: 'save', entry: entry, id: entry\.id, touch: true \}/.test(appSrc) &&
+   /openedAt: new Date\(\)\.toISOString\(\),/.test(appSrc) &&
+   /function clean\(entry: Record<string, unknown>, token: string, touch = false\)/.test(fnSrc) &&
+   /\.\.\.\(touch \? \{ opened_at: new Date\(\)\.toISOString\(\) \} : \{\}\),/.test(fnSrc) &&
+   /clean\(body\.entry, token, body\.touch === true\)/.test(fnSrc));
+/*
+ * Flagging is not. It also goes through save, but it is an annotation made
+ * while looking down the list, and a card that jumped to the top the moment it
+ * was flagged would move out from under the pointer that flagged it.
+ */
+ok('but flagging one does not',
+   /callKundaliApi\(\{ action: 'save', entry: list\[at\], id: list\[at\]\.id \}/.test(appSrc) &&
+   (appSrc.match(/touch: true/g) || []).length === 1);
+
 ok('opening a chart is recorded without saving it',
    /function recordOpening\(entry\)/.test(appSrc) &&
    /callKundaliApi\(\{ action: 'open', id: entry\.id \}/.test(appSrc) &&

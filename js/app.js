@@ -4602,6 +4602,13 @@
       gender: state.gender,
       celebrity: state.celebrity,
       flagged: state.flagged === true,
+      /*
+       * Generating a chart is reading it, so the one just saved goes to the
+       * top of the list like the one just opened. Written here as well as
+       * asked of the server, so the order is right on the next draw rather
+       * than a round trip later.
+       */
+      openedAt: new Date().toISOString(),
       note: state.note
     };
 
@@ -4639,7 +4646,7 @@
 
     // The local copy is written first so the panel updates immediately and keeps
     // working offline; the database is the shared copy, not the fast one.
-    callKundaliApi({ action: 'save', entry: entry, id: entry.id }, function (entries) {
+    callKundaliApi({ action: 'save', entry: entry, id: entry.id, touch: true }, function (entries) {
       if (entries) {
         writeSaved(entries.map(fromRow));
         renderSaved();

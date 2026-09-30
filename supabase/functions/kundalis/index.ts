@@ -28,8 +28,16 @@ const headers = (extra: Record<string, string> = {}) => ({
   ...extra,
 });
 
-/** Only the fields the browser is allowed to set, coerced and bounded. */
-function clean(entry: Record<string, unknown>, token: string) {
+/**
+ * Only the fields the browser is allowed to set, coerced and bounded.
+ *
+ * `touch` stamps opened_at, because generating a chart is reading it: the one
+ * just saved is the one being looked at, and without this it sorted last among
+ * the rows nobody had opened. The browser asks for the stamp but does not
+ * supply it - the time is the server's, or a clock that is wrong or lying
+ * would decide the order of somebody's list.
+ */
+function clean(entry: Record<string, unknown>, token: string, touch = false) {
   const text = (v: unknown, max: number) => String(v ?? '').slice(0, max);
   const num = (v: unknown) => {
     const n = Number(v);
@@ -55,6 +63,7 @@ function clean(entry: Record<string, unknown>, token: string) {
     flagged: entry.flagged === true,
     note: entry.note ? text(entry.note, 2000) : null,
     updated_at: new Date().toISOString(),
+    ...(touch ? { opened_at: new Date().toISOString() } : {}),
   };
 }
 
@@ -85,7 +94,7 @@ Deno.serve(async (req) => {
 
     if (body.action === 'save') {
       if (!body.entry) return json({ error: 'entry is required' }, 400);
-      const row = clean(body.entry, token);
+      const row = clean(body.entry, token, body.touch === true);
       if (!row.name || !row.place_label || !row.birth_date || !row.birth_time) {
         return json({ error: 'name, place, date and time are all required' }, 400);
       }
