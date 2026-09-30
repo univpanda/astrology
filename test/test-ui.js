@@ -1247,9 +1247,60 @@ function stripHtml(label) {
  */
 ok('a saved entry lays out as one row, wrapping only when it must', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-  var block = css.slice(css.indexOf('.saved-open {'), css.indexOf('.saved-name {'));
+  // The row is laid out by the block holding the three parts, which is the
+  // detail wrapper now that only the name is a button.
+  var block = css.slice(css.indexOf('.saved-detail {'), css.indexOf('.saved-open {'));
   return /display: flex;/.test(block) && /flex-wrap: wrap;/.test(block) &&
     !/display: grid;/.test(block);
+})());
+/*
+ * And only the name opens it. The whole left half used to be one button, so
+ * aiming at the place or the date opened a chart, and nothing in the row said
+ * which part of it was the target.
+ */
+ok('the name is the only thing that opens the chart', (function () {
+  var at = appSrc.indexOf('function renderSaved()');
+  var block = appSrc.slice(at, appSrc.indexOf('function removeSaved', at));
+  return /open\.appendChild\(el\('span', 'saved-name', entry\.name\)\)/.test(block) &&
+    /open\.addEventListener\('click', function \(\) \{ loadSaved\(entry\); \}\)/.test(block) &&
+    /detail\.appendChild\(el\('span', 'saved-meta saved-where'/.test(block) &&
+    /detail\.appendChild\(el\('span', 'saved-meta saved-when'/.test(block);
+})());
+ok('and the hover marks the name rather than the whole row', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  return /\.saved-open:hover,\n\.saved-open:focus-visible \{ border-bottom-color: currentColor; \}/
+    .test(css) && !/\.saved-item:hover \{ background:/.test(css.split('@media')[0]);
+})());
+
+/*
+ * Searching the list, and only once there are enough rows for finding one to be
+ * work. A box that never helps is a control taking space from what it filters.
+ */
+ok('saved kundalis can be searched by name or by place', (function () {
+  var at = appSrc.indexOf('function renderSaved()');
+  var block = appSrc.slice(at, appSrc.indexOf('function removeSaved', at));
+  return /id="saved-filter"/.test(html) && /id="saved-search"/.test(html) &&
+    /\(entry\.name \|\| ''\)\.toLowerCase\(\)\.indexOf\(term\) >= 0/.test(block) &&
+    /\(entry\.placeLabel \|\| ''\)\.toLowerCase\(\)\.indexOf\(term\) >= 0/.test(block) &&
+    /field\.addEventListener\('input', renderSaved\)/.test(appSrc);
+})());
+ok('and the box stays hidden until the list is long enough to need it', (function () {
+  var at = appSrc.indexOf('function renderSaved()');
+  var block = appSrc.slice(at, appSrc.indexOf('function removeSaved', at));
+  return /var SEARCH_FROM = 6;/.test(appSrc) &&
+    /box\.hidden = all\.length < SEARCH_FROM/.test(block);
+})());
+/*
+ * The delete takes its index from the stored list and not the filtered one. A
+ * search that shifted the indexes would delete whichever row happened to sit at
+ * that position in the whole list, which is the worst kind of bug here: silent,
+ * and on the only copy of the data.
+ */
+ok('deleting while searching removes the row that was asked for', (function () {
+  var at = appSrc.indexOf('function renderSaved()');
+  var block = appSrc.slice(at, appSrc.indexOf('function removeSaved', at));
+  return /var index = all\.indexOf\(entry\);/.test(block) &&
+    !/list\.forEach\(function \(entry, index\)/.test(block);
 })());
 ok('the place truncates and the moment does not', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');

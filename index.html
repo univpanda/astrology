@@ -37,6 +37,14 @@
       <p class="saved-empty" id="saved-empty">
         Nothing saved yet. Add a kundali and it will appear here as soon as it is generated.
       </p>
+      <!-- Filters the list by name or place as it is typed. Hidden until there
+           are enough rows for finding one to be work. -->
+      <div class="saved-search" id="saved-search" hidden>
+        <label class="visually-hidden" for="saved-filter">Search saved kundalis</label>
+        <input type="search" id="saved-filter" placeholder="Search by name or place"
+               autocomplete="off" spellcheck="false">
+      </div>
+      <p class="saved-none" id="saved-none" hidden></p>
       <ul class="saved-list" id="saved-list"></ul>
       <button type="button" class="add-kundali" id="add-kundali">+ Add a kundali</button>
       <p class="saved-note" id="saved-note">Charts are saved as soon as they are generated.</p>

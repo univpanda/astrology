@@ -4143,27 +4143,66 @@
     return button;
   }
 
-  function renderSaved() {
-    var list = readSaved();
-    savedList.innerHTML = '';
-    savedEmpty.hidden = list.length > 0;
-    savedCount.textContent = list.length;
-    savedCount.hidden = list.length === 0;
+  /*
+   * Enough rows that finding one is work. Below this the box would be a control
+   * that never helps, taking space from the list it filters.
+   */
+  var SEARCH_FROM = 6;
 
-    list.forEach(function (entry, index) {
+  function renderSaved() {
+    var all = readSaved();
+    savedList.innerHTML = '';
+    savedEmpty.hidden = all.length > 0;
+    savedCount.textContent = all.length;
+    savedCount.hidden = all.length === 0;
+
+    var box = document.getElementById('saved-search');
+    var field = document.getElementById('saved-filter');
+    var none = document.getElementById('saved-none');
+    if (box) box.hidden = all.length < SEARCH_FROM;
+    var term = (box && !box.hidden && field ? field.value : '').trim().toLowerCase();
+
+    /*
+     * Name or place. A reader looking for a chart remembers one or the other,
+     * and the date is not something anyone searches by.
+     */
+    var list = !term ? all : all.filter(function (entry) {
+      return (entry.name || '').toLowerCase().indexOf(term) >= 0 ||
+        (entry.placeLabel || '').toLowerCase().indexOf(term) >= 0;
+    });
+    if (none) {
+      none.hidden = !term || list.length > 0;
+      none.textContent = 'Nothing saved matches \u201c' + term + '\u201d.';
+    }
+
+    list.forEach(function (entry) {
+      // The index the delete needs is into the stored list, not the filtered
+      // one, or searching would delete the wrong row.
+      var index = all.indexOf(entry);
       var li = el('li', 'saved-item');
 
+      /*
+       * The name opens the chart and nothing else does.
+       *
+       * The whole left half of the row used to be one button, so a reader
+       * aiming for the place or the date opened a chart instead, and the row
+       * gave no sign which part of it was the target. The name is the thing
+       * being chosen between, so it is the thing that is clickable; the place
+       * and the moment are there to tell two charts of one person apart and are
+       * now plain text.
+       */
+      var detail = el('div', 'saved-detail');
       var open = el('button', 'saved-open');
       open.type = 'button';
-      var savedName = el('span', 'saved-name', entry.name);
-      if (entry.celebrity) savedName.appendChild(el('span', 'celebrity-mark', CELEBRITY_MARK));
-      open.appendChild(savedName);
+      open.appendChild(el('span', 'saved-name', entry.name));
+      if (entry.celebrity) open.appendChild(el('span', 'celebrity-mark', CELEBRITY_MARK));
+      open.addEventListener('click', function () { loadSaved(entry); });
+      detail.appendChild(open);
       // The place gives way first when the row is short of room; the moment is
       // what tells two charts of the same person apart, so it keeps its width.
-      open.appendChild(el('span', 'saved-meta saved-where', entry.placeLabel));
-      open.appendChild(el('span', 'saved-meta saved-when', formatSavedMoment(entry)));
-      open.addEventListener('click', function () { loadSaved(entry); });
-      li.appendChild(open);
+      detail.appendChild(el('span', 'saved-meta saved-where', entry.placeLabel));
+      detail.appendChild(el('span', 'saved-meta saved-when', formatSavedMoment(entry)));
+      li.appendChild(detail);
 
       var actions = el('div', 'saved-actions');
       actions.appendChild(iconButton('edit', 'Edit ' + entry.name, function () {
@@ -4198,6 +4237,11 @@
       savedList.appendChild(li);
     });
   }
+
+  (function () {
+    var field = document.getElementById('saved-filter');
+    if (field) field.addEventListener('input', renderSaved);
+  })();
 
   function removeSaved(index) {
     var current = readSaved();

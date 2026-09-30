@@ -149,17 +149,16 @@ main, .site-header, .site-footer { max-width: 1120px; margin: 0 auto; }
   border: 1px solid transparent;
   transition: background 0.12s ease, border-color 0.12s ease;
 }
-.saved-item:hover { background: var(--green-soft); border-color: var(--line); }
+.saved-item:hover { border-color: var(--line); }
 
-.saved-open {
-  font: inherit;
-  text-align: left;
-  background: none;
-  border: none;
-  padding: 0.55rem 0.6rem;
-  cursor: pointer;
-  color: var(--ink);
+/*
+ * The row is no longer one target. The name opens the chart and the place and
+ * the moment sit beside it as text, so the hover marks the name rather than
+ * the whole row, which used to promise that any of it could be clicked.
+ */
+.saved-detail {
   min-width: 0;
+  padding: 0.55rem 0.6rem;
   /* One row per person. It wraps only when the row genuinely runs out of width,
      which is the narrow-screen case rather than the normal one. */
   display: flex;
@@ -168,11 +167,39 @@ main, .site-header, .site-footer { max-width: 1120px; margin: 0 auto; }
   column-gap: 0.55rem;
   row-gap: 0.1rem;
 }
-.saved-name {
+.saved-open {
+  font: inherit;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--ink);
+  flex: 0 0 auto;
   font-weight: 600;
   font-size: 0.93rem;
   white-space: nowrap;
-  flex: 0 0 auto;
+  border-bottom: 1px solid transparent;
+}
+.saved-open:hover,
+.saved-open:focus-visible { border-bottom-color: currentColor; }
+.saved-name { font: inherit; }
+
+/* Filtering the list, shown only once there are enough rows to need it. */
+.saved-search { margin-bottom: 0.6rem; }
+.saved-search input {
+  width: 100%;
+  font: inherit;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+}
+.saved-none {
+  margin: 0 0 0.6rem;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
 }
 .saved-meta {
   font-size: 0.78rem;
