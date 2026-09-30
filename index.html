@@ -240,6 +240,11 @@
 
     <div class="actions">
       <button type="submit" class="primary">Generate chart</button>
+      <!-- Not type="reset". The browser's own reset restores the values in the
+           markup and knows nothing of the city that was chosen, the timezone
+           that was looked up, or the saved row being edited, so it would leave
+           a form that looks empty while still carrying all three. -->
+      <button type="button" class="secondary" id="reset-form">Reset</button>
       <p class="form-error" id="form-error" role="alert"></p>
     </div>
     <p class="form-note" id="add-note">Charts are saved as soon as they are generated.</p>

@@ -1441,11 +1441,32 @@ ok('the saved list and its empty state are both present',
  * yourself now does it, and only then - editSaved and the chart's edit button
  * arrive in code and both mean to keep the row they came from.
  */
+/*
+ * Reset, beside Generate, for a chart begun and thought better of.
+ *
+ * Deliberately not <button type="reset">. The browser's own reset restores the
+ * values written in the markup and knows nothing of the city chosen, the zone
+ * looked up, or the saved row being edited - it would leave a form that looks
+ * empty while still carrying all three, and the next chart generated would be
+ * written over that row.
+ */
+ok('a reset sits beside generate and is not the browser\'s own',
+   /<button type="button" class="secondary" id="reset-form">Reset<\/button>/.test(html) &&
+   // Outside comments: the comment above the button explains why it is not one.
+   !/type="reset"/.test(html.replace(/<!--[\s\S]*?-->/g, '')) &&
+   html.indexOf('id="reset-form"') > html.indexOf('>Generate chart<') &&
+   /getElementById\('reset-form'\)\.addEventListener\('click', startFreshChart\)/.test(appSrc));
+ok('and it clears the same three things the tab does, from one place',
+   (appSrc.match(/function startFreshChart\(\)/g) || []).length === 1 &&
+   (appSrc.match(/startFreshChart\(\)/g) || []).length === 2 &&
+   /button\.secondary \{/.test(cssSrc));
+
 ok('the add button is gone, the tab having always been there',
    !/id="add-kundali"/.test(html) && !/add-kundali/.test(cssSrc) &&
    !/addButton/.test(appSrc));
 ok('and asking for the form yourself still starts a new chart',
-   /if \(name === 'add' && byUser\) \{\s*\n\s*blankForm\(\);\s*\n\s*currentEntry = null;/
+   /if \(name === 'add' && byUser\) startFreshChart\(\);/.test(appSrc) &&
+   /function startFreshChart\(\) \{\s*\n\s*blankForm\(\);\s*\n\s*currentEntry = null;/
      .test(appSrc) &&
    /buttons\[name\]\.addEventListener\('click', function \(\) \{ activate\(name, false, true\); \}\)/
      .test(appSrc) &&

@@ -4838,11 +4838,7 @@
        * Only when a person asked. editSaved and the chart's own edit button
        * arrive here in code, and both mean to keep the row they came from.
        */
-      if (name === 'add' && byUser) {
-        blankForm();
-        currentEntry = null;
-        document.getElementById('name').focus();
-      }
+      if (name === 'add' && byUser) startFreshChart();
     } });
 
   /*
@@ -5149,6 +5145,18 @@
 
   function activateTab(name, moveFocus) { sections.activate(name, moveFocus); }
 
+  /*
+   * Empty the form and forget the row it came from, so the next chart generated
+   * is a new one rather than an edit of the last. Both ways of asking for a
+   * clean form go through here: the Reset button beside Generate, and reaching
+   * for the Add tab yourself.
+   */
+  function startFreshChart() {
+    blankForm();
+    currentEntry = null;
+    document.getElementById('name').focus();
+  }
+
   /** Empty the form so the next chart starts from nothing. */
   function blankForm() {
     document.getElementById('name').value = '';
@@ -5223,6 +5231,14 @@
   }
 
   editButton.addEventListener('click', function () { showForm(false); });
+
+  /*
+   * Emptying the form by hand, for a chart begun and thought better of. It is
+   * safe to press at any time: a saved chart being edited is not touched, the
+   * edit is simply abandoned, and clearing currentEntry is what stops the next
+   * chart generated from being written over that row.
+   */
+  document.getElementById('reset-form').addEventListener('click', startFreshChart);
 
   /* ------------------------------------------- shareable URL for a chart */
 

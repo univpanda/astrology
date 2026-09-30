@@ -920,6 +920,25 @@ button.primary:hover { filter: brightness(1.06); transform: translateY(-1px); }
 button.primary:active { transform: translateY(0); }
 button.primary:disabled { opacity: 0.6; cursor: progress; transform: none; }
 
+/* Beside the primary and clearly not it: the same shape, none of the weight.
+   Emptying a form is not the thing anybody came to the page to do. */
+button.secondary {
+  font: inherit;
+  font-weight: 600;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1.4rem;
+  cursor: pointer;
+  transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+button.secondary:hover {
+  color: var(--green-deep);
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+
 .link-button {
   font: inherit;
   font-size: 0.875rem;
