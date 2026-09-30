@@ -7089,9 +7089,9 @@ ok('and a written URL restores those choices before it submits', (function () {
     fields['node-type'].value === 'mean' && fields.gender.value === 'female' &&
     fields['time-standard'].value === 'lmt' && result.selectedCity.zone === 'America/New_York';
 })());
-ok('old shared links with no gender still cast as legacy unstated charts', (function () {
+ok('old shared links stop and ask for the gender their readings are missing', (function () {
   var restore = appSrc.slice(appSrc.indexOf('function readHash'), appSrc.indexOf('/* ------------------------------------------------------------------ init'));
-  return /if \(!document\.getElementById\('gender'\)\.value\) reopeningSaved = true;/.test(restore);
+  return /if \(!document\.getElementById\('gender'\)\.value\) \{[\s\S]*?fail\('Choose a gender to restore this older link\.'\);[\s\S]*?getElementById\('gender'\)\.focus\(\);[\s\S]*?return;/.test(restore);
 })());
 ok('merely opening manual coordinates does not discard a city already chosen', (function () {
   var toggle = appSrc.slice(appSrc.indexOf("manualToggle.addEventListener('click'"),

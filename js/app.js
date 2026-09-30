@@ -5197,9 +5197,17 @@
       document.getElementById('name').focus();
       return;
     }
-    // Old links predate gender in the URL. Treat them like an old saved chart:
-    // cast with gender unstated instead of making a formerly working link stop.
-    if (!document.getElementById('gender').value) reopeningSaved = true;
+    /*
+     * Links made before gender was carried cannot reproduce every reading: in
+     * particular Mahabhagya turns on it. Keep all the details the link does
+     * know, but ask for the missing fact instead of silently casting a chart
+     * whose findings can be incomplete.
+     */
+    if (!document.getElementById('gender').value) {
+      fail('Choose a gender to restore this older link.');
+      document.getElementById('gender').focus();
+      return;
+    }
     form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit'));
   }
 
