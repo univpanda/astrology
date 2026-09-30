@@ -2945,14 +2945,27 @@
           signLine.appendChild(el('span', 'flag flag-d', ' [D]'));
         }
 
-        var dignityLine = el('span', 'varga-dignity dig dig-' + d.key, d.label);
+        /*
+         * The rung the score was made of, and nothing else.
+         *
+         * This printed the dignity - Exal, Deb, Mool - over a cell whose score
+         * is always the relation to the sign's lord, so a cell could read Mool
+         * and be worth fifteen, or Exal and be worth seven. The varga viswa has
+         * six steps and they are these; a word outside them is a word about a
+         * different reckoning, and this grid is the vimsopaka one.
+         *
+         * The dignity is still known and still marks the cell where it changes
+         * something: a cancelled debilitation keeps its [N].
+         */
+        var dignityLine = el('span', 'varga-dignity dig dig-' + d.relation,
+          d.relationLabel);
         /*
          * [N] rather than a star. It was a star while it was the only mark that
          * sat on a dignity rather than on a sign, and a star is a footnote: it
          * says look elsewhere, where every other mark here names its own
          * condition. The letter says which condition without being looked up.
          */
-        if (d.key === 'debilitated' && cancelled[planet.name]) {
+        if (d.dignity === 'debilitated' && cancelled[planet.name]) {
           dignityLine.appendChild(el('span', 'flag flag-n', ' [N]'));
         }
 
@@ -3022,7 +3035,13 @@
    * with the abbreviation machinery and put back - vargaSummary still read it,
    * so the charts were throwing where the grid was fine.
    */
-  var GOOD_KEYS = ['exalted', 'moolatrikona', 'own', 'adhimitra', 'mitra'];
+  /*
+   * A good varga is one the ladder pays well for, so the count is taken on the
+   * same rungs the score is: own, great friend, friend. It used to include
+   * exalted and moolatrikona, which are not rungs of this ladder at all, so a
+   * cell could be counted good while scoring seven.
+   */
+  var GOOD_KEYS = ['own', 'adhimitra', 'mitra'];
 
   function vargaSummary(state, scheme, tatkalika, horaRule, horaMercury) {
     var positionsD1 = {};
@@ -3039,7 +3058,7 @@
         var d = Astro.vargaDignity(planet.name, planet.longitude, division, positionsD1,
           tatkalika, horaRule, horaMercury);
         if (!d) return;
-        if (GOOD_KEYS.indexOf(d.key) >= 0) good++;
+        if (GOOD_KEYS.indexOf(d.relation) >= 0) good++;
         var chart = Astro.chartInDivision(state.chart, division);
         var lagna = Astro.vargaPosition(state.chart.ascendant.longitude, division).sign;
         if (division !== 1 && d.sign === rashi) marks.V++;

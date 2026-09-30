@@ -2902,7 +2902,7 @@ var seeds = ['strength', 'varga', 'dignity', 'yogas'].map(function (name) {
  * where every other mark here names its own condition.
  */
 ok('a cancelled debilitation is marked where it is scored',
-   /if \(d\.key === 'debilitated' && cancelled\[planet\.name\]\)/.test(appSrc) &&
+   /if \(d\.dignity === 'debilitated' && cancelled\[planet\.name\]\)/.test(appSrc) &&
    /dignityLine\.appendChild\(el\('span', 'flag flag-n', ' \[N\]'\)\)/.test(appSrc) &&
    !/neecha-bhanga/.test(appSrc));
 /*
@@ -4318,9 +4318,15 @@ ok('so the six, seven and ten keep their words and the sixteen do not', (functio
  * and Great Friend however many divisions the scheme has, so the short forms and
  * the machinery that chose them went with the scroll they were fighting.
  */
-ok('the sign and the dignity are written out in full',
+/*
+ * The rung, not the dignity. This grid is scored on the varga viswa, whose six
+ * steps run from own down to sworn enemy; printing Exal or Mool over a cell
+ * worth seven or fifteen named a different reckoning from the one the column
+ * adds up.
+ */
+ok('the sign and the scored rung are written out in full',
    /el\('span', 'varga-sign', Astro\.SIGNS\[d\.sign\]\)/.test(appSrc) &&
-   /el\('span', 'varga-dignity dig dig-' \+ d\.key, d\.label\)/.test(appSrc));
+   /dig-' \+ d\.relation,\s*\n?\s*d\.relationLabel\)/.test(appSrc));
 ok('and no short form or width test is left to choose between them',
    !/ABBREVIATE_ABOVE/.test(appSrc) && !/SIGN_ABBR\[d\.sign\]/.test(appSrc) &&
    !/VARGA_DIGNITY_SHORT/.test(appSrc) && !/\bbrief\b/.test(appSrc));
@@ -4436,7 +4442,7 @@ ok('every dignity tier has a colour, and no colour is orphaned', (function () {
 ok('and a dignity is coloured wherever it is written, cell or span', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
   return !/td\.dig-/.test(css) && /\n\.dig-debilitated \{ color: var\(--retro\)/.test(css) &&
-    /el\('span', 'varga-dignity dig dig-' \+ d\.key, d\.label\)/.test(appSrc) &&
+    /dig-' \+ d\.relation,\s*\n?\s*d\.relationLabel\)/.test(appSrc) &&
     /\{ text: \(r\.isAscendant \? '' : Astro\.dignityOf/.test(appSrc);
 })());
 
@@ -4520,7 +4526,7 @@ ok('the trimsamsa stand-in is explained in the note, once for the grid',
  */
 ok('a graha in a division is one cell of two lines',
    /el\('span', 'varga-sign', Astro\.SIGNS\[d\.sign\]\)/.test(appSrc) &&
-   /el\('span', 'varga-dignity dig dig-' \+ d\.key, d\.label\)/.test(appSrc) &&
+   /dig-' \+ d\.relation,\s*\n?\s*d\.relationLabel\)/.test(appSrc) &&
    /td\.appendChild\(signLine\);\s*\n\s*td\.appendChild\(dignityLine\);/.test(appSrc));
 ok('and its name is a row header',
    /th\.setAttribute\('scope', 'row'\);/.test(appSrc));
@@ -5490,8 +5496,18 @@ ok('vargaSummary runs and counts every mark', (function () {
 })());
 
 ok('well placed counts the good rungs and nothing below',
-   /GOOD_KEYS\.indexOf\(d\.key\) >= 0/.test(appSrc) &&
+   /GOOD_KEYS\.indexOf\(d\.relation\) >= 0/.test(appSrc) &&
    Astro.VARGA_DIGNITY_LABELS.adhimitra === 'Great Friend');
+/*
+ * And the good ones are rungs of this ladder. Exalted and moolatrikona were in
+ * the list and are not steps of the varga viswa at all, so a cell could be
+ * counted well placed while scoring seven out of twenty.
+ */
+ok('and the list holds only steps the varga viswa has',
+   /var GOOD_KEYS = \['own', 'adhimitra', 'mitra'\];/.test(appSrc) &&
+   ['own', 'adhimitra', 'mitra'].every(function (k) {
+     return Astro.VARGA_VISWA[k] !== undefined;
+   }));
 ok('and the nodes are left out, keeping no friendships',
    /if \(!score\) return null;/.test(appSrc));
 
