@@ -3631,6 +3631,8 @@ ok('every script the page loads parses', (function () {
     '  __out.renderSaved = renderSaved; __out.setFlag = setFlag;\n' +
     '  __out.readSaved = readSaved; __out.writeSaved = writeSaved;\n' +
     '  __out.savedList = savedList; __out.STORAGE_KEY = STORAGE_KEY;\n' +
+    '  __out.readDate = readDate; __out.writeDate = writeDate;\n' +
+    '  __out.dateBoxes = function () { return [dayInput, monthInput, yearInput]; };\n' +
     appSrc.slice(close);
 
   var out = {};
@@ -6504,10 +6506,39 @@ ok('gender shows only when it was stated',
    /state\.gender !== 'unstated'/.test(appSrc));
 
 // Name, date, time and place are all required.
-['name', 'date', 'birth-hour', 'birth-minute', 'place'].forEach(function (id) {
+['name', 'birth-day', 'birth-month', 'birth-year', 'birth-hour', 'birth-minute', 'place']
+  .forEach(function (id) {
   var tag = html.match(new RegExp('<input[^>]*id="' + id + '"[^>]*>'));
   ok('#' + id + ' is marked required in the markup', !!tag && /\srequired/.test(tag[0]));
 });
+/*
+ * Typed, in one order, with a gap between the boxes. A date picker opens on
+ * this month, which is a month of clicking away from a birth in 1938, and it
+ * draws its own separators in its own order: the same form showed dd/mm/yyyy
+ * in one browser and mm/dd/yyyy in another, over an input whose value is
+ * neither. Three boxes say which is which and cannot be read the other way.
+ */
+ok('the date is typed rather than picked',
+   !/<input type="date"/.test(html) &&
+   html.indexOf('id="birth-day"') < html.indexOf('id="birth-month"') &&
+   html.indexOf('id="birth-month"') < html.indexOf('id="birth-year"'));
+ok('and the boxes say what goes in them, without a slash between',
+   /placeholder="dd"/.test(html) && /placeholder="mm"/.test(html) &&
+   /placeholder="yyyy"/.test(html) &&
+   /<legend>Date of birth <span class="hint">day month year<\/span><\/legend>/.test(html) &&
+   /\.date-grid \{[^}]*gap: 0\.45rem;/.test(cssSrc));
+/*
+ * A picker would have refused 31 February on its own. Typed boxes take it, so
+ * the day is checked against the month and the year beside it - a leap year is
+ * the case that makes a fixed table of month lengths wrong one year in four.
+ */
+ok('an impossible date is caught rather than cast',
+   /31, \(y % 4 === 0 && y % 100 !== 0\) \|\| y % 400 === 0 \? 29 : 28,/.test(appSrc) &&
+   /'The day must be from 1 to ' \+ last \+ ' in that month\.'/.test(appSrc) &&
+   /The year must be from 1800 to 2100/.test(appSrc));
+ok('and the day and month hand focus along like the hour and minute do',
+   /\[dayInput, monthInput, 3\], \[monthInput, yearInput, 1\]/.test(appSrc));
+
 ok('AM/PM select comes before the typed hour',
    html.indexOf('id="birth-meridiem"') < html.indexOf('id="birth-hour"'));
 ok('hour, minute and second appear in that order',
@@ -7217,6 +7248,45 @@ console.log('\nNothing marked hidden is drawn anyway');
   ok('and printing can still open what the page keeps shut',
     !/\[hidden\] \{ display: none !important/.test(cssSrc) &&
     /#panel-chart\[hidden\] \{ display: block; \}/.test(cssSrc));
+})();
+
+console.log('\nThe typed date is checked the way a picker would have been');
+/*
+ * A date picker refuses 31 February by construction. Three typed boxes will
+ * take it, and an impossible date that casts anyway is worse than one that is
+ * refused: the chart looks ordinary and is for a day that never happened.
+ *
+ * The century rule is the case worth driving rather than reading. 1900 is not
+ * a leap year and 2000 is, and a month-length table that does not know the
+ * difference is wrong one year in four and then wrong again the other way.
+ */
+(function () {
+  var out = global.appExports || {};
+  if (!out.readDate) { ok('the date field is reachable from the tests', false); return; }
+  var boxes = out.dateBoxes();
+  var read = function (d, m, y) {
+    boxes[0].value = d; boxes[1].value = m; boxes[2].value = y;
+    return out.readDate();
+  };
+  ok('a real date reads back as the day it was typed',
+    read('04', '03', '1948').iso === '1948-03-04' &&
+    read('4', '3', '1948').iso === '1948-03-04',
+    read('4', '3', '1948').iso);
+  ok('29 February is allowed in a leap year and refused otherwise',
+    read('29', '02', '2000').iso === '2000-02-29' &&
+    /from 1 to 28/.test(read('29', '02', '1900').error || '') &&
+    /from 1 to 29/.test(read('31', '02', '1948').error || ''));
+  ok('and each box is faulted by name rather than all together',
+    /Enter a date of birth/.test(read('', '', '').error || '') &&
+    /month must be from 1 to 12/.test(read('04', '13', '1948').error || '') &&
+    /year in full, all four digits/.test(read('04', '03', '48').error || '') &&
+    /from 1800 to 2100/.test(read('04', '03', '1799').error || ''));
+  out.writeDate('1938-09-01');
+  ok('and what is written into the boxes reads back unchanged',
+    boxes[0].value === '01' && boxes[1].value === '09' && boxes[2].value === '1938' &&
+    out.readDate().iso === '1938-09-01');
+  out.writeDate('');
+  ok('and a blank date empties all three', boxes.every(function (b) { return b.value === ''; }));
 })();
 
 var fnSrc = fs.readFileSync(path.join(root, 'supabase/functions/kundalis/index.ts'), 'utf8');

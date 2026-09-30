@@ -313,6 +313,49 @@
     }
   });
 
+  /* ------------------------------------------------------------ date field */
+
+  var dayInput = document.getElementById('birth-day');
+  var monthInput = document.getElementById('birth-month');
+  var yearInput = document.getElementById('birth-year');
+
+  /**
+   * Read the typed date. Returns either an `error` to show, or the three parts
+   * and the ISO spelling the rest of the page stores and compares on.
+   *
+   * Every part is required. A date picker would have refused an impossible one
+   * on its own; typed boxes will take 31 February, so the day is checked
+   * against the month and the year it was typed beside rather than against 31.
+   */
+  function readDate() {
+    var dayText = dayInput.value.trim();
+    var monthText = monthInput.value.trim();
+    var yearText = yearInput.value.trim();
+    if (!dayText && !monthText && !yearText) return { error: 'Enter a date of birth.' };
+    if (!/^\d{1,2}$/.test(dayText)) return { error: 'Enter the day as a number from 1 to 31.' };
+    if (!/^\d{1,2}$/.test(monthText)) return { error: 'Enter the month as a number from 1 to 12.' };
+    if (!/^\d{4}$/.test(yearText)) return { error: 'Enter the year in full, all four digits.' };
+    var d = +dayText, mo = +monthText, y = +yearText;
+    if (mo < 1 || mo > 12) return { error: 'The month must be from 1 to 12.' };
+    if (y < 1800 || y > 2100) return { error: 'The year must be from 1800 to 2100.' };
+    var last = [31, (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0 ? 29 : 28,
+      31, 30, 31, 30, 31, 31, 30, 31, 30, 31][mo - 1];
+    if (d < 1 || d > last) {
+      return { error: 'The day must be from 1 to ' + last + ' in that month.' };
+    }
+    return { y: y, mo: mo, d: d,
+      iso: y + '-' + String(mo).padStart(2, '0') + '-' + String(d).padStart(2, '0') };
+  }
+
+  /** Put a date into the boxes, from the "yyyy-mm-dd" the page stores. */
+  function writeDate(iso) {
+    var parts = String(iso || '').split('-');
+    if (parts.length !== 3) { dayInput.value = monthInput.value = yearInput.value = ''; return; }
+    yearInput.value = parts[0];
+    monthInput.value = String(+parts[1]).padStart(2, '0');
+    dayInput.value = String(+parts[2]).padStart(2, '0');
+  }
+
   /* ------------------------------------------------------------ time field */
 
   var hourInput = document.getElementById('birth-hour');
@@ -366,7 +409,9 @@
    * Keep the boxes numeric and hand focus along as each one can no longer grow:
    * an hour past 1 cannot gain a digit, nor a minute or second past 5.
    */
-  [[hourInput, minuteInput, 1], [minuteInput, secondInput, 5], [secondInput, null, 5]]
+  [[hourInput, minuteInput, 1], [minuteInput, secondInput, 5], [secondInput, null, 5],
+   // A day past 3 cannot gain a digit, nor a month past 1.
+   [dayInput, monthInput, 3], [monthInput, yearInput, 1]]
     .forEach(function (step) {
       var input = step[0], next = step[1], lastLeadingDigit = step[2];
       input.addEventListener('input', function () {
@@ -379,6 +424,12 @@
         if (input !== hourInput && /^\d$/.test(input.value)) input.value = '0' + input.value;
       });
     });
+
+  // The year takes four and hands focus nowhere: it is the last of the three.
+  yearInput.addEventListener('input', function () {
+    var digits = yearInput.value.replace(/\D/g, '').slice(0, 4);
+    if (digits !== yearInput.value) yearInput.value = digits;
+  });
 
   /* ---------------------------------------------------------------- submit */
 
@@ -607,19 +658,19 @@
 
     var nameValue = document.getElementById('name').value.trim();
     var genderValue = document.getElementById('gender').value;
-    var dateValue = document.getElementById('date').value;
+    var date = readDate();
     var time = readTime();
     var resolved = resolvePlace();
     var place = resolved.place;
 
     if (!nameValue) return fail('Enter the name this chart belongs to.');
     if (!genderValue) return fail('Choose a gender.');
-    if (!dateValue) return fail('Enter a date of birth.');
+    if (date.error) return fail(date.error);
     if (time.error) return fail(time.error);
     if (!place) return fail(resolved.error);
 
-    var dateParts = dateValue.split('-').map(Number);
-    var y = dateParts[0], mo = dateParts[1], d = dateParts[2];
+    var dateValue = date.iso;
+    var y = date.y, mo = date.mo, d = date.d;
     var h = time.hour24, mi = time.minute;
 
     /*
@@ -4490,7 +4541,7 @@
   function applyEntryToForm(entry) {
     currentEntry = entry;
     document.getElementById('name').value = entry.name;
-    document.getElementById('date').value = entry.date;
+    writeDate(entry.date);
     var t = entry.time.split(':').map(Number);
     writeTime(t[0], t[1] || 0, t[2] || 0);
     document.getElementById('ayanamsa').value = entry.ayanamsa || 'lahiri';
@@ -4913,7 +4964,7 @@
   /** Empty the form so the next chart starts from nothing. */
   function blankForm() {
     document.getElementById('name').value = '';
-    document.getElementById('date').value = '';
+    writeDate('');
     hourInput.value = ''; minuteInput.value = ''; secondInput.value = '';
     meridiemSelect.value = 'am';
     placeInput.value = '';
@@ -4940,8 +4991,8 @@
   /** Put a chart's details back into the form, so they can be corrected. */
   function fillForm(state) {
     document.getElementById('name').value = state.name;
-    document.getElementById('date').value = state.y + '-' +
-      String(state.mo).padStart(2, '0') + '-' + String(state.d).padStart(2, '0');
+    writeDate(state.y + '-' + String(state.mo).padStart(2, '0') + '-' +
+      String(state.d).padStart(2, '0'));
     writeTime(state.h, state.mi, state.time.second);
     document.getElementById('time-standard').value = state.standard === 'lmt' ? 'lmt' : 'zone';
     document.getElementById('ayanamsa').value = state.ayanamsa;
@@ -5006,7 +5057,7 @@
       if (i > 0) q[pair.slice(0, i)] = decodeURIComponent(pair.slice(i + 1));
     });
     if (!q.d || !q.t || !q.lat || !q.lon || !q.tz) return;
-    document.getElementById('date').value = q.d;
+    writeDate(q.d);
     var t = q.t.split(':');
     writeTime(+t[0], +(t[1] || 0), +(t[2] || 0));
     document.getElementById('name').value = q.n || '';

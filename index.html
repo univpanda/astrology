@@ -75,10 +75,26 @@
         </select>
       </div>
 
-      <div class="field">
-        <label for="date">Date of birth</label>
-        <input type="date" id="date" name="date" min="1800-01-01" max="2100-12-31" required>
-      </div>
+      <!-- Three typed boxes rather than a date picker. A birth date is known,
+           not chosen, so a calendar that opens on this month is a month of
+           clicking away from 1938; and the picker's own order and separators
+           are the browser's to decide, which is how a form that asks for the
+           day first came to show dd/mm/yyyy in one place and mm/dd/yyyy in
+           another. These boxes are in one order, always, and say so. -->
+      <fieldset class="field date-field">
+        <legend>Date of birth <span class="hint">day month year</span></legend>
+        <div class="date-grid">
+          <label class="visually-hidden" for="birth-day">Day</label>
+          <input type="text" id="birth-day" inputmode="numeric" autocomplete="off"
+                 maxlength="2" placeholder="dd" required>
+          <label class="visually-hidden" for="birth-month">Month</label>
+          <input type="text" id="birth-month" inputmode="numeric" autocomplete="off"
+                 maxlength="2" placeholder="mm" required>
+          <label class="visually-hidden" for="birth-year">Year</label>
+          <input type="text" id="birth-year" inputmode="numeric" autocomplete="off"
+                 maxlength="4" placeholder="yyyy" required>
+        </div>
+      </fieldset>
 
       <fieldset class="field time-field">
         <legend>Time of birth <span class="hint">local clock time</span></legend>

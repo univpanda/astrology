@@ -536,8 +536,21 @@ input:focus-visible, select:focus-visible, button:focus-visible, summary:focus-v
 
 input::placeholder { color: #a9bdb2; }
 
-.time-field { border: none; margin: 0; padding: 0; min-width: 0; }
-.time-field legend { padding: 0; }
+.time-field, .date-field { border: none; margin: 0; padding: 0; min-width: 0; }
+.time-field legend, .date-field legend { padding: 0; }
+
+/*
+ * Day, month, year, with a gap between them and no slashes. The separator was
+ * the browser's to draw and it drew a different one per locale; a space says
+ * three numbers as plainly and cannot be read as a fourth character to type.
+ * The year gets the room for four digits, the day and month two each.
+ */
+.date-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.7fr;
+  align-items: center;
+  gap: 0.45rem;
+}
 
 /* AM/PM first, then the typed hour and minute with the colon tight between. */
 .time-grid {
