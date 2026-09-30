@@ -270,7 +270,7 @@ console.log('\nThe Moon reaches her moolatrikona, which is not her own sign');
   var chart = A.chart({ jdUT: A.julianDay(1961, 8, 4, 19 + 24 / 60 + 10),
     latitude: place.latitude, longitude: place.longitude,
     tzOffsetMinutes: place.tzOffsetMinutes });
-  var r = S.compute(chart, place, { tatkalika: 'rashi' });
+  var r = S.compute(chart, place, { tatkalika: 'rashi', horaDignity: 'lord' });
   check('and she is scored 45 for it in the rashi',
     r.grahas.Moon.sthana.saptavargaja, 161.25, 0.01, 'virupas');
 
@@ -2541,21 +2541,39 @@ console.log('\nShadbala');
      Shadbala.GRAHAS.every(function (g) { return result.grahas[g].sthana.saptavargaja <= 225; }));
 
   /*
-   * The hora is judged here the ordinary way, by the compound relation, and NOT by
-   * the chapter 7 list the Dasavarga grid uses. Santhanam's note on chapter 27 is
-   * explicit that the compound relationships "including Hora lordship" are read in
-   * the rashi chart. The grid and this deliberately differ, so both sides are held.
+   * The hora is one of the seven, and it is now graded here the way the grid
+   * grades it: by chapter 7, on the same setting. The two used to differ on
+   * purpose and no longer do, which is the thing worth holding.
    */
-  ok('hora is one of the seven divisions scored, by relation not by the hora list',
+  ok('hora is one of the seven divisions scored, and only ever Cancer or Leo',
      Shadbala.GRAHAS.every(function (g) {
        var hora = result.grahas[g].saptavargajaDetail.filter(function (r) { return r.division === 2; })[0];
-       return hora && [3, 4].indexOf(hora.sign) >= 0 &&        // only ever Cancer or Leo
+       return hora && [3, 4].indexOf(hora.sign) >= 0 &&
          ['Moon', 'Sun'].indexOf(hora.lord) >= 0 &&
          Object.keys(Shadbala.SAPTAVARGAJA_VALUES).indexOf(hora.relation) >= 0;
      }));
-  ok('and temporal friendship for it is read in the rashi chart, as the note requires',
-     /be\s*\n?\s*\* seen in the Rashi chart only/.test(
-       require('fs').readFileSync(require('path').join(__dirname, '../js/shadbala.js'), 'utf8')));
+  ok('and by default it reads chapter 7, so the ladder there stops at adhimitra',
+     Shadbala.GRAHAS.every(function (g) {
+       var hora = result.grahas[g].saptavargajaDetail.filter(function (r) { return r.division === 2; })[0];
+       return ['adhimitra', 'mitra', 'sama'].indexOf(hora.relation) >= 0;
+     }),
+     Shadbala.GRAHAS.map(function (g) {
+       return result.grahas[g].saptavargajaDetail.filter(function (r) {
+         return r.division === 2;
+       })[0].relation;
+     }).join(', '));
+  /*
+   * Which costs the luminaries their own hora: 22.5 where ownership gave 30.
+   * That is the visible price of the chapter 7 reading, and the setting buys
+   * it back for anyone reconciling against Raman.
+   */
+  ok('the lord reading is still reachable, and still lets a luminary own its hora',
+     (function () {
+       var sun = Shadbala.saptavargajaBala('Sun', { planets: [{ name: 'Sun',
+         longitude: 4 * 30 + 5, sign: 4 }] }, { Sun: { sign: 4, longitude: 4 * 30 + 5 } },
+         'rashi', 'lord').detail.filter(function (r) { return r.division === 2; })[0];
+       return sun.relation === 'own';
+     })());
 
   /*
    * Every component reports separately and they add to the total - with the
@@ -6326,7 +6344,7 @@ console.log('\nSthana bala against three worked examples');
     planets.forEach(function (p) { d1[p.name] = p; });
     var out = {};
     GRAHAS.forEach(function (g) {
-      out[g] = Shadbala.saptavargajaBala(g, { planets: planets }, d1, 'rashi');
+      out[g] = Shadbala.saptavargajaBala(g, { planets: planets }, d1, 'rashi', 'lord');
     });
     return out;
   };
@@ -6728,7 +6746,8 @@ console.log('\nOne chart end to end, from birth data to every bala');
 
   /* Its settings: the Moon always benefic, and the averaged chesta kendra. */
   var r = Shadbala.compute(chart, place,
-    { moonPaksha: 'benefic', kendraMethod: 'averaged', tatkalika: 'rashi' }).grahas;
+    { moonPaksha: 'benefic', kendraMethod: 'averaged', tatkalika: 'rashi',
+      horaDignity: 'lord' }).grahas;
   var GRAHAS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
   var worstOf = function (want, pick) {
     return GRAHAS.reduce(function (w, g) {
@@ -6786,7 +6805,8 @@ console.log('\nOne chart end to end, from birth data to every bala');
    * the saptavargaja slip and nothing else does.
    */
   var full = Shadbala.compute(chart, place, { moonPaksha: 'benefic',
-    kendraMethod: 'averaged', luminaryCheshta: 'counted', tatkalika: 'rashi' });
+    kendraMethod: 'averaged', luminaryCheshta: 'counted', tatkalika: 'rashi',
+    horaDignity: 'lord' });
   var t = full.grahas;
   var totals = { Sun: 482.80, Moon: 319.23, Mars: 349.76, Mercury: 434.59,
     Jupiter: 468.83, Venus: 301.50, Saturn: 433.29 };
@@ -7948,12 +7968,13 @@ console.log('\nWhich chart tatkalika is counted in');
     return { name: g, longitude: at[g], sign: Math.floor(at[g] / 30) };
   });
   var chart = { planets: planets };
-  var byVarga = Shadbala.saptavargajaBala('Sun', chart, pos, 'varga').value;
-  var byRashi = Shadbala.saptavargajaBala('Sun', chart, pos, 'rashi').value;
+  // The hora is held at the lord throughout, so only one thing varies here.
+  var byVarga = Shadbala.saptavargajaBala('Sun', chart, pos, 'varga', 'lord').value;
+  var byRashi = Shadbala.saptavargajaBala('Sun', chart, pos, 'rashi', 'lord').value;
   ok('saptavargaja bala takes the setting too', byVarga !== byRashi,
      byVarga + ' against ' + byRashi + ' virupas');
   ok('and defaults to the division, as the page does',
-     Shadbala.saptavargajaBala('Sun', chart, pos).value === byVarga);
+     Shadbala.saptavargajaBala('Sun', chart, pos, undefined, 'lord').value === byVarga);
   // Raman prints 90 for this Sun, which is the rashi reading and nothing else.
   ok('while the rashi reading is the one Raman prints', byRashi === 90, byRashi);
 

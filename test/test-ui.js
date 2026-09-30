@@ -348,6 +348,9 @@ console.log('\nThe tatkalika setting, end to end');
      /positionsD1,\s*\n\s*tatkalikaSetting\(\), horaSetting\(\)\)/.test(src) &&
      /dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\), horaSetting\(\)\)/.test(src) &&
      /vargaSummary\(state, scheme, tatkalikaSetting\(\), horaSetting\(\)\)/.test(src));
+  // Shadbala takes it too, so saptavargaja grades its hora the way the grid does.
+  ok('and shadbala takes the hora reading as well as the tatkalika one',
+     /tatkalika: tatkalikaSetting\(\),\s*\n\s*horaDignity: horaSetting\(\)/.test(src));
   ok('changing the hora reading redraws too', /\['hora-dignity', \{ effects:/.test(src));
   ok('changing it drops the cached strengths and redraws',
      /\['tatkalika', \{ varga:/.test(src) &&

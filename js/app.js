@@ -2068,7 +2068,8 @@
            luminaryRule: document.getElementById('luminary-rule').value,
            luminaryCheshta: document.getElementById('luminary-cheshta').value,
            ishtaKashta: document.getElementById('ishta-kashta').value,
-           tatkalika: tatkalikaSetting() });
+           tatkalika: tatkalikaSetting(),
+           horaDignity: horaSetting() });
     }
     return state.shadbala;
   }

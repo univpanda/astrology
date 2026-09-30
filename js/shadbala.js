@@ -97,13 +97,27 @@ var Shadbala = (function () {
     sama: 7.5, shatru: 3.75, adhishatru: 1.875
   };
 
-  function saptavargajaBala(graha, chart, positionsD1, tatkalika) {
+  function saptavargajaBala(graha, chart, positionsD1, tatkalika, horaRule) {
     var planet = chart.planets.filter(function (p) { return p.name === graha; })[0];
     var total = 0, detail = [];
     SAPTAVARGA.forEach(function (division) {
       var position = Astro.vargaPosition(planet.longitude, division);
       var lord = Astro.SIGN_LORDS[position.sign];
       var relation;
+      /*
+       * The hora answers from its own chapter here too, on the same setting the
+       * grid takes. Chapter 7 grades the hora by which grahas it favours and
+       * whether it is the powerful half of the sign, not by the lord of a sign
+       * that can only ever be the Sun or the Moon.
+       *
+       * It costs the two luminaries their own hora: read this way the ladder
+       * stops at adhimitra, so the Sun in the Leo hora scores 22.5 where
+       * ownership gave it 30. That is what the chapter asks for, and it is why
+       * Raman's worked examples want the other setting - he scores his own Sun's
+       * hora as Swavarga at 30, and the tests that reproduce him say so.
+       */
+      var horaEffect = division === 2 && horaRule !== Astro.HORA_DIGNITY.LORD
+        ? Astro.horaEffect(graha, position.sign, Astro.signOf(planet.longitude)) : null;
       /*
        * Moolatrikona first, and not behind ownership, because for one graha the
        * two part company. The Moon's moolatrikona is Taurus 3 to 30, and Taurus
@@ -117,7 +131,9 @@ var Shadbala = (function () {
        */
       var mool = division === 1 && Astro.dignityOf(graha, position.sign,
         position.degreeInSign) === 'Mooltrikona';
-      if (mool) {
+      if (horaEffect) {
+        relation = horaEffect;
+      } else if (mool) {
         relation = 'moolatrikona';
       } else if (lord === graha) {
         /*
@@ -137,15 +153,6 @@ var Shadbala = (function () {
       } else if (!positionsD1[lord]) {
         relation = 'sama';           // the nodes disposit nothing; treat as neutral
       } else {
-        /*
-         * Hora included, and judged the ordinary way rather than by the rule in
-         * chapter 7. Santhanam's note on these verses is explicit: "The compound
-         * relationships of two given planets ... (including Hora lordship etc.) be
-         * seen in the Rashi chart only and not in the concerned divisional chart."
-         * The chapter 7 list of which grahas tell in which hora governs how varga
-         * effects are read, not this arithmetic, so the Dasavarga grid follows that
-         * and this does not.
-         */
         relation = Astro.compoundRelation(graha, lord, Astro.tatkalikaHouses(
           graha, lord, position.sign, positionsD1, division, tatkalika));
       }
@@ -971,6 +978,9 @@ var Shadbala = (function () {
      */
     var tatkalika = (options && options.tatkalika) === Astro.TATKALIKA.RASHI
       ? Astro.TATKALIKA.RASHI : Astro.TATKALIKA.VARGA;
+    /* And how the hora is graded, on the same setting the grid takes. */
+    var horaRule = (options && options.horaDignity) === Astro.HORA_DIGNITY.LORD
+      ? Astro.HORA_DIGNITY.LORD : Astro.HORA_DIGNITY.EFFECTS;
     var moonPaksha = (options && options.moonPaksha) === MOON_PAKSHA.BENEFIC
       ? MOON_PAKSHA.BENEFIC : MOON_PAKSHA.GROUP;
     var cheshtaMethod = (options && options.cheshtaMethod) === CHESHTA.MOTION
@@ -1082,7 +1092,7 @@ var Shadbala = (function () {
       var dec = Astro.declination(tropical, latitude,
         ayanaConstant.obliquity === null ? eps : ayanaConstant.obliquity);
 
-      var saptavargaja = saptavargajaBala(graha, chart, positions, tatkalika);
+      var saptavargaja = saptavargajaBala(graha, chart, positions, tatkalika, horaRule);
       var ojha = ojhayugmaBala(graha, p);
       var sthana = {
         uchcha: uchchaBala(graha, p.longitude),
