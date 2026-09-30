@@ -600,7 +600,7 @@ input::placeholder { color: #a9bdb2; }
 }
 
 /* The label is what you hover, so it has to say so. */
-#panel-settings .field label { cursor: help; }
+.settings-panel .field label { cursor: help; }
 
 /*
  * A select stretched to the width of the card reads as a text box waiting to
@@ -614,7 +614,7 @@ input::placeholder { color: #a9bdb2; }
  * scoped to this panel so the chart selects and the place combobox, which want
  * the width they are given, are untouched.
  */
-#panel-settings .field select { max-width: 30rem; }
+.settings-panel .field select { max-width: 30rem; }
 
 /*
  * The hover card for a graha in a chart. The label can only carry initials and

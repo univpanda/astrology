@@ -1052,9 +1052,9 @@ function stripHtml(label) {
   return at < 0 ? '' : html.slice(at, html.indexOf('</div>', at));
 }
 (function () {
-  var names = ['saved', 'add', 'chart', 'lesson', 'settings'];
+  var names = ['saved', 'add', 'chart', 'lesson', 'settings', 'testing'];
   var strip = stripHtml('Sections');
-  ok('the section strip holds five tabs', (strip.match(/role="tab"/g) || []).length === 5);
+  ok('the section strip holds six tabs', (strip.match(/role="tab"/g) || []).length === 6);
   ok('each tab has a panel, and each panel names its tab', names.every(function (n) {
     return new RegExp('id="tab-' + n + '"').test(html) &&
            new RegExp('id="panel-' + n + '"[^>]*aria-labelledby="tab-' + n + '"').test(html);
@@ -1070,7 +1070,7 @@ function stripHtml(label) {
      /id="panel-lesson"[^>]*hidden/.test(html) &&
      /id="panel-settings"[^>]*hidden/.test(html) && !/id="panel-add"[^>]*hidden/.test(html));
   ok('only the selected section tab is reachable by tab key',
-     (strip.match(/tabindex="-1"/g) || []).length === 4);
+     (strip.match(/tabindex="-1"/g) || []).length === 5);
   ok('the tab strip is keyboard navigable',
      /ArrowRight/.test(appSrc) && /ArrowLeft/.test(appSrc) && /'Home'/.test(appSrc) && /'End'/.test(appSrc));
   ok('the chart tab has something to say when empty', /id="empty-chart"/.test(html));
@@ -4744,7 +4744,7 @@ console.log('\nThe doubled rows can be shown halved');
 ok('a switch is offered for each row, not one for both', (function () {
   var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   var at = html.indexOf('id="panel-settings"');
-  var panel = html.slice(at, html.indexOf('</section>', at));
+  var panel = html.slice(at, html.indexOf('</section>', html.indexOf('id="panel-testing"')));
   return !/<select id="doubled-rows"/.test(panel) &&
     ['paksha-doubled', 'ayana-doubled'].every(function (id) {
       var sel = panel.slice(panel.indexOf('<select id="' + id + '"'));
@@ -4843,7 +4843,7 @@ ok('the reading is offered in settings, defaulting to her fortnight group',
   (function () {
     var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
     var at = html.indexOf('id="panel-settings"');
-    var panel = html.slice(at, html.indexOf('</section>', at));
+    var panel = html.slice(at, html.indexOf('</section>', html.indexOf('id="panel-testing"')));
     return /<select id="moon-paksha"/.test(panel) &&
       /<option value="group" selected>/.test(panel) &&
       /<option value="benefic">/.test(panel);
@@ -5100,7 +5100,7 @@ console.log('\nThe tab strip opens where it starts');
    * a different order than the eye does.
    */
   ok('and the arrow-key order matches the strip',
-    /setupTabs\(\['add', 'saved', 'chart', 'lesson', 'settings'\]/.test(appSrc));
+    /setupTabs\(\['add', 'saved', 'chart', 'lesson', 'settings', 'testing'\]/.test(appSrc));
 })();
 
 console.log('\nThe sign number keeps clear of the grahas');
@@ -5161,7 +5161,7 @@ console.log('\nSettings show the choice and fold the argument');
 (function () {
   var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   var at = html.indexOf('id="panel-settings"');
-  var panel = html.slice(at, html.indexOf('</section>', at));
+  var panel = html.slice(at, html.indexOf('</section>', html.indexOf('id="panel-testing"')));
   var fields = (panel.match(/<div class="field">/g) || []).length;
   var whys = (panel.match(/<div class="field-why"/g) || []).length;
   ok('every setting carries its own explanation',
@@ -5180,9 +5180,18 @@ console.log('\nSettings show the choice and fold the argument');
    * The status line is a field-note too and must not have been swept into a
    * fold, or the page would stop reporting what it just did.
    */
-  ok('the status line stays in the open',
-    /<p class="field-note" id="settings-status"><\/p>/.test(panel) &&
-    panel.indexOf('settings-status') > panel.lastIndexOf('</details>'));
+  ok('each panel keeps its own status line, in the open',
+    (panel.match(/<p class="field-note settings-status" id="[a-z]+-status"><\/p>/g) || [])
+      .length === 2 &&
+    panel.lastIndexOf('-status') > panel.lastIndexOf('</details>'));
+  /*
+   * And the code writes to the one in the panel the setting sits in. Two tabs
+   * means a message put in the other one is a message nobody sees.
+   */
+  ok('and the code finds the status line beside the setting that changed',
+    /function statusFor\(select\)/.test(appSrc) &&
+    !/getElementById\('settings-status'\)/.test(appSrc) &&
+    (appSrc.match(/var status = statusFor\(this\);/g) || []).length === 13);
   /*
    * And the reasoning is still there: each note argues from a named authority
    * rather than asserting. The ayanamsa note used to carry Raman's own figure
@@ -5240,7 +5249,7 @@ console.log('\nAyanamsa lives in settings');
 ok('the ayanamsa select sits in the settings panel', (function () {
   var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   var at = html.indexOf('id="panel-settings"');
-  var panel = html.slice(at, html.indexOf('</section>', at));
+  var panel = html.slice(at, html.indexOf('</section>', html.indexOf('id="panel-testing"')));
   var options = html.slice(html.indexOf('class="options-grid"'),
     html.indexOf('</details>'));
   return at > 0 &&
@@ -7048,7 +7057,7 @@ console.log('\nMahabhagya needs two things the sky does not supply');
     !/mahabhagya-day/.test(page) && !/mahabhagyaDay/.test(src));
   ok('and the lessons no longer send a reader to a setting that is gone',
     !/mahabhagya/i.test(page.slice(page.indexOf('id="panel-settings"'),
-      page.indexOf('</section>', page.indexOf('id="panel-settings"')))));
+      page.indexOf('</section>', page.indexOf('id="panel-testing"')))));
 
   /*
    * The sex comes off the form and the day comes off the real sunrise for the
@@ -7586,7 +7595,7 @@ console.log('\nThe settings read as choices, not as boxes to fill in');
   var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
   ok('the settings selects are capped rather than filling the card',
-    /#panel-settings \.field select \{ max-width: 30rem; \}/.test(css));
+    /\.settings-panel \.field select \{ max-width: 30rem; \}/.test(css));
 
   /*
    * The cap has to clear the longest option this panel offers, or the choice a
@@ -7634,12 +7643,12 @@ console.log('\nThe settings sit three to a row, explaining themselves on hover')
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
   var src = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
   var panel = page.slice(page.indexOf('id="panel-settings"'),
-                         page.indexOf('</section>', page.indexOf('id="panel-settings"')));
+                         page.indexOf('</section>', page.indexOf('id="panel-testing"')));
 
   ok('the fields are gridded rather than stacked one to a row',
     /<div class="settings-grid">/.test(panel) &&
     /\.settings-grid \{[^}]*display: grid/.test(css) &&
-    !/#panel-settings \.field \+ \.field \{ margin-top/.test(css));
+    !/\.settings-panel \.field \+ \.field \{ margin-top/.test(css));
   ok('and reach three across only when there is room for three',
     /@media \(min-width: 40rem\) \{\s*\.settings-grid \{ grid-template-columns: repeat\(2/
       .test(css) &&
@@ -7722,7 +7731,7 @@ console.log('\nThe settings sit three to a row, explaining themselves on hover')
     /document\.addEventListener\('keydown', function \(\) \{ viaPointer = false; \}, true\)/
       .test(src));
   ok('and the label says it is hoverable',
-    /#panel-settings \.field label \{ cursor: help; \}/.test(css));
+    /\.settings-panel \.field label \{ cursor: help; \}/.test(css));
 
   /*
    * One placement for both cards. They want the same behaviour - centred on
@@ -7892,7 +7901,7 @@ console.log('\nEvery citation in the settings names its book');
 (function () {
   var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   var panel = page.slice(page.indexOf('id="panel-settings"'),
-                         page.indexOf('</section>', page.indexOf('id="panel-settings"')));
+                         page.indexOf('</section>', page.indexOf('id="panel-testing"')));
   var text = panel.replace(/<[^>]+>/g, ' ').replace(/&rsquo;/g, "'");
   text = text.split(/\s+/).join(' ');
   var WORKS = ['Brihat Parashara Hora Shastra', 'Phaladeepika',
@@ -7963,7 +7972,7 @@ console.log('\nThe notes name facts, not marks that move between surfaces');
 (function () {
   var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   var panel = page.slice(page.indexOf('id="panel-settings"'),
-                         page.indexOf('</section>', page.indexOf('id="panel-settings"')));
+                         page.indexOf('</section>', page.indexOf('id="panel-testing"')));
   var letters = (panel.match(/\[[A-Z]\]/g) || []);
   ok('no settings note points at a mark by its letter',
     letters.length === 0, letters.join(', ') || 'none');
@@ -7982,7 +7991,7 @@ console.log('\nThe settings argue from the classical texts');
 (function () {
   var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   var panel = page.slice(page.indexOf('id="panel-settings"'),
-                         page.indexOf('</section>', page.indexOf('id="panel-settings"')));
+                         page.indexOf('</section>', page.indexOf('id="panel-testing"')));
   var seed = fs.readFileSync(path.join(root,
     'supabase/seed/astro_readings_strength.sql'), 'utf8');
 
@@ -8069,7 +8078,7 @@ console.log('\nUttara Kalamrita on the Moon in paksha bala');
   ok('and the labels name the reading, leaving the sourcing to the note',
     (function () {
       var panel = page.slice(page.indexOf('id="panel-settings"'),
-                             page.indexOf('</section>', page.indexOf('id="panel-settings"')));
+                             page.indexOf('</section>', page.indexOf('id="panel-testing"')));
       var named = (panel.match(/<option[^>]*>[^<]*\((?:[^)]*)\)[^<]*<\/option>/g) || []);
       return named.length === 0;
     })());
@@ -8086,7 +8095,7 @@ console.log('\nThe settings notes do not argue from what software does');
 (function () {
   var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   var panel = page.slice(page.indexOf('id="panel-settings"'),
-                         page.indexOf('</section>', page.indexOf('id="panel-settings"')));
+                         page.indexOf('</section>', page.indexOf('id="panel-testing"')));
   var seed = fs.readFileSync(path.join(root,
     'supabase/seed/astro_readings_strength.sql'), 'utf8');
 
@@ -8167,30 +8176,61 @@ console.log('\nThe settings notes do not argue from what software does');
 console.log('\nThe settings run from the chart outward');
 /*
  * The order is the order a reading is built in: what the zodiac is measured
- * from, then where the nodes are, then the clock every temporal strength is
- * counted against, and only then the individual balas. Nata-unnata sat among
- * the balas although everything in kala bala is measured from the midnight it
- * defines.
+ * from, then where the nodes are, and only then the individual balas.
+ *
+ * It is now told across two tabs rather than one long card. Chart settings
+ * holds what changes the chart a reader looks at; Test settings holds the
+ * shadbala readings, which are variants of one measure and were most of the
+ * clutter. Nata-unnata moved with them: it is the clock every temporal
+ * strength is counted against and belongs beside them, not above them.
  */
 (function () {
   var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   var panel = page.slice(page.indexOf('id="panel-settings"'),
-                         page.indexOf('</section>', page.indexOf('id="panel-settings"')));
+                         page.indexOf('</section>', page.indexOf('id="panel-testing"')));
   var order = (panel.match(/<label for="([a-z-]+)">/g) || [])
     .map(function (m) { return m.slice('<label for="'.length, -2); });
-  ok('the chart-wide choices come first, the clock among them',
-    order.slice(0, 3).join(',') === 'ayanamsa,node-type,nat-clock',
-    order.slice(0, 3).join(', '));
+  var chartPanel = page.slice(page.indexOf('id="panel-settings"'),
+                              page.indexOf('</section>', page.indexOf('id="panel-settings"')));
+  var testPanel = page.slice(page.indexOf('id="panel-testing"'),
+                             page.indexOf('</section>', page.indexOf('id="panel-testing"')));
+  var idsIn = function (p) {
+    return (p.match(/<label for="([a-z-]+)">/g) || [])
+      .map(function (m) { return m.slice('<label for="'.length, -2); });
+  };
+  ok('the chart-wide choices come first, and open the first tab',
+    idsIn(chartPanel).slice(0, 2).join(',') === 'ayanamsa,node-type',
+    idsIn(chartPanel).join(', '));
 
   /*
-   * And the two that are not shadbala at all come last. One settles a yoga
-   * rather than a strength, and Mercury's nature is read by the yoga detectors
-   * as well as by paksha and drik bala. Sitting in the middle they broke the
-   * run of shadbala settings in two.
+   * The split is the point of the two tabs: what a reader changes to change
+   * the chart, against the shadbala variants. A setting in the wrong tab is
+   * the failure worth catching, so both lists are named in full.
    */
-  ok('the settings that are not shadbala sit at the end',
-    order.slice(-2).join(',') === 'budha-floor,mercury-nature',
-    order.slice(-2).join(', '));
+  ok('Chart settings holds the readings that change the chart',
+    idsIn(chartPanel).join(',') ===
+      'ayanamsa,node-type,combustion,tatkalika,hora-dignity,budha-floor,mercury-nature',
+    idsIn(chartPanel).join(', '));
+  ok('and Test settings holds the shadbala variants, the clock with them',
+    idsIn(testPanel).join(',') ===
+      'nat-clock,moon-paksha,paksha-doubled,hora-length,ayana-constant,kranti,' +
+      'ayana-doubled,cheshta-method,kendra-method,mean-source,luminary-rule,' +
+      'luminary-cheshta,ishta-kashta',
+    idsIn(testPanel).length + ' settings');
+  ok('between them they hold every setting, none lost in the split',
+    idsIn(chartPanel).length + idsIn(testPanel).length === order.length &&
+    order.length === 20, order.length + ' settings');
+
+  /*
+   * The two that are not shadbala at all sit in the other tab now. One settles
+   * a yoga rather than a strength, and Mercury's nature is read by the yoga
+   * detectors as well as by paksha and drik bala, so neither belongs among the
+   * shadbala variants. They used to break that run in two from the middle.
+   */
+  ok('the settings that are not shadbala are not in the shadbala tab',
+    ['budha-floor', 'mercury-nature'].every(function (k) {
+      return idsIn(testPanel).indexOf(k) < 0 && idsIn(chartPanel).indexOf(k) >= 0;
+    }));
   ok('so the shadbala run is unbroken from the Moon’s paksha to the luminaries',
     order.slice(order.indexOf('moon-paksha'), order.indexOf('luminary-cheshta') + 1)
       .every(function (k) {

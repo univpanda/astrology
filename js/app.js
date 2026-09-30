@@ -4294,6 +4294,19 @@
     document.getElementById('name').focus();
   }
 
+  /*
+   * The confirmation line belongs to the panel the setting sits in. There are
+   * two of them since the settings were split across two tabs, and a message
+   * written into the tab you are not looking at is a message nobody sees.
+   */
+  function statusFor(select) {
+    var node = select;
+    while (node && String(node.className || '').indexOf('settings-panel') < 0) {
+      node = node.parentNode;
+    }
+    return (node || document).querySelector('.settings-status');
+  }
+
   /* ------------------------------------------------------------- tabs */
 
   /*
@@ -4355,7 +4368,7 @@
   var emptyChart = document.getElementById('empty-chart');
   var savedCount = document.getElementById('saved-count');
 
-  var sections = setupTabs(['add', 'saved', 'chart', 'lesson', 'settings'],
+  var sections = setupTabs(['add', 'saved', 'chart', 'lesson', 'settings', 'testing'],
     document.querySelector('.tabs:not(.subtabs)'), { scrollToTop: true, onChange: function (name) {
       if (name === 'lesson') loadLessons();
     } });
@@ -4370,7 +4383,7 @@
    * the choice is picked up when one is.
    */
   document.getElementById('node-type').addEventListener('change', function () {
-    var status = document.getElementById('settings-status');
+    var status = statusFor(this);
     if (!lastChart) {
       status.textContent = 'Saved. The next chart will use it.';
       return;
@@ -4398,7 +4411,7 @@
   [['paksha-doubled', 'The Moon\u2019s paksha bala'],
    ['ayana-doubled', 'The Sun\u2019s ayana bala']].forEach(function (pair) {
     document.getElementById(pair[0]).addEventListener('change', function () {
-      var status = document.getElementById('settings-status');
+      var status = statusFor(this);
       var halved = this.value === 'undoubled';
       if (!lastChart) {
         status.textContent = 'Saved. The next chart will use it.';
@@ -4432,7 +4445,7 @@
                       lord: 'The hora now reads by the lord of its sign, as the other divisions do.' }]
   ].forEach(function (pair) {
     document.getElementById(pair[0]).addEventListener('change', function () {
-      var status = document.getElementById('settings-status');
+      var status = statusFor(this);
       var said = pair[1][this.value];
       if (!lastChart) {
         status.textContent = 'Saved. The next chart will use it.';
@@ -4445,7 +4458,7 @@
   });
 
   document.getElementById('cheshta-method').addEventListener('change', function () {
-    var status = document.getElementById('settings-status');
+    var status = statusFor(this);
     var motion = this.value === 'motion';
     if (!lastChart) {
       status.textContent = 'Saved. The next chart will use it.';
@@ -4459,7 +4472,7 @@
   });
 
   document.getElementById('budha-floor').addEventListener('change', function () {
-    var status = document.getElementById('settings-status');
+    var status = statusFor(this);
     var open = this.value === 'none';
     if (!lastChart) {
       status.textContent = 'Saved. The next chart will use it.';
@@ -4477,7 +4490,7 @@
    * both frames are already in hand.
    */
   document.getElementById('combustion').addEventListener('change', function () {
-    var status = document.getElementById('settings-status');
+    var status = statusFor(this);
     var inside = this.value === 'division';
     if (!lastChart) {
       status.textContent = 'Saved. The next chart will use it.';
@@ -4490,7 +4503,7 @@
   });
 
   document.getElementById('mercury-nature').addEventListener('change', function () {
-    var status = document.getElementById('settings-status');
+    var status = statusFor(this);
     var always = this.value === 'benefic';
     if (!lastChart) {
       status.textContent = 'Saved. The next chart will use it.';
@@ -4504,7 +4517,7 @@
   });
 
   document.getElementById('ayana-constant').addEventListener('change', function () {
-    var status = document.getElementById('settings-status');
+    var status = statusFor(this);
     var raman = this.value === 'raman';
     if (!lastChart) {
       status.textContent = 'Saved. The next chart will use it.';
@@ -4518,7 +4531,7 @@
   });
 
   document.getElementById('kranti').addEventListener('change', function () {
-    var status = document.getElementById('settings-status');
+    var status = statusFor(this);
     var real = this.value === 'true';
     if (!lastChart) {
       status.textContent = 'Saved. The next chart will use it.';
@@ -4532,7 +4545,7 @@
   });
 
   document.getElementById('hora-length').addEventListener('change', function () {
-    var status = document.getElementById('settings-status');
+    var status = statusFor(this);
     var seasonal = this.value === 'seasonal';
     if (!lastChart) {
       status.textContent = 'Saved. The next chart will use it.';
@@ -4550,7 +4563,7 @@
    * strengths are dropped and the page redrawn.
    */
   document.getElementById('nat-clock').addEventListener('change', function () {
-    var status = document.getElementById('settings-status');
+    var status = statusFor(this);
     var names = { apparent: 'the sundial at the birthplace', zone: 'zone time' };
     var chosen = names[this.value] || this.value;
     if (!lastChart) {
@@ -4568,7 +4581,7 @@
    * nothing to recompute in the ephemeris: drop the cached Shadbala and redraw.
    */
   document.getElementById('moon-paksha').addEventListener('change', function () {
-    var status = document.getElementById('settings-status');
+    var status = statusFor(this);
     var asBenefic = this.value === 'benefic';
     if (!lastChart) {
       status.textContent = 'Saved. The next chart will use it.';
@@ -4593,7 +4606,7 @@
    * degree - far too much to leave on screen until something else redraws.
    */
   document.getElementById('ayanamsa').addEventListener('change', function () {
-    var status = document.getElementById('settings-status');
+    var status = statusFor(this);
     var wanted = this.value;
     var label = (Astro.AYANAMSA[wanted] || {}).label || wanted;
     if (!lastChart) {

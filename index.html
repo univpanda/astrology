@@ -28,6 +28,8 @@
             aria-controls="panel-lesson" aria-selected="false" tabindex="-1">Lesson</button>
     <button type="button" class="tab" role="tab" id="tab-settings"
             aria-controls="panel-settings" aria-selected="false" tabindex="-1">Chart settings</button>
+    <button type="button" class="tab" role="tab" id="tab-testing"
+            aria-controls="panel-testing" aria-selected="false" tabindex="-1">Test settings</button>
   </div>
 
   <section class="panel" id="panel-saved" role="tabpanel" aria-labelledby="tab-saved" hidden>
@@ -419,9 +421,8 @@
   <!-- Settings that change how a chart is reckoned rather than what chart it is,
        so they belong to the app and not to the form that creates one. A change
        here recomputes whatever chart is open. One so far; more will follow. -->
-  <section class="panel" id="panel-settings" role="tabpanel" aria-labelledby="tab-settings" hidden>
+  <section class="panel settings-panel" id="panel-settings" role="tabpanel" aria-labelledby="tab-settings" hidden>
     <div class="card">
-      <h3>Chart settings</h3>
       <div class="settings-grid">
       <div class="field">
         <label for="ayanamsa">Ayanamsa</label>
@@ -466,35 +467,6 @@
           ranking. The six balas are reckoned for the seven grahas, and a node neither
           takes a figure nor casts an aspect that counts toward one. Nor the Vimshottari
           dasha, which runs off the Moon.</p>
-        </div>
-      </div>
-      <div class="field">
-        <label for="nat-clock">Nata-unnata clock</label>
-        <select id="nat-clock" aria-describedby="why-nat-clock">
-          <option value="apparent" selected>Local apparent time, the sundial</option>
-          <option value="zone">Zone time, the clock on the wall</option>
-        </select>
-        <div class="field-why" id="why-nat-clock">
-          <p>Nata-unnata measures how far the birth fell from noon or from
-          midnight. Uttara Kalamrita gives it plainly: &ldquo;Moon, Mars and
-          Saturn are strong at midnight and powerless at noon. Ravi, Shukra and
-          Guru are strong at noon, and powerless at midnight. Budha is always
-          powerful.&rdquo; The elapsed time divided by twelve is the figure.
-          <br><br>
-          Which noon is the choice. The same text allows the clock:
-          &ldquo;It is enough if we take 12.00 hours as noon and zero hours as
-          midnight.&rdquo; Raman asks for the sundial by name:
-          &ldquo;The Hindus consider the apparent noon &hellip; it must be
-          converted into the apparent time by applying equation of time.&rdquo;
-          They part because a timezone is an administrative band, and because a
-          clock keeps an even hour where the Sun does not. Four virupas is
-          typical, sixteen at the far west of a wide zone.
-          <br><br>
-          Use apparent time, the default. Noon here means the Sun on the
-          meridian, so it is what the measure is made of rather than a
-          refinement of it. A birth time recorded in local mean time, as Indian
-          times were before 1906, is a separate question: set that on the birth
-          form under time standard.</p>
         </div>
       </div>
       <div class="field">
@@ -607,6 +579,107 @@
           for reconciling against a table built the ordinary way, and shadbala
           keeps it regardless, because Raman scores his own Sun&rsquo;s hora as
           Swavarga in Example 9 of Graha and Bhava Balas.</p>
+        </div>
+      </div>
+      <div class="field">
+        <label for="budha-floor">Budha-Aditya yoga</label>
+        <select id="budha-floor" aria-describedby="why-budha-floor">
+          <option value="raman" selected>Only outside 10&deg; of the Sun</option>
+          <option value="none">Any conjunction in one sign</option>
+        </select>
+        <div class="field-why" id="why-budha-floor">
+          <p class="field-note">Raman states a floor and most treatments drop it:
+          &ldquo;It should not be taken for granted that irrespective of the
+          distance between the Sun and Mercury, Budha-Aditya Yoga would be
+          present. On the contrary, Mercury should not be within 10 degrees of
+          the Sun.&rdquo; He gives no reason, and the obvious one does not hold:
+          his own <em>Hindu Predictive Astrology</em> puts Mercury&rsquo;s orb of
+          combustion at 14&deg; direct and 12&deg; retrograde, so the floor
+          cannot be combustion.
+          <br><br>
+          K. N. Rao applies no floor. In <em>Advance Techniques of Astrology
+          Prediction</em> he reads a chart - October 7 1964, 21:30 IST,
+          Delhi - as &ldquo;Mercury in fifth with the Sun forming
+          Budhaditya yoga and in exaltation aspected by Jupiter&rdquo; and counts
+          it toward the promise of education. His own printed longitudes are Sun
+          21&deg;03&prime; and Mercury 14&deg;57&prime;: six degrees apart, and
+          combust under every orb any of these authors gives. The same book
+          treats combust planets as adverse, so this is not an oversight. For
+          Rao combustion is a <em>discount</em> on the yoga rather than a gate in
+          front of it: whether the combination formed and how much it can
+          deliver are two questions, and burning Mercury answers the second.
+          That reading is applied on either setting, because it is a claim about
+          what combustion does and not about where the boundary sits - so
+          a combust Mercury that clears the floor is reported as a yoga formed
+          and discounted, not as a contradiction.
+          <br><br>
+          Raman&rsquo;s reading is the default, on two grounds. He states a rule
+          where Rao only declines to use one, and Mercury is never more than
+          28&deg; from the Sun, so without a floor the yoga is claimed for every
+          chart that has the two in one sign - 52 per cent of charts
+          against 28. A finding half the world has tells you little about any of
+          them.</p>
+        </div>
+      </div>
+      <div class="field">
+        <label for="mercury-nature">Mercury&rsquo;s nature</label>
+        <select id="mercury-nature" aria-describedby="why-mercury-nature">
+          <option value="qualified" selected>Malefic in bad company</option>
+          <option value="benefic">Always a benefic</option>
+        </select>
+        <div class="field-why" id="why-mercury-nature">
+          <p class="field-note">Parashara gives Mercury one qualifier -
+          &ldquo;Mercury, however, is a malefic if he joins a malefic&rdquo;
+          - and the authorities keep it. Raman, footnoting his drik bala
+          table: &ldquo;Mercury is a malefic as he is very closely associated
+          with Sun or combusted.&rdquo;
+          K. N. Rao calls Mercury a malefic in a worked chart &ldquo;as he is
+          associated with two malefics Sun and Ketu&rdquo;, and says combust
+          planets &ldquo;become evil&rdquo;.
+          <br><br>
+          The other reading is Parashara&rsquo;s own opening list read without the
+          sentence that follows it, which names Mercury a benefic beside the
+          Moon, Jupiter and Venus; Rao gives the list the same way,
+          &ldquo;Jupiter, Venus, Mercury and Moon&rdquo;. Neither defends it
+          as the whole rule. It reaches paksha bala, drik bala, the kartari marks and
+          every yoga that asks whether a graha is benefic.</p>
+        </div>
+      </div>
+      </div>
+      <p class="field-note settings-status" id="settings-status"></p>
+    </div>
+  </section>
+
+  <section class="panel settings-panel" id="panel-testing" role="tabpanel" aria-labelledby="tab-testing" hidden>
+    <div class="card">
+      <div class="settings-grid">
+      <div class="field">
+        <label for="nat-clock">Nata-unnata clock</label>
+        <select id="nat-clock" aria-describedby="why-nat-clock">
+          <option value="apparent" selected>Local apparent time, the sundial</option>
+          <option value="zone">Zone time, the clock on the wall</option>
+        </select>
+        <div class="field-why" id="why-nat-clock">
+          <p>Nata-unnata measures how far the birth fell from noon or from
+          midnight. Uttara Kalamrita gives it plainly: &ldquo;Moon, Mars and
+          Saturn are strong at midnight and powerless at noon. Ravi, Shukra and
+          Guru are strong at noon, and powerless at midnight. Budha is always
+          powerful.&rdquo; The elapsed time divided by twelve is the figure.
+          <br><br>
+          Which noon is the choice. The same text allows the clock:
+          &ldquo;It is enough if we take 12.00 hours as noon and zero hours as
+          midnight.&rdquo; Raman asks for the sundial by name:
+          &ldquo;The Hindus consider the apparent noon &hellip; it must be
+          converted into the apparent time by applying equation of time.&rdquo;
+          They part because a timezone is an administrative band, and because a
+          clock keeps an even hour where the Sun does not. Four virupas is
+          typical, sixteen at the far west of a wide zone.
+          <br><br>
+          Use apparent time, the default. Noon here means the Sun on the
+          meridian, so it is what the measure is made of rather than a
+          refinement of it. A birth time recorded in local mean time, as Indian
+          times were before 1906, is a separate question: set that on the birth
+          form under time standard.</p>
         </div>
       </div>
       <div class="field">
@@ -949,72 +1022,8 @@
           cannot.</p>
         </div>
       </div>
-      <div class="field">
-        <label for="budha-floor">Budha-Aditya yoga</label>
-        <select id="budha-floor" aria-describedby="why-budha-floor">
-          <option value="raman" selected>Only outside 10&deg; of the Sun</option>
-          <option value="none">Any conjunction in one sign</option>
-        </select>
-        <div class="field-why" id="why-budha-floor">
-          <p class="field-note">Raman states a floor and most treatments drop it:
-          &ldquo;It should not be taken for granted that irrespective of the
-          distance between the Sun and Mercury, Budha-Aditya Yoga would be
-          present. On the contrary, Mercury should not be within 10 degrees of
-          the Sun.&rdquo; He gives no reason, and the obvious one does not hold:
-          his own <em>Hindu Predictive Astrology</em> puts Mercury&rsquo;s orb of
-          combustion at 14&deg; direct and 12&deg; retrograde, so the floor
-          cannot be combustion.
-          <br><br>
-          K. N. Rao applies no floor. In <em>Advance Techniques of Astrology
-          Prediction</em> he reads a chart - October 7 1964, 21:30 IST,
-          Delhi - as &ldquo;Mercury in fifth with the Sun forming
-          Budhaditya yoga and in exaltation aspected by Jupiter&rdquo; and counts
-          it toward the promise of education. His own printed longitudes are Sun
-          21&deg;03&prime; and Mercury 14&deg;57&prime;: six degrees apart, and
-          combust under every orb any of these authors gives. The same book
-          treats combust planets as adverse, so this is not an oversight. For
-          Rao combustion is a <em>discount</em> on the yoga rather than a gate in
-          front of it: whether the combination formed and how much it can
-          deliver are two questions, and burning Mercury answers the second.
-          That reading is applied on either setting, because it is a claim about
-          what combustion does and not about where the boundary sits - so
-          a combust Mercury that clears the floor is reported as a yoga formed
-          and discounted, not as a contradiction.
-          <br><br>
-          Raman&rsquo;s reading is the default, on two grounds. He states a rule
-          where Rao only declines to use one, and Mercury is never more than
-          28&deg; from the Sun, so without a floor the yoga is claimed for every
-          chart that has the two in one sign - 52 per cent of charts
-          against 28. A finding half the world has tells you little about any of
-          them.</p>
-        </div>
       </div>
-      <div class="field">
-        <label for="mercury-nature">Mercury&rsquo;s nature</label>
-        <select id="mercury-nature" aria-describedby="why-mercury-nature">
-          <option value="qualified" selected>Malefic in bad company</option>
-          <option value="benefic">Always a benefic</option>
-        </select>
-        <div class="field-why" id="why-mercury-nature">
-          <p class="field-note">Parashara gives Mercury one qualifier -
-          &ldquo;Mercury, however, is a malefic if he joins a malefic&rdquo;
-          - and the authorities keep it. Raman, footnoting his drik bala
-          table: &ldquo;Mercury is a malefic as he is very closely associated
-          with Sun or combusted.&rdquo;
-          K. N. Rao calls Mercury a malefic in a worked chart &ldquo;as he is
-          associated with two malefics Sun and Ketu&rdquo;, and says combust
-          planets &ldquo;become evil&rdquo;.
-          <br><br>
-          The other reading is Parashara&rsquo;s own opening list read without the
-          sentence that follows it, which names Mercury a benefic beside the
-          Moon, Jupiter and Venus; Rao gives the list the same way,
-          &ldquo;Jupiter, Venus, Mercury and Moon&rdquo;. Neither defends it
-          as the whole rule. It reaches paksha bala, drik bala, the kartari marks and
-          every yoga that asks whether a graha is benefic.</p>
-        </div>
-      </div>
-      </div>
-      <p class="field-note" id="settings-status"></p>
+      <p class="field-note settings-status" id="testing-status"></p>
     </div>
   </section>
 
