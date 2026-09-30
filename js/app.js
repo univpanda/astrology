@@ -673,6 +673,18 @@
     e.preventDefault();
     errorBox.textContent = '';
 
+    /*
+     * Read and cleared here, before anything can return: the comment always
+     * said synchronously and the code did it after the validation, so a submit
+     * that was refused left the flag standing and swallowed the save of
+     * whatever was generated next.
+     */
+    var reopening = reopeningSaved;
+    reopeningSaved = false;
+    // The same, for the flag on the record being reopened.
+    var flagged = pendingFlagged;
+    pendingFlagged = false;
+
     var nameValue = document.getElementById('name').value.trim();
     var genderValue = document.getElementById('gender').value;
     var date = readDate();
@@ -681,7 +693,14 @@
     var place = resolved.place;
 
     if (!nameValue) return fail('Enter the name this chart belongs to.');
-    if (!genderValue) return fail('Choose a gender.');
+    /*
+     * Asked of a new chart and not of an old one. Gender changes no calculation
+     * here, some classical readings turn on it, and the stored record allows it
+     * to be unstated - so a chart saved without one could not be reopened at
+     * all: the refusal landed in this box on a tab the reader had just been
+     * taken off, and the chart tab sat empty with nothing to say why.
+     */
+    if (!genderValue && !reopening) return fail('Choose a gender.');
     if (date.error) return fail(date.error);
     if (time.error) return fail(time.error);
     if (!place) return fail(resolved.error);
@@ -720,15 +739,6 @@
       trueNode: document.getElementById('node-type').value === 'true',
       tzOffsetMinutes: offset
     };
-
-    // Read and clear it here, synchronously, so a failed submit cannot leave the
-    // flag set and swallow the save of whatever is generated next.
-    var reopening = reopeningSaved;
-    reopeningSaved = false;
-    // Read and cleared in the same breath, for the same reason: the flag
-    // belongs to the record being reopened, not to whatever is cast next.
-    var flagged = pendingFlagged;
-    pendingFlagged = false;
 
     var button = form.querySelector('button.primary');
     button.disabled = true;
@@ -806,6 +816,13 @@
 
   function fail(message) {
     errorBox.textContent = message;
+    /*
+     * This box lives on the Add tab. A submit raised from the saved list is
+     * refused just the same, and writing the reason onto a panel the reader is
+     * not looking at is the same as saying nothing.
+     */
+    var panel = document.getElementById('panel-add');
+    if (panel && panel.hidden) activateTab('add');
     return false;
   }
 
@@ -4160,6 +4177,7 @@
       gender: row.gender || 'unstated',
       celebrity: row.celebrity === true,
       flagged: row.flagged === true,
+      openedAt: row.opened_at || null,
       note: row.note || ''
     };
   }
@@ -4321,8 +4339,21 @@
    */
   var SEARCH_FROM = 6;
 
+  /*
+   * Last read first, then everything never read since the column existed, which
+   * keeps the order the database gave those - last written first. Sorted here
+   * as well as in the query so an offline list and a synced one agree.
+   */
+  function byLastOpened(a, b) {
+    var x = a.openedAt || '', y = b.openedAt || '';
+    if (x === y) return 0;
+    if (!x) return 1;
+    if (!y) return -1;
+    return x < y ? 1 : -1;
+  }
+
   function renderSaved() {
-    var all = readSaved();
+    var all = readSaved().slice().sort(byLastOpened);
     savedList.innerHTML = '';
     savedEmpty.hidden = all.length > 0;
     savedCount.textContent = all.length;
@@ -4360,9 +4391,6 @@
     }
 
     list.forEach(function (entry) {
-      // The index the delete needs is into the stored list, not the filtered
-      // one, or searching would delete the wrong row.
-      var index = all.indexOf(entry);
       var li = el('li', 'saved-card');
 
       /*
@@ -4433,7 +4461,7 @@
         var yes = el('button', 'saved-confirm', 'Delete');
         yes.type = 'button';
         yes.setAttribute('aria-label', 'Confirm deleting ' + entry.name);
-        yes.addEventListener('click', function () { removeSaved(index); });
+        yes.addEventListener('click', function () { removeSaved(entry); });
         actions.appendChild(yes);
 
         var no = el('button', 'saved-cancel', 'Cancel');
@@ -4454,9 +4482,17 @@
     if (field) field.addEventListener('input', renderSaved);
   })();
 
-  function removeSaved(index) {
+  /*
+   * By the record, not by its position. The list is drawn sorted and filtered,
+   * so a row's place on screen has not been its place in storage since either
+   * of those existed, and counting to it deletes somebody else.
+   */
+  function removeSaved(entry) {
     var current = readSaved();
-    var removed = current.splice(index, 1)[0];
+    var at = -1;
+    for (var i = 0; i < current.length; i++) if (sameRecord(current[i], entry)) at = i;
+    if (at < 0) { renderSaved(); return; }
+    var removed = current.splice(at, 1)[0];
     writeSaved(current);
     // If the chart on screen was the one deleted, the next save is a new row.
     if (currentEntry && removed &&
@@ -4554,6 +4590,29 @@
     if (!quiet) setTimeout(function () { saveFeedback.textContent = ''; }, 4000);
   }
 
+  /*
+   * Remember that this chart was read, so the list can put it back on top.
+   *
+   * Written locally first and then sent, like every other change here, so the
+   * order is right the moment the list is next drawn rather than a round trip
+   * later. It is deliberately not a save: reading a chart is not editing it,
+   * and a save would bump updated_at and lose the difference between the two.
+   */
+  function recordOpening(entry) {
+    var when = new Date().toISOString();
+    var list = readSaved();
+    for (var i = 0; i < list.length; i++) {
+      if (sameRecord(list[i], entry)) list[i].openedAt = when;
+    }
+    entry.openedAt = when;
+    writeSaved(list);
+    if (entry.id) {
+      callKundaliApi({ action: 'open', id: entry.id }, function (entries) {
+        if (entries) { writeSaved(entries.map(fromRow)); renderSaved(); }
+      });
+    }
+  }
+
   /** Put a saved chart's details into the form, without casting it. */
   function applyEntryToForm(entry) {
     currentEntry = entry;
@@ -4586,7 +4645,9 @@
   function loadSaved(entry) {
     applyEntryToForm(entry);
     reopeningSaved = true;
-    activateTab('chart');
+    recordOpening(entry);
+    // showChart() opens the tab once there is a chart to show. Opening it here
+    // meant a refused submit left the reader on an empty panel.
     form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit'));
   }
 

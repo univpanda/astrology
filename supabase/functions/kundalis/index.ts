@@ -68,8 +68,14 @@ Deno.serve(async (req) => {
 
     const query = `?owner_token=eq.${encodeURIComponent(token)}` +
       '&select=id,name,place_label,latitude,longitude,zone,birth_date,birth_time,time_standard,' +
-      'ayanamsa,true_node,gender,celebrity,flagged,note' +
-      '&order=updated_at.desc&limit=200';
+      'ayanamsa,true_node,gender,celebrity,flagged,note,opened_at' +
+      /*
+       * Last read first. updated_at is when the record was last written, which
+       * is a different question and the wrong one for a list that is read far
+       * more often than it is edited. Rows never opened fall in behind, ordered
+       * among themselves by when they were last written.
+       */
+      '&order=opened_at.desc.nullslast,updated_at.desc&limit=200';
 
     if (body.action === 'list') {
       const res = await fetch(TABLE + query, { headers: headers() });
@@ -130,6 +136,21 @@ Deno.serve(async (req) => {
       return json({ saved: true, updated: existing.length > 0, entries: listed.ok ? await listed.json() : [] });
     }
 
+    /*
+     * Reading a chart is not editing it, so this touches opened_at alone and
+     * leaves updated_at where it was. A save would have bumped both and lost
+     * the difference between the two.
+     */
+    if (body.action === 'open') {
+      if (!body.id) return json({ error: 'id is required' }, 400);
+      const res = await fetch(
+        `${TABLE}?owner_token=eq.${encodeURIComponent(token)}&id=eq.${encodeURIComponent(String(body.id))}`,
+        { method: 'PATCH', headers: headers(), body: JSON.stringify({ opened_at: new Date().toISOString() }) });
+      if (!res.ok) return json({ error: await res.text() }, 502);
+      const listed = await fetch(TABLE + query, { headers: headers() });
+      return json({ opened: true, entries: listed.ok ? await listed.json() : [] });
+    }
+
     if (body.action === 'delete') {
       if (!body.id) return json({ error: 'id is required' }, 400);
       const res = await fetch(
@@ -140,7 +161,7 @@ Deno.serve(async (req) => {
       return json({ deleted: true, entries: listed.ok ? await listed.json() : [] });
     }
 
-    return json({ error: 'action must be list, save or delete' }, 400);
+    return json({ error: 'action must be list, save, open or delete' }, 400);
   } catch (err) {
     return json({ error: String((err as Error)?.message ?? err) }, 500);
   }

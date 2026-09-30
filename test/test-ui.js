@@ -1117,8 +1117,18 @@ function stripHtml(label) {
   ok('the chart tab has something to say when empty', /id="empty-chart"/.test(html));
   ok('generating moves you to the chart tab and clears the form',
      /showChart\(\);\s*\n[\s\S]{0,200}blankForm\(\);/.test(appSrc));
-  ok('opening a saved chart lands on the chart tab',
-     /reopeningSaved = true;\s*\n\s*activateTab\('chart'\)/.test(appSrc));
+  /*
+   * The chart opens the tab, not the click. Opening it up front meant a submit
+   * that was refused left the reader on an empty chart panel with the reason
+   * written into a box on the tab they had just been taken off.
+   */
+  ok('opening a saved chart lands on the chart tab, once there is a chart',
+     /reopeningSaved = true;\s*\n\s*recordOpening\(entry\);/.test(appSrc) &&
+     !/reopeningSaved = true;[\s\S]{0,120}activateTab\('chart'\)/.test(appSrc) &&
+     /function showChart\(\) \{[\s\S]{0,140}activateTab\('chart'\);/.test(appSrc));
+  ok('and a refusal follows the reader to the tab that can answer it',
+     /var panel = document\.getElementById\('panel-add'\);\s*\n\s*if \(panel && panel\.hidden\) activateTab\('add'\);/
+       .test(appSrc));
   /*
    * The node choice left the form. It is not a fact about the person the way a
    * birth time is: it is how the nodes are reckoned, and it applies to whatever
@@ -1331,16 +1341,19 @@ ok('and the box stays hidden until the list is long enough to need it', (functio
     /box\.hidden = all\.length < SEARCH_FROM/.test(block);
 })());
 /*
- * The delete takes its index from the stored list and not the filtered one. A
- * search that shifted the indexes would delete whichever row happened to sit at
- * that position in the whole list, which is the worst kind of bug here: silent,
- * and on the only copy of the data.
+ * The delete finds its row rather than counting to it. The list is drawn
+ * sorted and filtered, so a row's place on screen has not been its place in
+ * storage since either of those existed, and an index taken off the drawn list
+ * deletes whoever happens to sit at that position in the stored one: the worst
+ * kind of bug here, silent and on the only copy of the data.
  */
 ok('deleting while searching removes the row that was asked for', (function () {
-  var at = appSrc.indexOf('function renderSaved()');
-  var block = appSrc.slice(at, appSrc.indexOf('function removeSaved', at));
-  return /var index = all\.indexOf\(entry\);/.test(block) &&
-    !/list\.forEach\(function \(entry, index\)/.test(block);
+  var at = appSrc.indexOf('function removeSaved');
+  var block = appSrc.slice(at, appSrc.indexOf('function formatSavedMoment', at));
+  return /function removeSaved\(entry\)/.test(block) &&
+    /if \(sameRecord\(current\[i\], entry\)\) at = i;/.test(block) &&
+    /if \(at < 0\) \{ renderSaved\(\); return; \}/.test(block) &&
+    !/function removeSaved\(index\)/.test(appSrc);
 })());
 /*
   * And the rules that sized those two went with them. A selector nothing emits
@@ -6456,7 +6469,7 @@ ok('deleting asks before it deletes',
    /actions\.className = 'saved-actions confirming'/.test(appSrc) &&
    /'Delete\?'/.test(appSrc) && /saved-cancel/.test(appSrc));
 ok('nothing is removed until the confirm is pressed',
-   /yes\.addEventListener\('click', function \(\) \{ removeSaved\(index\); \}\)/.test(appSrc) &&
+   /yes\.addEventListener\('click', function \(\) \{ removeSaved\(entry\); \}\)/.test(appSrc) &&
    !/remove\.addEventListener\('click', function \(\) \{\s*\n\s*var current = readSaved/.test(appSrc));
 ok('cancelling restores the row untouched',
    /no\.addEventListener\('click', renderSaved\)/.test(appSrc));
@@ -6475,9 +6488,27 @@ ok('gender is required, the other two are not', (function () {
   var note = html.match(/<textarea[^>]*id="person-note"[^>]*>/)[0];
   return /\srequired/.test(gender) && !/\srequired/.test(celebrity) && !/\srequired/.test(note);
 })());
+/*
+ * Asked of a new chart and not of an old one. Gender changes no calculation
+ * here and the stored record allows it to be unstated, so a chart saved
+ * without one could not be reopened at all: the refusal went to a box on a tab
+ * the reader had just been taken off, and the chart panel sat empty with
+ * nothing to say why. One of the 30 stored charts was in that state.
+ */
 ok('gender starts unanswered and is checked on submit',
    /<option value="" selected>Select<\/option>/.test(html) &&
-   /if \(!genderValue\) return fail\('Choose a gender\.'\);/.test(appSrc));
+   /if \(!genderValue && !reopening\) return fail\('Choose a gender\.'\);/.test(appSrc));
+/*
+ * Which needs the reopening flag read before anything can return. Its own
+ * comment always claimed it was read synchronously; it was read after the
+ * validation, so a refused submit left it standing and swallowed the save of
+ * whatever was generated next.
+ */
+ok('and the reopening flag is read before the first refusal can return',
+   appSrc.indexOf('var reopening = reopeningSaved;') <
+     appSrc.indexOf("return fail('Enter the name this chart belongs to.')") &&
+   appSrc.indexOf('var flagged = pendingFlagged;') <
+     appSrc.indexOf("return fail('Enter the name this chart belongs to.')"));
 ok('a chart saved before gender was asked leaves the select unanswered',
    /=== 'unstated'\) \? '' :/.test(appSrc));
 ok('the note is bounded', /maxlength="2000"/.test(html));
@@ -7397,6 +7428,47 @@ console.log('\nThe typed date is checked the way a picker would have been');
 })();
 
 var fnSrc = fs.readFileSync(path.join(root, 'supabase/functions/kundalis/index.ts'), 'utf8');
+console.log('\nThe saved list puts the last chart read at the top');
+/*
+ * The order a reader wants is the one they were working in. updated_at answers
+ * a different question - when the record was last written - and reopening a
+ * chart deliberately does not save it, so it could not carry this.
+ *
+ * Rows never opened fall in behind, keeping the order the database gave them.
+ * That is the honest answer for them: nothing is known about when they were
+ * last read, and guessing would put a chart nobody has looked at above one
+ * somebody read last week.
+ */
+(function () {
+  var out = global.appExports || {};
+  if (!out.renderSaved) { ok('the saved list is reachable from the tests', false); return; }
+  var row = function (name, openedAt) {
+    return { name: name, placeLabel: 'Delhi, India', date: '1970-01-01', time: '06:00:00',
+      latitude: 28.6, longitude: 77.2, zone: 'Asia/Kolkata', standard: 'zone',
+      ayanamsa: 'lahiri', trueNode: true, gender: 'male', celebrity: false,
+      flagged: false, note: '', openedAt: openedAt };
+  };
+  var drawn = function () {
+    return out.savedList.children.map(function (card) {
+      return card.children.filter(function (c) { return c.className === 'saved-open'; })[0]
+        .children[0].textContent;
+    }).join(' ');
+  };
+  out.writeSaved([row('Sept', '2026-09-01T00:00:00Z'), row('Never', null),
+    row('Latest', '2026-09-29T00:00:00Z'), row('AlsoNever', null),
+    row('Middle', '2026-09-15T00:00:00Z')]);
+  out.renderSaved();
+  ok('the last read comes first and the unread keep their order',
+    drawn() === 'Latest Middle Sept Never AlsoNever', drawn());
+
+  /* And the sort is on a copy: the stored order is not rewritten by drawing. */
+  ok('drawing the list does not reorder what is stored',
+    out.readSaved().map(function (e) { return e.name; }).join(' ') ===
+      'Sept Never Latest AlsoNever Middle');
+  out.writeSaved([]);
+  out.renderSaved();
+})();
+
 console.log('\nA chart whose details are in doubt can be flagged');
 /*
  * The flag is about the record and not the reading: a birth time taken from
@@ -7516,6 +7588,18 @@ ok('casting the same chart again does not drop the flag',
    /var flagged = pendingFlagged;/.test(appSrc) &&
    /pendingFlagged = entry\.flagged === true;/.test(appSrc));
 // It reaches the database as a column of its own, not as a word inside the note.
+/*
+ * Reading is not editing, so it touches opened_at alone. A save would have
+ * bumped updated_at too and lost the difference between the two.
+ */
+ok('opening a chart is recorded without saving it',
+   /function recordOpening\(entry\)/.test(appSrc) &&
+   /callKundaliApi\(\{ action: 'open', id: entry\.id \}/.test(appSrc) &&
+   /openedAt: row\.opened_at \|\| null,/.test(appSrc) &&
+   /if \(body\.action === 'open'\)/.test(fnSrc) &&
+   /JSON\.stringify\(\{ opened_at: new Date\(\)\.toISOString\(\) \}\)/.test(fnSrc) &&
+   /'&order=opened_at\.desc\.nullslast,updated_at\.desc&limit=200'/.test(fnSrc));
+
 ok('the flag is stored and synced beside the rest of the record',
    /flagged: row\.flagged === true,/.test(appSrc) &&
    /flagged: state\.flagged === true,/.test(appSrc) &&
