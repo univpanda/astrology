@@ -6670,6 +6670,18 @@ console.log('\nManual coordinates');
 
   put('lat', 23, '', '', 'N');
   ok('minutes and seconds may be left empty', near(readDms('lat', 90), 23));
+  /*
+   * And the note under the boxes says only what the boxes cannot. It used to
+   * open by arguing for the design - degrees and a letter rather than a signed
+   * decimal, so no minus can be dropped - which is a reason to have built it
+   * this way and not a thing a reader needs while filling it in. The marks and
+   * the N/E selects say the format; these two sentences say what is optional
+   * and what else is accepted, and neither is guessable.
+   */
+  ok('the note says what is optional and what else is taken, and nothing else',
+    /<p class="varga-note">Minutes and seconds may be left empty, and a decimal\s+typed into the degrees box on its own works too\.<\/p>/
+      .test(html) &&
+    !/the way an atlas or a birth record/.test(html));
   put('lat', 23.55, '', '', 'N');
   ok('a decimal in the degrees box on its own still works', near(readDms('lat', 90), 23.55));
 
