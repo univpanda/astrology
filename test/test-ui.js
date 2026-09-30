@@ -8218,6 +8218,27 @@ console.log('\nThe card says how the graha stands in its sign');
  * draw between themselves: the placement is one thing, how the graha stands
  * another, the combinations a third.
  */
+/*
+ * Each state carries the mark the chart draws for it, so the letter beside a
+ * graha in the kundli and the line on its card read as the same fact. Only
+ * the states have one: directional strength and a dignity are not marked on
+ * the chart, so neither takes a bracket.
+ */
+  ok('each state names itself and shows the mark the chart uses',
+    /STATE_NAMES\[item\.term\] \+ ' \[' \+ item\.term \+ '\]'/.test(src));
+  /*
+   * And the two the chart does not draw are cut to match, so the line reads
+   * as one set rather than as marked and unmarked halves. None of E, D, M or
+   * Dr collides with a mark the chart uses, which are R, C, V, Y, P and S.
+   */
+  ok('and the conditions with no chart mark are given one of their own',
+    /var DIGNITY_MARKS = \{ Exalted: 'E', Debilitated: 'D', Mooltrikona: 'M' \};/.test(src) &&
+    /dignity \+ ' \[' \+ DIGNITY_MARKS\[dignity\] \+ '\]'/.test(src) &&
+    /'Directional strength \[Dr\]'/.test(src) &&
+    (function () {
+      var chart = Object.keys({ R: 1, C: 1, V: 1, Y: 1, P: 1, S: 1 });
+      return ['E', 'D', 'M', 'Dr'].every(function (m) { return chart.indexOf(m) < 0; });
+    })());
   ok('and the conditions line carries the states, ruled off from both sides',
     /if \(t\.getAttribute\('data-directional'\) === 'true'\) \{/.test(src) &&
     // Ruled off, and set like every other line: no weight, no colour of its own.
@@ -8294,7 +8315,7 @@ console.log('\nThe card says how the graha stands in its sign');
   ok('special dignity closes the plain-English condition line',
     /var dignity = t\.getAttribute\('data-dignity'\)/.test(src) &&
     /\^\(Exalted\|Debilitated\|Mooltrikona\)\$/.test(src) &&
-    /conditions\.appendChild\(el\('span', 'graha-card-item', dignity\)\)/.test(src) &&
+    /conditions\.appendChild\(el\('span', 'graha-card-item',\s*\n?\s*dignity \+ ' \[' \+ DIGNITY_MARKS\[dignity\] \+ '\]'\)\)/.test(src) &&
     !/graha-card-dignity/.test(src + css));
   /*
    * And is divided from the findings by the same line the findings use between

@@ -1285,6 +1285,14 @@
    * One card per chart container, moved and refilled rather than rebuilt, so
    * pointing along a row of grahas does not churn the DOM.
    */
+  /*
+   * Short marks for the two conditions the chart does not draw. The states
+   * have theirs from the kundli - a reader meets [R] beside a graha before
+   * they meet it on a card - and these are cut to match, so the line reads as
+   * one set rather than as marked and unmarked halves.
+   */
+  var DIGNITY_MARKS = { Exalted: 'E', Debilitated: 'D', Mooltrikona: 'M' };
+
   var STATE_NAMES = { R: 'Retrograde', C: 'Combust', V: 'Vargottama',
     Y: 'Yogakaraka', P: 'Papa kartari', S: 'Shubha kartari' };
 
@@ -1616,14 +1624,20 @@
       var conditions = el('p', 'graha-card-conditions');
       split(t.getAttribute('data-states')).forEach(function (item) {
         var chance = chanceOf('state', at + '/' + item.term);
-        var one = el('span', 'graha-card-item', STATE_NAMES[item.term]);
+        /*
+         * The word and its mark. For a state the mark is the one the chart
+         * draws, so the letter beside a graha in the kundli and the line on
+         * its card are visibly the same fact.
+         */
+        var one = el('span', 'graha-card-item',
+          STATE_NAMES[item.term] + ' [' + item.term + ']');
         one.title = [item.why, chance === undefined ? '' : 'In ' +
           (chance >= 10 ? Math.round(chance) : chance) + '% of charts.']
           .filter(Boolean).join(' ');
         conditions.appendChild(one);
       });
       if (t.getAttribute('data-directional') === 'true') {
-        var dig = el('span', 'graha-card-item', 'Directional strength');
+        var dig = el('span', 'graha-card-item', 'Directional strength [Dr]');
         dig.title = 'In the house this graha is strongest facing.';
         conditions.appendChild(dig);
       }
@@ -1634,7 +1648,8 @@
        */
       var dignity = t.getAttribute('data-dignity');
       if (/^(Exalted|Debilitated|Mooltrikona)$/i.test(dignity)) {
-        conditions.appendChild(el('span', 'graha-card-item', dignity));
+        conditions.appendChild(el('span', 'graha-card-item',
+          dignity + ' [' + DIGNITY_MARKS[dignity] + ']'));
       }
       if (conditions.children.length) card.appendChild(conditions);
       /*
