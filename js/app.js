@@ -3946,8 +3946,6 @@
    */
   var STORAGE_KEY = 'jyotisha.saved.v1';
   var TOKEN_KEY = 'jyotisha.owner.v1';
-  var SEED_KEY = 'jyotisha.seeded.v2';
-  var SEED_KEY_V1 = 'jyotisha.seeded.v1';
   var KUNDALI_API = 'https://deiefjnwbfcywsaaqqbs.supabase.co/functions/v1/kundalis';
   var savedList = document.getElementById('saved-list');
   var savedEmpty = document.getElementById('saved-empty');
@@ -3957,9 +3955,11 @@
   var editButton = document.getElementById('edit-button');
 
   /*
-   * Seven charts ship with the app, so the saved list is not empty before anyone
-   * has typed a birth time in. All seven are picked for being checkable rather
-   * than for being famous, and between them they show the three things that
+   * Seven public reference charts live here for the engine checks and for
+   * provisioning the database deliberately. They are not inserted into a new
+   * browser's Saved tab: that list now mirrors its database rows exactly.
+   * All seven are picked for being checkable rather than for being famous, and
+   * between them they show the three things that
    * decide whether a chart can be trusted: the time, the clock it is read on,
    * and the place. The last of them is here for what it asks of the drawing
    * rather than of the data.
@@ -4113,50 +4113,6 @@
   }];
 
   /*
-   * Which study charts have already been offered, or null when the question
-   * cannot be answered. Recording the names rather than a single flag is what
-   * lets a chart be added to the list later: deleting one still has to stick,
-   * so nothing is ever offered twice, but a browser that already holds the
-   * earlier charts is not therefore finished with seeding. The v1 key was that
-   * single flag, written when Donald Trump's was the only study chart, so it
-   * counts as that one having been offered and no more.
-   */
-  function offeredStudyCharts() {
-    var offered = {};
-    try {
-      if (window.localStorage.getItem(SEED_KEY_V1)) offered['Donald Trump'] = true;
-      var raw = window.localStorage.getItem(SEED_KEY);
-      var names = raw ? JSON.parse(raw) : [];
-      if (Array.isArray(names)) names.forEach(function (name) { offered[name] = true; });
-    } catch (e) {
-      // No storage, or a value that is not ours: with no way to tell what has
-      // been offered, declining to seed is what keeps a deletion deleted.
-      return null;
-    }
-    return offered;
-  }
-
-  function seedStudyCharts() {
-    var offered = offeredStudyCharts();
-    if (!offered) return;
-    var list = readSaved();
-    var known = {};
-    list.forEach(function (entry) { known[keyOf(entry)] = true; });
-    var fresh = STUDY_CHARTS.filter(function (entry) {
-      return !offered[entry.name] && !known[keyOf(entry)];
-    });
-    // Appended, not prepended: a saved chart of one's own outranks the example.
-    fresh.forEach(function (entry) { list.push(entry); });
-    if (!fresh.length || writeSaved(list)) {
-      try {
-        window.localStorage.setItem(SEED_KEY, JSON.stringify(STUDY_CHARTS.map(function (entry) {
-          return entry.name;
-        })));
-      } catch (e) {}
-    }
-  }
-
-  /*
    * There are no accounts, so ownership is a capability: a random token minted
    * once and kept in this browser. It is what scopes rows in astro_charts, so
    * clearing site data loses the link to them, and the same charts opened in
@@ -4177,13 +4133,13 @@
         }).join('');
       }
       // A capability token is the key to every saved chart. If this browser
-      // cannot mint one securely, keep saves local instead of inventing a key
+      // cannot mint one securely, saving is unavailable; do not invent a key
       // from the clock and Math.random().
       if (!minted) return null;
       window.localStorage.setItem(TOKEN_KEY, minted);
       return minted;
     } catch (e) {
-      return null; // private browsing: local only, no sync
+      return null; // storage unavailable: the database cannot identify this browser
     }
   }
 
@@ -4209,8 +4165,8 @@
     };
   }
 
-  /** Talk to the saved-charts API; resolves to null rather than throwing. */
-  function callKundaliApi(payload, done) {
+  /** Send one request; resolves to null rather than throwing. */
+  function sendKundaliApi(payload, done) {
     var token = ownerToken();
     if (!token || !window.fetch) return done(null);
     payload.ownerToken = token;
@@ -4224,6 +4180,34 @@
     }).then(function (res) { return res.ok ? res.json() : null; })
       .then(function (body) { clearTimeout(timer); finish(body && body.entries ? body.entries : null); })
       .catch(function () { clearTimeout(timer); finish(null); });
+  }
+
+  /*
+   * Mutations return the whole authoritative list. Run them in click order so
+   * an older response cannot overwrite a newer flag, edit or deletion. Listing
+   * is read-only and remains immediate.
+   */
+  var kundaliMutations = [];
+  var kundaliMutationRunning = false;
+  var kundaliMutationGeneration = 0;
+
+  function runKundaliMutation() {
+    if (kundaliMutationRunning || !kundaliMutations.length) return;
+    kundaliMutationRunning = true;
+    var next = kundaliMutations.shift();
+    sendKundaliApi(next.payload, function (entries) {
+      try { next.done(entries); } finally {
+        kundaliMutationRunning = false;
+        runKundaliMutation();
+      }
+    });
+  }
+
+  function callKundaliApi(payload, done) {
+    if (payload.action === 'list') return sendKundaliApi(payload, done);
+    kundaliMutationGeneration += 1;
+    kundaliMutations.push({ payload: payload, done: done });
+    runKundaliMutation();
   }
 
   function readSaved() {
@@ -4262,6 +4246,7 @@
    * is the note that it may be drawn from the wrong moment.
    */
   var FLAG_MARK = 'needs checking';
+  var pendingFlagChanges = {};
 
   /*
    * Raise or lower it. Doubt arrives while reading a chart as often as while
@@ -4269,9 +4254,13 @@
    * same field on the same row.
    */
   function setFlag(entry, on) {
+    var pendingKey = entry.id || keyOf(entry);
+    if (pendingFlagChanges[pendingKey]) return;
+    pendingFlagChanges[pendingKey] = true;
     var list = readSaved();
     var at = -1;
     for (var i = 0; i < list.length; i++) if (sameRecord(list[i], entry)) at = i;
+    var before = entry.flagged === true;
     entry.flagged = on;
     if (at >= 0) {
       list[at].flagged = on;
@@ -4285,9 +4274,25 @@
     renderSaved();
     if (at >= 0) {
       callKundaliApi({ action: 'save', entry: list[at], id: list[at].id }, function (entries) {
-        if (entries) { writeSaved(entries.map(fromRow)); renderSaved(); }
+        delete pendingFlagChanges[pendingKey];
+        if (entries) {
+          writeSaved(entries.map(fromRow));
+        } else {
+          var current = readSaved();
+          for (var j = 0; j < current.length; j++) {
+            if (sameRecord(current[j], entry)) current[j].flagged = before;
+          }
+          entry.flagged = before;
+          var chartShowsEntry = lastChart && sameRecord(currentEntry, entry);
+          if (chartShowsEntry) lastChart.flagged = before;
+          writeSaved(current);
+          savedNote.textContent = 'The flag change could not be confirmed. Please try again.';
+          savedNote.hidden = false;
+          if (chartShowsEntry) showFlagOnChart();
+        }
+        renderSaved();
       });
-    }
+    } else delete pendingFlagChanges[pendingKey];
   }
 
   /** Raise or lower the flag on whatever chart is on screen. */
@@ -4467,6 +4472,7 @@
         (raised ? 'Clear the flag on ' : 'Flag ') + entry.name +
           (raised ? '' : ' as ' + FLAG_MARK),
         function () { setFlag(entry, !raised); });
+      flag.disabled = !!pendingFlagChanges[entry.id || keyOf(entry)];
       if (raised) flag.className += ' is-flagged';
       flag.setAttribute('aria-pressed', raised ? 'true' : 'false');
       actions.appendChild(flag);
@@ -4520,6 +4526,7 @@
     for (var i = 0; i < current.length; i++) if (sameRecord(current[i], entry)) at = i;
     if (at < 0) { renderSaved(); return; }
     var removed = current.splice(at, 1)[0];
+    var wasCurrent = currentEntry && removed && sameRecord(currentEntry, removed);
     writeSaved(current);
     // If the chart on screen was the one deleted, the next save is a new row.
     if (currentEntry && removed &&
@@ -4529,7 +4536,19 @@
     renderSaved();
     if (removed && removed.id) {
       callKundaliApi({ action: 'delete', id: removed.id }, function (entries) {
-        if (entries) { writeSaved(entries.map(fromRow)); renderSaved(); }
+        if (entries) {
+          writeSaved(entries.map(fromRow));
+        } else {
+          var restored = readSaved();
+          if (!restored.some(function (item) { return sameRecord(item, removed); })) {
+            restored.splice(Math.min(at, restored.length), 0, removed);
+          }
+          writeSaved(restored);
+          if (wasCurrent) currentEntry = removed;
+          savedNote.textContent = 'The deletion could not be confirmed. Please try again.';
+          savedNote.hidden = false;
+        }
+        renderSaved();
       });
     }
   }
@@ -4629,10 +4648,10 @@
         }
         writeSaved(current);
         renderSaved();
-        saveFeedback.textContent = 'Not saved.';
+        saveFeedback.textContent = 'Save not confirmed.';
         savedNote.textContent = previous
-          ? 'Changes were not saved. Check your connection and try again.'
-          : 'Not saved. Check your connection and generate the chart again.';
+          ? 'The changes could not be confirmed. Check your connection and try again.'
+          : 'The save could not be confirmed. Check your connection before trying again.';
         savedNote.hidden = false;
         currentEntry = previous;
       }
@@ -5238,7 +5257,6 @@
 
   populateSelects();
   populateSlotSelects();
-  seedStudyCharts();
   renderSaved();
   /*
    * The database is the saved list. localStorage is only its fast/offline
@@ -5246,8 +5264,12 @@
    * instead of reviving an old browser-only chart by uploading it.
    */
   (function syncSavedCharts() {
+    var beforeMutations = kundaliMutationGeneration;
     callKundaliApi({ action: 'list' }, function (entries) {
       if (!entries) return; // no answer: leave the last known cache visible
+      // A save/delete/flag begun while this list was in flight owns the cache;
+      // its ordered response will carry a newer authoritative list.
+      if (beforeMutations !== kundaliMutationGeneration) return;
       writeSaved(entries.map(fromRow));
       renderSaved();
     });

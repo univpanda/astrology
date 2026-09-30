@@ -103,7 +103,8 @@ Deno.serve(async (req) => {
         const rows = await patched.json();
         if (rows.length) {
           const listed = await fetch(TABLE + query, { headers: headers() });
-          return json({ saved: true, updated: true, entries: listed.ok ? await listed.json() : [] });
+          if (!listed.ok) return json({ error: await listed.text() }, 502);
+          return json({ saved: true, updated: true, entries: await listed.json() });
         }
         // The id did not match anything of theirs; fall through and insert.
       }
@@ -133,7 +134,8 @@ Deno.serve(async (req) => {
       if (!res.ok) return json({ error: await res.text() }, 502);
 
       const listed = await fetch(TABLE + query, { headers: headers() });
-      return json({ saved: true, updated: existing.length > 0, entries: listed.ok ? await listed.json() : [] });
+      if (!listed.ok) return json({ error: await listed.text() }, 502);
+      return json({ saved: true, updated: existing.length > 0, entries: await listed.json() });
     }
 
     /*
@@ -148,7 +150,8 @@ Deno.serve(async (req) => {
         { method: 'PATCH', headers: headers(), body: JSON.stringify({ opened_at: new Date().toISOString() }) });
       if (!res.ok) return json({ error: await res.text() }, 502);
       const listed = await fetch(TABLE + query, { headers: headers() });
-      return json({ opened: true, entries: listed.ok ? await listed.json() : [] });
+      if (!listed.ok) return json({ error: await listed.text() }, 502);
+      return json({ opened: true, entries: await listed.json() });
     }
 
     if (body.action === 'delete') {
@@ -158,7 +161,8 @@ Deno.serve(async (req) => {
         { method: 'DELETE', headers: headers() });
       if (!res.ok) return json({ error: await res.text() }, 502);
       const listed = await fetch(TABLE + query, { headers: headers() });
-      return json({ deleted: true, entries: listed.ok ? await listed.json() : [] });
+      if (!listed.ok) return json({ error: await listed.text() }, 502);
+      return json({ deleted: true, entries: await listed.json() });
     }
 
     return json({ error: 'action must be list, save, open or delete' }, 400);

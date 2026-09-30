@@ -784,21 +784,10 @@ console.log('\nStudy charts that ship with the app');
      (bjup ? bjup.y + '-' + bjup.m : '?') + ' to ' + (bsat ? bsat.y + '-' + bsat.m : '?'));
 })();
 
-/*
- * Seeding has to survive a chart being added to the list. The record is the
- * names already offered, so a browser holding the older charts still receives a
- * new one, and a deleted chart stays deleted.
- */
 (function () {
   var src = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
-  ok('the seed record is a list of names, not one flag',
-     /SEED_KEY = 'jyotisha\.seeded\.v2'/.test(src) &&
-     /JSON\.stringify\(STUDY_CHARTS\.map\(/.test(src));
-  ok('the v1 flag is still honoured, so deletions stick',
-     /SEED_KEY_V1 = 'jyotisha\.seeded\.v1'/.test(src) &&
-     /getItem\(SEED_KEY_V1\)/.test(src));
-  ok('a chart already in the list is not seeded again',
-     /!offered\[entry\.name\] && !known\[keyOf\(entry\)\]/.test(src));
+  ok('reference charts are not inserted into a database-backed saved list',
+     !/seedStudyCharts\(\)/.test(src) && !/SEED_KEY/.test(src));
 })();
 
 /* ------------------------------------------------ app.js <-> index.html */
@@ -1452,6 +1441,16 @@ ok('ownership is a minted token, not an account',
 ok('the ownership capability never falls back to predictable randomness',
    /getRandomValues/.test(appSrc) &&
    !/Date\.now\(\)\.toString\(36\) \+ Math\.random/.test(appSrc));
+ok('saved-list mutations run one at a time in the order they were made',
+   /var kundaliMutations = \[\];/.test(appSrc) &&
+   /if \(kundaliMutationRunning \|\| !kundaliMutations\.length\) return;/.test(appSrc) &&
+   /kundaliMutations\.push\(\{ payload: payload, done: done \}\)/.test(appSrc));
+ok('the startup list cannot overwrite a mutation begun while it was in flight',
+   /var beforeMutations = kundaliMutationGeneration;/.test(appSrc) &&
+   /if \(beforeMutations !== kundaliMutationGeneration\) return;/.test(appSrc));
+ok('a flag cannot be toggled again while its first change is unresolved',
+   /if \(pendingFlagChanges\[pendingKey\]\) return;/.test(appSrc) &&
+   /flag\.disabled = !!pendingFlagChanges/.test(appSrc));
 ok('the database replaces the cache instead of uploading old local-only charts', (function () {
   var sync = appSrc.slice(appSrc.indexOf('(function syncSavedCharts()'),
                           appSrc.indexOf('if (!Geo.historicalZonesSupported())'));
@@ -1465,7 +1464,7 @@ ok('if the database cannot answer, the last cache stays visible', (function () {
 })());
 ok('the failed-save message no longer promises a browser-only save',
    !/Saved in this browser\. Syncing was not possible\./.test(appSrc) &&
-   /saveFeedback\.textContent = 'Not saved\.';/.test(appSrc));
+   /saveFeedback\.textContent = 'Save not confirmed\.';/.test(appSrc));
 ok('entries are keyed on name, place, date and time',
    /entry\.name, entry\.placeLabel, entry\.date, entry\.time/.test(appSrc));
 ok('a local copy is written first so the panel works offline',
@@ -3652,7 +3651,7 @@ ok('every script the page loads parses', (function () {
     '  __out.renderAspects = renderAspects;\n' +
     '  __out.rotatedOnto = rotatedOnto;\n' +
     '  __out.rulingAndAspects = rulingAndAspects;\n' +
-    '  __out.renderSaved = renderSaved; __out.setFlag = setFlag;\n' +
+    '  __out.renderSaved = renderSaved; __out.setFlag = setFlag; __out.removeSaved = removeSaved;\n' +
     '  __out.saveCurrent = saveCurrent; __out.setLastChart = function (v) { lastChart = v; };\n' +
     '  __out.savedNote = savedNote;\n' +
     '  __out.readSaved = readSaved; __out.writeSaved = writeSaved;\n' +
@@ -3690,7 +3689,17 @@ ok('every script the page loads parses', (function () {
       gender: 'male', celebrity: false, flagged: false, note: ''
     });
     out.saveCurrent(true); // this harness has no fetch, so the API fails synchronously
-    return out.readSaved().length === 0 && /^Not saved\./.test(out.savedNote.textContent);
+    return out.readSaved().length === 0 && /could not be confirmed/.test(out.savedNote.textContent);
+  })());
+  ok('a deletion the database cannot confirm restores the row', (function () {
+    var row = { id: 'kept-id', name: 'Kept', placeLabel: 'Delhi, India',
+      date: '1990-01-02', time: '03:04:05', latitude: 28.6, longitude: 77.2,
+      zone: 'Asia/Kolkata', standard: 'zone', ayanamsa: 'lahiri', trueNode: true,
+      gender: 'male', celebrity: false, flagged: false, note: '' };
+    out.writeSaved([row]);
+    out.removeSaved(row); // this harness has no fetch, so deletion is unconfirmed
+    return out.readSaved().length === 1 && out.readSaved()[0].id === 'kept-id' &&
+      /deletion could not be confirmed/.test(out.savedNote.textContent);
   })());
   var chart = Astro.chart({ jdUT: Astro.julianDay(1946, 7, 6, 19 + 20 / 60 + 4),
                             latitude: 40.7143, longitude: -74.006, tzOffsetMinutes: -240 });
@@ -7511,6 +7520,9 @@ console.log('\nThe typed date is checked the way a picker would have been');
 })();
 
 var fnSrc = fs.readFileSync(path.join(root, 'supabase/functions/kundalis/index.ts'), 'utf8');
+ok('a failed post-mutation refresh is an error, never an authoritative empty list',
+   (fnSrc.match(/if \(!listed\.ok\) return json\(\{ error: await listed\.text\(\) \}, 502\);/g) || []).length === 4 &&
+   !/listed\.ok \? await listed\.json\(\) : \[\]/.test(fnSrc));
 console.log('\nThe saved list puts the last chart read at the top');
 /*
  * The order a reader wants is the one they were working in. updated_at answers
@@ -7596,8 +7608,9 @@ console.log('\nA chart whose details are in doubt can be flagged');
    */
   out.setFlag(rows[0], true);
   var stored = out.readSaved();
-  ok('raising it from a card writes to the stored row',
-    stored[0].flagged === true && stored[1].flagged === false);
+  ok('a flag the database cannot confirm rolls back in the stored row',
+    stored[0].flagged === false && stored[1].flagged === false &&
+    /could not be confirmed/.test(out.savedNote.textContent));
 
   /*
    * And it draws as a state rather than as a third identical outline. The icon
@@ -7607,13 +7620,13 @@ console.log('\nA chart whose details are in doubt can be flagged');
     return card.children.filter(function (c) { return c.tag === 'div'; })[0].children[0];
   };
   out.renderSaved();
-  ok('and the raised flag is drawn apart from the lowered one',
-    /is-flagged/.test(flagOf(out.savedList.children[0]).className) &&
+  ok('and the rolled-back flag is drawn lowered again',
+    !/is-flagged/.test(flagOf(out.savedList.children[0]).className) &&
     !/is-flagged/.test(flagOf(out.savedList.children[1]).className) &&
-    flagOf(out.savedList.children[0]).attrs['aria-pressed'] === 'true');
+    flagOf(out.savedList.children[0]).attrs['aria-pressed'] === 'false');
 
-  ok('and it is a button a reader can find by name',
-    /Clear the flag on Uncertain/.test(flagOf(out.savedList.children[0]).attrs['aria-label']) &&
+  ok('and it is again a button a reader can find by name',
+    /Flag Uncertain as needs checking/.test(flagOf(out.savedList.children[0]).attrs['aria-label']) &&
     /Flag Certain as needs checking/.test(flagOf(out.savedList.children[1]).attrs['aria-label']));
 
   // Lowered again, it leaves nothing behind.
