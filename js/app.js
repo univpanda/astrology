@@ -1258,11 +1258,17 @@
       Yogas.detect(chart, strengthsFor(state)).forEach(function (yoga) {
         (yoga.grahas || []).forEach(function (name) {
           var list = map[name] || (map[name] = []);
-          if (!list.some(function (y) { return y.title === yoga.title && y.from === from; })) {
+          var same = list.filter(function (y) {
+            return y.title === yoga.title && y.subject === (yoga.subject || '') &&
+              y.condition === (yoga.condition || '');
+          })[0];
+          if (same) {
+            same.from.push(from);
+          } else {
             /* The library key and the reference frame travel with the finding. */
             list.push({ title: yoga.title, summary: yoga.summary || '',
               subject: yoga.subject || '', condition: yoga.condition || '',
-              graha: yoga.graha || '', from: from });
+              graha: yoga.graha || '', from: [from] });
           }
         });
       });
@@ -1698,9 +1704,9 @@
           var li = el('li', 'graha-card-yoga');
           var head = el('p', 'graha-card-term');
           head.appendChild(el('span', 'graha-card-label', item.term));
-          var from = item.from === 'Ascendant' ? 'from the ascendant'
-            : item.from ? 'from ' + (item.from === 'Moon' || item.from === 'Sun'
-              ? 'the ' : '') + item.from : '';
+          var from = item.from ? 'from ' + item.from.split(',').map(function (name) {
+            return name === 'Ascendant' ? 'asc' : name;
+          }).join(' & ') : '';
           if (from) head.appendChild(el('span', 'graha-card-whose', from));
           rarity(head, kind, key);
           li.appendChild(head);

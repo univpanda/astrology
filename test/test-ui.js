@@ -3985,19 +3985,20 @@ ok('every script the page loads parses', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
   var src = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
   ok('the card carries the yoga’s reference through the renderer',
-    /y\.graha \|\| '', y\.from \|\| ''\]\.join\(FLD\)/.test(chartsSrc) &&
+    /\(y\.from \|\| \[\]\)\.join\(','\)/.test(chartsSrc) &&
     /from: bits\[5\] \|\| ''/.test(src) &&
-    /item\.from === 'Ascendant' \? 'from the ascendant'/.test(src) &&
+    /name === 'Ascendant' \? 'asc' : name/.test(src) &&
     /graha-card-whose/.test(src) && /\.graha-card-whose \{/.test(css));
-  ok('and the map keeps separate results from distinct reference houses',
-    /y\.title === yoga\.title && y\.from === from/.test(src) &&
-    /graha: yoga\.graha \|\| '', from: from/.test(src));
+  ok('and the map clubs matching yogas from distinct reference houses',
+    /same\.from\.push\(from\)/.test(src) &&
+    /graha: yoga\.graha \|\| '', from: \[from\]/.test(src));
   /*
    * And spoken, not only shown. A label that read the titles out flat would
    * leave a listener with exactly the fault the card had just lost.
    */
   ok('the graha’s accessible label says where each yoga is read from too',
-    /y\.from === 'Ascendant' \? 'the ascendant'/.test(chartsSrc));
+    /name === 'Ascendant' \? 'asc' : name/.test(chartsSrc) &&
+    /\.join\(' and '\)/.test(chartsSrc));
   /*
    * The stacked cards are gone, and their rules went with them rather than
    * sitting in the sheet unreferenced. A selector nothing produces is a claim
@@ -8394,8 +8395,8 @@ console.log('\nThe card says how the graha stands in its sign');
       var map;
       try { map = out.yogasByGraha({ chart: fake, shadbala: {} }, 1, 'Venus'); }
       finally { Yogas.detect = original; }
-      return calls.join(',') === 'Venus,Sun' && map.Mars.length === 2 &&
-        map.Mars.map(function (y) { return y.from; }).join(',') === 'Venus,Sun';
+      return calls.join(',') === 'Venus,Sun' && map.Mars.length === 1 &&
+        map.Mars[0].from.join(',') === 'Venus,Sun';
     })());
 
   /*
