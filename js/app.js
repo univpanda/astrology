@@ -3880,7 +3880,7 @@
     head.appendChild(headRow);
 
     var subRow = document.createElement('tr');
-    ['Chart condition', 'Overall'].forEach(function (h) {
+    ['This manifestation', 'Overall'].forEach(function (h) {
       var th = el('th', 'yoga-subhead', h);
       th.setAttribute('scope', 'col');
       subRow.appendChild(th);

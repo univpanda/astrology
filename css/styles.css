@@ -2003,6 +2003,11 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
  * under it sits quieter than the columns that stand alone.
  */
 .yoga-table th[scope="colgroup"] { text-align: center; }
+.yoga-table thead th {
+  text-align: center;
+  vertical-align: middle;
+}
+.yoga-table thead tr:first-child th:first-child { text-align: left; }
 .yoga-table .yoga-subhead {
   font-weight: 500;
   color: var(--ink-soft);

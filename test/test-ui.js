@@ -1603,7 +1603,7 @@ ok('it still says how each yoga forms',
 ok('the table names the graha a yoga resolves to, apart from its participants',
    /\['Graha', 'Chart', 'From', 'Yoga', 'Result'\]\.forEach/.test(appSrc) &&
    /el\('th', 'yoga-group', 'Yoga probability'\)/.test(appSrc) &&
-   /\['Chart condition', 'Overall'\]\.forEach/.test(appSrc) &&
+   /\['This manifestation', 'Overall'\]\.forEach/.test(appSrc) &&
    /finding\.graha \? 'yoga-graha' : 'yoga-graha is-shared'/.test(appSrc) &&
    /\(finding\.grahas \|\| \[\]\)\.join\(', '\)/.test(appSrc));
 ok('family remains detector metadata and is not rendered as a user-facing column',
@@ -4136,7 +4136,7 @@ ok('every script the page loads parses', (function () {
           walk(kid);
         });
       })(host);
-      return heads.join(',') === 'Graha,Chart,From,Yoga,Result,Chart condition,Overall';
+      return heads.join(',') === 'Graha,Chart,From,Yoga,Result,This manifestation,Overall';
     })());
   /*
    * The last two columns are one question asked against two backgrounds, so
@@ -4173,6 +4173,12 @@ ok('every script the page loads parses', (function () {
         });
       })(host);
       return spanned === 5;
+    })());
+  ok('and headings are centred both ways except the left-aligned Graha heading',
+    (function () {
+      var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+      return /\.yoga-table thead th \{[\s\S]{0,100}?text-align: center;[\s\S]{0,100}?vertical-align: middle;/.test(css) &&
+        /\.yoga-table thead tr:first-child th:first-child \{ text-align: left; \}/.test(css);
     })());
   /*
    * And the table narrows to one graha.
