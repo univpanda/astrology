@@ -2794,17 +2794,17 @@ ok('and the prose still reads as prose, the article taking the lower-case form',
    /withArticle\(Astro\.RELATION_LABELS\[out\]\)/.test(appSrc) &&
    Astro.titleCase(Astro.RELATION_LABELS.adhimitra) === 'Great Friend');
 /*
- * Name, pada and both lords are grouped as the four parts of the nakshatra.
- * The lords remain named in full rather than abbreviated.
+ * Name and pada share a column; both lords remain named in full rather than
+ * abbreviated, and all three columns sit under the nakshatra heading.
  */
 ok('the nakshatra lord and sub lord have grouped columns, named in full', (function () {
   var at = appSrc.indexOf('var GRAHA_ROWS = [');
   var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
   var rows = (block.match(/label: '[^']+'/g) || [])
     .map(function (t) { return t.slice(8, -1); });
-  return rows.indexOf('Name') + 1 === rows.indexOf('Pada') &&
-    rows.indexOf('Sub lord') === rows.indexOf('Lord') + 1 &&
-    (block.match(/group: 'Nakshatra'/g) || []).length === 4 &&
+  return rows.indexOf('Sub lord') === rows.indexOf('Lord') + 1 &&
+    rows.indexOf('Name - Pada') === rows.indexOf('Lord') - 1 &&
+    (block.match(/group: 'Nakshatra'/g) || []).length === 3 &&
     /\{ text: nak\.lord,/.test(appSrc) && /\{ text: nak\.subLord,/.test(appSrc) &&
     !/Astro\.grahaAbbr\(nak\.lord\)/.test(appSrc);
 })());
@@ -2815,8 +2815,8 @@ ok('the nakshatra lord and sub lord have grouped columns, named in full', (funct
   */
 ok('and no note under the table explains the codes',
    !/two-letter code the kundli uses/.test(html) &&
-   /'Nakshatra ' \+ nak\.name \+ ', ruled by ' \+ nak\.lord/.test(appSrc) &&
-   /'Pada ' \+ nak\.pada \+ ' of four in ' \+ nak\.name/.test(appSrc));
+   /'Nakshatra ' \+ nak\.name \+ ', pada ' \+ nak\.pada/.test(appSrc) &&
+   /' of four, ruled by ' \+ nak\.lord/.test(appSrc));
 
 console.log('\nVargottama flags');
 /*
@@ -6797,14 +6797,14 @@ ok('and the box is drawn to that half width, not the old full one',
  * graha like the states are, rather than a row of dashes with three words in
  * it: over nine grahas a chart carries two or three dignities at most.
  */
-ok('the table carries twelve property columns', (function () {
+ok('the table carries eleven property columns', (function () {
   var at = appSrc.indexOf('var GRAHA_ROWS = [');
   if (at < 0) return false;
   var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
   var found = (block.match(/label: '[^']+'/g) || [])
     .map(function (t) { return t.slice(8, -1); });
   return found.join('|') === ['Rashi', 'House', 'Lordship', 'Dispositor',
-    'Longitude', 'Name', 'Pada', 'Lord', 'Sub lord', 'Karaka',
+    'Longitude', 'Name - Pada', 'Lord', 'Sub lord', 'Karaka',
     'Jagratadi', 'Baladi'].join('|') &&
     !/<th scope="col">Chart<\/th>/.test(html);
 })());
@@ -6823,15 +6823,14 @@ ok('and every column says what it measures', (function () {
  * built from housesOwned, the same helper isYogakaraka and the raja yoga
  * detector use, rather than from a bespoke function of its own.
  */
-/* Name, pada and the two lords are four parts of one nakshatra reading. */
-ok('name and pada sit under the Nakshatra heading with its two lords', (function () {
+/* Name and pada share one reading; both lords complete the Nakshatra group. */
+ok('name and pada share a column under Nakshatra with its two lords', (function () {
   var at = appSrc.indexOf('var GRAHA_ROWS = [');
   var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
-  return ["label: 'Name'", "label: 'Pada'", "label: 'Lord'", "label: 'Sub lord'"]
+  return ["label: 'Name - Pada'", "label: 'Lord'", "label: 'Sub lord'"]
     .every(function (label) {
       return block.indexOf(label + ", group: 'Nakshatra'") >= 0;
-    }) && /\{ text: nak\.name, cls: 'nakshatra-name'/.test(appSrc) &&
-    /\{ text: String\(nak\.pada\), cls: 'numeric'/.test(appSrc);
+    }) && /\{ text: nak\.name \+ ' - ' \+ nak\.pada, cls: 'nakshatra-name'/.test(appSrc);
 })());
 ok('and long nakshatra names wrap between their words', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');

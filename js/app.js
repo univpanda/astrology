@@ -2035,8 +2035,7 @@
     { label: 'Lordship', says: 'Which houses the graha rules, counted from the same house 1 as the House column.' },
     { label: 'Dispositor', says: 'The lord of the sign the graha stands in, followed in brackets by the graha’s compound relationship to that lord.' },
     { label: 'Longitude', says: 'Where the graha stands within its sign, in degrees, minutes and seconds.' },
-    { label: 'Name', group: 'Nakshatra', says: 'Which of the 27 nakshatras the graha falls in.' },
-    { label: 'Pada', group: 'Nakshatra', says: 'Which of that nakshatra’s four quarters the graha falls in.' },
+    { label: 'Name - Pada', group: 'Nakshatra', says: 'Which of the 27 nakshatras the graha falls in and which of its four quarters.' },
     { label: 'Lord', group: 'Nakshatra', says: 'The graha that rules that nakshatra, which is what runs the Vimshottari dasha.' },
     { label: 'Sub lord', group: 'Nakshatra', says: 'The KP sub lord: the nakshatra divided again in the Vimshottari proportions, and whichever graha owns the part the position falls in.' },
     /*
@@ -2142,10 +2141,9 @@
           { text: dms(v.degreeInSign), cls: 'longitude',
             title: Astro.SIGNS[v.sign] + ' ' + dms(v.degreeInSign) +
               '. Longitude ' + v.longitude.toFixed(4) + '°.' },
-          { text: nak.name, cls: 'nakshatra-name',
-            title: 'Nakshatra ' + nak.name + ', ruled by ' + nak.lord + '.' },
-          { text: String(nak.pada), cls: 'numeric',
-            title: 'Pada ' + nak.pada + ' of four in ' + nak.name + '.' },
+          { text: nak.name + ' - ' + nak.pada, cls: 'nakshatra-name',
+            title: 'Nakshatra ' + nak.name + ', pada ' + nak.pada +
+              ' of four, ruled by ' + nak.lord + '.' },
           /* The two lords have their own columns and can be named in full. */
           { text: nak.lord,
             title: nak.name + ' is ruled by ' + nak.lord + '.' },
