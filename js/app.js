@@ -2038,7 +2038,6 @@
    */
   var GRAHA_ROWS = [
     { label: 'Rashi', says: 'The sign this chart puts the graha in.' },
-    { label: 'Dignity', says: 'What the graha is worth in that sign: exalted, its own, a friend’s, and so on down to debilitated.' },
     { label: 'House', says: 'Counted from this chart’s own house 1, which the tab above says what is counted from.' },
     { label: 'Lordship', says: 'Which houses the graha rules, counted from the same house 1 as the row above.' },
     { label: 'Dispositor', says: 'The lord of the sign the graha stands in.' },
@@ -2161,8 +2160,6 @@
            * the graha's card, where there is room for the reason. The marks
            * that remain here are about the sign the cell names.
            */
-          { text: (r.isAscendant ? '' : Astro.dignityOf(r.name, v.sign, v.degreeInSign)) || '–',
-            stack: true },
           { text: String(house), cls: 'numeric' },
           owned.length
             ? { text: owned.join(', '), cls: 'numeric',
@@ -3519,7 +3516,7 @@
     { key: 'V', label: '[V]', name: 'Vargottama' },
     { key: 'X', label: '[X]', name: 'Exchange of signs' },
     { key: 'S', label: '[S]', name: 'Shubha kartari' },
-    { key: 'D', label: '[D]', name: 'Directional strength' },
+    { key: 'D', label: '[Dr]', name: 'Directional strength' },
     { key: 'N', label: '[N]', name: 'Neecha bhanga raja yoga' },
     { key: 'P', label: '[P]', name: 'Papa kartari' }
   ];

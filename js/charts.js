@@ -78,9 +78,20 @@ var Charts = (function () {
    * that chart; the setting offers the rashi distance carried in, which is what
    * the texts ask for.
    */
-  function planetText(p) {
+  /*
+   * Short marks for a dignity, drawn on the chart beside the states.
+   *
+   * Own sign is deliberately absent: a graha in its own sign is its own
+   * dispositor, which the card's Dispositor line already says, and a mark for
+   * it would be a fourth letter saying what another line says anyway.
+   */
+  var DIGNITY_MARKS = { Exalted: 'E', Debilitated: 'D', Mooltrikona: 'M' };
+
+  function planetText(p, dignity) {
+    var mark = DIGNITY_MARKS[dignity];
     var flags = (p.retrograde ? '[R]' : '') + (p.vargottama ? '[V]' : '') +
-      (p.yogakaraka ? '[Y]' : '') + (p.combust ? '[C]' : '');
+      (p.yogakaraka ? '[Y]' : '') + (p.combust ? '[C]' : '') +
+      (mark ? '[' + mark + ']' : '');
     return Astro.grahaAbbr(p.name) + (flags ? ' ' + flags : '');
   }
 
@@ -255,7 +266,8 @@ var Charts = (function () {
           x: (cx + offset).toFixed(1), y: y.toFixed(1),
           class: 'planet graha-' + (SLUG[p.name] || 'other'),
           'text-anchor': 'middle'
-        }, planetText(p));
+        }, planetText(p, ctx && ctx.dignities && ctx.dignities[p.name]
+          ? ctx.dignities[p.name].formal : ''));
         if (ctx) {
           var d = describeOccupant(p, ctx.sign, ctx.house, ctx.yogas,
             ctx.division, ctx.dignities, ctx.hemming, ctx.ruling, ctx.karakas);

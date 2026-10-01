@@ -1075,8 +1075,15 @@ ok('and the flag alone takes the colour, not the name', (function () {
   return /th \.retro-flag \{ color: var\(--retro\)/.test(css) ||
     /th \.retro-flag/.test(css.slice(css.indexOf('retro-flag')));
 })());
-ok('the ascendant row still leaves dignity blank',
-   /\(r\.isAscendant \? '' : Astro\.dignityOf/.test(appSrc));
+/*
+ * The ascendant is not a graha and takes no dignity. It no longer has a row to
+ * leave blank, so what is checked is that the chart does not draw it one
+ * either: the mark is read off the dignity map, which never holds the
+ * ascendant.
+ */
+ok('the ascendant is given no dignity to draw',
+   /ctx\.dignities\[p\.name\]\s*\n?\s*\? ctx\.dignities\[p\.name\]\.formal : ''/
+     .test(fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8')));
 
 ok('time standard select is wired', /id="time-standard"/.test(html) && /time-standard/.test(appSrc));
 
@@ -2764,16 +2771,16 @@ ok('and a two-word label stacks, as the nakshatra does', (function () {
   var block = appSrc.slice(appSrc.indexOf('cells: ['),
                            appSrc.indexOf('var table = el('));
   var stacked = (block.match(/stack: true/g) || []).length;
-  // Dignity, Relationship, Nakshatra and Karaka: Amatyakaraka is one word but
-  // the row holds two-word company, and stacking costs nothing where there is
-  // only one word to put on a line.
-  return stacked === 4 &&
+  // Relationship, Nakshatra and Karaka: Amatyakaraka is one word but the row
+  // holds two-word company, and stacking costs nothing where there is only one
+  // word to put on a line. Dignity has left the table for the chart.
+  return stacked === 3 &&
     // And the karaka is split before the word every one of the eight ends in,
     // the part that tells them apart going on top.
     /function karakaLines\(name\)/.test(appSrc) &&
     /return name\.replace\(\/karaka\$\/, ' Karaka'\);/.test(appSrc) &&
     Astro.CHARA_KARAKAS.every(function (k) { return /karaka$/.test(k); }) &&
-    /Astro\.dignityOf\(r\.name, v\.sign, v\.degreeInSign\)\) \|\| '–',\s*\n\s*stack: true \}/
+    !/Astro\.dignityOf\(r\.name, v\.sign, v\.degreeInSign\)\)/
       .test(block) &&
     /cls: 'dispositor', stack: true,/.test(block);
 })());
@@ -3055,9 +3062,12 @@ ok('the key names every mark the grid draws', (function () {
   var flat = html.replace(/\s+/g, ' ');
   var key = flat.match(/<p class="varga-key">.*?<\/p>/);
   if (!key) return false;
-  return ['v', 'x', 's', 'p', 'd', 'n'].every(function (c) {
+  // [Dr] rather than [D]: the letter now means debilitated on the chart and
+  // on the card, and one letter cannot mean two things on one page.
+  return ['v', 'x', 's', 'p', 'dr', 'n'].every(function (c) {
+    var letter = c === 'dr' ? 'Dr' : c.toUpperCase();
     return new RegExp('<span class="flag flag-' + c + '">\\[' +
-      c.toUpperCase() + '\\]</span>').test(key[0]);
+      letter + '\\]</span>').test(key[0]);
   });
 })());
 ok('and sits with the grid it explains, not under the charts', (function () {
@@ -3084,13 +3094,20 @@ ok('every mark drawn anywhere is explained in one place or the other',
      var flat = html.replace(/\s+/g, ' ');
      var key = (flat.match(/<p class="varga-key">.*?<\/p>/) || [''])[0];
      var drawn = {};
-     (appSrc.match(/'flag flag-([a-z])'/g) || []).forEach(function (m) {
-       drawn[m.charAt(m.length - 2).toUpperCase()] = true;
+     (appSrc.match(/'flag flag-([a-z]+)'/g) || []).forEach(function (m) {
+       drawn[m.slice("'flag flag-".length, -1).toUpperCase()] = true;
+     });
+     // The chart draws a dignity beside the states now, from its own table.
+     var chartsSrc = fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8');
+     var dignityMarks = chartsSrc.match(/var DIGNITY_MARKS = \{[^}]*\}/)[0];
+     (dignityMarks.match(/'([A-Z])'/g) || []).forEach(function (m) {
+       drawn[m.slice(1, -1)] = true;
      });
      var card = appSrc.match(/var STATE_NAMES = \{[^}]*\}/)[0];
      var orphans = Object.keys(drawn).filter(function (letter) {
        return key.indexOf('[' + letter + ']') < 0 &&
-         !new RegExp("\\b" + letter + ": '").test(card);
+         !new RegExp("\\b" + letter + ": '").test(card) &&
+         dignityMarks.indexOf("'" + letter + "'") < 0;
      });
      return Object.keys(drawn).length >= 6 && orphans.length === 0;
    })());
@@ -3188,7 +3205,7 @@ ok('dig bala and neecha bhanga are still reported, on the varga grid',
    /signLine\.appendChild\(el\('span', 'flag flag-d', ' \[D\]'\)\)/.test(appSrc) &&
    /dignityLine\.appendChild\(el\('span', 'flag flag-n', ' \[N\]'\)\)/.test(appSrc));
 ok('and the two still drawn on the grid are still named in its key',
-   /flag-d">\[D\]/.test(html) && /flag-n">\[N\]/.test(html));
+   /flag-dr">\[Dr\]/.test(html) && /flag-n">\[N\]/.test(html));
 ok('while yogakaraka, drawn only in the chart, is named only on the card',
    !/flag-y">\[Y\]/.test(html) && /Y: 'Yogakaraka'/.test(appSrc));
 /*
@@ -3204,7 +3221,7 @@ ok('while yogakaraka, drawn only in the chart, is named only on the card',
  */
 ok('the ascendant takes none of what is about a graha',
    /var owned = r\.isAscendant \? \[\] : Astro\.housesOwned/.test(appSrc) &&
-   /r\.isAscendant \? '' : Astro\.dignityOf/.test(appSrc));
+   !/Astro\.dignityOf\(r\.name, v\.sign/.test(appSrc));
 /*
  * The graha table used to withhold the hemming marks from the ascendant, the
  * one placement the texts define kartari on. That is moot now the table draws
@@ -3215,9 +3232,10 @@ ok('and nothing excludes the ascendant from the hemming, defined on it first',
    !/isAscendant[^\n]*hemmedBy/.test(appSrc) &&
    !/hemmedBy[^\n]*isAscendant/.test(appSrc));
 ok('each mark in the key carries its own colour',
-   ['v', 'x', 's', 'p', 'd', 'n'].every(function (c) {
+   ['v', 'x', 's', 'p', 'dr', 'n'].every(function (c) {
+     var letter = c === 'dr' ? 'Dr' : c.toUpperCase();
      return new RegExp('<span class="flag flag-' + c + '">\\[' +
-       c.toUpperCase() + '\\]</span>').test(html.replace(/\s+/g, ' '));
+       letter + '\\]</span>').test(html.replace(/\s+/g, ' '));
    }));
 ok('and the card says which of the two each of its own marks is true of',
    /True of the graha whichever chart is read/.test(appSrc) ||
@@ -3510,9 +3528,9 @@ ok('and it agrees with the detector, cell by cell, on a chart that has one',
 ok('every mark is a bracketed letter', (function () {
   var flat = html.replace(/\s+/g, ' ');
   var key = (flat.match(/<p class="varga-key">.*?<\/p>/) || [''])[0];
-  var marks = key.match(/<span class="flag flag-[a-z]">[^<]*<\/span>/g) || [];
+  var marks = key.match(/<span class="flag flag-[a-z]+">[^<]*<\/span>/g) || [];
   return marks.length === 6 && !/flag-dig/.test(flat) && !/flag-star/.test(flat) &&
-    marks.every(function (m) { return /\[[RVYCXSPDN]\]/.test(m); });
+    marks.every(function (m) { return /\[(?:Dr|[RVYCXSPDNEM])\]/.test(m); });
 })());
 /*
  * [H] and [D] share the green, the letters telling them apart. A sixth hue was
@@ -4986,8 +5004,7 @@ ok('every dignity tier has a colour, and no colour is orphaned', (function () {
 ok('and a dignity is coloured wherever it is written, cell or span', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
   return !/td\.dig-/.test(css) && /\n\.dig-debilitated \{ color: var\(--retro\)/.test(css) &&
-    /dig-' \+ d\.relation,\s*\n?\s*d\.relationLabel\)/.test(appSrc) &&
-    /\{ text: \(r\.isAscendant \? '' : Astro\.dignityOf/.test(appSrc);
+    /dig-' \+ d\.relation,\s*\n?\s*d\.relationLabel\)/.test(appSrc);
 })());
 
 ok('the library says exaltation is outside the classical steps',
@@ -5931,6 +5948,47 @@ ok('and the reserved columns leave room for a name at every width', (function ()
   return released && content - reserved >= 8;
 })());
 
+/*
+ * Dignity is a mark on the chart now, beside the states, and not a row of its
+ * own in the table. Over nine grahas a chart carries two or three dignities at
+ * most, so the row was six dashes and three words.
+ *
+ * Driven, because the point is what ends up beside the graha. Own sign takes
+ * no mark: a graha in its own sign is its own dispositor, which the card's
+ * Dispositor line already says.
+ */
+(function () {
+  var chartsSrc = fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8');
+  var place = { latitude: 23.5204, longitude: 87.3119, tzOffsetMinutes: 330 };
+  var chart = Astro.chart({ jdUT: Astro.julianDay(1985, 3, 22, (10 * 60 + 55) / 60 - 5.5),
+    latitude: place.latitude, longitude: place.longitude, tzOffsetMinutes: 330 });
+  var dignityBody = appSrc.match(/function dignitiesByGraha\(state, division, tatkalika, horaRule, horaMercury\) \{[\s\S]*?\n  \}/)[0];
+  var dignities = new Function('Astro', dignityBody + '\nreturn dignitiesByGraha;')(Astro)(
+    { chart: chart }, 1, 'rashi', 'lord');
+  var box = makeNode('div');
+  Charts.render(box, { style: 'north', planets: chart.planets,
+    ascendant: chart.ascendant.longitude, division: 1, reference: 'Ascendant',
+    yogas: {}, dignities: dignities, ruling: {}, karakas: {} });
+  var labels = {};
+  (function walk(n) {
+    if (n.tag === 'text' && n.attrs && n.attrs['data-graha']) {
+      labels[n.attrs['data-graha']] = n.textContent;
+    }
+    n.children.forEach(walk);
+  })(box);
+
+  ok('the chart marks a dignity beside the graha, as it marks a state',
+    /Ve \[R\]\[E\]/.test(labels.Venus) && /\[D\]/.test(labels.Jupiter) &&
+    /\[M\]/.test(labels.Mars),
+    [labels.Venus, labels.Jupiter, labels.Mars].join(' / '));
+  ok('and a graha in its own sign takes none, that being said by its dispositor',
+    /var DIGNITY_MARKS = \{ Exalted: 'E', Debilitated: 'D', Mooltrikona: 'M' \};/
+      .test(chartsSrc) &&
+    !/Own/.test(chartsSrc.match(/var DIGNITY_MARKS = \{[^}]*\}/)[0]));
+  ok('and the table no longer carries a row of dashes for it',
+    !/label: 'Dignity'/.test(appSrc));
+})();
+
 console.log('\nAyanamsa lives in settings');
 /*
  * The ayanamsa is not a fact about a nativity. It is a choice about how every
@@ -6672,10 +6730,15 @@ ok('and every bar fill is declared for both modes',
      .every(function (token) {
        return (cssSrc.match(new RegExp(token + ': #', 'g')) || []).length === 2;
      }));
+/*
+ * [D] is debilitated now, on the chart and on the card alike, so the vargas
+ * grid writes directional strength as [Dr] rather than keeping one letter for
+ * two meanings on one page.
+ */
 ok('and every mark has a letter for the axis and a word for the hover',
-   ['V', 'X', 'S', 'P', 'D', 'N'].every(function (k) {
+   ['V', 'X', 'S', 'P', 'N'].every(function (k) {
      return new RegExp("\\{ key: '" + k + "', label: '\\[" + k + "\\]', name: '").test(appSrc);
-   }));
+   }) && /\{ key: 'D', label: '\[Dr\]', name: 'Directional strength' \}/.test(appSrc));
 /*
  * The chart note says what the series counts and stops. The strict reading - the
  * word is the D9 case, D1 excluded because every graha would qualify - is in the
@@ -6748,13 +6811,18 @@ ok('and the box is drawn to that half width, not the old full one',
  * match the two grids beside it. The Graha heading went with the turn: the
  * grahas are the columns, so the corner above their names is blank.
  */
-ok('the table carries sixteen rows, one of them a heading', (function () {
+/*
+ * Fifteen rows now. Dignity left for the chart, where it is a mark beside the
+ * graha like the states are, rather than a row of dashes with three words in
+ * it: over nine grahas a chart carries two or three dignities at most.
+ */
+ok('the table carries fifteen rows, one of them a heading', (function () {
   var at = appSrc.indexOf('var GRAHA_ROWS = [');
   if (at < 0) return false;
   var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
   var found = (block.match(/label: '[^']+'/g) || [])
     .map(function (t) { return t.slice(8, -1); });
-  return found.join('|') === ['Rashi', 'Dignity', 'House', 'Lordship', 'Dispositor',
+  return found.join('|') === ['Rashi', 'House', 'Lordship', 'Dispositor',
     'Relationship', 'Longitude', 'Degrees', 'Minutes', 'Seconds', 'Nakshatra',
     'Pada', 'Nakshatra lord', 'Sub lord', 'Karaka', 'Avastha'].join('|') &&
     !/<th scope="col">Chart<\/th>/.test(html);
@@ -6857,8 +6925,7 @@ ok('a yogakaraka owns an angle and a trine, which the column now shows', (functi
 ok('what a graha is comes before where it is', (function () {
   var at = appSrc.indexOf('var GRAHA_ROWS = [');
   var head = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
-  return head.indexOf("'Dignity'") < head.indexOf("'Degrees'") &&
-         head.indexOf("'Rashi'") < head.indexOf("'Dignity'") &&
+  return head.indexOf("'Rashi'") < head.indexOf("'House'") &&
          head.indexOf("'Lordship'") < head.indexOf("'Degrees'");
 })());
 /*

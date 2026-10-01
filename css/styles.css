@@ -1387,6 +1387,16 @@ td .retro-flag, td.retro-flag, th .retro-flag { color: var(--retro); }
    accent, which is also what a burnt graha is. */
 .flag-c { color: var(--flag-combust); }
 .flag-x { color: var(--flag-exchange); }
+/*
+ * Dignity, drawn on the chart beside the states. Exaltation takes the page's
+ * green and debilitation the red it uses for a fault; moolatrikona sits with
+ * exaltation, being the lesser of the two strong seats. Own sign has no mark:
+ * a graha in its own sign is its own dispositor, which the card already says.
+ */
+.flag-dr { color: var(--green-deep); }
+.flag-e { color: var(--green-deep); }
+.flag-m { color: var(--green-deep); }
+.flag-d { color: var(--retro); }
 /* [S] and [D] share the page's green. Both say the graha's surroundings are
    helping it - benefic company on either side, or the house it is strongest in -
    and the bracketed letter is what tells them apart. [P] is the same figure with
