@@ -812,7 +812,17 @@ input::placeholder { color: #a9bdb2; }
  * not part of what it is called, and taking the name's weight and the graha's
  * colour made it read as a second half of the name.
  */
+/*
+ * Laid out like the lines below it rather than as running text, so the dots
+ * take their space from the same gap those do. As plain inline text the
+ * separator had a space after it and none before, and sat against the word it
+ * was meant to be parted from: "Pitrukaraka· Pisces".
+ */
 .graha-card-trail {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.55rem;
   font-size: 0.8rem;
   font-weight: 400;
   color: var(--ink-soft);
@@ -886,21 +896,32 @@ input::placeholder { color: #a9bdb2; }
   padding-top: 0.2rem;
   border-top: 1px solid var(--line-soft);
 }
+/*
+ * Three columns, not two ends and a drifter.
+ *
+ * space-between with three children puts the middle one halfway along,
+ * wherever halfway happens to fall for that row, so the "from" read as a
+ * ragged line of its own down the middle of the card. The name takes the
+ * slack instead and the two that qualify it sit right, each in a column wide
+ * enough to hold the longest of them.
+ */
 .graha-card-term {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
   gap: 0.75rem;
   margin: 0;
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--ink);
 }
+.graha-card-label { flex: 1; }
 /* How common the finding is. Recessive, because it qualifies the statement
    rather than competing with it - but present on every line, so the reader can
    weigh a rare yoga against a near-universal one at a glance. */
 .graha-card-freq {
   flex: none;
+  min-width: 7rem;
+  text-align: right;
   font-size: 0.7rem;
   font-weight: 400;
   color: var(--ink-soft);
@@ -2049,7 +2070,9 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
 
 /* The house frame a yoga was detected from, between its name and frequency. */
 .graha-card-whose {
-  margin-left: 0.4rem;
+  flex: none;
+  min-width: 8.5rem;
+  text-align: right;
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--ink-soft);

@@ -5858,6 +5858,35 @@ ok('the yoga table centres its columns under their labels, the first excepted',
     .test(cssSrc) &&
   /\.yoga-table thead th \{\s*text-align: center;/.test(cssSrc));
 
+/*
+ * The findings on a graha card read as three columns: the name, where it was
+ * read from, how rare it is.
+ *
+ * space-between with three children puts the middle one halfway along,
+ * wherever halfway falls for that row, so the "from" was a ragged line of its
+ * own down the middle of the card. The name takes the slack instead, and the
+ * two that qualify it sit right in columns wide enough for the longest.
+ */
+ok('the card’s findings line up in columns rather than drifting',
+  /\.graha-card-term \{[^}]*display: flex;[^}]*gap: 0\.75rem;[^}]*\}/
+    .test(cssSrc.replace(/\n/g, '')) &&
+  !/\.graha-card-term \{[^}]*justify-content: space-between/
+    .test(cssSrc.replace(/\n/g, '')) &&
+  /\.graha-card-label \{ flex: 1; \}/.test(cssSrc) &&
+  /\.graha-card-whose \{[^}]*min-width: 8\.5rem;[^}]*text-align: right;/
+    .test(cssSrc.replace(/\n/g, '')) &&
+  /\.graha-card-freq \{[^}]*min-width: 7rem;[^}]*text-align: right;/
+    .test(cssSrc.replace(/\n/g, '')));
+/*
+ * And the heading's trail is laid out like the lines below it, so its dots
+ * take their space from the same gap. As running text the separator had a
+ * space after it and none before: "Pitrukaraka· Pisces".
+ */
+ok('and the dots in the heading are spaced on both sides',
+  /\.graha-card-trail \{[^}]*display: inline-flex;[^}]*gap: 0 0\.55rem;/
+    .test(cssSrc.replace(/\n/g, '')) &&
+  /\.graha-card-item \+ \.graha-card-item::before \{/.test(cssSrc));
+
 console.log('\nAyanamsa lives in settings');
 /*
  * The ayanamsa is not a fact about a nativity. It is a choice about how every
