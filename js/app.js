@@ -3072,7 +3072,7 @@
    */
   var GOOD_KEYS = ['own', 'adhimitra', 'mitra'];
 
-  function vargaSummary(state, scheme, tatkalika, horaRule, horaMercury) {
+  function vargaSummary(state, scheme, tatkalika, horaRule, horaMercury, combustion) {
     var positionsD1 = {};
     state.chart.planets.forEach(function (p) { positionsD1[p.name] = p; });
 
@@ -3081,7 +3081,7 @@
         tatkalika, horaRule, horaMercury);
       if (!score) return null;                     // the nodes keep no friendships
       var rashi = Astro.signOf(planet.longitude);
-      var good = 0, marks = { V: 0, X: 0, D: 0 };
+      var good = 0, marks = { V: 0, X: 0, Y: 0, Dr: 0, E: 0, D: 0, C: 0 };
       scheme.divisions.forEach(function (division) {
         var d = Astro.vargaDignity(planet.name, planet.longitude, division, positionsD1,
           tatkalika, horaRule, horaMercury);
@@ -3093,7 +3093,18 @@
         if (Yogas.parivartana(chart).some(function (yoga) {
           return (yoga.grahas || []).indexOf(planet.name) >= 0;
         })) marks.X++;
-        if (Astro.hasDigBala(planet.name, ((d.sign - lagna) % 12 + 12) % 12 + 1)) marks.D++;
+        if (Astro.isYogakaraka(planet.name, lagna)) marks.Y++;
+        if (Astro.hasDigBala(planet.name, ((d.sign - lagna) % 12 + 12) % 12 + 1)) marks.Dr++;
+        var position = Astro.vargaPosition(planet.longitude, division);
+        var dignity = Astro.dignityOf(planet.name, position.sign, position.degreeInSign);
+        if (dignity === 'Exalted') marks.E++;
+        if (dignity === 'Debilitated') marks.D++;
+        var sun = positionsD1.Sun;
+        var inDivision = combustion !== 'rashi' && division !== 1;
+        if (sun && Astro.isCombust(planet.name,
+          inDivision ? position.longitude : planet.longitude,
+          inDivision ? Astro.vargaPosition(sun.longitude, division).longitude : sun.longitude,
+          planet.retrograde)) marks.C++;
       });
       return { graha: planet.name, vimsopaka: score.total, band: score.band,
                good: good, vargottama: marks.V, marks: marks };
@@ -3266,17 +3277,15 @@
     return figure;
   }
 
-  /*
-   * The five that help, then the one that harms. Papa kartari is the only mark
-   * here that reports an affliction, so it closes the row rather than sitting
-   * third among the rest, and it wears the red its letter wears in the grid.
-   * Every bar takes the colour of its own mark for the same reason: a reader
-   * coming from the table already knows what the purple and the blue mean.
-   */
+  // Match the table key's order and names. Dr and D are distinct conditions.
   var MARKS = [
     { key: 'V', label: '[V]', name: 'Vargottama' },
     { key: 'X', label: '[X]', name: 'Exchange of signs' },
-    { key: 'D', label: '[Dr]', name: 'Directional strength' }
+    { key: 'Y', label: '[Y]', name: 'Yogakaraka' },
+    { key: 'Dr', label: '[Dr]', name: 'Directional strength' },
+    { key: 'E', label: '[E]', name: 'Exalted' },
+    { key: 'D', label: '[D]', name: 'Debilitated' },
+    { key: 'C', label: '[C]', name: 'Combust' }
   ];
 
   /**
@@ -3302,7 +3311,7 @@
     var host = document.getElementById('vargas-charts');
     host.innerHTML = '';
     var rows = vargaSummary(state, scheme, tatkalikaSetting(), horaSetting(),
-      horaMercurySetting());
+      horaMercurySetting(), document.getElementById('combustion').value);
     if (!rows.length) return;
 
     /*

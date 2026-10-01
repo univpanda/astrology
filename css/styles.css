@@ -1967,17 +1967,15 @@ td.vimsopaka-poor { color: var(--retro); }
   color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
 }
-/* Each bar in a graha's profile is a mark, so it wears that mark's own colour -
-   the hue its letter wears in the grid above, so a reader crossing from table to
-   chart carries one vocabulary rather than two. The fill steps are the chart-
-   tuned siblings of the text hues: a letter and a filled bar want different
-   lightness, and the text greens and reds sit above the band on a dark surface.
-   The validator cannot separate the purple from the blue - 1.6 deutan, 10.5 to
-   normal vision - so the colour here is redundant, not the encoding: every bar
-   is labelled with its own letter underneath and names itself on hover. */
+/* Bars retain condition colours; table symbols and axis labels stay neutral.
+   Each bar also has its own label, count and full name on hover. */
 .chart-bar.mark-v rect { fill: var(--chart-vargottama); }
 .chart-bar.mark-x rect { fill: var(--chart-exchange); }
-.chart-bar.mark-d rect { fill: var(--chart-vimsopaka); }
+.chart-bar.mark-y rect { fill: var(--chart-good); }
+.chart-bar.mark-dr rect { fill: var(--chart-vimsopaka); }
+.chart-bar.mark-e rect { fill: var(--chart-vimsopaka); }
+.chart-bar.mark-d rect { fill: var(--retro); }
+.chart-bar.mark-c rect { fill: var(--flag-combust); }
 /* Five small charts where two large ones sit, so they take a narrower track.
    min-width: 0 lets each shrink to its own rather than holding the row open. */
 .varga-facets {

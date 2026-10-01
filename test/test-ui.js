@@ -340,7 +340,7 @@ console.log('\nThe tatkalika setting, end to end');
   ok('the vimsopaka grid takes it',
      /Astro\.vargaDignity\(planet\.name, planet\.longitude, division, positionsD1,\s*\n\s*tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src));
   ok('the chart card takes it', /GrahaView\.dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src));
-  ok('the varga summary takes it', /vargaSummary\(state, scheme, tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src));
+  ok('the varga summary takes it', /vargaSummary\(state, scheme, tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\), document\.getElementById\('combustion'\)\.value\)/.test(src));
   // Including the figure at the foot of the grid, which is scored over the
   // same cells and would otherwise be a total of a column nobody is looking at.
   ok('and so does the vimsopaka total beneath the cells',
@@ -361,7 +361,7 @@ console.log('\nThe tatkalika setting, end to end');
   ok('the grid, the card, the summary and the total all take it',
      /positionsD1,\s*\n\s*tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src) &&
      /GrahaView\.dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src) &&
-     /vargaSummary\(state, scheme, tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src));
+     /vargaSummary\(state, scheme, tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\), document\.getElementById\('combustion'\)\.value\)/.test(src));
   // Shadbala takes it too, so saptavargaja grades its hora the way the grid does.
   ok('and shadbala takes the hora reading as well as the tatkalika one',
      /tatkalika: tatkalikaSetting\(\),\s*\n\s*horaDignity: horaSetting\(\),\s*\n\s*horaMercury: horaMercurySetting\(\)/.test(src));
@@ -6310,7 +6310,7 @@ ok('and the margins shrink with the labels that needed them',
 ok('every mark in the grid is counted in a facet', (function () {
   var at = appSrc.indexOf('var MARKS = [');
   var block = appSrc.slice(at, appSrc.indexOf('var ceiling', at));
-  return ['V', 'X', 'D'].every(function (k) {
+  return ['V', 'X', 'Y', 'Dr', 'E', 'D', 'C'].every(function (k) {
     return block.indexOf("key: '" + k + "'") >= 0;
   });
 })());
@@ -6335,7 +6335,94 @@ ok('vargaSummary runs and counts every mark', (function () {
   var rows = summary({ chart: c }, Astro.VARGA_SCHEMES.shodasavarga);
   return rows.length === 7 && rows.every(function (r) {
     return typeof r.vimsopaka === 'number' && r.good >= 0 &&
-      ['V', 'X', 'D'].every(function (k) { return r.marks[k] >= 0; });
+      ['V', 'X', 'Y', 'Dr', 'E', 'D', 'C'].every(function (k) { return r.marks[k] >= 0; });
+  });
+})());
+
+ok('all seven counts match divisional cards across schemes and combustion settings', (function () {
+  var src = appSrc.slice(appSrc.indexOf('  var GOOD_KEYS'), appSrc.indexOf('  function svgEl'));
+  var summary = new Function('Astro', 'Yogas', src + '; return vargaSummary;')(Astro, Yogas);
+  var chart = Astro.chart({ jdUT: Astro.julianDay(1977, 8, 20, 3),
+    latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 });
+  var state = { chart: chart };
+  var keys = ['V', 'X', 'Y', 'Dr', 'E', 'D', 'C'];
+  var totals = { V: 0, X: 0, Y: 0, Dr: 0, E: 0, D: 0, C: 0 };
+  var modesDiffer = false, priorCombust;
+  var valid = ['division', 'rashi'].every(function (combustion) {
+    var modeCombust = 0;
+    var matches = Object.keys(Astro.VARGA_SCHEMES).every(function (schemeKey) {
+      var scheme = Astro.VARGA_SCHEMES[schemeKey];
+      var rows = summary(state, scheme, 'varga', 'effects', 'friend', combustion);
+      return rows.length === 7 && rows.every(function (row) {
+        var expected = { V: 0, X: 0, Y: 0, Dr: 0, E: 0, D: 0, C: 0 };
+        scheme.divisions.forEach(function (division) {
+          var recast = Astro.chartInDivision(chart, division);
+          var yogas = {};
+          Yogas.parivartana(recast).forEach(function (yoga) {
+            yoga.grahas.forEach(function (name) {
+              (yogas[name] || (yogas[name] = [])).push({ subject: 'Parivartana' });
+            });
+          });
+          var target = makeNode('td');
+          Charts.decorateCardTarget(target, {
+            planets: chart.planets, ascendant: chart.ascendant.longitude,
+            division: division, reference: 'Ascendant', combustion: combustion,
+            yogas: yogas,
+            dignities: GrahaView.dignitiesByGraha(state, division, 'varga', 'effects', 'friend')
+          }, row.graha);
+          (target.getAttribute('data-states') || '').split('\u001e').forEach(function (record) {
+            var key = record.split('\u001f')[0];
+            if (['V', 'X', 'Y', 'C'].indexOf(key) >= 0) expected[key]++;
+          });
+          var formal = target.getAttribute('data-dignity');
+          if (formal === 'Exalted') expected.E++;
+          if (formal === 'Debilitated') expected.D++;
+          var planet = recast.planets.filter(function (p) { return p.name === row.graha; })[0];
+          var house = ((planet.sign - recast.ascendant.sign) % 12 + 12) % 12 + 1;
+          if (Astro.hasDigBala(row.graha, house)) expected.Dr++;
+        });
+        modeCombust += expected.C;
+        return keys.every(function (key) {
+          totals[key] += expected[key];
+          return row.marks[key] === expected[key] && row.marks[key] <= scheme.count;
+        });
+      });
+    });
+    if (priorCombust !== undefined) modesDiffer = priorCombust !== modeCombust;
+    priorCombust = modeCombust;
+    return matches;
+  });
+  return valid && modesDiffer && keys.every(function (key) { return totals[key] > 0; });
+})());
+
+ok('each graha chart renders seven labelled counts including zeros', (function () {
+  var host = makeNode('div');
+  var chartDocument = {
+    createElementNS: document.createElementNS,
+    getElementById: function (id) { return id === 'vargas-charts' ? host : { value: 'division' }; }
+  };
+  var makeElement = function (tag, cls, text) {
+    var node = makeNode(tag);
+    if (cls) node.setAttribute('class', cls);
+    if (text != null) node.textContent = text;
+    return node;
+  };
+  var src = appSrc.slice(appSrc.indexOf('  var GOOD_KEYS'),
+    appSrc.indexOf('  /* --------------------------------------------------------------- yogas */'));
+  var renderCharts = new Function('Astro', 'Yogas', 'document', 'el',
+    'tatkalikaSetting', 'horaSetting', 'horaMercurySetting', src + '; return renderVargaCharts;')(
+      Astro, Yogas, chartDocument, makeElement,
+      function () { return 'varga'; }, function () { return 'effects'; }, function () { return 'friend'; });
+  var chart = Astro.chart({ jdUT: Astro.julianDay(1977, 8, 20, 3),
+    latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 });
+  renderCharts({ chart: chart }, Astro.VARGA_SCHEMES.shodasavarga);
+  var figures = host.children[0].children;
+  return figures.length === 7 && figures.every(function (figure) {
+    var svg = figure.children[1];
+    var labels = svg.children.filter(function (n) { return n.getAttribute('class') === 'chart-name'; });
+    var values = svg.children.filter(function (n) { return n.getAttribute('class') === 'chart-value'; });
+    return labels.map(function (n) { return n.textContent; }).join(',') === '[V],[X],[Y],[Dr],[E],[D],[C]' &&
+      values.length === 7 && values.every(function (n) { return /^\d+$/.test(n.textContent); });
   });
 })());
 
@@ -6772,10 +6859,10 @@ ok('and a mark labels its own bar rather than being abbreviated to two letters',
 ok('the removed kartari markers do not enter the row', (function () {
   var at = appSrc.indexOf('var MARKS = [');
   var block = appSrc.slice(at, appSrc.indexOf('];', at));
-  var keys = (block.match(/key: '([VXSPDN])'/g) || []).map(function (m) {
-    return m.slice(-2, -1);
+  var keys = (block.match(/key: '([A-Za-z]+)'/g) || []).map(function (m) {
+    return m.match(/'([^']+)'/)[1];
   });
-  return keys.join('') === 'VXD';
+  return keys.join(',') === 'V,X,Y,Dr,E,D,C';
 })());
 /*
  * A bar takes the colour of its own mark - the same colour that mark's letter
@@ -6789,7 +6876,7 @@ ok('and each bar wears the colour of its own mark',
    /\.chart-bar\.mark-v rect \{ fill: var\(--chart-vargottama\); \}/.test(cssSrc) &&
    /\.chart-bar\.mark-x rect \{ fill: var\(--chart-exchange\); \}/.test(cssSrc) &&
    !/\.chart-bar\.mark-[sp] rect/.test(cssSrc) &&
-   /\.chart-bar\.mark-d rect \{ fill: var\(--chart-vimsopaka\); \}/
+   /\.chart-bar\.mark-dr rect \{ fill: var\(--chart-vimsopaka\); \}/
      .test(cssSrc));
 /*
  * A filled bar and a coloured letter want different lightness. The text hues for
@@ -6812,7 +6899,7 @@ ok('and every bar fill is declared for both modes',
 ok('and every mark has a letter for the axis and a word for the hover',
    ['V', 'X'].every(function (k) {
      return new RegExp("\\{ key: '" + k + "', label: '\\[" + k + "\\]', name: '").test(appSrc);
-   }) && /\{ key: 'D', label: '\[Dr\]', name: 'Directional strength' \}/.test(appSrc));
+   }) && /\{ key: 'Dr', label: '\[Dr\]', name: 'Directional strength' \}/.test(appSrc));
 /*
  * The chart note says what the series counts and stops. The strict reading - the
  * word is the D9 case, D1 excluded because every graha would qualify - is in the
