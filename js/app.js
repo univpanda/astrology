@@ -1707,10 +1707,9 @@
          * carry the family's figure - one of them holds in every chart - where
          * Chakra is one in thousands and Pasa two in five.
          */
-        var cardKey = item.division + '|' + item.primaryReference + '|' +
-          item.term + '|' + item.route + '|' + item.from;
-        var manifestationChance = FREQUENCIES.yogaManifestationByCardContext &&
-          FREQUENCIES.yogaManifestationByCardContext[cardKey];
+        var cardKey = item.division + '|' + item.term + '|' + item.route;
+        var manifestationChance = FREQUENCIES.yogaManifestationByDivision &&
+          FREQUENCIES.yogaManifestationByDivision[cardKey];
         found.push({ chance: manifestationChance, build: function () {
           var li = el('li', 'graha-card-yoga');
           var head = el('p', 'graha-card-term');
@@ -3716,10 +3715,10 @@
 
   function yogaFrequency(finding) {
     if (typeof FREQUENCIES === 'undefined') return;
-    var context = finding.frequencyDivision + '|' + finding.frequencyReference + '|';
-    if (FREQUENCIES.yogaTitleByContext &&
-        typeof FREQUENCIES.yogaTitleByContext[context + finding.title] === 'number') {
-      return FREQUENCIES.yogaTitleByContext[context + finding.title];
+    var context = finding.frequencyDivision + '|';
+    if (FREQUENCIES.yogaTitleByDivision &&
+        typeof FREQUENCIES.yogaTitleByDivision[context + finding.title] === 'number') {
+      return FREQUENCIES.yogaTitleByDivision[context + finding.title];
     }
     if (typeof FREQUENCIES.yogaTitle[finding.title] === 'number') {
       return FREQUENCIES.yogaTitle[finding.title];
@@ -3736,11 +3735,11 @@
     if (typeof FREQUENCIES === 'undefined' || !FREQUENCIES.yogaManifestation) return;
     var route = Array.isArray(finding.route) ? finding.route.slice().sort().join('+')
       : finding.route || finding.kind || finding.condition || 'general';
-    var context = finding.frequencyDivision + '|' + finding.frequencyReference + '|';
-    if (FREQUENCIES.yogaManifestationByContext &&
-        typeof FREQUENCIES.yogaManifestationByContext[
+    var context = finding.frequencyDivision + '|';
+    if (FREQUENCIES.yogaManifestationByDivision &&
+        typeof FREQUENCIES.yogaManifestationByDivision[
           context + finding.title + '|' + route] === 'number') {
-      return FREQUENCIES.yogaManifestationByContext[
+      return FREQUENCIES.yogaManifestationByDivision[
         context + finding.title + '|' + route];
     }
     return FREQUENCIES.yogaManifestation[finding.title + '|' + route];

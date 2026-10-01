@@ -7704,6 +7704,13 @@ console.log('\nHow rare a finding is, said out loud');
     F.yogaManifestation['Angle-trine raja yoga|aspect'] > 0 &&
     F.yogaTitle['Angle-trine raja yoga'] >
       F.yogaManifestation['Angle-trine raja yoga|conjunction']);
+  ok('reference frames neither split nor multiply a yoga probability',
+    F.yogaTitleByDivision['1|Gaja Kesari yoga'] ===
+      F.yogaTitle['Gaja Kesari yoga'] &&
+    F.yogaManifestationByDivision['1|Gaja Kesari yoga|gaja'] ===
+      F.yogaManifestation['Gaja Kesari yoga|gaja'] &&
+    !F.yogaTitleByContext && !F.yogaManifestationByContext &&
+    !F.yogaManifestationByCardContext);
 })();
 
 console.log('\nThe card prints the figure beside the finding');
@@ -7717,7 +7724,7 @@ console.log('\nThe card prints the figure beside the finding');
  */
 ok('the card asks the table for both kinds of line',
     /chanceOf\('state', at \+ '\/' \+ item\.term\)/.test(src) &&
-    /FREQUENCIES\.yogaManifestationByCardContext\[cardKey\]/.test(src) &&
+    /FREQUENCIES\.yogaManifestationByDivision\[cardKey\]/.test(src) &&
     /typeof manifestationChance === 'number'/.test(src) &&
     /'In ' \+\s*\n?\s*\(chance >= 10 \? Math\.round\(chance\) : chance\) \+ '% of charts\.'/
       .test(src));
@@ -7727,10 +7734,11 @@ ok('the card asks the table for both kinds of line',
    * of them holds in every chart: keyed on the subject they would all have read
    * "every chart", where Chakra is one in thousands and Pasa two in five.
    */
-  ok('and a highlighted yoga asks for its exact route, division and reference set',
-    /item\.division \+ '\|' \+ item\.primaryReference \+ '\|'/.test(src) &&
-    /item\.term \+ '\|' \+ item\.route \+ '\|' \+ item\.from/.test(src) &&
-    typeof F.yogaManifestationByCardContext === 'object');
+  ok('and a highlighted yoga asks for its route and division, never its reference frame',
+    /item\.division \+ '\|' \+ item\.term \+ '\|' \+ item\.route/.test(src) &&
+    !/item\.primaryReference \+ '\|'/.test(src) &&
+    !/item\.route \+ '\|' \+ item\.from/.test(src) &&
+    typeof F.yogaManifestationByDivision === 'object');
   ok('and the two really do differ where a family shares a passage',
     F.yoga['Nabhasa Yoga|general'] > 95 &&
     F.yogaTitle['Rajju yoga'] < 2 && F.yogaTitle['Pasa yoga'] > 30,

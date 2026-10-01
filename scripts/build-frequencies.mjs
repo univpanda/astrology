@@ -23,7 +23,6 @@ const Shadbala = (global.Shadbala = require('../js/shadbala.js'));
 
 const GRAHAS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn',
   'Rahu', 'Ketu'];
-const REFERENCES = ['Ascendant'].concat(GRAHAS);
 const PLACES = [
   [28.61, 77.21, 330], [40.71, -74.01, -300], [-33.87, 151.21, 600],
   [51.51, -0.13, 0], [-23.55, -46.63, -180]
@@ -38,8 +37,7 @@ const yoga = {}, state = {}, yogaNoFloor = {};
  * chart - where Chakra is one in thousands and Pasa is two in five.
  */
 const byTitle = {}, byManifestation = {};
-const titleByContext = {}, manifestationByContext = {};
-const manifestationByCardContext = {};
+const titleByDivision = {}, manifestationByDivision = {};
 
 /*
  * A manifestation is the stable route by which a named yoga formed, not the
@@ -53,20 +51,6 @@ const manifestationKey = function (f) {
     : f.route || f.kind || f.condition || 'general';
   return f.title + '|' + route;
 };
-const rotatedOnto = function (chart, reference) {
-  if (reference === 'Ascendant') return chart;
-  const anchor = chart.planets.find(function (p) { return p.name === reference; });
-  if (!anchor) return chart;
-  const turned = Object.assign({}, chart);
-  turned.ascendant = Object.assign({}, anchor, { longitude: anchor.longitude });
-  const lagna = Astro.signOf(anchor.longitude);
-  turned.planets = chart.planets.map(function (p) {
-    return Object.assign({}, p, { house: ((p.sign - lagna + 12) % 12) + 1 });
-  });
-  turned.reference = reference;
-  return turned;
-};
-
 for (let y = 1930; y < 2030; y++) {
   for (let m = 1; m <= 12; m++) {
     for (let step = 0; step < 8; step++) {
@@ -139,58 +123,27 @@ for (let y = 1930; y < 2030; y++) {
       };
       sweep(yoga, byTitle, byManifestation);
       /*
-       * The Yogas table can read every division from every reference. Its two
-       * probabilities must be measured in that same frame; an ascendant/D1
-       * rate beside a Moon/D9 finding would answer a different question.
+       * Reference is evidence for where a yoga was found in this chart, not a
+       * different route by which the yoga forms and not another opportunity
+       * for it to enter the sample. Measure the canonical divisional chart
+       * once. The same rate is then shown whether this chart happened to
+       * expose that route from the ascendant, Moon, Sun or several of them.
        */
       Astro.SHODASAVARGA.forEach(function (division) {
         const inDivision = Astro.chartInDivision(chart, division);
-        const findingsByReference = {};
-        REFERENCES.forEach(function (reference) {
-          const seenTitle = {}, seenManifestation = {};
-          const findings = findingsByReference[reference] =
-            Yogas.detect(rotatedOnto(inDivision, reference), strengths);
-          findings.forEach(function (f) {
-            if (!f.title) return;
-            const prefix = division + '|' + reference + '|';
-            const tk = prefix + f.title;
-            const mk = prefix + manifestationKey(f);
-            if (!seenTitle[tk]) {
-              seenTitle[tk] = 1;
-              titleByContext[tk] = (titleByContext[tk] || 0) + 1;
-            }
-            if (!seenManifestation[mk]) {
-              seenManifestation[mk] = 1;
-              manifestationByContext[mk] = (manifestationByContext[mk] || 0) + 1;
-            }
-          });
+        const seenTitle = {}, seenManifestation = {};
+        Yogas.detect(inDivision, strengths).forEach(function (f) {
+          if (!f.title) return;
+          seenTitle[f.title] = 1;
+          seenManifestation[manifestationKey(f)] = 1;
         });
-        REFERENCES.forEach(function (primaryReference) {
-          const seenSigns = {}, grouped = {};
-          [primaryReference, 'Moon', 'Sun'].forEach(function (reference) {
-            const anchor = reference === 'Ascendant' ? inDivision.ascendant
-              : inDivision.planets.find(function (p) { return p.name === reference; });
-            if (!anchor) return;
-            const sign = Astro.signOf(anchor.longitude);
-            if (seenSigns[sign]) return;
-            seenSigns[sign] = 1;
-            (findingsByReference[reference] || []).forEach(function (f) {
-              if (!f.title) return;
-              const route = Array.isArray(f.route) ? f.route.slice().sort().join('+')
-                : f.route || f.kind || f.condition || 'general';
-              const identity = f.title + '|' + route;
-              if (!grouped[identity]) grouped[identity] = [];
-              if (grouped[identity].indexOf(reference) < 0) {
-                grouped[identity].push(reference);
-              }
-            });
-          });
-          Object.keys(grouped).forEach(function (identity) {
-            const key = division + '|' + primaryReference + '|' + identity + '|' +
-              grouped[identity].join(',');
-            manifestationByCardContext[key] =
-              (manifestationByCardContext[key] || 0) + 1;
-          });
+        Object.keys(seenTitle).forEach(function (title) {
+          const key = division + '|' + title;
+          titleByDivision[key] = (titleByDivision[key] || 0) + 1;
+        });
+        Object.keys(seenManifestation).forEach(function (manifestation) {
+          const key = division + '|' + manifestation;
+          manifestationByDivision[key] = (manifestationByDivision[key] || 0) + 1;
         });
       });
       /*
@@ -256,14 +209,11 @@ ${dump(byTitle)}
   yogaManifestation: {
 ${dump(byManifestation)}
   },
-  yogaTitleByContext: {
-${dump(titleByContext)}
+  yogaTitleByDivision: {
+${dump(titleByDivision)}
   },
-  yogaManifestationByContext: {
-${dump(manifestationByContext)}
-  },
-  yogaManifestationByCardContext: {
-${dump(manifestationByCardContext)}
+  yogaManifestationByDivision: {
+${dump(manifestationByDivision)}
   }
 };
 
