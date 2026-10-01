@@ -9294,6 +9294,37 @@ console.log('\nKartari remains a yoga without an S or P marker');
       /condition: wanted \? 'shubha' : 'papa'/.test(yogaSrc));
 })();
 
+console.log('\nVimsopaka cells use the divisional charts\u2019 own cards');
+ok('every one of the sixteen divisions gives a cell the same card data as its chart',
+  (function () {
+    var chart = Astro.chart({ jdUT: Astro.julianDay(1985, 3, 22, 5 + 25 / 60),
+      latitude: 23.55, longitude: 87.32, tzOffsetMinutes: 330 });
+    return Astro.SHODASAVARGA.every(function (division) {
+      var opts = { style: 'north', planets: chart.planets,
+        ascendant: chart.ascendant.longitude, division: division,
+        reference: 'Ascendant', yogas: {}, dignities: {}, ruling: {}, karakas: {},
+        combustion: 'division' };
+      var box = makeNode('div'), cell = makeNode('td');
+      Charts.render(box, opts);
+      Charts.decorateCardTarget(cell, opts, 'Jupiter');
+      var label;
+      (function walk(n) {
+        if (n.attrs && n.attrs['data-graha'] === 'Jupiter') label = n;
+        (n.children || []).forEach(walk);
+      })(box);
+      if (!label) return false;
+      var keys = Object.keys(label.attrs).filter(function (key) {
+        return key.indexOf('data-') === 0 || key === 'aria-label';
+      });
+      var same = keys.every(function (key) {
+        return label.attrs[key] === cell.attrs[key];
+      }) && Object.keys(cell.attrs).filter(function (key) {
+        return key.indexOf('data-') === 0 || key === 'aria-label';
+      }).length === keys.length;
+      return same;
+    });
+  })());
+
 
 console.log('\nThe card is wide enough to read and stays on screen');
 /*

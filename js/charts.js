@@ -510,6 +510,7 @@ var Charts = (function () {
       var occ = data.bySign[sign];
       drawOccupants(g, occ, cx, cy, [NORTH_FIT[h][0] * s, NORTH_FIT[h][1] * s],
         { sign: sign, house: h + 1, yogas: yogas,
+          division: division,
           dignities: dignities,
           karakas: karakas,
           ruling: ruling });
@@ -556,6 +557,7 @@ var Charts = (function () {
        */
       drawOccupants(g, data.bySign[i], x + cell / 2, y + cell / 2 + 2, [cell - 32, 0],
         { sign: i, house: house, yogas: yogas,
+          division: division,
           dignities: dignities,
           karakas: karakas,
           ruling: ruling });
