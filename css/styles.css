@@ -941,6 +941,24 @@ input::placeholder { color: #a9bdb2; }
   background: var(--green-soft);
 }
 /*
+ * The name of a group, opening its own tbody. The page keeps these settings in
+ * two tabs - the readings that change the chart, and the ones that only move a
+ * figure inside the strength tables - and twenty-four rows at one stretch
+ * asked a reader to find that division for themselves.
+ */
+.preset-group-head th {
+  padding-top: 1.1rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--green-deep);
+  border-bottom: 1px solid var(--line);
+}
+/* The first group opens the table, where the column headings are already the
+   rule above it. */
+.preset-group:first-of-type .preset-group-head th { padding-top: 0.35rem; }
+/*
  * Most rows read the same across all four: the readings part in a handful of
  * places and nowhere else. Marking the ones that differ puts the eye on what
  * is actually being decided between.

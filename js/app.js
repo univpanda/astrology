@@ -4977,12 +4977,39 @@
    * comparator's figures cannot be reached at all, the preset says so rather
    * than quietly landing near them.
    */
-  var RECKONING_IDS = ['time-standard', 'ayanamsa', 'node-type', 'combustion',
-    'tatkalika', 'hora-dignity', 'budha-floor', 'mercury-nature',
-    'nat-clock', 'saptavargaja-ladder', 'hora-mercury', 'moon-paksha',
-    'paksha-doubled', 'hora-length', 'ayana-constant', 'kranti', 'ayana-doubled',
-    'cheshta-method', 'kendra-method', 'mean-source', 'luminary-rule',
-    'luminary-cheshta', 'ishta-kashta'];
+  /*
+   * The settings, in the two groups the page already keeps them in: the
+   * readings that change the chart, and the ones that only move a figure
+   * inside the strength tables. The comparison is read in those groups too,
+   * because twenty-four rows at one stretch asks a reader to find the division
+   * for themselves when the page has already made it.
+   *
+   * Written out rather than read off the panels, which is where the division
+   * really lives: the two cannot be read at the point this is wanted, since
+   * the page is still being built. A test holds them to the markup instead, so
+   * a setting added to a panel and not to a group is a failure and not a quiet
+   * omission from everything below.
+   */
+  var SETTING_GROUPS = [
+    { title: 'Chart settings',
+      ids: ['chart-style', 'time-standard', 'ayanamsa', 'node-type',
+        'combustion', 'tatkalika', 'hora-dignity', 'budha-floor',
+        'mercury-nature'] },
+    { title: 'Test settings',
+      ids: ['nat-clock', 'saptavargaja-ladder', 'hora-mercury', 'moon-paksha',
+        'paksha-doubled', 'hora-length', 'ayana-constant', 'kranti',
+        'ayana-doubled', 'cheshta-method', 'kendra-method', 'mean-source',
+        'luminary-rule', 'luminary-cheshta', 'ishta-kashta'] }
+  ];
+
+  /*
+   * Every setting, flat. Chart style is in it now rather than being appended
+   * by each of the four callers that wanted it, which is what the old list
+   * left them all doing.
+   */
+  var RECKONING_IDS = SETTING_GROUPS.reduce(function (all, group) {
+    return all.concat(group.ids);
+  }, []);
 
   /*
    * The values the markup ships with, read once before anything has been
@@ -4993,7 +5020,7 @@
   function pageDefaults() {
     if (!PAGE_DEFAULTS) {
       PAGE_DEFAULTS = {};
-      RECKONING_IDS.concat(['chart-style']).forEach(function (id) {
+      RECKONING_IDS.forEach(function (id) {
         var select = document.getElementById(id);
         if (select) PAGE_DEFAULTS[id] = select.value;
       });
@@ -5156,7 +5183,7 @@
 
   function currentSettings() {
     var out = {};
-    RECKONING_IDS.concat(['chart-style']).forEach(function (id) {
+    RECKONING_IDS.forEach(function (id) {
       var select = document.getElementById(id);
       if (select) out[id] = select.value;
     });
@@ -5168,7 +5195,7 @@
     var preset = PRESETS[name];
     if (!preset) return null;
     var wanted = {};
-    RECKONING_IDS.concat(['chart-style']).forEach(function (id) {
+    RECKONING_IDS.forEach(function (id) {
       wanted[id] = Object.prototype.hasOwnProperty.call(preset.of, id)
         ? preset.of[id] : pageDefaults()[id];
     });
@@ -5366,70 +5393,83 @@
       thead.appendChild(head);
       table.appendChild(thead);
 
-      var body = el('tbody');
-      RECKONING_IDS.concat(['chart-style']).forEach(function (id) {
-        var source = document.getElementById(id);
-        if (!source) return;
-        /*
-         * What each reading has to say here, and whether it says anything.
-         * A preset names the settings it is pinned on and takes the rest from
-         * this page, so a cell can be either a reading's own position or this
-         * page's standing in for one. They looked identical, which made the
-         * table claim four opinions where it had one: nothing is recorded
-         * about where Drik Panchang or Star Jyotish put Budha-Aditya's floor,
-         * and the row read as though all four had settled it.
-         */
-        var values = COLUMNS.map(function (name) {
-          var wanted = settingsForPreset(name);
-          return {
-            value: wanted ? wanted[id] : undefined,
-            own: name === 'page' ||
-              Object.prototype.hasOwnProperty.call(PRESETS[name].of, id)
-          };
-        });
-        var spoken = values.filter(function (v) { return v.own; });
-        var agree = spoken.every(function (v) { return v.value === spoken[0].value; });
-        var row = el('tr', agree ? '' : 'preset-row-differs');
-
-        var name = el('th', null, labelFor(id));
-        name.setAttribute('scope', 'row');
-        row.appendChild(name);
-
-        var cell = el('td');
-        var select = el('select');
-        select.id = 'my-' + id;
-        select.setAttribute('aria-label', labelFor(id));
-        Array.prototype.forEach.call(source.options, function (option) {
-          var copy = el('option', null, option.textContent || option.value);
-          copy.value = option.value;
-          select.appendChild(copy);
-        });
-        select.addEventListener('change', markChosen);
-        cell.appendChild(select);
-        row.appendChild(cell);
-        editorSelects[id] = select;
-
-        values.forEach(function (entry, column) {
-          var td = el('td');
-          var button = el('button', 'preset-cell', wordsFor(id, entry.value));
-          button.setAttribute('type', 'button');
-          if (!entry.own) {
-            button.setAttribute('title', PRESETS[COLUMNS[column]].label +
-              ' is not recorded on this. Choosing it leaves this page\u2019s own' +
-              ' reading, which is what the cell shows.');
-          }
-          button.addEventListener('click', function () {
-            select.value = entry.value;
-            markChosen();
+      /*
+       * A tbody per group, each opening with its own name. Two bodies rather
+       * than one with heading rows in it, so the grouping is in the table's
+       * structure and a reader on a screen reader hears it as one.
+       */
+      SETTING_GROUPS.forEach(function (group) {
+        var body = el('tbody', 'preset-group');
+        var heading = el('tr', 'preset-group-head');
+        var headingCell = el('th', null, group.title);
+        headingCell.setAttribute('colspan', String(COLUMNS.length + 2));
+        headingCell.setAttribute('scope', 'colgroup');
+        heading.appendChild(headingCell);
+        body.appendChild(heading);
+        group.ids.forEach(function (id) {
+          var source = document.getElementById(id);
+          if (!source) return;
+          /*
+           * What each reading has to say here, and whether it says anything.
+           * A preset names the settings it is pinned on and takes the rest from
+           * this page, so a cell can be either a reading's own position or this
+           * page's standing in for one. They looked identical, which made the
+           * table claim four opinions where it had one: nothing is recorded
+           * about where Drik Panchang or Star Jyotish put Budha-Aditya's floor,
+           * and the row read as though all four had settled it.
+           */
+          var values = COLUMNS.map(function (name) {
+            var wanted = settingsForPreset(name);
+            return {
+              value: wanted ? wanted[id] : undefined,
+              own: name === 'page' ||
+                Object.prototype.hasOwnProperty.call(PRESETS[name].of, id)
+            };
           });
-          td.appendChild(button);
-          row.appendChild(td);
-          editorCells.push({ setting: id, value: entry.value, node: button,
-            own: entry.own });
+          var spoken = values.filter(function (v) { return v.own; });
+          var agree = spoken.every(function (v) { return v.value === spoken[0].value; });
+          var row = el('tr', agree ? '' : 'preset-row-differs');
+
+          var name = el('th', null, labelFor(id));
+          name.setAttribute('scope', 'row');
+          row.appendChild(name);
+
+          var cell = el('td');
+          var select = el('select');
+          select.id = 'my-' + id;
+          select.setAttribute('aria-label', labelFor(id));
+          Array.prototype.forEach.call(source.options, function (option) {
+            var copy = el('option', null, option.textContent || option.value);
+            copy.value = option.value;
+            select.appendChild(copy);
+          });
+          select.addEventListener('change', markChosen);
+          cell.appendChild(select);
+          row.appendChild(cell);
+          editorSelects[id] = select;
+
+          values.forEach(function (entry, column) {
+            var td = el('td');
+            var button = el('button', 'preset-cell', wordsFor(id, entry.value));
+            button.setAttribute('type', 'button');
+            if (!entry.own) {
+              button.setAttribute('title', PRESETS[COLUMNS[column]].label +
+                ' is not recorded on this. Choosing it leaves this page\u2019s own' +
+                ' reading, which is what the cell shows.');
+            }
+            button.addEventListener('click', function () {
+              select.value = entry.value;
+              markChosen();
+            });
+            td.appendChild(button);
+            row.appendChild(td);
+            editorCells.push({ setting: id, value: entry.value, node: button,
+              own: entry.own });
+          });
+          body.appendChild(row);
         });
-        body.appendChild(row);
+        table.appendChild(body);
       });
-      table.appendChild(body);
       editor.appendChild(table);
       /*
        * And the table says which of its cells are a reading's own position.

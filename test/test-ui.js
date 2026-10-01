@@ -3951,6 +3951,7 @@ ok('every script the page loads parses', (function () {
     '  __out.wireGrahaCard = wireGrahaCard;\n' +
     '  __out.applyPreset = function (n) { return presetApply(n); };\n' +
     '  __out.PRESETS = PRESETS; __out.RECKONING_IDS = RECKONING_IDS;\n' +
+    '  __out.SETTING_GROUPS = SETTING_GROUPS;\n' +
     '  __out.currentSettings = currentSettings; __out.pageDefaults = pageDefaults;\n' +
     '  __out.readMySettings = readMySettings; __out.readDefaultChoice = readDefaultChoice;\n' +
     '  __out.readMyDefault = readMyDefault;\n' +
@@ -10706,7 +10707,8 @@ console.log('\nEach preset reaches the figures it is named for');
     })(out.byId('preset-editor'));
     var names = Object.keys(rows);
     // One row per setting, and six columns: the name, yours, and the four.
-    return names.length === out.RECKONING_IDS.length + 1 &&
+    // The group headings have no td of their own, so they are not counted.
+    return names.length === out.RECKONING_IDS.length &&
       names.every(function (name) { return rows[name].length === 5; });
   })());
   ok('and each column really holds what that reading computes with', (function () {
@@ -10732,7 +10734,7 @@ console.log('\nEach preset reaches the figures it is named for');
       n.children.forEach(walk);
     })(out.byId('preset-editor'));
     var words = row.slice(1).map(textOf);
-    return cells.length === (out.RECKONING_IDS.length + 1) * 4 &&
+    return cells.length === out.RECKONING_IDS.length * 4 &&
       words.length === 4 &&
       /Lahiri/.test(words[0]) && /Raman/.test(words[1]) &&
       /Lahiri/.test(words[2]) && /Lahiri/.test(words[3]);
@@ -10781,6 +10783,60 @@ console.log('\nEach preset reaches the figures it is named for');
       n.children.forEach(walk);
     })(out.byId('preset-editor'));
     return key && /not recorded on/.test(textOf(key));
+  })());
+
+  /*
+   * The comparison is read in the two groups the page already keeps these
+   * settings in: the readings that change the chart, and the ones that only
+   * move a figure inside the strength tables. Twenty-four rows at one stretch
+   * asked a reader to find that division for themselves when the page had
+   * already made it.
+   */
+  ok('the comparison is split into the groups the panels already use',
+    (function () {
+      out.byId('preset-create').fire('click', {});
+      var bodies = [];
+      (function walk(n) {
+        if (n.tag === 'tbody') bodies.push(n);
+        n.children.forEach(walk);
+      })(out.byId('preset-editor'));
+      if (bodies.length !== 2) return false;
+      var opens = bodies.map(function (b) {
+        var first = b.children[0];
+        return first && first.className === 'preset-group-head'
+          ? textOf(first) : '';
+      });
+      // Each group opens with its own name, spanning the whole table.
+      var spans = bodies.every(function (b) {
+        var cell = b.children[0].children[0];
+        return cell.tag === 'th' && cell.attrs.colspan === '6' &&
+          cell.attrs.scope === 'colgroup';
+      });
+      return opens.join(' | ') === 'Chart settings | Test settings' && spans;
+    })());
+  /*
+   * And the groups are the panels'. They are written out in app.js rather than
+   * read off the markup, the panels not being readable at the point they are
+   * wanted, so this is what keeps the two from drifting: a setting added to a
+   * panel and not to a group would otherwise fall out of the comparison, out
+   * of every preset, and out of a reader's saved default, silently.
+   */
+  ok('and the groups hold exactly what the two panels hold', (function () {
+    var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+    var idsIn = function (panelId) {
+      var at = page.indexOf('id="' + panelId + '"');
+      var seg = page.slice(at, page.indexOf('</section>', at));
+      return (seg.match(/<select id="([a-z-]+)"/g) || [])
+        .map(function (m) { return m.slice('<select id="'.length, -1); })
+        .filter(function (id) { return id.indexOf('preset-') !== 0; });
+    };
+    var want = [idsIn('panel-settings'), idsIn('panel-testing')];
+    return out.SETTING_GROUPS.length === 2 &&
+      out.SETTING_GROUPS.every(function (group, i) {
+        return group.ids.join(',') === want[i].join(',');
+      }) &&
+      // And nothing is lost between the groups and the flat list.
+      out.RECKONING_IDS.join(',') === want[0].concat(want[1]).join(',');
   })());
 
   /* Pressing a cell takes that reading for that setting, and nothing else. */
