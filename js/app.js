@@ -1026,82 +1026,6 @@
     return el2 ? el2.value : 'parashara';
   }
 
-  /* The compact form shared by the table and the graha highlight card. */
-  var RELATION_SHORT = {
-    'great friend': 'GF', 'friend': 'F', 'neutral': 'N',
-    'enemy': 'E', 'great enemy': 'GE'
-  };
-
-  function dignitiesByGraha(state, division, tatkalika, horaRule, horaMercury) {
-    var d1 = {};
-    state.chart.planets.forEach(function (p) { d1[p.name] = p; });
-
-    var nakOf = function (p) { return Astro.nakshatraOf(p.longitude); };
-
-    /** The compound relation from a graha to another, as the table reads it. */
-    var relationBetween = function (p, other, at) {
-      if (!other || other === p.name || !at[other]) return '';
-      var apart = ((Astro.signOf(at[other].longitude) - Astro.signOf(p.longitude)) % 12 + 12) % 12 + 1;
-      var rel = Astro.compoundRelation(p.name, other, apart);
-      return rel ? RELATION_SHORT[Astro.RELATION_LABELS[rel]] : '';
-    };
-
-    var map = {};
-    state.chart.planets.forEach(function (p) {
-      var displayed = Astro.vargaPosition(p.longitude, division);
-      /*
-       * The displayed dignity and the bala rung are two consumers of the same
-       * divisional position. vargaDignity selects the rung required by the
-       * varga-viswa calculation; it must not suppress a positional dignity on
-       * the chart merely because that bala does not score it separately.
-       */
-      var displayedDignity = Astro.dignityOf(p.name, displayed.sign,
-        displayed.degreeInSign);
-      var standing = Astro.vargaDignity(p.name, p.longitude, division, d1, tatkalika, horaRule,
-        horaMercury);
-      if (!standing) {
-        /*
-         * Nodes are deliberately outside the varga-viswa scale, but that only
-         * means this bala has no rung for them. Their positional dignity is a
-         * separate display fact and remains available to the chart and card.
-         */
-        if (Astro.NODES.indexOf(p.name) < 0) return;
-        map[p.name] = {
-          formal: displayedDignity || '', lord: '', relation: '',
-          nakLordRelation: relationBetween(p, nakOf(p).lord, d1),
-          subLordRelation: relationBetween(p, nakOf(p).subLord, d1)
-        };
-        return;
-      }
-      /*
-       * The parts rather than a sentence. The card names the lord beside the
-       * sign and puts special dignity among the graha's conditions, so a
-       * string reading "In Mars's sign, an enemy" would have to be taken apart
-       * again at the other end.
-       */
-      var lord = standing.lord;
-      var owned = lord && lord === p.name;
-      map[p.name] = {
-        formal: displayedDignity === 'Own Sign' ? 'Own sign' : displayedDignity || '',
-        /*
-         * How the graha regards the lords of its nakshatra and sub. Both are
-         * relationships from this graha to another, so
-         * they are worked out here where every position is to hand rather than
-         * in the renderer, which sees one graha at a time.
-         */
-        nakLordRelation: relationBetween(p, nakOf(p).lord, d1),
-        subLordRelation: relationBetween(p, nakOf(p).subLord, d1),
-        // Its own dispositor is still its dispositor, and saying so is shorter
-        // than the reader working out that Mars in Aries has nobody to answer.
-        lord: lord || '',
-        relation: owned ? 'Own'
-          : !standing.relation || standing.relation === 'moolatrikona'
-            ? '' : RELATION_SHORT[Astro.RELATION_LABELS[standing.relation]]
-      };
-    });
-    return map;
-  }
-
   /*
    * Which grahas are hemmed in the division on screen, and by whom.
    *
@@ -1586,11 +1510,10 @@
      * The card writes a friendship short, as the table does, but has no key
      * under it to spell them out - so each one carries its word on the hover.
      */
-    var RELATION_WORD = { GF: 'great friend', F: 'friend', N: 'neutral',
-      E: 'enemy', GE: 'great enemy', Own: 'own sign' };
     var saysRelation = function (who, mark) {
       if (mark === 'Own') return 'This graha owns the sign it occupies.';
-      return mark && RELATION_WORD[mark] ? who + ' is a ' + RELATION_WORD[mark] +
+      return mark && GrahaView.RELATION_WORD[mark] ? who + ' is a ' +
+        GrahaView.RELATION_WORD[mark] +
         ' of this graha.' : '';
     };
     var shortGrahas = function (value) {
@@ -1601,8 +1524,8 @@
     var shortNakshatra = function (value) {
       var full = String(value || '');
       var name = full.replace(/\s+[1-4]$/, '');
-      return NAKSHATRA_SHORT[name]
-        ? NAKSHATRA_SHORT[name] + full.slice(name.length)
+      return GrahaView.NAKSHATRA_SHORT[name]
+        ? GrahaView.NAKSHATRA_SHORT[name] + full.slice(name.length)
         : full;
     };
 
@@ -1830,7 +1753,7 @@
       division: set.division,
       reference: set.reference,
       yogas: yogasByGraha(state, set.division, set.reference),
-      dignities: dignitiesByGraha(state, set.division, tatkalikaSetting(), horaSetting(),
+      dignities: GrahaView.dignitiesByGraha(state, set.division, tatkalikaSetting(), horaSetting(),
         horaMercurySetting()),
       hemming: hemmingByGraha(state, set.division),
       ruling: rulingAndAspects(state, set.division, set.reference),
@@ -1876,10 +1799,6 @@
    * row where the sign this lord rules is already spelt out.
    */
   /* Planet references inside the table use the same two letters as the chart. */
-  function dispositorOf(sign) {
-    return Astro.grahaAbbr(Astro.SIGN_LORDS[sign]);
-  }
-
   /**
    * What the graha makes of the lord of the sign it stands in.
    *
@@ -1897,30 +1816,6 @@
    * enough that the long case is not an edge case. The key under the table
    * spells them out; so does the hover on the cell.
    */
-  var NAKSHATRA_SHORT = {
-    'Purva Bhadrapada': 'P Bhadra', 'Uttara Bhadrapada': 'U Bhadra',
-    'Purva Phalguni': 'P Phalguni', 'Uttara Phalguni': 'U Phalguni',
-    'Purva Ashadha': 'P Ashadha', 'Uttara Ashadha': 'U Ashadha'
-  };
-
-  function dispositorRelation(graha, sign, positionsD1) {
-    var lord = Astro.SIGN_LORDS[sign];
-    // 'Own Sign' as Astro.dignityOf spells it, the two sitting in rows that
-    // touch and the same words meaning the same thing in both.
-    if (lord === graha) return 'Own';
-    if (!positionsD1[lord] || !positionsD1[graha]) return '\u2013';
-    var relation = Astro.compoundRelation(graha, lord,
-      ((positionsD1[lord].sign - positionsD1[graha].sign) % 12 + 12) % 12 + 1);
-    // The nodes rule nothing and have no place in the friendship table.
-    return relation ? RELATION_SHORT[Astro.RELATION_LABELS[relation]] : '\u2013';
-  }
-
-  /** "great friend" reads as "a great friend"; "neutral" takes no article. */
-  function withArticle(label) {
-    if (label === 'neutral') return 'neutral';
-    return (label.charAt(0) === 'e' ? 'an ' : 'a ') + label;
-  }
-
   /**
    * The same pair read both ways round, for the cell's title.
    *
@@ -1931,27 +1826,6 @@
    * takes a different view, it is worth saying so rather than leaving the
    * asymmetry to be discovered.
    */
-  function dispositorDetail(graha, sign, positionsD1) {
-    var lord = Astro.SIGN_LORDS[sign];
-    var signName = Astro.SIGNS[sign];
-    if (lord === graha) return graha + ' rules ' + signName + ', so this is its own sign.';
-    if (!positionsD1[lord] || !positionsD1[graha]) return lord + ' rules ' + signName + '.';
-    var apart = function (from, to) {
-      return ((positionsD1[to].sign - positionsD1[from].sign) % 12 + 12) % 12 + 1;
-    };
-    var out = Astro.compoundRelation(graha, lord, apart(graha, lord));
-    var back = Astro.compoundRelation(lord, graha, apart(lord, graha));
-    // Rahu and Ketu rule nothing and keep no friendships, so there is no pair to read.
-    if (!out) return lord + ' rules ' + signName + '. ' + graha + ' keeps no friendships.';
-    var text = signName + ' belongs to ' + lord + ', and ' + graha + ' regards ' + lord +
-      ' as ' + withArticle(Astro.RELATION_LABELS[out]) + '. This is the direction shown.';
-    if (back && back !== out) {
-      text += ' Read the other way it differs: ' + lord + ' regards ' + graha + ' as ' +
-        withArticle(Astro.RELATION_LABELS[back]) + '.';
-    }
-    return text;
-  }
-
   /**
    * One table per chart, in whichever division that chart is showing.
    *
@@ -1982,19 +1856,6 @@
   }
 
   /* The column already says Karaka; its cells carry only the distinguishing name. */
-  function karakaShort(name) {
-    return name.replace(/karaka$/, '');
-  }
-
-  /* The engine keeps the classical names; this table speaks English. */
-  var JAGRATADI_ENGLISH = {
-    Jagrat: 'Waking', Swapna: 'Dreaming', Sushupta: 'Sleeping'
-  };
-  var BALADI_ENGLISH = {
-    Bala: 'Infant', Kumara: 'Teen', Yuva: 'Youth',
-    Vriddha: 'Old', Mrita: 'Dead'
-  };
-
   /** "first", "second" ... for a karaka's place in the order of eight. */
   function karakaRank(name) {
     var at = Astro.CHARA_KARAKAS.indexOf(name);
@@ -2073,8 +1934,8 @@
       key.appendChild(el('span', 'table-key-item',
         'Nakshatras: P and U are Purva and Uttara.'));
       key.appendChild(el('span', 'table-key-item',
-        'Relationship: GF great friend, F friend, N neutral, ' +
-        'E enemy, GE great enemy, Own its own sign.'));
+        'Relationship: GF great friend, Fr friend, Neu neutral, ' +
+        'En enemy, GE great enemy, Own its own sign.'));
       host.appendChild(key);
     });
 
@@ -2179,9 +2040,9 @@
       var house = ((v.sign - firstSign) % 12 + 12) % 12 + 1;
       var owned = r.isAscendant ? [] : Astro.housesOwned(r.name, firstSign);
       var dispositor = r.isAscendant ? Astro.grahaAbbr(Astro.SIGN_LORDS[v.sign])
-        : dispositorOf(v.sign);
+        : GrahaView.dispositorOf(v.sign);
       var relationship = r.isAscendant ? ''
-        : dispositorRelation(r.name, v.sign, positionsD1);
+        : GrahaView.dispositorRelation(r.name, v.sign, positionsD1);
       var jagratadi = r.isAscendant ? ''
         : Astro.jagratadiAvastha(r.name, rashiSign(r));
       var baladi = r.isAscendant ? ''
@@ -2215,11 +2076,11 @@
             title: r.isAscendant
               ? Astro.SIGN_LORDS[v.sign] + ' rules ' + Astro.SIGNS[v.sign] +
                 '. The lagna is a point rather than a graha, so it keeps no friendships.'
-              : dispositorDetail(r.name, v.sign, positionsD1) },
+              : GrahaView.dispositorDetail(r.name, v.sign, positionsD1) },
           { text: dms(v.degreeInSign), cls: 'longitude',
             title: Astro.SIGNS[v.sign] + ' ' + dms(v.degreeInSign) +
               '. Longitude ' + v.longitude.toFixed(4) + '°.' },
-          { text: (NAKSHATRA_SHORT[nak.name] || nak.name) + ' - ' + nak.pada,
+          { text: GrahaView.shortNakshatra(nak.name) + ' - ' + nak.pada,
             cls: 'nakshatra-name',
             title: 'Nakshatra ' + nak.name + ', pada ' + nak.pada +
               ' of four, ruled by ' + nak.lord + '.' },
@@ -2230,7 +2091,7 @@
             title: 'The sub lord of this point in ' + nak.name + ' is ' +
               nak.subLord + '.' },
           { text: r.isAscendant || !karakas[r.name] ? '–'
-              : karakaShort(karakas[r.name]),
+              : GrahaView.karakaShort(karakas[r.name]),
             title: r.isAscendant
               ? 'The lagna is a point rather than a graha, so it takes no karaka.'
               : karakas[r.name]
@@ -2240,21 +2101,21 @@
                   'Sun to Saturn with Rahu, whose degrees are counted back from ' +
                   'the end of its sign.' },
           { text: r.isAscendant ? '–'
-              : (JAGRATADI_ENGLISH[jagratadi] || '–'),
+              : (GrahaView.JAGRATADI_ENGLISH[jagratadi] || '–'),
             title: r.isAscendant
               ? 'The lagna is a point rather than a graha, so it takes no avastha.'
               : jagratadi
-                ? JAGRATADI_ENGLISH[jagratadi] + ': ' + r.name +
+                ? GrahaView.JAGRATADI_ENGLISH[jagratadi] + ': ' + r.name +
                   ' is judged from its rashi sign and that sign’s natural lord.'
                 : 'The classical friendship table does not assign Rahu or Ketu an awareness state.' },
           { text: r.isAscendant ? '–'
-              : BALADI_ENGLISH[baladi],
+              : GrahaView.BALADI_ENGLISH[baladi],
             title: r.isAscendant
               ? 'The lagna is a point rather than a graha, so it takes no avastha.'
               : Astro.SIGNS[rashiSign(r)] + ' is an ' +
                 (rashiSign(r) % 2 === 0 ? 'odd' : 'even') + ' sign, and the graha ' +
                 'stands ' + rashiDegree(r).toFixed(1) + '° into it, making its age ' +
-                BALADI_ENGLISH[baladi].toLowerCase() + '; it gives ' +
+                GrahaView.BALADI_ENGLISH[baladi].toLowerCase() + '; it gives ' +
                 Astro.BALADI_WORTH[baladi] +
                 '.' }
         ]

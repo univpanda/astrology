@@ -99,6 +99,7 @@ var Geo = require('../js/geo.js');
 // Loaded so the yoga note can be checked against the real detector count rather
 // than against a sentence somebody remembered to update.
 global.Astro = Astro;
+var GrahaView = require('../js/graha-view.js');
 var Yogas = require('../js/yogas.js');
 var Charts = new Function('document', 'Astro',
   fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8') + '\nreturn Charts;')(document, Astro);
@@ -303,7 +304,7 @@ console.log('\nWhat a chart slot recomputes when it is rotated');
    * Stated as a test so a later change does not rotate them by symmetry.
    */
   ok('dignity and hemming stay out of it, being rotation-independent',
-     /dignities: dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src) &&
+     /dignities: GrahaView\.dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src) &&
      /hemming: hemmingByGraha\(state, set\.division\)/.test(src));
   ok('the Yogas tab is unaffected, reading the whole chart from the ascendant',
      /function renderYogas\(state\)/.test(src) &&
@@ -328,7 +329,7 @@ console.log('\nThe tatkalika setting, end to end');
    */
   ok('the vimsopaka grid takes it',
      /Astro\.vargaDignity\(planet\.name, planet\.longitude, division, positionsD1,\s*\n\s*tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src));
-  ok('the chart card takes it', /dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src));
+  ok('the chart card takes it', /GrahaView\.dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src));
   ok('the varga summary takes it', /vargaSummary\(state, scheme, tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src));
   // Including the figure at the foot of the grid, which is scored over the
   // same cells and would otherwise be a total of a column nobody is looking at.
@@ -349,7 +350,7 @@ console.log('\nThe tatkalika setting, end to end');
      /function horaSetting\(\) \{\s*\n\s*return document\.getElementById\('hora-dignity'\)\.value;/.test(src));
   ok('the grid, the card, the summary and the total all take it',
      /positionsD1,\s*\n\s*tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src) &&
-     /dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src) &&
+     /GrahaView\.dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src) &&
      /vargaSummary\(state, scheme, tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src));
   // Shadbala takes it too, so saptavargaja grades its hora the way the grid does.
   ok('and shadbala takes the hora reading as well as the tatkalika one',
@@ -828,6 +829,7 @@ console.log('\nStylesheet traps');
 console.log('\nDOM contract between app.js and index.html');
 var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 var appSrc = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
+var grahaViewSrc = fs.readFileSync(path.join(root, 'js/graha-view.js'), 'utf8');
 var cssSrc = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
 
 var htmlIds = {};
@@ -850,7 +852,8 @@ while ((m = selRe.exec(appSrc))) {
 }
 ok('every querySelector root exists in index.html', selMissing.length === 0, selMissing.join(', ') || 'all found');
 
-['data/perturbations.js', 'js/astro.js', 'js/geo.js', 'js/charts.js', 'js/app.js', 'css/styles.css'].forEach(function (asset) {
+['data/perturbations.js', 'js/astro.js', 'js/graha-view.js', 'js/geo.js',
+  'js/charts.js', 'js/app.js', 'css/styles.css'].forEach(function (asset) {
   ok('index.html links ' + asset, html.indexOf(asset) >= 0);
   ok(asset + ' exists on disk', fs.existsSync(path.join(root, asset)));
 });
@@ -2712,15 +2715,16 @@ ok('the tables carry one dispositor column each, built once',
    /fact\(seat, 'Dispositor',/.test(appSrc) &&
    !/<th scope="col">Dispositor<\/th>/.test(html));
 ok('the dispositor is the lord of the sign shown in that column',
-   /Astro\.SIGN_LORDS\[sign\]/.test(appSrc) &&
-   /dispositorOf\(v\.sign\)/.test(appSrc));
+   /Astro\.SIGN_LORDS\[sign\]/.test(grahaViewSrc) &&
+   /GrahaView\.dispositorOf\(v\.sign\)/.test(appSrc));
 ok('its relation is the compound one, counted in the rashi chart',
-   /Astro\.compoundRelation\(graha, lord,/.test(appSrc) && /positionsD1\[lord\]\.sign/.test(appSrc));
+   /Astro\.compoundRelation\(graha, lord,/.test(grahaViewSrc) &&
+   /positionsD1\[lord\]\.sign/.test(grahaViewSrc));
 ok('a graha in its own sign disposits itself',
-   /return Astro\.grahaAbbr\(Astro\.SIGN_LORDS\[sign\]\);/.test(appSrc));
+   /return Astro\.grahaAbbr\(Astro\.SIGN_LORDS\[sign\]\);/.test(grahaViewSrc));
 /* Planet references inside the table use the same two letters as the chart. */
 ok('the dispositor uses the standard two-letter graha abbreviation',
-   /return Astro\.grahaAbbr\(Astro\.SIGN_LORDS\[sign\]\);/.test(appSrc) &&
+   /return Astro\.grahaAbbr\(Astro\.SIGN_LORDS\[sign\]\);/.test(grahaViewSrc) &&
    /var dispositor = r\.isAscendant \? Astro\.grahaAbbr\(Astro\.SIGN_LORDS\[v\.sign\]\)/
      .test(appSrc) &&
    /title: r\.isAscendant[\s\S]*?Astro\.SIGN_LORDS\[v\.sign\] \+ ' rules '/.test(appSrc));
@@ -2732,11 +2736,9 @@ ok('and its relationship follows in brackets in the same cell', (function () {
   return rows.indexOf('Relationship') < 0 &&
     /dispositor \+ \(relationship && relationship !== '\\u2013'/.test(appSrc) &&
     /' \(' \+ relationship \+ '\)'/.test(appSrc) &&
-    /function dispositorRelation\(graha, sign, positionsD1\)/.test(appSrc) &&
+    /GrahaView\.dispositorRelation\(r\.name, v\.sign, positionsD1\)/.test(appSrc) &&
     // Written short and in capitals: the key under the table spells them out.
-    /return relation \? RELATION_SHORT\[Astro\.RELATION_LABELS\[relation\]\] : '\\u2013';/
-      .test(appSrc) &&
-    /'great friend': 'GF', 'friend': 'F', 'neutral': 'N',/.test(appSrc);
+    /'great friend': 'GF', friend: 'Fr', neutral: 'Neu',/.test(grahaViewSrc);
 })());
 /*
  * Own sign rather than a relation, a graha having no opinion of itself; and a
@@ -2744,8 +2746,8 @@ ok('and its relationship follows in brackets in the same cell', (function () {
  * point rather than a graha.
  */
 ok('and says own sign where there is no relation to keep',
-   /if \(lord === graha\) return 'Own';/.test(appSrc) &&
-   /relation: owned \? 'Own'/.test(appSrc) &&
+   /if \(lord === graha\) return 'Own';/.test(grahaViewSrc) &&
+   /standing\.lord === planet\.name \? 'Own'/.test(grahaViewSrc) &&
    /The lagna is a point rather than a graha, so it keeps no friendships\./
      .test(appSrc));
 /*
@@ -2770,9 +2772,9 @@ ok('and spells it as the dignity row does', (function () {
 ok('and the Karaka column carries only the distinguishing name', (function () {
   var block = appSrc.slice(appSrc.indexOf('cells: ['),
                            appSrc.indexOf('var table = el('));
-  return /function karakaShort\(name\)/.test(appSrc) &&
-    /return name\.replace\(\/karaka\$\/, ''\);/.test(appSrc) &&
-    /karakaShort\(karakas\[r\.name\]\)/.test(block) &&
+  return /function karakaShort\(name\)/.test(grahaViewSrc) &&
+    /return name\.replace\(\/karaka\$\/, ''\);/.test(grahaViewSrc) &&
+    /GrahaView\.karakaShort\(karakas\[r\.name\]\)/.test(block) &&
     Astro.CHARA_KARAKAS.every(function (k) { return /karaka$/.test(k); }) &&
     !/karakaLines/.test(appSrc);
 })());
@@ -2789,7 +2791,7 @@ ok('the cell capitalises them rather than a second table holding them capitalise
      }) && !/adhimitra: 'Great Friend'/.test(astroSrc.split('VARGA_DIGNITY_LABELS')[0]);
    })());
 ok('and the prose still reads as prose, the article taking the lower-case form',
-   /withArticle\(Astro\.RELATION_LABELS\[out\]\)/.test(appSrc) &&
+   /withArticle\(Astro\.RELATION_LABELS\[out\]\)/.test(grahaViewSrc) &&
    Astro.titleCase(Astro.RELATION_LABELS.adhimitra) === 'Great Friend');
 /*
  * Name and pada share a column; both lords remain named in full rather than
@@ -3893,11 +3895,11 @@ ok('every script the page loads parses', (function () {
   var loaded = true, why = '';
   try {
     new Function('document', 'window', 'location', 'history', 'navigator', 'fetch',
-                 'Astro', 'Geo', 'Charts', 'Shadbala', 'Yogas', 'PERTURBATIONS',
+                 'Astro', 'Geo', 'Charts', 'Shadbala', 'Yogas', 'GrahaView', 'PERTURBATIONS',
                  'FREQUENCIES', '__out',
                  wired)(
       sandbox.document, sandbox.window, sandbox.location, sandbox.history,
-      sandbox.navigator, sandbox.fetch, Astro, Geo, Charts, Shadbala, Yogas,
+      sandbox.navigator, sandbox.fetch, Astro, Geo, Charts, Shadbala, Yogas, GrahaView,
       global.PERTURBATIONS, global.FREQUENCIES, out);
   } catch (e) {
     loaded = false;
@@ -5958,12 +5960,7 @@ ok('and the reserved columns leave room for a name at every width', (function ()
   var place = { latitude: 23.5204, longitude: 87.3119, tzOffsetMinutes: 330 };
   var chart = Astro.chart({ jdUT: Astro.julianDay(1985, 3, 22, (10 * 60 + 55) / 60 - 5.5),
     latitude: place.latitude, longitude: place.longitude, tzOffsetMinutes: 330 });
-  var dignityBody = appSrc.match(/function dignitiesByGraha\(state, division, tatkalika, horaRule, horaMercury\) \{[\s\S]*?\n  \}/)[0];
-  var relationShort = { 'great friend': 'GF', friend: 'F', neutral: 'N',
-    enemy: 'E', 'great enemy': 'GE' };
-  var dignities = new Function('Astro', 'RELATION_SHORT',
-    dignityBody + '\nreturn dignitiesByGraha;')(Astro, relationShort)(
-    { chart: chart }, 1, 'rashi', 'lord');
+  var dignities = GrahaView.dignitiesByGraha({ chart: chart }, 1, 'rashi', 'lord');
   var box = makeNode('div');
   Charts.render(box, { style: 'north', planets: chart.planets,
     ascendant: chart.ascendant.longitude, division: 1, reference: 'Ascendant',
@@ -6283,7 +6280,7 @@ ok('every bar carries a hover readout, named by what the bar is',
  * point is that none of them can reintroduce it.
  */
 ok('nothing the interface says uses an em-dash', (function () {
-  var dashed = ['js/app.js', 'js/charts.js', 'js/yogas.js', 'js/astro.js',
+  var dashed = ['js/app.js', 'js/charts.js', 'js/yogas.js', 'js/astro.js', 'js/graha-view.js',
     'js/shadbala.js', 'js/geo.js', 'index.html'].filter(function (n) {
       var text = fs.readFileSync(path.join(root, n), 'utf8');
       return text.indexOf('\u2014') > -1 || text.indexOf('&mdash;') > -1;
@@ -6505,10 +6502,7 @@ ok('and opens with a sentence rather than a fragment', (function () {
  * shows. These pull the two helpers straight out of app.js and run them, rather
  * than only checking that the source mentions them.
  */
-var dispSrc = appSrc.slice(appSrc.indexOf('function withArticle'),
-                           appSrc.indexOf('function grahaViews'));
-var Disp = new Function('Astro', dispSrc +
-  '\nreturn { withArticle: withArticle, detail: dispositorDetail };')(Astro);
+var Disp = { withArticle: GrahaView.withArticle, detail: GrahaView.dispositorDetail };
 
 ok('the article agrees with the label',
    Disp.withArticle('great friend') === 'a great friend' &&
@@ -6539,7 +6533,7 @@ ok('a node is said to keep no friendships', /Rahu keeps no friendships/.test(
    Disp.detail('Rahu', 5, { Rahu: { sign: 5 }, Mercury: { sign: 5 } })));
 
 ok('the dispositor cell carries that title',
-   /: dispositorDetail\(r\.name, v\.sign, positionsD1\) \}/.test(appSrc));
+   /: GrahaView\.dispositorDetail\(r\.name, v\.sign, positionsD1\) \}/.test(appSrc));
 /*
  * The ascendant has no dignity and no friendships, so its dispositor is a bare
  * lordship. It used to carry no title at all, which left the abbreviation with
@@ -6810,11 +6804,11 @@ ok('the table carries eleven property columns', (function () {
     !/<th scope="col">Chart<\/th>/.test(html);
 })());
 ok('both avastha columns are displayed in English',
-   /Jagrat: 'Waking', Swapna: 'Dreaming', Sushupta: 'Sleeping'/.test(appSrc) &&
-   /Bala: 'Infant', Kumara: 'Teen', Yuva: 'Youth'/.test(appSrc) &&
-   /Vriddha: 'Old', Mrita: 'Dead'/.test(appSrc) &&
-   /JAGRATADI_ENGLISH\[jagratadi\]/.test(appSrc) &&
-   /BALADI_ENGLISH\[baladi\]/.test(appSrc));
+   /Jagrat: 'Waking', Swapna: 'Dreaming', Sushupta: 'Sleeping'/.test(grahaViewSrc) &&
+   /Bala: 'Infant', Kumara: 'Teen', Yuva: 'Youth'/.test(grahaViewSrc) &&
+   /Vriddha: 'Old', Mrita: 'Dead'/.test(grahaViewSrc) &&
+   /GrahaView\.JAGRATADI_ENGLISH\[jagratadi\]/.test(appSrc) &&
+   /GrahaView\.BALADI_ENGLISH\[baladi\]/.test(appSrc));
 /*
  * Every column says what it is on hover.
  */
@@ -6837,7 +6831,7 @@ ok('name and pada share a column under Nakshatra with its two lords', (function 
   return ["label: 'Name - Pada'", "label: 'Lord'", "label: 'Sub lord'"]
     .every(function (label) {
       return block.indexOf(label + ", group: 'Nakshatra'") >= 0;
-    }) && /\{ text: \(NAKSHATRA_SHORT\[nak\.name\] \|\| nak\.name\) \+ ' - ' \+ nak\.pada,/
+    }) && /\{ text: GrahaView\.shortNakshatra\(nak\.name\) \+ ' - ' \+ nak\.pada,/
       .test(appSrc);
 })());
 ok('and long nakshatra names wrap between their words', (function () {
@@ -8463,8 +8457,8 @@ console.log('\nThe card says how the graha stands in its sign');
   var out = global.appExports || {};
 
   ok('the map is built and handed to the renderer with the yogas',
-    /function dignitiesByGraha\(state, division, tatkalika, horaRule, horaMercury\)/.test(src) &&
-    /dignities: dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src));
+    /function dignitiesByGraha\(state, division, tatkalika, horaRule, horaMercury\)/.test(grahaViewSrc) &&
+    /dignities: GrahaView\.dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src));
   ok('and the renderer carries it onto the graha',
     /ctx\.division, ctx\.dignities, ctx\.hemming, ctx\.ruling, ctx\.karakas\)/.test(chartsSrc) &&
     /t\.setAttribute\('data-dignity', d\.dignity\)/.test(chartsSrc));
@@ -8495,12 +8489,7 @@ console.log('\nThe card says how the graha stands in its sign');
   (function () {
     var chart = Astro.chart({ jdUT: Astro.julianDay(1980, 9, 21, 8 + 39 / 60 - 5.5),
       latitude: 19.0728, longitude: 72.8826, tzOffsetMinutes: 330 });
-    var dignityBody = appSrc.match(/function dignitiesByGraha\(state, division, tatkalika, horaRule, horaMercury\) \{[\s\S]*?\n  \}/)[0];
-    var relationShort = { 'great friend': 'GF', friend: 'F', neutral: 'N',
-      enemy: 'E', 'great enemy': 'GE' };
-    var dig = new Function('Astro', 'RELATION_SHORT',
-      dignityBody + '\nreturn dignitiesByGraha;')(Astro, relationShort)(
-      { chart: chart }, 1, 'rashi', 'lord');
+    var dig = GrahaView.dignitiesByGraha({ chart: chart }, 1, 'rashi', 'lord');
     var box = makeNode('div');
     Charts.render(box, { style: 'north', planets: chart.planets,
       ascendant: chart.ascendant.longitude, division: 1, reference: 'Ascendant',
@@ -8563,7 +8552,7 @@ console.log('\nThe card says how the graha stands in its sign');
       by.Moon['data-nak-lord'] === 'Moon' && !!by.Moon['data-sub-lord']);
     ok('the dispositor is named with how the graha regards it',
       by.Moon['data-dispositor'] === 'Saturn' &&
-      by.Moon['data-dispositor-relation'] === 'E',
+      by.Moon['data-dispositor-relation'] === 'En',
       by.Moon['data-dispositor'] + ' (' + by.Moon['data-dispositor-relation'] + ')');
 
     /*
@@ -8681,8 +8670,8 @@ console.log('\nThe card says how the graha stands in its sign');
    * is itself placed.
    */
   ok('the nakshatra lord and sub lord both carry their relationship',
-    /nakLordRelation: relationBetween\(p, nakOf\(p\)\.lord, d1\)/.test(src) &&
-    /subLordRelation: relationBetween\(p, nakOf\(p\)\.subLord, d1\)/.test(src) &&
+    /nakLordRelation: relationBetween\(planet, nakshatra\.lord, d1\)/.test(grahaViewSrc) &&
+    /subLordRelation: relationBetween\(planet, nakshatra\.subLord, d1\)/.test(grahaViewSrc) &&
     /data-nak-lord-relation/.test(chartsSrc) && /data-sub-lord-relation/.test(chartsSrc));
   ok('the highlighted graha stays full while secondary grahas are abbreviated',
     /var head = el\('h4', 'graha-card-name', at\);/.test(src) &&
@@ -8692,7 +8681,7 @@ console.log('\nThe card says how the graha stands in its sign');
     /fact\(over, 'Aspected by', shortGrahas\(seenBy\)/.test(src));
   ok('the highlight abbreviates the six long nakshatras and keeps the full hover',
     /var shortNakshatra = function \(value\)/.test(src) &&
-    /NAKSHATRA_SHORT\[name\] \+ full\.slice\(name\.length\)/.test(src) &&
+    /GrahaView\.NAKSHATRA_SHORT\[name\] \+ full\.slice\(name\.length\)/.test(src) &&
     /nakshatra \? 'Nakshatra ' \+ nakshatra \+ '\.'/.test(src));
 
   ok('Moon is not repeated when it occupies the selected reference house',
@@ -8780,21 +8769,18 @@ console.log('\nThe card says how the graha stands in its sign');
    * positions whatever division is being drawn.
    */
   ok('friendship is read from the rashi even for a division',
-    /var d1 = \{\};\s*\n\s*state\.chart\.planets\.forEach/.test(src));
+    /var d1 = \{\};\s*\n\s*state\.chart\.planets\.forEach/.test(grahaViewSrc));
 
   /*
    * Run the real thing rather than trust the source. Pull the builder out of
    * app.js and check both halves answer on a chart that has each case.
    */
-  var body = src.match(/function dignitiesByGraha\(state, division, tatkalika, horaRule, horaMercury\) \{[\s\S]*?\n  \}/)[0];
+  var body = grahaViewSrc;
   ok('display dignity and bala classification select separately from the same position',
-    /var displayed = Astro\.vargaPosition\(p\.longitude, division\)/.test(body) &&
-    /Astro\.dignityOf\(p\.name, displayed\.sign,\s*\n?\s*displayed\.degreeInSign\)/.test(body) &&
-    /Astro\.vargaDignity\(p\.name, p\.longitude, division, d1, tatkalika, horaRule,\s*\n\s*horaMercury\)/.test(body));
-  var relationShort = { 'great friend': 'GF', friend: 'F', neutral: 'N',
-    enemy: 'E', 'great enemy': 'GE' };
-  var build = new Function('Astro', 'RELATION_SHORT',
-    body + '\n return dignitiesByGraha;')(Astro, relationShort);
+    /var displayed = Astro\.vargaPosition\(planet\.longitude, division\)/.test(body) &&
+    /Astro\.dignityOf\(planet\.name, displayed\.sign,\s*\n?\s*displayed\.degreeInSign\)/.test(body) &&
+    /Astro\.vargaDignity\(planet\.name, planet\.longitude, division,\s*\n\s*d1, tatkalika, horaRule, horaMercury\)/.test(body));
+  var build = GrahaView.dignitiesByGraha;
   // Every assertion below is about dignity, not about tatkalika, so it names
   // the reading rather than inheriting whichever way the default happens to go.
   var built = function (state, division) { return build(state, division, 'rashi', 'lord'); };
