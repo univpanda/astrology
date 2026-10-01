@@ -1582,25 +1582,23 @@
        *   the lords of the finer frames
        *   what looks at it
        */
+      /*
+       * Who it is and where exactly, on one line: the name, the role it holds
+       * in the chara scheme, and the position that decides both. The karaka
+       * follows from the degree and the nakshatra is the degree said finer,
+       * so the three read as one answer and were being given as two.
+       *
+       * All of it trails the name without taking its weight or the graha's
+       * colour: these are things true of the graha, not part of what it is
+       * called.
+       */
       var head = el('h4', 'graha-card-name', at);
-      var karaka = t.getAttribute('data-karaka');
-      /*
-       * The karaka in the heading but not of it. It was taking the name's
-       * weight and the graha's colour, which made it read as part of what the
-       * graha is called rather than as a role it happens to hold.
-       */
-      if (karaka) head.appendChild(el('span', 'graha-card-karaka', '\u00b7 ' + karaka));
+      var trail = el('span', 'graha-card-trail');
+      fact(trail, '', t.getAttribute('data-karaka'));
+      fact(trail, '', t.getAttribute('data-sign') + ' ' + t.getAttribute('data-degree'));
+      fact(trail, '', t.getAttribute('data-nakshatra'));
+      if (trail.children.length) head.appendChild(trail);
       card.appendChild(head);
-
-      /*
-       * The whole zodiacal position on one line: the sign, how far into it,
-       * and the nakshatra and pada that degree falls in. Three ways of saying
-       * one thing, which is where it stands in the 360 degrees.
-       */
-      var at360 = el('p', 'graha-card-lords');
-      fact(at360, '', t.getAttribute('data-sign') + ' ' + t.getAttribute('data-degree'));
-      fact(at360, '', t.getAttribute('data-nakshatra'));
-      if (at360.children.length) card.appendChild(at360);
 
       /*
        * Where it stands in the chart, whose ground that is, and what ground it

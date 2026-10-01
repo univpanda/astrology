@@ -812,11 +812,16 @@ input::placeholder { color: #a9bdb2; }
  * not part of what it is called, and taking the name's weight and the graha's
  * colour made it read as a second half of the name.
  */
-.graha-card-karaka {
-  margin-left: 0.35rem;
+.graha-card-trail {
   font-size: 0.8rem;
   font-weight: 400;
   color: var(--ink-soft);
+}
+/* One dot between the name and what trails it, as between the items after. */
+.graha-card-trail::before {
+  content: '\00b7';
+  margin: 0 0.5rem 0 0.35rem;
+  color: var(--ink-faint);
 }
 /*
  * The three frames a graha sits in at once, run together on one line with a

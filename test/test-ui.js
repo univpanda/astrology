@@ -8504,7 +8504,8 @@ console.log('\nThe card says how the graha stands in its sign');
     /fact\(seat, 'Rules', t\.getAttribute\('data-rules'\)\)/.test(src) &&
     /fact\(over, 'Aspected by', t\.getAttribute\('data-seen-by'\)\)/.test(src) &&
     /\.graha-card-fact-label \{/.test(css) &&
-    src.indexOf("fact(at360, ''") < src.indexOf("fact(seat, 'Dispositor'") &&
+    src.indexOf("fact(trail, '', t.getAttribute('data-nakshatra'))") <
+      src.indexOf("fact(seat, 'Dispositor'") &&
     src.indexOf("fact(seat, 'Dispositor'") < src.indexOf("fact(seat, 'Rules'") &&
     src.indexOf("fact(seat, 'Rules'") < src.indexOf("fact(inNak, 'Nakshatra lord'") &&
     src.indexOf("fact(inNak, 'Sub lord'") < src.indexOf("fact(over, 'Aspected by'") &&
@@ -8556,9 +8557,23 @@ console.log('\nThe card says how the graha stands in its sign');
    * And the karaka takes neither the name's weight nor the graha's colour: it
    * is a role the graha holds, not part of what it is called.
    */
-  ok('the karaka sits in the heading without being part of the name',
-    /head\.appendChild\(el\('span', 'graha-card-karaka', '\\u00b7 ' \+ karaka\)\)/.test(src) &&
-    /\.graha-card-karaka \{[^}]*font-weight: 400;/.test(css.replace(/\n/g, '')));
+/*
+ * Who it is and where exactly, on one line. The karaka follows from the
+ * degree and the nakshatra is the degree said finer, so the three are one
+ * answer and were being given as two.
+ *
+ * All of it trails the name without taking its weight or the graha's colour:
+ * these are things true of the graha, not part of what it is called.
+ */
+  ok('the karaka and the position trail the name without joining it',
+    /var trail = el\('span', 'graha-card-trail'\);/.test(src) &&
+    /fact\(trail, '', t\.getAttribute\('data-karaka'\)\)/.test(src) &&
+    /fact\(trail, '', t\.getAttribute\('data-sign'\) \+ ' ' \+ t\.getAttribute\('data-degree'\)\)/
+      .test(src) &&
+    /fact\(trail, '', t\.getAttribute\('data-nakshatra'\)\)/.test(src) &&
+    /head\.appendChild\(trail\)/.test(src) &&
+    /\.graha-card-trail \{[^}]*font-weight: 400;/.test(css.replace(/\n/g, '')) &&
+    !/graha-card-karaka/.test(src + css));
   /*
    * Two readings new to the card, both about grahas other than the one being
    * pointed at. The nakshatra lord is read as a relation, the way the
