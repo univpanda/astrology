@@ -1515,8 +1515,13 @@
      * The card writes a friendship short, as the table does, but has no key
      * under it to spell them out - so each one carries its word on the hover.
      */
-    var saysRelation = function (who, mark) {
-      if (mark === 'Own') return 'This graha owns the sign it occupies.';
+    /*
+     * Own means a different thing in each of the three frames - the sign, the
+     * nakshatra, the sub - so the sentence for it comes from the row rather
+     * than from the mark, which only says that the lord and the graha are one.
+     */
+    var saysRelation = function (who, mark, owns) {
+      if (mark === 'Own') return owns;
       return mark && GrahaView.RELATION_WORD[mark] ? who + ' is a ' +
         GrahaView.RELATION_WORD[mark] +
         ' of this graha.' : '';
@@ -1592,9 +1597,15 @@
         return Astro.grahaAbbr(who) + (mark ? ' (' + mark + ')' : '');
       };
       [
-        [['Dis', withRelation(dispositor, relation), saysRelation(dispositor, relation)],
-         ['N Lord', withRelation(nakLord, nakRel), saysRelation(nakLord, nakRel)],
-         ['N SLord', withRelation(subLord, subRel), saysRelation(subLord, subRel)]],
+        [['Dis', withRelation(dispositor, relation),
+          saysRelation(dispositor, relation,
+            'This graha owns the sign it occupies.')],
+         ['N Lord', withRelation(nakLord, nakRel),
+          saysRelation(nakLord, nakRel,
+            'This graha lords the nakshatra it occupies.')],
+         ['N SLord', withRelation(subLord, subRel),
+          saysRelation(subLord, subRel,
+            'This graha lords the sub it occupies.')]],
         [['', t.getAttribute('data-house'), ''],
          ['Rules', t.getAttribute('data-rules'), ''],
          ['Aspected by', shortGrahas(seenBy),

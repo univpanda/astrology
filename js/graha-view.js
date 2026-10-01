@@ -38,7 +38,16 @@ var GrahaView = (function () {
   }
 
   function relationBetween(planet, other, positions) {
-    if (!other || other === planet.name || !positions[other]) return '';
+    if (!other) return '';
+    /*
+     * A graha that lords the frame it is standing in. That is not a friendship
+     * but identity, and it is the same reading the dispositor is given when a
+     * graha occupies its own sign, so it is written the same way. Left blank
+     * before, which made the one case worth noticing the one that said
+     * nothing: Saturn in Pushya read "N Lord Sa" and looked like a gap.
+     */
+    if (other === planet.name) return 'Own';
+    if (!positions[other]) return '';
     var apart = ((Astro.signOf(positions[other].longitude) -
       Astro.signOf(planet.longitude)) % 12 + 12) % 12 + 1;
     return relationShort(Astro.compoundRelation(planet.name, other, apart));

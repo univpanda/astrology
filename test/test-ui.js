@@ -8478,6 +8478,31 @@ console.log('\nThe card says how the graha stands in its sign');
     container.fire('mouseover', { target: label });
     return container.grahaCard;
   };
+  /*
+   * The labels a real chart writes, with what each graha rules and what looks
+   * at it, so a card is driven off the renderer's own vocabulary rather than
+   * off attributes hand-typed into a test. Hand-typed ones drifted: they said
+   * the house was "10th house" where the renderer writes "House 10", and gave
+   * relations as (E) and (N) which are not words the app has.
+   */
+  var labels = function () {
+    var state = { chart: Astro.chart({
+      jdUT: Astro.julianDay(1980, 9, 21, 8 + 39 / 60 - 5.5),
+      latitude: 19.0728, longitude: 72.8826, tzOffsetMinutes: 330 }) };
+    var box = makeNode('div');
+    Charts.render(box, { style: 'north', planets: state.chart.planets,
+      ascendant: state.chart.ascendant.longitude, division: 1,
+      reference: 'Ascendant', yogas: {},
+      dignities: GrahaView.dignitiesByGraha(state, 1, 'rashi', 'lord'),
+      ruling: out.rulingAndAspects(state, 1, 'Ascendant'),
+      karakas: Astro.charaKarakas(state.chart) });
+    var by = {};
+    (function walk(n) {
+      if (n.tag === 'text' && n.attrs['data-graha']) by[n.attrs['data-graha']] = n.attrs;
+      n.children.forEach(walk);
+    })(box);
+    return by;
+  };
   var cellsOf = function (card) {
     var grid = card.children.filter(function (n) {
       return n.className === 'graha-card-grid';
@@ -8551,9 +8576,16 @@ console.log('\nThe card says how the graha stands in its sign');
       by.Venus['data-nak-lord-relation'] === 'GF' &&
       by.Venus['data-dispositor-relation'] === 'GE',
       by.Venus['data-nak-lord-relation'] + ' / ' + by.Venus['data-dispositor-relation']);
+    /*
+     * Venus is the sub lord of its own sub, which is identity rather than a
+     * friendship and is written Own, as a graha in its own sign is.
+     */
     ok('the sub lord is read as a relationship from the graha too',
-      by.Venus['data-sub-lord-relation'] === undefined &&
-      Object.keys(by).some(function (g) { return by[g]['data-sub-lord-relation']; }),
+      by.Venus['data-sub-lord-relation'] === 'Own' &&
+      Object.keys(by).some(function (g) {
+        return by[g]['data-sub-lord-relation'] &&
+          by[g]['data-sub-lord-relation'] !== 'Own';
+      }),
       Object.keys(by).map(function (g) {
         return by[g]['data-sub-lord-relation']
           ? g + ':' + by[g]['data-sub-lord-relation'] : '';
@@ -8623,23 +8655,16 @@ console.log('\nThe card says how the graha stands in its sign');
    * lines. The two stopped being the same question once the lines became cells
    * in a grid.
    */
-  ok('and the card reads identity, lords, seat, conditions, findings', (function () {
-    var card = cardFor({
-      'data-graha': 'Mars', 'data-karaka': 'Pitrukaraka', 'data-sign': 'Aries',
-      'data-degree': '8\u00b036\u203201\u2033',
-      'data-nakshatra': 'Uttara Bhadrapada 3', 'data-house': '10th house',
-      'data-rules': '5th, 10th', 'data-dispositor': 'Mars',
-      'data-dispositor-relation': 'Own', 'data-nak-lord': 'Saturn',
-      'data-nak-lord-relation': 'E', 'data-sub-lord': 'Jupiter',
-      'data-sub-lord-relation': 'N', 'data-seen-by': 'Jupiter (9th)'
-    });
-    var lines = card.children.map(function (n) { return n.className; });
-    return lines.join(' ') === 'graha-card-name graha-card-grid' &&
+  ok('and the card reads identity, lords, seat, findings', (function () {
+    var card = cardFor(labels().Venus);
+    return card.children.map(function (n) { return n.className; }).join(' ') ===
+      'graha-card-name graha-card-grid' &&
       /\.graha-card-fact-label \{/.test(css) &&
       textOf(card.children[0]) ===
-        'Mars Pitrukaraka Aries 8\u00b036\u203201\u2033 U Bhadra 3' &&
-      cellsOf(card).join(' | ') === 'Dis Ma (Own) | N Lord Sa (E) | ' +
-        'N SLord Ju (N) | 10th house | Rules 5th, 10th | Aspected by Ju (9th)';
+        'Venus Matrukaraka Cancer 20\u00b049\u203235\u2033 Ashlesha 2' &&
+      cellsOf(card).join(' | ') ===
+        'Dis Mo (GE) | N Lord Me (GF) | N SLord Ve (Own) | ' +
+        'House 10 | Rules 1st, 8th | Aspected by Mo (7th), Ke (7th)';
   })());
   /*
    * The two rows share three columns, so the dots fall in the same two places
@@ -8659,22 +8684,29 @@ console.log('\nThe card says how the graha stands in its sign');
    * the column is what keeps the dots in line: the Ascendant has no dispositor
    * and no rulership, and without the empty cells its row would slide left.
    */
+  /*
+   * A cell with nothing to say is still drawn, because the column it holds
+   * open is what keeps the dots in line. A node is the case that occurs: Ketu
+   * sits in a house and is aspected, and rules nothing, so the middle of its
+   * second row is empty and the two dots either side of it stay where the
+   * first row put them.
+   */
   ok('a missing reading leaves its column standing', (function () {
-    // The ascendant is a degree, not a graha: nothing disposits it, it rules
-    // nothing, and houses are counted from it rather than it sitting in one.
-    var cells = cellsOf(cardFor({ 'data-graha': 'Ascendant',
-      'data-sign': 'Aries', 'data-degree': '8\u00b036\u203201\u2033',
-      'data-nakshatra': 'Ashwini 3', 'data-nak-lord': 'Ketu',
-      'data-sub-lord': 'Venus', 'data-seen-by': 'Jupiter (9th)' }));
-    return cells.join(' | ') === ' | N Lord Ke | N SLord Ve |  |  | ' +
-      'Aspected by Ju (9th)';
+    var cells = cellsOf(cardFor(labels().Ketu));
+    return cells.join(' | ') === 'Dis Sa | N Lord Ma | N SLord Ra | House 4 |  | ' +
+      'Aspected by Ma (4th), Ve (7th), Ra (7th)' && cells[4] === '';
   })());
-  /* And a row with nothing in it at all is not drawn, rather than left blank. */
+  /*
+   * And a row with nothing in it at all is dropped rather than drawn blank.
+   * The ascendant is that row: houses are counted from it so it sits in none,
+   * it is a degree and rules nothing, and nothing in the chart aspects it. It
+   * does carry a dispositor - the lagnesha, lord of the rising sign - named
+   * without a bracket, since the ascendant is outside the scheme friendships
+   * are read from.
+   */
   ok('a row with nothing to say is left out', (function () {
-    var card = cardFor({ 'data-graha': 'Mars', 'data-sign': 'Aries',
-      'data-degree': '8\u00b036\u203201\u2033', 'data-house': '10th house',
-      'data-rules': '5th, 10th' });
-    return cellsOf(card).join(' | ') === '10th house | Rules 5th, 10th | ';
+    var card = cardFor(labels().Ascendant);
+    return cellsOf(card).join(' | ') === 'Dis Ve | N Lord Ma | N SLord Ve';
   })());
   /*
    * Retrograde, combust and yogakaraka are not on the conditions line. The
@@ -8757,14 +8789,31 @@ console.log('\nThe card says how the graha stands in its sign');
     /return Astro\.grahaAbbr\(who\) \+ \(mark \? ' \(' \+ mark \+ '\)' : ''\);/.test(src) &&
     /\['Aspected by', shortGrahas\(seenBy\),/.test(src) &&
     (function () {
-      var card = cardFor({ 'data-graha': 'Mars', 'data-sign': 'Aries',
-        'data-degree': '8\u00b036\u203201\u2033', 'data-dispositor': 'Saturn',
-        'data-dispositor-relation': 'GE', 'data-nak-lord': 'Jupiter',
-        'data-sub-lord': 'Venus', 'data-seen-by': 'Jupiter (9th)' });
+      var by = labels(), card = cardFor(by.Venus);
       // Full name in the heading, two letters everywhere a second graha is named.
-      return textOf(card.children[0]) === 'Mars Aries 8\u00b036\u203201\u2033' &&
-        cellsOf(card).join(' | ') ===
-          'Dis Sa (GE) | N Lord Ju | N SLord Ve |  |  | Aspected by Ju (9th)';
+      return textOf(card.children[0]).indexOf('Venus ') === 0 &&
+        cellsOf(card).join(' | ').indexOf('Venus') < 0 &&
+        cellsOf(card)[0] === 'Dis Mo (GE)' &&
+        /Aspected by Mo \(7th\), Ke \(7th\)$/.test(cellsOf(card)[5]) &&
+        /*
+         * And the brackets are words the app has. The card echoes whatever the
+         * renderer wrote, so a test that typed its own relations passed while
+         * agreeing with nothing: these came out as (E) and (N) long after the
+         * vocabulary had settled on (En) and (Neu).
+         */
+        (function () {
+          var known = Object.keys(GrahaView.RELATION_SHORT).map(function (k) {
+            return GrahaView.RELATION_SHORT[k];
+          }).concat('Own');
+          var wrong = [];
+          Object.keys(by).forEach(function (g) {
+            cellsOf(cardFor(by[g])).forEach(function (cell) {
+              var m = /^(?:Dis|N Lord|N SLord) \w\w \((\w+)\)$/.exec(cell);
+              if (m && known.indexOf(m[1]) < 0) wrong.push(g + ': ' + cell);
+            });
+          });
+          return wrong.length === 0;
+        })();
     })());
   ok('the highlight abbreviates the six long nakshatras and keeps the full hover',
     /var shortNakshatra = function \(value\)/.test(src) &&
@@ -8818,6 +8867,38 @@ console.log('\nThe card says how the graha stands in its sign');
       return map.Moon.length === 1 && map.Moon[0].from.join(' & ') === 'Moon';
     })());
   /* And no finding in a real chart carries a frame twice. */
+  /*
+   * A graha that lords the frame it stands in. Saturn in Pushya read "N Lord
+   * Sa" and the one case worth noticing was the one that said nothing, so it
+   * is written Own, as a graha in its own sign is. The sentence behind it
+   * comes from the row: Own means a different thing in each of the three
+   * frames, and "owns the sign it occupies" is false of a nakshatra.
+   */
+  ok('a graha that lords its own frame is marked Own, in that frame\u2019s words',
+    (function () {
+      var st = { chart: Astro.chart({ jdUT: Astro.julianDay(1976, 7, 11, 4),
+        latitude: 19.07, longitude: 72.88, tzOffsetMinutes: 330 }) };
+      var box = makeNode('div');
+      Charts.render(box, { style: 'north', planets: st.chart.planets,
+        ascendant: st.chart.ascendant.longitude, division: 1,
+        reference: 'Ascendant', yogas: {},
+        dignities: GrahaView.dignitiesByGraha(st, 1, 'rashi', 'lord'),
+        ruling: out.rulingAndAspects(st, 1, 'Ascendant'),
+        karakas: Astro.charaKarakas(st.chart) });
+      var own = [];
+      (function walk(n) {
+        if (n.tag === 'text' && n.attrs['data-graha'] &&
+            n.attrs['data-nak-lord'] === n.attrs['data-graha']) own.push(n.attrs);
+        n.children.forEach(walk);
+      })(box);
+      if (!own.length) return false;
+      var cells = cardFor(own[0]).children[1].children;
+      return own[0]['data-nakshatra'].indexOf('Swati') === 0 &&
+        textOf(cells[1]) === 'N Lord Ra (Own)' &&
+        cells[1].title === 'This graha lords the nakshatra it occupies.' &&
+        // Not the dispositor's sentence, which is what one shared Own gave.
+        cells[1].title.indexOf('sign') < 0;
+    })());
   var report = '';
   ok('no finding repeats a frame in a chart read from every graha',
     (function () {
