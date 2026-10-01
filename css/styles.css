@@ -2063,8 +2063,9 @@ td.vimsopaka-poor { color: var(--retro); }
   line-height: 1.55;
   color: var(--ink-soft);
 }
-/* The bottom key is plain text; coloured flags remain in the table and charts. */
+/* Vimsopaka symbols use the surrounding text colour; other views keep theirs. */
 p.varga-key .flag { color: inherit; }
+#vargas-table .flag { color: inherit; }
 .flag-key {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));

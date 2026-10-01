@@ -3091,11 +3091,13 @@ ok('the compact key sits at the bottom of the Vimsopaka panel', (function () {
 ok('the key uses compact labels like the Graha relationship key', (function () {
   var key = html.replace(/\s+/g, ' ').match(/<p class="varga-key">(.*?)<\/p>/);
   return key && key[1].replace(/<[^>]+>/g, '').trim() ===
-    'Marks: [V] Vargottama, [X] Parivartana, [Y] Yogakaraka, ' +
+    'Marks: [V] Vargottama, [X] Exchange of signs, [Y] Yogakaraka, ' +
     '[Dr] Directional strength, [E] Exalted, [D] Debilitated, [C] Combust.';
 })());
-ok('the bottom key inherits its text colour without changing table flags',
+ok('the bottom key inherits its text colour',
    /p\.varga-key \.flag\s*\{\s*color:\s*inherit;\s*\}/.test(cssSrc));
+ok('Vimsopaka table symbols inherit their text colour in headers and cells',
+   /#vargas-table \.flag\s*\{\s*color:\s*inherit;\s*\}/.test(cssSrc));
 /*
  * Every entry says where its mark is drawn, and the marks have moved between
  * surfaces more than once: [N], [D], [Y] and then [S] and [P] all came off the
