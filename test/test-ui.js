@@ -1812,25 +1812,9 @@ ok('a chart with no yoga makes no request for one', (function () {
   var block = appSrc.slice(at, appSrc.indexOf('return;', at));
   return block.length > 0 && block.indexOf('READINGS_API') < 0 && block.indexOf('fetch(') < 0;
 })());
-/*
- * The note lists what is checked, so it has to be kept in step with the module.
- * This counts the detectors rather than trusting the sentence, since a detector
- * added without updating the note is exactly the drift worth catching.
- */
-ok('the page lists what it looks for by name, not in a sentence', (function () {
-  // The sentence was the problem: thirty names run together read as coverage,
-  // and a reader could not tell a yoga absent from the chart from one absent
-  // from the engine. The list is built from the module instead.
-  var flat = appSrc.replace(/'\s*\+\s*'/g, '');
-  return /id="yoga-catalogue"/.test(html) &&
-    /function renderYogaCatalogue\(found, chosen\)/.test(appSrc) &&
-    /Yogas\.CATALOGUE\.forEach/.test(appSrc) &&
-    !/Bharathi, Kusuma, Chapa, Sreenatha, Sankha, Bheri, Matsya/.test(flat);
-})());
-ok('and it says how many of them this chart gave', (function () {
-  return /held \+ ' of ' \+ total \+ ' present in '/.test(appSrc) &&
-    /catalogue-count/.test(appSrc);
-})());
+ok('the Yogas tab does not show the detector catalogue',
+   !/id="yoga-catalogue"/.test(html) &&
+   !/function renderYogaCatalogue/.test(appSrc));
 ok('and the yoga check is handed the strengths it needs',
    /Yogas\.detect\(rotatedOnto\(inDivision, from\), strengths\)/.test(appSrc) &&
    /var inDivision = Astro\.chartInDivision\(state\.chart, division\)/.test(appSrc) &&
@@ -4078,54 +4062,6 @@ ok('every script the page loads parses', (function () {
     })());
 
   /*
-   * And the catalogue really renders, with the chart's own findings marked.
-   * Driven rather than read off the source, since the value of the list is
-   * that the marking is right: a name shown plain when the chart holds it
-   * would be worse than no list.
-   */
-  ok('the catalogue renders every group and every name the module lists',
-    (function () {
-      var host = byId['yoga-catalogue'];
-      if (!host) return false;
-      host.children.length = 0;
-      out.renderYogas(peace);
-      var groups = host.children.filter(function (c) {
-        return c.className === 'catalogue-group';
-      });
-      var names = 0;
-      groups.forEach(function (g) {
-        (g.children || []).forEach(function (kid) {
-          if (kid.className === 'catalogue-names') names += kid.children.length;
-        });
-      });
-      var listed = Yogas.CATALOGUE.reduce(function (n, g) {
-        return n + g.names.length;
-      }, 0);
-      return groups.length === Yogas.CATALOGUE.length && names === listed;
-    })());
-  ok('and marks exactly the ones this chart gave, no more and no fewer',
-    (function () {
-      var host = byId['yoga-catalogue'];
-      host.children.length = 0;
-      out.renderYogas(peace);
-      var marked = [];
-      host.children.forEach(function (g) {
-        (g.children || []).forEach(function (kid) {
-          if (kid.className !== 'catalogue-names') return;
-          kid.children.forEach(function (li) {
-            if (/is-here/.test(li.className || '')) marked.push(li.textContent);
-          });
-        });
-      });
-      var held = {};
-      Yogas.detect(peace.chart, Shadbala.compute(peace.chart,
-        { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 }))
-        .forEach(function (f) { held[f.title.replace(/ yoga$/, '')] = true; });
-      var want = Object.keys(held).sort().join(',');
-      return marked.length > 0 && marked.sort().join(',') === want;
-    })());
-
-  /*
    * The card was where the complaint came from and the table fix did not reach
    * it. A graha is still listed for every yoga it takes part in, which is worth
    * knowing; what was missing is the line saying whose the combination is, so
@@ -5845,32 +5781,10 @@ ok('and holds the six the grid draws, the other three being the card\u2019s',
  */
 ok('and wears the same summary as the other folds', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-  return /\.options summary, \.technical summary, \.flag-legend summary, \.catalogue-fold summary \{/
+  return /\.options summary, \.technical summary, \.flag-legend summary \{/
       .test(css) &&
     /\.flag-legend \{/.test(css);
 })());
-
-/*
- * The Yogas tab is what this chart has, and the catalogue is folded under it.
- *
- * A hundred and eight names, most of them absent from any one chart, sat
- * below a table of eight: the tab read as a list of yogas with a chart's
- * findings on top rather than as the chart's findings. It stays one click
- * away because the question it answers is real - without it a reader cannot
- * tell a yoga missing from the chart from one missing from the engine.
- */
-ok('the yoga catalogue is folded under the findings, not printed beside them',
-  (function () {
-    var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-    var panel = page.slice(page.indexOf('id="panel-yogas"'),
-                           page.indexOf('id="panel-aspects"'));
-    return /<details class="catalogue-fold">/.test(panel) &&
-      /<summary>What else this page checks for<\/summary>/.test(panel) &&
-      panel.indexOf('id="yoga-list"') < panel.indexOf('catalogue-fold') &&
-      !/<details[^>]*open/.test(panel);
-  })());
-ok('and it still says how many of them this chart holds',
-  /held \+ ' of ' \+ total \+ ' present in ' \+ chosen\.name/.test(appSrc));
 
 /*
  * The control rows fill their width instead of packing to the left. The Yogas

@@ -3705,45 +3705,6 @@
              label: varga ? varga.label : '' };
   }
 
-  /*
-   * The catalogue: every yoga the module looks for, grouped, with the ones this
-   * chart gave marked. Built from Yogas.CATALOGUE rather than from a sentence
-   * kept in step by hand, so a detector added without a name here fails a test
-   * instead of quietly going unlisted.
-   */
-  function renderYogaCatalogue(found, chosen) {
-    var host = document.getElementById('yoga-catalogue');
-    if (!host) return;
-    host.innerHTML = '';
-    var here = {};
-    found.forEach(function (f) { here[f.title] = true; });
-
-    var total = 0, held = 0;
-    Yogas.CATALOGUE.forEach(function (group) {
-      total += group.names.length;
-      group.names.forEach(function (n) { if (here[n]) held++; });
-    });
-
-    var head = el('h3', 'catalogue-head', 'What this page looks for');
-    head.appendChild(el('span', 'catalogue-count',
-      held + ' of ' + total + ' present in ' + chosen.name));
-    host.appendChild(head);
-
-    Yogas.CATALOGUE.forEach(function (group) {
-      var box = el('div', 'catalogue-group');
-      box.appendChild(el('h4', null, group.group));
-      var row = el('ul', 'catalogue-names');
-      group.names.forEach(function (name) {
-        var li = el('li', here[name] ? 'catalogue-name is-here' : 'catalogue-name',
-          name.replace(/ yoga$/, ''));
-        if (here[name]) li.setAttribute('aria-label', name + ', present in the chart on screen');
-        row.appendChild(li);
-      });
-      box.appendChild(row);
-      host.appendChild(box);
-    });
-  }
-
   function yogaFrequency(finding) {
     if (typeof FREQUENCIES === 'undefined') return;
     var context = finding.frequencyDivision + '|' + finding.frequencyReference + '|';
@@ -3817,19 +3778,6 @@
         });
       });
     });
-
-    /*
-     * What this page looks for, and which of them this chart gave.
-     *
-     * The note here used to be a thirty-name sentence, which reads as coverage
-     * when it is really a list: a reader could not tell a yoga absent from the
-     * chart from one absent from the engine, and five that had been in all
-     * along were asked for on that account. Every name the detectors can
-     * produce is now on the page, grouped, with the ones this chart holds
-     * marked - so the answer to "do you check Bhadra" is in front of the
-     * reader rather than in a sentence about Mahapurusha.
-     */
-    renderYogaCatalogue(found, chosen);
 
     if (!found.length) {
       note.textContent = 'No yoga among those this page looks for is present in ' +
