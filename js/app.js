@@ -1593,6 +1593,11 @@
       return mark && RELATION_WORD[mark] ? who + ' is a ' + RELATION_WORD[mark] +
         ' of this graha.' : '';
     };
+    var shortGrahas = function (value) {
+      return String(value || '').replace(
+        /\b(Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu)\b/g,
+        function (name) { return Astro.grahaAbbr(name); });
+    };
 
     var fill = function (t) {
       card.innerHTML = '';
@@ -1637,7 +1642,8 @@
       var dispositor = t.getAttribute('data-dispositor');
       if (dispositor) {
         var relation = t.getAttribute('data-dispositor-relation');
-        fact(seat, 'Dispositor', dispositor + (relation ? ' (' + relation + ')' : ''),
+        fact(seat, 'Dispositor', Astro.grahaAbbr(dispositor) +
+          (relation ? ' (' + relation + ')' : ''),
           saysRelation(dispositor, relation));
       }
       fact(seat, 'Rules', t.getAttribute('data-rules'));
@@ -1646,17 +1652,19 @@
       /* The lords of the finer frames, read as relations the way the dispositor is. */
       var inNak = el('p', 'graha-card-lords');
       var nakRel = t.getAttribute('data-nak-lord-relation');
-      fact(inNak, 'Nakshatra lord', t.getAttribute('data-nak-lord') +
+      fact(inNak, 'Nakshatra lord', Astro.grahaAbbr(t.getAttribute('data-nak-lord')) +
         (nakRel ? ' (' + nakRel + ')' : ''),
         saysRelation(t.getAttribute('data-nak-lord'), nakRel));
       var subRel = t.getAttribute('data-sub-lord-relation');
-      fact(inNak, 'Sub lord', t.getAttribute('data-sub-lord') +
+      fact(inNak, 'Sub lord', Astro.grahaAbbr(t.getAttribute('data-sub-lord')) +
         (subRel ? ' (' + subRel + ')' : ''),
         saysRelation(t.getAttribute('data-sub-lord'), subRel));
       if (inNak.children.length) card.appendChild(inNak);
 
       var over = el('p', 'graha-card-lords');
-      fact(over, 'Aspected by', t.getAttribute('data-seen-by'));
+      var seenBy = t.getAttribute('data-seen-by');
+      fact(over, 'Aspected by', shortGrahas(seenBy),
+        seenBy ? 'Aspected by ' + seenBy + '.' : '');
       if (over.children.length) card.appendChild(over);
 
       /*

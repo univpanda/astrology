@@ -8601,7 +8601,7 @@ console.log('\nThe card says how the graha stands in its sign');
    */
   ok('and the card follows identity, position, seat, lords, aspects, conditions',
     /fact\(seat, 'Rules', t\.getAttribute\('data-rules'\)\)/.test(src) &&
-    /fact\(over, 'Aspected by', t\.getAttribute\('data-seen-by'\)\)/.test(src) &&
+    /fact\(over, 'Aspected by', shortGrahas\(seenBy\)/.test(src) &&
     /\.graha-card-fact-label \{/.test(css) &&
     src.indexOf("fact(trail, '', t.getAttribute('data-nakshatra'))") <
       src.indexOf("fact(seat, 'Dispositor'") &&
@@ -8684,6 +8684,12 @@ console.log('\nThe card says how the graha stands in its sign');
     /nakLordRelation: relationBetween\(p, nakOf\(p\)\.lord, d1\)/.test(src) &&
     /subLordRelation: relationBetween\(p, nakOf\(p\)\.subLord, d1\)/.test(src) &&
     /data-nak-lord-relation/.test(chartsSrc) && /data-sub-lord-relation/.test(chartsSrc));
+  ok('the highlighted graha stays full while secondary grahas are abbreviated',
+    /var head = el\('h4', 'graha-card-name', at\);/.test(src) &&
+    /Astro\.grahaAbbr\(dispositor\)/.test(src) &&
+    /Astro\.grahaAbbr\(t\.getAttribute\('data-nak-lord'\)\)/.test(src) &&
+    /Astro\.grahaAbbr\(t\.getAttribute\('data-sub-lord'\)\)/.test(src) &&
+    /fact\(over, 'Aspected by', shortGrahas\(seenBy\)/.test(src));
 
   ok('Moon is not repeated when it occupies the selected reference house',
     (function () {
