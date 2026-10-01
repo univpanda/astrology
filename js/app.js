@@ -1588,7 +1588,12 @@
       [
         [['', sign || '', ''],
          ['', degree || '', ''],
-         ['Dis', withRelation(dispositor, relation),
+         /*
+          * Written out, where the three lords sharing a row had to be short.
+          * It stands alone at the end of the sign's row now, and Dis was a
+          * saving of eight characters nothing was asking for.
+          */
+         ['Dispositor', withRelation(dispositor, relation),
           saysRelation(dispositor, relation,
             'This graha owns the sign it occupies.')]],
         [['', shortNakshatra(nakshatra),

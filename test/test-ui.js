@@ -2711,8 +2711,8 @@ ok('and the war row appears only in a chart that has one',
 // Twice: the table's column and the card's own line, which is the same fact
 // put where the eye already is. Neither is typed into the markup.
 ok('the tables carry one dispositor column each, built once',
-   (appSrc.match(/'Dispositor'/g) || []).length === 1 &&
-   /\['Dis', withRelation\(dispositor, relation\)/.test(appSrc) &&
+   (appSrc.match(/'Dispositor'/g) || []).length === 2 &&
+   /\['Dispositor', withRelation\(dispositor, relation\)/.test(appSrc) &&
    !/<th scope="col">Dispositor<\/th>/.test(html));
 ok('the dispositor is the lord of the sign shown in that column',
    /Astro\.SIGN_LORDS\[sign\]/.test(grahaViewSrc) &&
@@ -8659,7 +8659,7 @@ console.log('\nThe card says how the graha stands in its sign');
       /\.graha-card-fact-label \{/.test(css) &&
       textOf(card.children[0]) === 'Venus Matrukaraka' &&
       cellsOf(card).join(' | ') ===
-        'Cancer | 20\u00b049\u203235\u2033 | Dis Mo (GE) | ' +
+        'Cancer | 20\u00b049\u203235\u2033 | Dispositor Mo (GE) | ' +
         'Ashlesha 2 | N Lord Me (GF) | N SLord Ve (Own) | ' +
         'In House 10 | Rules 1st, 8th | Aspected by Mo (7th), Ke (7th)';
   })());
@@ -8691,7 +8691,7 @@ console.log('\nThe card says how the graha stands in its sign');
   ok('a missing reading leaves its column standing', (function () {
     var cells = cellsOf(cardFor(labels().Ketu));
     return cells.join(' | ') === 'Capricorn | 24\u00b019\u203226\u2033 | ' +
-      'Dis Sa | Dhanishta 1 | N Lord Ma | N SLord Ra | In House 4 |  | ' +
+      'Dispositor Sa | Dhanishta 1 | N Lord Ma | N SLord Ra | In House 4 |  | ' +
       'Aspected by Ma (4th), Ve (7th), Ra (7th)' && cells[7] === '';
   })());
   /*
@@ -8705,7 +8705,7 @@ console.log('\nThe card says how the graha stands in its sign');
   ok('a row with nothing to say is left out', (function () {
     var card = cardFor(labels().Ascendant);
     return cellsOf(card).join(' | ') === 'Libra | 4\u00b053\u203219\u2033 | ' +
-      'Dis Ve | Chitra 4 | N Lord Ma | N SLord Ve';
+      'Dispositor Ve | Chitra 4 | N Lord Ma | N SLord Ve';
   })());
   /*
    * Retrograde, combust and yogakaraka are not on the conditions line. The
@@ -8773,7 +8773,7 @@ console.log('\nThe card says how the graha stands in its sign');
         /\.graha-card-role \{[^}]*color: var\(--ink-soft\);/
           .test(css.replace(/\n/g, '')) &&
         cellsOf(card).slice(0, 6).join(' | ') ===
-          'Cancer | 20\u00b049\u203235\u2033 | Dis Mo (GE) | ' +
+          'Cancer | 20\u00b049\u203235\u2033 | Dispositor Mo (GE) | ' +
           'Ashlesha 2 | N Lord Me (GF) | N SLord Ve (Own)' &&
         // A node is outside the chara scheme, so its heading is the name alone.
         textOf(cardFor(by.Ketu).children[0]) === 'Ketu' &&
@@ -8800,7 +8800,7 @@ console.log('\nThe card says how the graha stands in its sign');
       // Full name in the heading, two letters everywhere a second graha is named.
       return textOf(card.children[0]) === 'Venus Matrukaraka' &&
         cellsOf(card).join(' | ').indexOf('Venus') < 0 &&
-        cellsOf(card)[2] === 'Dis Mo (GE)' &&
+        cellsOf(card)[2] === 'Dispositor Mo (GE)' &&
         /Aspected by Mo \(7th\), Ke \(7th\)$/.test(cellsOf(card)[8]) &&
         /*
          * And the brackets are words the app has. The card echoes whatever the
@@ -8815,7 +8815,7 @@ console.log('\nThe card says how the graha stands in its sign');
           var wrong = [];
           Object.keys(by).forEach(function (g) {
             cellsOf(cardFor(by[g])).forEach(function (cell) {
-              var m = /^(?:Dis|N Lord|N SLord) \w\w \((\w+)\)$/.exec(cell);
+              var m = /^(?:Dispositor|N Lord|N SLord) \w\w \((\w+)\)$/.exec(cell);
               if (m && known.indexOf(m[1]) < 0) wrong.push(g + ': ' + cell);
             });
           });
