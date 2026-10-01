@@ -1858,15 +1858,9 @@
    * whose. The full name is in the hover, and in the Rashi column on the same
    * row where the sign this lord rules is already spelt out.
    */
-  /*
-   * The dispositor's name, in full. It was abbreviated, and shared its cell with
-   * the relation - "Me · Great Friend" - because the two had one column between
-   * them and the column had to hold both. They are two rows now, so the name has
-   * the width to be a name.
-   */
-  function dispositorOf(graha, sign) {
-    var lord = Astro.SIGN_LORDS[sign];
-    return lord === graha ? 'itself' : lord;
+  /* Planet references inside the table use the same two letters as the chart. */
+  function dispositorOf(sign) {
+    return Astro.grahaAbbr(Astro.SIGN_LORDS[sign]);
   }
 
   /**
@@ -2167,8 +2161,8 @@
       var nak = Astro.nakshatraOf(v.longitude);
       var house = ((v.sign - firstSign) % 12 + 12) % 12 + 1;
       var owned = r.isAscendant ? [] : Astro.housesOwned(r.name, firstSign);
-      var dispositor = r.isAscendant ? Astro.SIGN_LORDS[v.sign]
-        : dispositorOf(r.name, v.sign);
+      var dispositor = r.isAscendant ? Astro.grahaAbbr(Astro.SIGN_LORDS[v.sign])
+        : dispositorOf(v.sign);
       var relationship = r.isAscendant ? ''
         : dispositorRelation(r.name, v.sign, positionsD1);
       var jagratadi = r.isAscendant ? ''
@@ -2212,10 +2206,10 @@
             cls: 'nakshatra-name',
             title: 'Nakshatra ' + nak.name + ', pada ' + nak.pada +
               ' of four, ruled by ' + nak.lord + '.' },
-          /* The two lords have their own columns and can be named in full. */
-          { text: nak.lord,
+          /* Planet references inside the table use the chart's two-letter code. */
+          { text: Astro.grahaAbbr(nak.lord),
             title: nak.name + ' is ruled by ' + nak.lord + '.' },
-          { text: nak.subLord,
+          { text: Astro.grahaAbbr(nak.subLord),
             title: 'The sub lord of this point in ' + nak.name + ' is ' +
               nak.subLord + '.' },
           { text: r.isAscendant || !karakas[r.name] ? '–'

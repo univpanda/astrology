@@ -2713,22 +2713,17 @@ ok('the tables carry one dispositor column each, built once',
    !/<th scope="col">Dispositor<\/th>/.test(html));
 ok('the dispositor is the lord of the sign shown in that column',
    /Astro\.SIGN_LORDS\[sign\]/.test(appSrc) &&
-   /dispositorOf\(r\.name, v\.sign\)/.test(appSrc));
+   /dispositorOf\(v\.sign\)/.test(appSrc));
 ok('its relation is the compound one, counted in the rashi chart',
    /Astro\.compoundRelation\(graha, lord,/.test(appSrc) && /positionsD1\[lord\]\.sign/.test(appSrc));
 ok('a graha in its own sign disposits itself',
-   /return lord === graha \? 'itself' : lord;/.test(appSrc));
-/*
- * The dispositor's name goes in full, and its relation has a row of its own.
- * The two shared a cell - "Me · Great Friend" - for as long as they shared a
- * column and the column had to hold both. Turned, a row costs no width, so the
- * name has room to be a name.
- */
-ok('the dispositor names its lord in full, not in the abbreviation',
-   /return lord === graha \? 'itself' : lord;/.test(appSrc) &&
-   /var dispositor = r\.isAscendant \? Astro\.SIGN_LORDS\[v\.sign\]/
+   /return Astro\.grahaAbbr\(Astro\.SIGN_LORDS\[sign\]\);/.test(appSrc));
+/* Planet references inside the table use the same two letters as the chart. */
+ok('the dispositor uses the standard two-letter graha abbreviation',
+   /return Astro\.grahaAbbr\(Astro\.SIGN_LORDS\[sign\]\);/.test(appSrc) &&
+   /var dispositor = r\.isAscendant \? Astro\.grahaAbbr\(Astro\.SIGN_LORDS\[v\.sign\]\)/
      .test(appSrc) &&
-   !/Astro\.grahaAbbr\(Astro\.SIGN_LORDS\[v\.sign\]\)/.test(appSrc));
+   /title: r\.isAscendant[\s\S]*?Astro\.SIGN_LORDS\[v\.sign\] \+ ' rules '/.test(appSrc));
 ok('and its relationship follows in brackets in the same cell', (function () {
   var at = appSrc.indexOf('var GRAHA_ROWS = [');
   var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
@@ -2800,7 +2795,7 @@ ok('and the prose still reads as prose, the article taking the lower-case form',
  * Name and pada share a column; both lords remain named in full rather than
  * abbreviated, and all three columns sit under the nakshatra heading.
  */
-ok('the nakshatra lord and sub lord have grouped columns, named in full', (function () {
+ok('the nakshatra lord and sub lord use the standard two-letter codes', (function () {
   var at = appSrc.indexOf('var GRAHA_ROWS = [');
   var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
   var rows = (block.match(/label: '[^']+'/g) || [])
@@ -2808,8 +2803,8 @@ ok('the nakshatra lord and sub lord have grouped columns, named in full', (funct
   return rows.indexOf('Sub lord') === rows.indexOf('Lord') + 1 &&
     rows.indexOf('Name - Pada') === rows.indexOf('Lord') - 1 &&
     (block.match(/group: 'Nakshatra'/g) || []).length === 3 &&
-    /\{ text: nak\.lord,/.test(appSrc) && /\{ text: nak\.subLord,/.test(appSrc) &&
-    !/Astro\.grahaAbbr\(nak\.lord\)/.test(appSrc);
+    /\{ text: Astro\.grahaAbbr\(nak\.lord\),/.test(appSrc) &&
+    /\{ text: Astro\.grahaAbbr\(nak\.subLord\),/.test(appSrc);
 })());
 /*
   * No note says so. Two letters beside a relation in words is not a puzzle, the
