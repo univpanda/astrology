@@ -1785,9 +1785,12 @@ ok('so hemming takes the rashi\u2019s benefics and the division\u2019s neighbour
  * Counted rather than listed: a caller added without the map is the drift worth
  * catching, and a fixed number would have to be edited every time one is.
  */
-ok('and the UI no longer computes hemming merely to draw a marker', (function () {
+ok('the card reads hemming with the rashi benefics and no letter marker', (function () {
   var appSrc = require('fs').readFileSync(__dirname + '/../js/app.js', 'utf8');
-  return !/hemmedBy(?:Benefics|Malefics)\(/.test(appSrc);
+  var calls = appSrc.match(/Astro\.hemmedBy(?:Benefics|Malefics)\([^\n]+/g) || [];
+  return calls.length === 2 && calls.every(function (call) {
+    return /p\.name, p\.sign, base, benefics\)/.test(call);
+  }) && !/flag flag-[sp]'/.test(appSrc);
 })());
 /*
  * Left to itself the bug is quiet: it needs the Moon or Mercury to be one of the

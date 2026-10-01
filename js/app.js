@@ -1182,6 +1182,36 @@
         });
       });
     });
+    // Hemming around this graha is distinct from its participation in a
+    // Kartari around the ascendant, Moon or Sun. Keep it as a named yoga.
+    // Neighbours follow the division; their nature is read from the rashi.
+    var benefics = Astro.naturalBenefics(state.chart);
+    base.planets.forEach(function (p) {
+      [true, false].forEach(function (wanted) {
+        var applies = wanted
+          ? Astro.hemmedByBenefics(p.name, p.sign, base, benefics)
+          : Astro.hemmedByMalefics(p.name, p.sign, base, benefics);
+        if (!applies) return;
+        var neighbours = function (sign) {
+          return base.planets.filter(function (q) {
+            return q.name !== p.name && q.sign === sign &&
+              (Astro.NODES.indexOf(q.name) < 0 && benefics[q.name] === true) === wanted;
+          }).map(function (q) { return q.name; });
+        };
+        var before = (p.sign + 11) % 12, after = (p.sign + 1) % 12;
+        var list = map[p.name] || (map[p.name] = []);
+        list.push({
+          title: (wanted ? 'Shubha' : 'Papa') + ' kartari yoga',
+          subject: 'Kartari Yoga', condition: wanted ? 'shubha' : 'papa',
+          summary: listOfNames(neighbours(before)) + ' in ' + Astro.SIGNS[before] +
+            ' before ' + p.name + ' and ' + listOfNames(neighbours(after)) +
+            ' in ' + Astro.SIGNS[after] + ' after it, ' +
+            (wanted ? 'both benefic' : 'both malefic') + '.',
+          graha: p.name, from: [], route: 'graha-hemming', division: division,
+          primaryReference: reference || 'Ascendant'
+        });
+      });
+    });
     return map;
   }
 
@@ -1206,7 +1236,7 @@
   var DIGNITY_MARKS = { Exalted: 'E', Debilitated: 'D', Mooltrikona: 'M' };
 
   var STATE_NAMES = { R: 'Retrograde', C: 'Combust', V: 'Vargottama',
-    Y: 'Yogakaraka' };
+    Y: 'Yogakaraka', X: 'Exchange of signs' };
 
   /*
    * The library, fetched once and quietly, so a hover can explain a yoga

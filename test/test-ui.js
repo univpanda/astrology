@@ -9295,6 +9295,80 @@ console.log('\nKartari remains a yoga without an S or P marker');
 })();
 
 console.log('\nVimsopaka cells use the divisional charts\u2019 own cards');
+(function () {
+  var out = global.appExports;
+  var chart = Astro.chart({ jdUT: Astro.julianDay(1977, 8, 20, 3),
+    latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 });
+  var state = { chart: chart, shadbala: Shadbala.compute(chart,
+    { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 }) };
+  var benefics = Astro.naturalBenefics(chart);
+  var restored = out.yogasByGraha(state, 1, 'Ascendant');
+  ok('the previously lost Papa Kartari entries return to Mercury, Jupiter and Venus',
+    ['Mercury', 'Jupiter', 'Venus'].every(function (name) {
+      return restored[name].some(function (y) {
+        return y.title === 'Papa kartari yoga' && y.route === 'graha-hemming';
+      });
+    }));
+  ok('Saturn retains its own Shubha Kartari as well as yogas it participates in',
+    restored.Saturn.some(function (y) {
+      return y.title === 'Shubha kartari yoga' && y.route === 'graha-hemming';
+    }));
+  var failures = [], exchanges = 0, hemmings = 0, comparisons = 0;
+  var textOf = function (n) {
+    return (n.textContent || '') + (n.children || []).map(textOf).join('');
+  };
+  Astro.SHODASAVARGA.forEach(function (division) {
+    var base = Astro.chartInDivision(chart, division);
+    var map = out.yogasByGraha(state, division, 'Ascendant');
+    base.planets.forEach(function (p) {
+      ['shubha', 'papa'].forEach(function (kind) {
+        var expected = (kind === 'shubha' ? Astro.hemmedByBenefics :
+          Astro.hemmedByMalefics)(p.name, p.sign, base, benefics);
+        var found = (map[p.name] || []).filter(function (y) {
+          return y.route === 'graha-hemming' && y.condition === kind;
+        });
+        if (found.length !== (expected ? 1 : 0)) failures.push('hemming D' + division + p.name);
+        hemmings += found.length;
+      });
+    });
+    ['north', 'south'].forEach(function (style) {
+      var opts = { style: style, planets: chart.planets, ascendant: chart.ascendant.longitude,
+        division: division, reference: 'Ascendant', yogas: map,
+        dignities: GrahaView.dignitiesByGraha(state, division, 'varga', 'effects', 'effects'),
+        ruling: out.rulingAndAspects(state, division, 'Ascendant'),
+        karakas: Astro.charaKarakas(chart), combustion: 'division' };
+      var box = makeNode('div'), cells = makeNode('div');
+      Charts.render(box, opts);
+      out.wireGrahaCard(box); out.wireGrahaCard(cells);
+      var labels = {};
+      (function walk(n) {
+        if (n.attrs && n.attrs['data-graha']) labels[n.attrs['data-graha']] = n;
+        (n.children || []).forEach(walk);
+      })(box);
+      chart.planets.filter(function (p) { return Astro.NODES.indexOf(p.name) < 0; })
+        .forEach(function (p) {
+          var cell = makeNode('td'); cells.appendChild(cell);
+          Charts.decorateCardTarget(cell, opts, p.name);
+          box.fire('mouseover', { target: labels[p.name] });
+          cells.fire('mouseover', { target: cell });
+          if (serialise(box.grahaCard) !== serialise(cells.grahaCard)) {
+            failures.push('card ' + style + ' D' + division + p.name);
+          }
+          var conditions = cells.grahaCard.children.filter(function (n) {
+            return n.className === 'graha-card-conditions';
+          }).map(textOf).join('');
+          var exchange = (map[p.name] || []).some(function (y) { return y.subject === 'Parivartana'; });
+          if (exchange !== /Exchange of signs \[X\]/.test(conditions)) failures.push('exchange ' + p.name);
+          if (exchange) exchanges++;
+          if (/\[[SP]\]/.test(textOf(cells.grahaCard))) failures.push('removed marker');
+          comparisons++;
+        });
+    });
+  });
+  ok('all 224 cards agree, show exchange marks, and keep named hemming without S/P',
+    failures.length === 0 && comparisons === 224 && exchanges > 0 && hemmings > 0,
+    failures.join(', ') || comparisons + ' cards, ' + exchanges + ' exchanges, ' + hemmings + ' hemmings');
+})();
 ok('every one of the sixteen divisions gives a cell the same card data as its chart',
   (function () {
     var chart = Astro.chart({ jdUT: Astro.julianDay(1985, 3, 22, 5 + 25 / 60),
@@ -9501,7 +9575,12 @@ console.log('\nThe card leads with what is rare');
     return badge ? parseFloat(badge.textContent) : null;
   }).filter(function (v) { return v !== null && !isNaN(v); });
 
-  ok('every row on the card carries a figure', shown.length === ul.children.length,
+  var measured = byGraha[busiest.attrs['data-graha']].filter(function (item) {
+    var key = item.division + '|' + item.title + '|' + item.route;
+    return typeof F.yogaManifestationByDivision[key] === 'number';
+  }).length;
+  ok('measured findings keep their figures without inventing one for graha hemming',
+    shown.length === measured,
     shown.length + ' of ' + ul.children.length);
 
   var ordered = shown.every(function (v, i) { return i === 0 || shown[i - 1] <= v; });

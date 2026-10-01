@@ -152,7 +152,7 @@ var Charts = (function () {
    * pointing at.
    */
   var STATE_NAMES = { R: 'Retrograde', C: 'Combust', V: 'Vargottama',
-    Y: 'Yogakaraka' };
+    Y: 'Yogakaraka', X: 'Exchange of signs' };
 
   /*
    * Records are separated by one control character and their two fields by
@@ -222,6 +222,11 @@ var Charts = (function () {
      */
     var nak = Astro.nakshatraOf(p.longitude);
     var mine = (yogas && yogas[p.name]) || [];
+    var exchange = mine.filter(function (y) { return y.subject === 'Parivartana'; })[0];
+    if (exchange) {
+      states.push('X');
+      why.X = exchange.summary || 'This graha and its dispositor occupy each other\u2019s signs.';
+    }
     var standing = (dignities && dignities[p.name]) || {};
     /*
      * The dispositor is the lord of the sign occupied, which is true of the
