@@ -820,6 +820,7 @@ input::placeholder { color: #a9bdb2; }
  */
 .graha-card-trail {
   display: inline-flex;
+  margin-left: 0.55rem;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0 0.55rem;
@@ -828,9 +829,14 @@ input::placeholder { color: #a9bdb2; }
   color: var(--ink-soft);
 }
 /* One dot between the name and what trails it, as between the items after. */
+/*
+ * The dot is a child of a flex container, so it is a flex item and the gap
+ * spaces its right side. Giving it a right margin as well put 1.05rem after
+ * it against 0.35rem before, where every other dot on the card has the same
+ * on both sides. The leading space belongs to the trail, not to the dot.
+ */
 .graha-card-trail::before {
   content: '\00b7';
-  margin: 0 0.5rem 0 0.35rem;
   color: var(--ink-faint);
 }
 /*
@@ -915,6 +921,25 @@ input::placeholder { color: #a9bdb2; }
   color: var(--ink);
 }
 .graha-card-label { flex: 1; }
+
+/*
+ * The reserved columns are given back on a narrow screen.
+ *
+ * They reserve 8.5rem and 7rem with 1.5rem of gaps between, which is 17rem.
+ * At 320px the card is capped at 100vw - 1.5rem and its padding takes another
+ * 1.5rem, leaving 17rem of content: exactly the reservation, and nothing at
+ * all for the name. At 375px the name got 3.4rem, which wraps "Angle-trine
+ * raja yoga" into four lines.
+ *
+ * Below the width where a name has room to be read, the row wraps instead:
+ * the name takes a line of its own and the two things that qualify it sit
+ * under it, right, in the order they had.
+ */
+@media (max-width: 30rem) {
+  .graha-card-term { flex-wrap: wrap; justify-content: flex-end; }
+  .graha-card-label { flex: 1 1 100%; }
+  .graha-card-whose, .graha-card-freq { min-width: 0; }
+}
 /* How common the finding is. Recessive, because it qualifies the statement
    rather than competing with it - but present on every line, so the reader can
    weigh a rare yoga against a near-universal one at a glance. */

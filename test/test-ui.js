@@ -5878,14 +5878,58 @@ ok('the card’s findings line up in columns rather than drifting',
   /\.graha-card-freq \{[^}]*min-width: 7rem;[^}]*text-align: right;/
     .test(cssSrc.replace(/\n/g, '')));
 /*
- * And the heading's trail is laid out like the lines below it, so its dots
- * take their space from the same gap. As running text the separator had a
- * space after it and none before: "Pitrukaraka· Pisces".
+ * And the heading's dots are spaced the same on both sides.
+ *
+ * Measured rather than matched. The trail is a flex container, so its ::before
+ * is a flex item and the container's gap spaces its right side; a right margin
+ * on top of that put 1.05rem after the first dot against 0.35rem before, where
+ * every other dot on the card has the same on both sides.
  */
-ok('and the dots in the heading are spaced on both sides',
-  /\.graha-card-trail \{[^}]*display: inline-flex;[^}]*gap: 0 0\.55rem;/
-    .test(cssSrc.replace(/\n/g, '')) &&
-  /\.graha-card-item \+ \.graha-card-item::before \{/.test(cssSrc));
+ok('and the dots in the heading are spaced on both sides', (function () {
+  var flat = cssSrc.replace(/\n/g, ' ');
+  var trail = /\.graha-card-trail \{([^}]*)\}/.exec(flat);
+  var dot = /\.graha-card-trail::before \{([^}]*)\}/.exec(flat);
+  if (!trail || !dot) return false;
+  var gap = /gap: 0 ([\d.]+)rem/.exec(trail[1]);
+  var lead = /margin-left: ([\d.]+)rem/.exec(trail[1]);
+  // The dot itself must carry no horizontal margin: the gap is doing that job.
+  var dotMargin = /margin[^:]*: [^;]*/.exec(dot[1]);
+  return !!gap && !!lead && !dotMargin &&
+    Number(gap[1]) === Number(lead[1]) &&
+    /display: inline-flex/.test(trail[1]);
+})());
+
+/*
+ * And the reserved columns fit the narrowest screen the card is drawn on.
+ *
+ * Arithmetic, from the stylesheet's own numbers, because the declarations
+ * existing says nothing about whether they leave room for a name. At 320px
+ * the card is capped at 100vw minus its margin and its padding takes more,
+ * and the two reserved columns plus the gaps between them came to exactly
+ * what was left - nothing at all for the yoga's name.
+ */
+ok('and the reserved columns leave room for a name at every width', (function () {
+  var flat = cssSrc.replace(/\s+/g, ' ');
+  var num = function (re, from) { var m = re.exec(from); return m ? Number(m[1]) : null; };
+  var card = /\.graha-card \{([\s\S]*?)\}/.exec(flat)[1];
+  var viewportMargin = num(/max-width: min\([\d.]+rem, calc\(100vw - ([\d.]+)rem\)\)/, card);
+  var padding = num(/padding: [\d.]+rem ([\d.]+)rem/, card);
+  var term = /\.graha-card-term \{([^}]*)\}/.exec(flat)[1];
+  var gap = num(/gap: ([\d.]+)rem/, term);
+  var whose = num(/\.graha-card-whose \{[^}]*min-width: ([\d.]+)rem/, flat);
+  var freq = num(/\.graha-card-freq \{[^}]*min-width: ([\d.]+)rem/, flat);
+  var breakpoint = num(/@media \(max-width: ([\d.]+)rem\) \{ \.graha-card-term \{ flex-wrap: wrap/, flat);
+  if ([viewportMargin, padding, gap, whose, freq, breakpoint].some(function (v) { return v === null; })) {
+    return false;
+  }
+  // Below the breakpoint the reservations are given back and the row wraps.
+  var released = /@media \(max-width: [\d.]+rem\) \{[^@]*\.graha-card-whose, \.graha-card-freq \{ min-width: 0; \}/
+    .test(flat);
+  // At and above it, the name must still have a readable share.
+  var content = breakpoint - viewportMargin - 2 * padding;
+  var reserved = whose + freq + 2 * gap;
+  return released && content - reserved >= 8;
+})());
 
 console.log('\nAyanamsa lives in settings');
 /*
