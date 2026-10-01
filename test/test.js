@@ -4670,6 +4670,24 @@ console.log('\nChara karakas and avasthas');
      A.BALADI_WORTH.Yuva === 'its results in full' &&
      A.BALADI_WORTH.Mrita === 'nothing' &&
      A.BALADI_WORTH.Bala === 'a quarter of its results');
+
+  /*
+   * Jagratadi is a separate avastha: own/exaltation signs wake a graha,
+   * friendly and neutral signs make it dream, and enemy/debilitation signs
+   * make it sleep. It uses natural sign friendship, not temporary friendship.
+   */
+  ok('Jagratadi keeps waking, dreaming and sleeping separate from Baladi',
+     A.JAGRATADI.join(' ') === 'Jagrat Swapna Sushupta' &&
+     A.jagratadiAvastha('Sun', 4) === 'Jagrat' &&       // own Leo
+     A.jagratadiAvastha('Sun', 0) === 'Jagrat' &&       // exaltation Aries
+     A.jagratadiAvastha('Sun', 3) === 'Swapna' &&       // Moon is a friend
+     A.jagratadiAvastha('Sun', 2) === 'Swapna' &&       // Mercury is neutral
+     A.jagratadiAvastha('Sun', 1) === 'Sushupta' &&     // Venus is an enemy
+     A.jagratadiAvastha('Sun', 6) === 'Sushupta');      // debilitation Libra
+  ok('Jagratadi is sign-based and does not invent a node friendship scheme',
+     A.jagratadiAvastha('Moon', 1) === 'Jagrat' &&      // exaltation rashi
+     A.jagratadiAvastha('Rahu', 1) === '' &&
+     A.jagratadiAvastha('Ketu', 7) === '');
 })();
 
 console.log('\nCombustion');

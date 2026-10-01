@@ -6796,14 +6796,15 @@ ok('and the box is drawn to that half width, not the old full one',
  * graha like the states are, rather than a row of dashes with three words in
  * it: over nine grahas a chart carries two or three dignities at most.
  */
-ok('the table carries ten property columns', (function () {
+ok('the table carries eleven property columns', (function () {
   var at = appSrc.indexOf('var GRAHA_ROWS = [');
   if (at < 0) return false;
   var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
   var found = (block.match(/label: '[^']+'/g) || [])
     .map(function (t) { return t.slice(8, -1); });
   return found.join('|') === ['Rashi', 'House', 'Lordship', 'Dispositor',
-    'Longitude', 'Nakshatra - Pada', 'Lord', 'Sub lord', 'Karaka', 'Avastha'].join('|') &&
+    'Longitude', 'Nakshatra - Pada', 'Lord', 'Sub lord', 'Karaka',
+    'Jagratadi', 'Baladi'].join('|') &&
     !/<th scope="col">Chart<\/th>/.test(html);
 })());
 /*

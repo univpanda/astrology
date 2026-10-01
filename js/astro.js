@@ -734,6 +734,30 @@ var Astro = (function () {
     return sign % 2 === 0 ? BALADI[step] : BALADI[4 - step];
   }
 
+  /*
+   * Jagratadi avastha, chapter 45 verse 5. A graha in its own or exaltation
+   * rashi is awake (Jagrat); in a friend's or neutral's rashi it dreams
+   * (Swapna); and in an enemy's or debilitation rashi it sleeps (Sushupta).
+   *
+   * This is deliberately sign-based. The verse says exaltation rashi, not the
+   * deep-exaltation degree, and the friendship here is the fixed, natural
+   * relation to the sign lord rather than the chart-dependent compound one.
+   * The classical friendship table does not include Rahu and Ketu, so the
+   * function leaves them unclassified instead of inventing a node convention.
+   */
+  var JAGRATADI = ['Jagrat', 'Swapna', 'Sushupta'];
+
+  function jagratadiAvastha(planet, sign) {
+    var dignity = DIGNITY[planet];
+    if (!dignity || NODES.indexOf(planet) >= 0) return '';
+    if (sign === dignity.exalt.sign || dignity.own.indexOf(sign) >= 0) {
+      return 'Jagrat';
+    }
+    if (sign === dignity.debil) return 'Sushupta';
+    var relation = naturalRelation(planet, SIGN_LORDS[sign]);
+    return relation === -1 ? 'Sushupta' : 'Swapna';
+  }
+
   /**
    * Local apparent solar time, hours, 0 at apparent midnight and 12 at apparent
    * noon: the hour angle of the true Sun at that longitude.
@@ -2274,6 +2298,7 @@ var Astro = (function () {
     SS_REVOLUTIONS: SS_REVOLUTIONS, MAHAYUGA_DAYS: MAHAYUGA_DAYS,
     charaKarakas: charaKarakas, CHARA_KARAKAS: CHARA_KARAKAS,
     KARAKA_GRAHAS: KARAKA_GRAHAS,
+    jagratadiAvastha: jagratadiAvastha, JAGRATADI: JAGRATADI,
     baladiAvastha: baladiAvastha, BALADI: BALADI, BALADI_WORTH: BALADI_WORTH,
     declination: declination,
     sunriseSunset: sunriseSunset,

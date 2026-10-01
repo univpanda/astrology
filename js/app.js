@@ -2046,7 +2046,8 @@
      * measured inside a division.
      */
     { label: 'Karaka', says: 'The Jaimini chara karaka, assigned by how far into its sign the graha has travelled - furthest is Atmakaraka. Read in the rashi, and so the same in every chart here.' },
-    { label: 'Avastha', says: 'Baladi avastha, the graha’s age in its sign, six degrees to a stage and reversed in an even sign. Read in the rashi, and so the same in every chart here.' }
+    { label: 'Jagratadi', says: 'Waking, dreaming or sleeping according to whether the graha is in its own or exaltation sign, a friend’s or neutral’s sign, or an enemy’s or debilitation sign. Read in the rashi.' },
+    { label: 'Baladi', says: 'The graha’s age in its sign, six degrees to a stage and reversed in an even sign. Read in the rashi, and so the same in every chart here.' }
   ];
 
   /**
@@ -2106,6 +2107,8 @@
         : dispositorOf(r.name, v.sign);
       var relationship = r.isAscendant ? ''
         : dispositorRelation(r.name, v.sign, positionsD1);
+      var jagratadi = r.isAscendant ? ''
+        : Astro.jagratadiAvastha(r.name, rashiSign(r));
       return {
         entity: r,
         cells: [
@@ -2157,6 +2160,14 @@
                 : 'Ketu takes no chara karaka. The eight are the seven from the ' +
                   'Sun to Saturn with Rahu, whose degrees are counted back from ' +
                   'the end of its sign.' },
+          { text: r.isAscendant ? '–'
+              : (jagratadi || '–'),
+            title: r.isAscendant
+              ? 'The lagna is a point rather than a graha, so it takes no avastha.'
+              : jagratadi
+                ? jagratadi + ': ' + r.name +
+                  ' is judged from its rashi sign and that sign’s natural lord.'
+                : 'The classical friendship table does not assign Rahu or Ketu a Jagratadi avastha.' },
           { text: r.isAscendant ? '–'
               : Astro.baladiAvastha(rashiSign(r), rashiDegree(r)),
             title: r.isAscendant
