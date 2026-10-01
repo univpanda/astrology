@@ -3894,7 +3894,7 @@
      * graha got", and the column answering it was third, behind two that
      * describe the finding rather than place it.
      */
-    ['Graha', 'Chart', 'From', 'Yoga', 'Family', 'Result', 'Manifestation', 'Charts']
+    ['Graha', 'Chart', 'From', 'Yoga', 'Family', 'Result', 'Charts']
       .forEach(function (h) {
       var th = el('th', null, h);
       th.setAttribute('scope', 'col');
@@ -3930,7 +3930,9 @@
 
       tr.appendChild(el('td', 'yoga-chart', finding.inChart));
       tr.appendChild(el('td', 'yoga-from', finding.from));
-      tr.appendChild(el('td', 'yoga-name', finding.title));
+      var yogaName = el('td', 'yoga-name', finding.title);
+      yogaName.title = finding.manifestation;
+      tr.appendChild(yogaName);
       tr.appendChild(el('td', 'yoga-family', finding.family || '\u2013'));
       var passage = (lessonLibrary || []).filter(function (p) {
         return p.topic === 'yoga' && p.subject === finding.subject &&
@@ -3939,7 +3941,6 @@
       var effect = passage && passage.effect ? passage.effect : 'mixed';
       tr.appendChild(el('td', 'yoga-effect yoga-effect-' + effect,
         effect.charAt(0).toUpperCase() + effect.slice(1)));
-      tr.appendChild(el('td', 'yoga-manifestation', finding.manifestation));
       var pct = yogaFrequency(finding);
       tr.appendChild(el('td', 'yoga-frequency', typeof pct === 'number' ? pct + '%' : '\u2013'));
       body.appendChild(tr);

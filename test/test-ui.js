@@ -1586,7 +1586,7 @@ ok('the library is fetched once and searched in the page',
 ok('the yogas panel carries no explanatory passage',
    !/yoga-explanation/.test(appSrc) && !/fetchPassages\(\{ subjects:/.test(appSrc));
 ok('it still says how each yoga forms',
-   /el\('td', 'yoga-manifestation', finding\.manifestation\)/.test(appSrc) &&
+   /yogaName\.title = finding\.manifestation/.test(appSrc) &&
    /finding\.manifestation = finding\.manifestation \|\| finding\.summary/.test(
      fs.readFileSync(path.join(root, 'js/yogas.js'), 'utf8')));
 /*
@@ -1601,7 +1601,7 @@ ok('it still says how each yoga forms',
  * finding rather than place it.
  */
 ok('the table names the graha a yoga resolves to, apart from its participants',
-   /'Graha', 'Chart', 'From', 'Yoga', 'Family', 'Result', 'Manifestation', 'Charts'/.test(appSrc) &&
+   /'Graha', 'Chart', 'From', 'Yoga', 'Family', 'Result', 'Charts'/.test(appSrc) &&
    /finding\.graha \? 'yoga-graha' : 'yoga-graha is-shared'/.test(appSrc) &&
    /\(finding\.grahas \|\| \[\]\)\.join\(', '\)/.test(appSrc));
 ok('the yoga result comes from the database’s constrained effect field', (function () {
@@ -1861,14 +1861,15 @@ ok('matched conditions and user-facing prose are separate fields',
  */
 ok('and presentation never joins the matched-condition bullets',
    !/finding\.reasons.*join/.test(appSrc) &&
-   /el\('td', 'yoga-manifestation', finding\.manifestation\)/.test(appSrc));
+   /yogaName\.title = finding\.manifestation/.test(appSrc));
 /*
  * And the fragments are set as sentences. They are written to be read in a
  * list, so a bare space ran them into one another: "rather than on a house
  * worth protecting Saturn also owns the 9th".
  */
-ok('and the manifestation is a column rather than a tooltip assembled at render time',
-   !/yogaName\.title/.test(appSrc) && /'Manifestation'/.test(appSrc));
+ok('and the manifestation is the Yoga cell’s hover, never assembled at render time',
+   /yogaName\.title = finding\.manifestation/.test(appSrc) &&
+   !/'Manifestation'/.test(appSrc));
 /*
  * And the commonest finding of all does not say its condition twice in two
  * different wordings. Its summary names both lords and both houses, so the
@@ -4155,7 +4156,7 @@ ok('every script the page loads parses', (function () {
    * The Graha column, driven. A source match would not catch the column being
    * filled from the wrong field, which is the fault this replaces.
    */
-  ok('the rendered table carries the requested eight columns',
+  ok('the rendered table carries the requested seven columns',
     (function () {
       var host = byId['yoga-list'];
       if (!host) return false;
@@ -4171,7 +4172,7 @@ ok('every script the page loads parses', (function () {
           walk(kid);
         });
       })(host);
-      return heads.join(',') === 'Graha,Chart,From,Yoga,Family,Result,Manifestation,Charts';
+      return heads.join(',') === 'Graha,Chart,From,Yoga,Family,Result,Charts';
     })());
   /*
    * And the table narrows to one graha.
@@ -5637,7 +5638,7 @@ ok('the states line holds conditions and the list holds combinations',
  * complete rather than the only view of something trimmed.
  */
 ok('and the Yogas tab carries one coherent manifestation instead of the bullets',
-   /el\('td', 'yoga-manifestation', finding\.manifestation\)/.test(appSrc) &&
+   /yogaName\.title = finding\.manifestation/.test(appSrc) &&
    !/yogaAccount/.test(appSrc));
 
 /*
