@@ -5067,13 +5067,13 @@
   /*
    * A reader's own starting point, kept in this browser.
    *
-   * Nothing else on this page is remembered between visits, which is a
-   * deliberate choice for the twenty-odd selects: a setting silently in force
-   * from a session a month ago is worse than one that is plainly at its
-   * default. A default a reader has chosen and can forget in one click is the
-   * other case, and this is only that.
+   * The individual controls are not remembered between visits. Instead the
+   * reader chooses one named default, and may keep one personal combination.
+   * Saving that combination again replaces it; there is no accumulating list
+   * of anonymous presets to decipher later.
    */
   var MY_SETTINGS_KEY = 'jyotisha.settings.v1';
+  var DEFAULT_SETTINGS_KEY = 'jyotisha.default-settings.v1';
   /* Held so the suites can drive a preset the way a click does. */
   var presetApply = null;
 
@@ -5116,6 +5116,29 @@
       if (select) out[id] = select.value;
     });
     return out;
+  }
+
+  function settingsForPreset(name) {
+    if (name === 'mine') return readMySettings();
+    var preset = PRESETS[name];
+    if (!preset) return null;
+    var wanted = {};
+    RECKONING_IDS.concat(['chart-style']).forEach(function (id) {
+      wanted[id] = Object.prototype.hasOwnProperty.call(preset.of, id)
+        ? preset.of[id] : pageDefaults()[id];
+    });
+    return wanted;
+  }
+
+  function readDefaultChoice() {
+    try {
+      var name = window.localStorage.getItem(DEFAULT_SETTINGS_KEY) || 'page';
+      if (name === 'mine' && !readMySettings()) return 'page';
+      return name === 'raman' || name === 'drik' || name === 'star' || name === 'mine'
+        ? name : 'page';
+    } catch (e) {
+      return 'page';
+    }
   }
 
   /*
@@ -5201,23 +5224,63 @@
     var status = document.getElementById('preset-status');
     var what = document.getElementById('preset-what');
     var forget = document.getElementById('preset-forget');
+    var choice = document.getElementById('preset-choice');
+    var mineOption = document.getElementById('preset-mine-option');
+    var dialog = document.getElementById('preset-dialog');
+    var editor = document.getElementById('preset-editor');
+    var base = document.getElementById('preset-base');
 
-    var showForget = function () { forget.hidden = !readMySettings(); };
+    var showMine = function () {
+      var exists = !!readMySettings();
+      mineOption.hidden = !exists;
+      mineOption.disabled = !exists;
+      forget.hidden = !exists;
+      document.getElementById('preset-create').textContent = exists
+        ? 'Edit my default settings' : 'Create my default settings';
+    };
+
+    var editorSelects = {};
+    RECKONING_IDS.concat(['chart-style']).forEach(function (id) {
+      var source = document.getElementById(id);
+      if (!source) return;
+      var field = el('div', 'field');
+      var sourceLabel = source.parentNode && source.parentNode.querySelector
+        ? source.parentNode.querySelector('label') : null;
+      var label = el('label', null, sourceLabel && sourceLabel.textContent
+        ? sourceLabel.textContent : id.replace(/-/g, ' '));
+      var select = el('select');
+      label.setAttribute('for', 'my-' + id);
+      select.id = 'my-' + id;
+      Array.prototype.forEach.call(source.options, function (option) {
+        var copy = el('option', null, option.textContent || option.value);
+        copy.value = option.value;
+        select.appendChild(copy);
+      });
+      field.appendChild(label);
+      field.appendChild(select);
+      editor.appendChild(field);
+      editorSelects[id] = select;
+    });
+
+    var fillEditor = function (values) {
+      Object.keys(editorSelects).forEach(function (id) {
+        if (values && values[id] !== undefined) editorSelects[id].value = values[id];
+      });
+    };
+
+    var closeDialog = function () {
+      if (typeof dialog.close === 'function') dialog.close();
+      else dialog.removeAttribute('open');
+    };
 
     var apply = function (name) {
+      var wanted = settingsForPreset(name);
+      if (!wanted) return;
       var preset = PRESETS[name];
-      if (!preset) return;
-      /*
-       * Every control named, not only the ones this preset moves, so clicking
-       * two in a row gives the second and not a mixture of both.
-       */
-      var wanted = {};
-      RECKONING_IDS.forEach(function (id) {
-        wanted[id] = Object.prototype.hasOwnProperty.call(preset.of, id)
-          ? preset.of[id] : pageDefaults()[id];
-      });
+      var label = preset ? preset.label : 'My default';
       applySettings(wanted);
-      what.textContent = preset.says;
+      what.textContent = preset ? preset.says
+        : 'Your one saved combination. Edit it to replace it; this browser keeps no second copy.';
       what.hidden = false;
       status.textContent = 'Recomputing\u2026';
       /*
@@ -5231,42 +5294,61 @@
           ? 'lmt' : 'zone'
       }, function (recast, warning) {
         status.textContent = (recast
-          ? 'The chart on screen now reads as ' + preset.label + ' does.'
-          : 'Set to ' + preset.label + '. The next chart will use it.') +
+          ? 'The chart on screen now uses ' + label + '.'
+          : 'Set to ' + label + '. The next chart will use it.') +
           (warning || '');
       });
     };
-    /*
-     * One listener per button rather than one on the row. Delegation would
-     * have to walk up from whatever was clicked to find the button, and the
-     * four of them are made once and never replaced.
-     */
-    Array.prototype.forEach.call(
-      document.querySelectorAll('#preset-row [data-preset]'),
-      function (button) {
-        button.addEventListener('click', function () {
-          apply(button.getAttribute('data-preset'));
-        });
-      });
     presetApply = apply;
 
+    choice.addEventListener('change', function () {
+      var name = this.value;
+      try { window.localStorage.setItem(DEFAULT_SETTINGS_KEY, name); } catch (e) { /* session only */ }
+      apply(name);
+    });
+
+    document.getElementById('preset-create').addEventListener('click', function () {
+      base.value = 'page';
+      fillEditor(readMySettings() || currentSettings());
+      if (typeof dialog.showModal === 'function') dialog.showModal();
+      else dialog.setAttribute('open', '');
+    });
+
+    base.addEventListener('change', function () {
+      fillEditor(settingsForPreset(this.value));
+    });
+
+    document.getElementById('preset-cancel').addEventListener('click', closeDialog);
+
     document.getElementById('preset-save').addEventListener('click', function () {
+      var saved = {};
+      Object.keys(editorSelects).forEach(function (id) { saved[id] = editorSelects[id].value; });
       try {
-        window.localStorage.setItem(MY_SETTINGS_KEY,
-          JSON.stringify(currentSettings()));
-        status.textContent = 'Saved. Every visit will start here.';
+        window.localStorage.setItem(MY_SETTINGS_KEY, JSON.stringify(saved));
+        window.localStorage.setItem(DEFAULT_SETTINGS_KEY, 'mine');
+        status.textContent = 'My default saved. Saving again will replace it.';
       } catch (e) {
         status.textContent = 'This browser would not store the setting.';
+        return;
       }
-      showForget();
+      showMine();
+      choice.value = 'mine';
+      closeDialog();
+      apply('mine');
     });
 
     forget.addEventListener('click', function () {
       try { window.localStorage.removeItem(MY_SETTINGS_KEY); } catch (e) { /* nothing to undo */ }
-      status.textContent = 'Forgotten. Visits will start where this page does.';
-      showForget();
+      try { window.localStorage.setItem(DEFAULT_SETTINGS_KEY, 'page'); } catch (e2) { /* session only */ }
+      choice.value = 'page';
+      closeDialog();
+      showMine();
+      apply('page');
+      status.textContent = 'My default deleted. Standard default is in use.';
     });
-    showForget();
+    fillEditor(readMySettings() || currentSettings());
+    showMine();
+    choice.value = readDefaultChoice();
   }
 
   function statusFor(select) {
@@ -5891,7 +5973,7 @@
    * the link is that it opens the same chart for whoever follows it, which a
    * stranger's stored preference would quietly undo.
    */
-  applySettings(readMySettings() || {});
+  applySettings(settingsForPreset(readDefaultChoice()) || {});
 
   readHash();
 })();

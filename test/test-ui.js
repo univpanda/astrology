@@ -3950,7 +3950,7 @@ ok('every script the page loads parses', (function () {
     '  __out.applyPreset = function (n) { return presetApply(n); };\n' +
     '  __out.PRESETS = PRESETS; __out.RECKONING_IDS = RECKONING_IDS;\n' +
     '  __out.currentSettings = currentSettings; __out.pageDefaults = pageDefaults;\n' +
-    '  __out.readMySettings = readMySettings;\n' +
+    '  __out.readMySettings = readMySettings; __out.readDefaultChoice = readDefaultChoice;\n' +
     '  __out.strengthsFor = strengthsFor;\n' +
     '  __out.applySettings = applySettings;\n' +
     '  __out.lastChart = function () { return lastChart; };\n' +
@@ -9668,7 +9668,8 @@ console.log('\nThe settings sit three to a row, explaining themselves on hover')
   ok('every select points at its own explanation for a screen reader',
     (function () {
       var ids = (panel.match(/<select id="([a-z-]+)"/g) || [])
-        .map(function (m) { return m.slice('<select id="'.length, -1); });
+        .map(function (m) { return m.slice('<select id="'.length, -1); })
+        .filter(function (id) { return id !== 'preset-choice' && id !== 'preset-base'; });
       return ids.length === (panel.match(/<div class="field">/g) || []).length &&
         ids.every(function (id) {
         return panel.indexOf('aria-describedby="why-' + id + '"') >= 0 &&
@@ -10111,8 +10112,9 @@ console.log('\nThe settings notes do not argue from what software does');
     !/Star Jyotish/.test(notes));
   /* And the presets are the one place a program may be named. */
   ok('the presets name the reckonings they reproduce',
-    /data-preset="raman"/.test(panel) && /data-preset="drik"/.test(panel) &&
-    /data-preset="star"/.test(panel) &&
+    /<option value="raman">B\. V\. Raman<\/option>/.test(panel) &&
+    /<option value="drik">Drik Panchang<\/option>/.test(panel) &&
+    /<option value="star">Star Jyotish<\/option>/.test(panel) &&
     /Drik Panchang/.test(panel) && /Star Jyotish/.test(panel));
   /*
    * But the warning itself stays. A reader is owed the fact that a reading has
@@ -10221,14 +10223,16 @@ console.log('\nThe settings run from the chart outward');
   var panel = page.slice(page.indexOf('id="panel-settings"'),
                          page.indexOf('</section>', page.indexOf('id="panel-testing"')));
   var order = (panel.match(/<label for="([a-z-]+)">/g) || [])
-    .map(function (m) { return m.slice('<label for="'.length, -2); });
+    .map(function (m) { return m.slice('<label for="'.length, -2); })
+    .filter(function (id) { return id !== 'preset-choice' && id !== 'preset-base'; });
   var chartPanel = page.slice(page.indexOf('id="panel-settings"'),
                               page.indexOf('</section>', page.indexOf('id="panel-settings"')));
   var testPanel = page.slice(page.indexOf('id="panel-testing"'),
                              page.indexOf('</section>', page.indexOf('id="panel-testing"')));
   var idsIn = function (p) {
     return (p.match(/<label for="([a-z-]+)">/g) || [])
-      .map(function (m) { return m.slice('<label for="'.length, -2); });
+      .map(function (m) { return m.slice('<label for="'.length, -2); })
+      .filter(function (id) { return id !== 'preset-choice' && id !== 'preset-base'; });
   };
   /*
    * Drawing comes before reading, and the moment before the zodiac. The style
@@ -10500,20 +10504,57 @@ console.log('\nEach preset reaches the figures it is named for');
       return afterBoth[id] === alone[id];
     });
   })());
+  ok('the main selector applies and remembers the chosen default', (function () {
+    var choice = out.byId('preset-choice');
+    choice.value = 'drik';
+    choice.fire('change', {});
+    return out.readDefaultChoice() === 'drik' &&
+      out.RECKONING_IDS.every(function (id) {
+        return out.currentSettings()[id] ===
+          (Object.prototype.hasOwnProperty.call(out.PRESETS.drik.of, id)
+            ? out.PRESETS.drik.of[id] : out.pageDefaults()[id]);
+      });
+  })());
   /*
    * A reader's own default, which is the other half of the ask: the presets
    * are starting points somebody else chose, and this is the one they choose.
    */
   ok('a saved default is read back whole, chart style and all', (function () {
     out.applyPreset('raman');
-    out.byId('chart-style').value = 'south';
+    out.byId('preset-create').fire('click', {});
+    var editor = out.byId('preset-editor');
+    var editorSelects = {};
+    editor.children.forEach(function (field) {
+      field.children.forEach(function (child) {
+        if (child.id && child.id.indexOf('my-') === 0) {
+          editorSelects[child.id.slice(3)] = child;
+        }
+      });
+    });
+    editorSelects['chart-style'].value = 'south';
     out.byId('preset-save').fire('click', {});
     var saved = out.readMySettings();
     return saved && saved.ayanamsa === 'raman' && saved['chart-style'] === 'south' &&
       out.RECKONING_IDS.every(function (id) {
         return saved[id] === out.currentSettings()[id];
-      });
+      }) && out.byId('preset-choice').value === 'mine';
   })());
+  ok('saving again replaces the one personal default instead of adding another',
+    (function () {
+      out.byId('preset-create').fire('click', {});
+      var editor = out.byId('preset-editor');
+      var style;
+      editor.children.forEach(function (field) {
+        field.children.forEach(function (child) {
+          if (child.id === 'my-chart-style') style = child;
+        });
+      });
+      style.value = 'north';
+      out.byId('preset-save').fire('click', {});
+      var saved = out.readMySettings();
+      return saved && saved['chart-style'] === 'north' &&
+        out.byId('preset-choice').value === 'mine';
+    })());
   ok('and forgetting it leaves nothing behind', (function () {
     out.byId('preset-forget').fire('click', {});
     return out.readMySettings() === null;

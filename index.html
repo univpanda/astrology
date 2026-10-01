@@ -504,24 +504,46 @@
         at elsewhere" - and naming the elsewhere is the whole of it.
       -->
       <div class="presets">
-        <h3 class="presets-head">Start from</h3>
-        <div class="preset-row" id="preset-row">
-          <button type="button" class="preset" data-preset="page">This page</button>
-          <button type="button" class="preset" data-preset="raman">B. V. Raman</button>
-          <button type="button" class="preset" data-preset="drik">Drik Panchang</button>
-          <button type="button" class="preset" data-preset="star">Star Jyotish</button>
+        <h3 class="presets-head">Default settings</h3>
+        <div class="preset-picker">
+          <label for="preset-choice">Use</label>
+          <select id="preset-choice">
+            <option value="page">Standard default</option>
+            <option value="raman">B. V. Raman</option>
+            <option value="drik">Drik Panchang</option>
+            <option value="star">Star Jyotish</option>
+            <option value="mine" id="preset-mine-option" hidden disabled>My default</option>
+          </select>
+          <button type="button" id="preset-create">Create my default settings</button>
         </div>
         <p class="field-note preset-what" id="preset-what" hidden></p>
-        <div class="preset-row preset-mine">
-          <button type="button" id="preset-save">Save these as my default</button>
-          <button type="button" id="preset-forget" hidden>Forget my default</button>
-        </div>
-        <!--
-          Not .settings-status: statusFor() takes the first one in the panel,
-          so a third would have answered for every control below it.
-        -->
         <p class="field-note preset-status" id="preset-status"></p>
       </div>
+
+      <dialog id="preset-dialog" class="preset-dialog" aria-labelledby="preset-dialog-title">
+        <div class="preset-dialog-head">
+          <div>
+            <h3 id="preset-dialog-title">My default settings</h3>
+            <p class="field-note">One personal default is kept in this browser.
+              Saving again replaces it.</p>
+          </div>
+          <button type="button" id="preset-cancel" aria-label="Close">Close</button>
+        </div>
+        <div class="field preset-base-field">
+          <label for="preset-base">Start with</label>
+          <select id="preset-base">
+            <option value="page">Standard default</option>
+            <option value="raman">B. V. Raman</option>
+            <option value="drik">Drik Panchang</option>
+            <option value="star">Star Jyotish</option>
+          </select>
+        </div>
+        <div class="preset-editor" id="preset-editor"></div>
+        <div class="preset-dialog-actions">
+          <button type="button" class="primary" id="preset-save">Save my default</button>
+          <button type="button" id="preset-forget" hidden>Delete my default</button>
+        </div>
+      </dialog>
       <div class="settings-grid">
       <div class="field">
         <label for="chart-style">Chart style</label>

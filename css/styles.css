@@ -714,12 +714,15 @@ input::placeholder { color: #a9bdb2; }
   text-transform: uppercase;
   color: var(--ink-soft);
 }
-.preset-row {
+.preset-picker {
   display: flex;
   flex-wrap: wrap;
+  align-items: end;
   gap: 0.5rem;
 }
-.preset-row button {
+.preset-picker label { width: 100%; font-size: 0.82rem; color: var(--ink-soft); }
+.preset-picker select { min-width: 12rem; }
+.preset-picker button, .preset-dialog button {
   font: inherit;
   font-size: 0.85rem;
   font-weight: 600;
@@ -731,7 +734,7 @@ input::placeholder { color: #a9bdb2; }
   cursor: pointer;
   transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
 }
-.preset-row button:hover {
+.preset-picker button:hover, .preset-dialog button:hover {
   color: var(--green-deep);
   border-color: var(--green);
   background: var(--green-soft);
@@ -739,8 +742,57 @@ input::placeholder { color: #a9bdb2; }
 /* What the preset is, and where it cannot reach. Kept at the note's size and
    colour, since it is the same kind of thing the notes are. */
 .preset-what { margin: 0.7rem 0 0; max-width: 46rem; }
-.preset-mine { margin-top: 0.9rem; }
 .preset-status { margin: 0.6rem 0 0; min-height: 1.2em; }
+
+.preset-dialog {
+  width: min(48rem, calc(100vw - 2rem));
+  max-height: min(80vh, 48rem);
+  overflow: auto;
+  padding: 1.25rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lift);
+}
+.preset-dialog::backdrop { background: rgba(14, 28, 20, 0.45); }
+.preset-dialog-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+  position: sticky;
+  top: -1.25rem;
+  z-index: 2;
+  margin: -1.25rem -1.25rem 1rem;
+  padding: 1.25rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line-soft);
+}
+.preset-dialog-head h3 { margin: 0; }
+.preset-dialog-head p { margin: 0.2rem 0 0; }
+.preset-base-field { max-width: 20rem; margin-bottom: 1.25rem; }
+.preset-editor {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.25rem;
+}
+.preset-editor .field label { display: block; }
+.preset-editor select { width: 100%; }
+.preset-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  position: sticky;
+  bottom: -1.25rem;
+  margin: 1.25rem -1.25rem -1.25rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface);
+  border-top: 1px solid var(--line-soft);
+}
+@media (max-width: 38rem) {
+  .preset-editor { grid-template-columns: 1fr; }
+}
 
 .settings-grid {
   position: relative;
