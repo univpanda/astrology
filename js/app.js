@@ -5316,6 +5316,78 @@
    * Nothing happens where no chart is open: there is nothing to recompute, and
    * the choice is picked up when one is.
    */
+  /*
+   * The one setting that changes nothing computed, and so the one that needs
+   * no recompute: the same grahas in the same signs and houses, drawn the
+   * other way. It had no listener at all, so picking a style did nothing until
+   * something else happened to redraw - generating a chart, opening a saved
+   * one, moving any other setting - and in the meantime the select said one
+   * thing and the page showed another.
+   */
+  styleSelect.addEventListener('change', function () {
+    var status = statusFor(this);
+    var south = this.value === 'south';
+    if (!lastChart) {
+      status.textContent = 'Saved. The next chart will be drawn that way.';
+      return;
+    }
+    render(lastChart);
+    status.textContent = south
+      ? 'Redrawn as the South Indian square, signs fixed and the lagna marked.'
+      : 'Redrawn as the North Indian diamond, houses fixed and the signs moving.';
+  });
+
+  /*
+   * The other setting that was deaf, and this one moves the chart rather than
+   * only how it is drawn: it decides what instant the recorded time names, and
+   * local mean time parts from zone time by up to an hour at the far end of a
+   * country, which is fifteen degrees of ascendant.
+   *
+   * It was read when a chart was cast and never again, so changing it left the
+   * select saying one thing and the chart on screen computed from the other.
+   */
+  document.getElementById('time-standard').addEventListener('change', function () {
+    var status = statusFor(this);
+    var lmt = this.value === 'lmt';
+    if (!lastChart) {
+      status.textContent = 'Saved. The next chart will use it.';
+      return;
+    }
+    var offset;
+    if (lmt) {
+      offset = Math.round(lastChart.place.lon * 4);
+    } else {
+      try {
+        offset = Geo.offsetMinutes(lastChart.place.zone, lastChart.y, lastChart.mo,
+          lastChart.d, lastChart.h, lastChart.mi);
+      } catch (err) {
+        status.textContent = 'That timezone could not be resolved: ' +
+          lastChart.place.zone;
+        return;
+      }
+    }
+    status.textContent = 'Recomputing\u2026';
+    var seconds = (lastChart.time && lastChart.time.second) || 0;
+    computeChart({
+      jdUT: Astro.julianDay(lastChart.y, lastChart.mo, lastChart.d,
+        (lastChart.h * 3600 + lastChart.mi * 60 + seconds) / 3600 - offset / 60),
+      latitude: lastChart.place.lat, longitude: lastChart.place.lon,
+      tzOffsetMinutes: offset,
+      ayanamsa: lastChart.ayanamsa, trueNode: lastChart.trueNode
+    }, function (chart, source) {
+      lastChart.chart = chart;
+      lastChart.offset = offset;
+      lastChart.standard = lmt ? 'lmt' : 'zone';
+      lastChart.source = source;
+      lastChart.shadbala = null;
+      render(lastChart);
+      writeHash(lastChart);
+      status.textContent = lmt
+        ? 'Recomputed from local mean time at the birthplace\u2019s own meridian.'
+        : 'Recomputed from zone time, as ' + lastChart.place.zone + ' kept it.';
+    });
+  });
+
   document.getElementById('node-type').addEventListener('change', function () {
     var status = statusFor(this);
     if (!lastChart) {

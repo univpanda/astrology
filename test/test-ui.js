@@ -71,8 +71,11 @@ function makeNode(tag) {
     addEventListener: function (type, fn) {
       (this.listeners[type] || (this.listeners[type] = [])).push(fn);
     },
+    /* Called on the node, as a browser does: a change handler reading
+       this.value is the ordinary way to write one. */
     fire: function (type, event) {
-      (this.listeners[type] || []).forEach(function (fn) { fn(event); });
+      var node = this;
+      (this.listeners[type] || []).forEach(function (fn) { fn.call(node, event); });
     }
   };
   node.dataset = {};
@@ -5952,7 +5955,28 @@ console.log('\nSettings show the choice and fold the argument');
   ok('and the code finds the status line beside the setting that changed',
     /function statusFor\(select\)/.test(appSrc) &&
     !/getElementById\('settings-status'\)/.test(appSrc) &&
-    (appSrc.match(/var status = statusFor\(this\);/g) || []).length === 14);
+    (appSrc.match(/var status = statusFor\(this\);/g) || []).length >= 14);
+  /*
+   * And every select in both panels is actually listened to. Counting the
+   * calls above is what let this through: chart style had no listener at all,
+   * so picking a style did nothing until something else happened to redraw,
+   * and the select said one thing while the page showed another. A count
+   * cannot see a control that was never wired; asking each one can.
+   */
+  var report2 = '';
+  ok('every setting in both panels is wired to something', (function () {
+    var out = global.appExports || {};
+    if (!out.byId) return false;
+    var ids = (panel.match(/<select id="([a-z-]+)"/g) || []).map(function (m) {
+      return m.slice('<select id="'.length, -1);
+    });
+    var deaf = ids.filter(function (id) {
+      var node = out.byId(id);
+      return !node || !node.listeners || !(node.listeners.change || []).length;
+    });
+    report2 = ids.length + ' selects, deaf: ' + (deaf.join(', ') || 'none');
+    return ids.length >= 24 && deaf.length === 0;
+  })(), report2);
   /*
    * And the reasoning is still there: each note argues from a named authority
    * rather than asserting. The ayanamsa note used to carry Raman's own figure
@@ -10536,6 +10560,61 @@ console.log('\nEach preset reaches the figures it is named for');
       /Raman/.test(after) &&
       // The time standard moved too, and that one waits for the next chart.
       /next chart/.test(after);
+  })());
+
+  /*
+   * Two selects had no listener at all, so they were read when a chart was
+   * cast and never again: picking a style did nothing until something else
+   * happened to redraw, and the time standard left the select saying one thing
+   * and the chart computed from the other. Both are driven here rather than
+   * counted, because a count is what let them through.
+   */
+  var openChart = function () {
+    out.applyPreset('page');
+    var chart = Astro.chart({ jdUT: Astro.julianDay(1961, 8, 4, 19 + 24 / 60 + 10),
+      latitude: 21.3069, longitude: -157.8583, tzOffsetMinutes: -600 });
+    out.setLastChart({ chart: chart,
+      place: { lat: 21.3069, lon: -157.8583, zone: 'Pacific/Honolulu' },
+      offset: -600, name: 'Test', standard: 'zone', ayanamsa: 'lahiri',
+      trueNode: true, time: { hour12: 7, minute: 24, second: 0, meridiem: 'pm' },
+      y: 1961, mo: 8, d: 4, h: 19, mi: 24, shadbala: null });
+    return chart;
+  };
+  var drawnStyle = function () {
+    var box = out.byId('chart-a');
+    var svg = box.children.filter(function (n) { return n.tag === 'svg'; })[0];
+    return svg ? String(svg.attrs.class || '') : '';
+  };
+  ok('changing the chart style redraws what is on screen', (function () {
+    openChart();
+    var style = out.byId('chart-style');
+    style.value = 'south';
+    style.fire('change', { target: style });
+    var south = drawnStyle();
+    style.value = 'north';
+    style.fire('change', { target: style });
+    return /south/.test(south) && /north/.test(drawnStyle()) &&
+      !/south/.test(drawnStyle());
+  })());
+
+  ok('changing the time standard recasts the chart', (function () {
+    var before = openChart();
+    var standard = out.byId('time-standard');
+    standard.value = 'lmt';
+    standard.fire('change', { target: standard });
+    var after = out.lastChart();
+    var moon = function (c) {
+      return c.planets.filter(function (p) { return p.name === 'Moon'; })[0].longitude;
+    };
+    /*
+     * Honolulu is a long way off its zone's meridian: local mean time there
+     * runs about half an hour from zone time, which moves the ascendant by
+     * several degrees and the Moon by a measurable arc.
+     */
+    return after.standard === 'lmt' &&
+      after.offset === Math.round(-157.8583 * 4) &&
+      Math.abs(after.offset - (-600)) > 20 &&
+      Math.abs(moon(after.chart) - moon(before)) > 0.01;
   })());
 
   /* And "This page" really is the markup's own values, not a fourth opinion. */
