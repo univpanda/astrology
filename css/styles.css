@@ -693,6 +693,55 @@ input::placeholder { color: #a9bdb2; }
  * Three to a row on a wide window, two on a narrower one, one on a phone.
  * Positioned, because the explanation card hangs off it.
  */
+/*
+ * The presets, above the controls they move. They are a starting point rather
+ * than a mode, so they are set like the secondary buttons elsewhere and not
+ * like a group of tabs: nothing here stays lit afterwards, because the moment
+ * a reader changes one select the lit button would be a lie about what the
+ * page is reading.
+ */
+.presets {
+  margin: 0 0 1.5rem;
+  padding: 0 0 1.3rem;
+  border-bottom: 1px solid var(--line-soft);
+}
+.presets-head {
+  margin: 0 0 0.6rem;
+  font-family: var(--font);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.preset-row button {
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+  transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+.preset-row button:hover {
+  color: var(--green-deep);
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+/* What the preset is, and where it cannot reach. Kept at the note's size and
+   colour, since it is the same kind of thing the notes are. */
+.preset-what { margin: 0.7rem 0 0; max-width: 46rem; }
+.preset-mine { margin-top: 0.9rem; }
+.preset-status { margin: 0.6rem 0 0; min-height: 1.2em; }
+
 .settings-grid {
   position: relative;
   display: grid;

@@ -44,6 +44,14 @@ function makeNode(tag) {
       this.children.push(child);
       return child;
     },
+    /* The inverse, modelled for the same reason appendChild is: the page takes
+       a mark off the chart by removing it, and whether it went is the question. */
+    removeChild: function (child) {
+      var at = this.children.indexOf(child);
+      if (at >= 0) this.children.splice(at, 1);
+      child.parentNode = null;
+      return child;
+    },
     set innerHTML(v) {
       if (v !== '') return;
       this.children.forEach(function (c) { c.parentNode = null; });
@@ -3819,7 +3827,11 @@ ok('every script the page loads parses', (function () {
     node.style = {};
     node.classList = { add: function () {}, remove: function () {},
                        toggle: function () {}, contains: function () { return false; } };
-    node.addEventListener = function () {};
+    /*
+     * Recorded rather than dropped, so a button the page wires can be pressed
+     * here. makeNode already keeps listeners; this factory threw them away,
+     * which made every click handler on the page untestable.
+     */
     node.removeAttribute = function () {};
     node.querySelectorAll = function () { return []; };
     node.querySelector = function (sel) {
@@ -3834,6 +3846,29 @@ ok('every script the page loads parses', (function () {
     };
     return node;
   };
+  /*
+   * The selects the page really ships, read out of index.html: every option
+   * value and which one is marked selected. Without these the stub answers
+   * `undefined` for every setting and accepts any value written to one, so a
+   * preset could name an option the markup does not have and nothing would
+   * notice until somebody clicked it.
+   */
+  var SELECTS = (function () {
+    var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+    var found = {};
+    page.replace(/<select id="([a-z-]+)"[\s\S]*?<\/select>/g, function (whole, id) {
+      var values = [], selected = null;
+      whole.replace(/<option value="([^"]*)"([^>]*)>/g, function (_, value, rest) {
+        values.push(value);
+        if (/\bselected\b/.test(rest)) selected = value;
+        return '';
+      });
+      found[id] = { values: values, selected: selected === null ? values[0] : selected };
+      return '';
+    });
+    return found;
+  })();
+
   var byId = {};
   var sandbox = {
     document: {
@@ -3843,7 +3878,38 @@ ok('every script the page loads parses', (function () {
       createTextNode: function (text) {
         var n = loose('#text'); n.textContent = text; return n;
       },
-      getElementById: function (id) { return byId[id] || (byId[id] = loose('div')); },
+      getElementById: function (id) {
+        if (byId[id]) return byId[id];
+        var node = byId[id] = loose(SELECTS[id] ? 'select' : 'div');
+        if (SELECTS[id]) {
+          /*
+           * Live, because one select is empty in the markup and filled by the
+           * page itself: the ayanamsas come from Astro.AYANAMSA at start-up.
+           * A list frozen at construction would have said that select has no
+           * options at all, and anything setting it would silently do nothing.
+           */
+          Object.defineProperty(node, 'options', {
+            get: function () {
+              var appended = node.children.filter(function (c) { return c.tag === 'option'; });
+              return appended.length ? appended
+                : SELECTS[id].values.map(function (v) { return { value: v }; });
+            }
+          });
+          node.value = SELECTS[id].selected;
+          /*
+           * And an option appended with selected set decides the value, as it
+           * does in a browser. That is how the ayanamsa select gets its
+           * default, so without this the page ships with no ayanamsa at all.
+           */
+          var append = node.appendChild;
+          node.appendChild = function (child) {
+            var added = append.call(node, child);
+            if (child.tag === 'option' && child.selected) node.value = child.value;
+            return added;
+          };
+        }
+        return node;
+      },
       querySelector: function () { return loose('div'); },
       querySelectorAll: function () { return []; },
       addEventListener: function () {},
@@ -3875,10 +3941,16 @@ ok('every script the page loads parses', (function () {
     '  __out.render = render; __out.renderVargas = renderVargas;\n' +
     '  __out.renderGrahaTable = renderGrahaTable;\n' +
     '  __out.wireGrahaCard = wireGrahaCard;\n' +
+    '  __out.applyPreset = function (n) { return presetApply(n); };\n' +
+    '  __out.PRESETS = PRESETS; __out.RECKONING_IDS = RECKONING_IDS;\n' +
+    '  __out.currentSettings = currentSettings; __out.pageDefaults = pageDefaults;\n' +
+    '  __out.readMySettings = readMySettings;\n' +
+    '  __out.strengthsFor = strengthsFor;\n' +
+    '  __out.applySettings = applySettings;\n' +
+    '  __out.lastChart = function () { return lastChart; };\n' +
     '  __out.renderShadbala = renderShadbala; __out.renderYogas = renderYogas;\n' +
     '  __out.renderAspects = renderAspects;\n' +
     '  __out.rotatedOnto = rotatedOnto;\n' +
-    '  __out.wireGrahaCard = wireGrahaCard;\n' +
     '  __out.yogasByGraha = yogasByGraha;\n' +
     '  __out.rulingAndAspects = rulingAndAspects;\n' +
     '  __out.renderSaved = renderSaved; __out.setFlag = setFlag; __out.removeSaved = removeSaved;\n' +
@@ -9997,9 +10069,25 @@ console.log('\nThe settings notes do not argue from what software does');
   var seed = fs.readFileSync(path.join(root,
     'supabase/seed/astro_readings_strength.sql'), 'utf8');
 
+  /*
+   * Narrowed from the whole panel to the notes, which is what the rule was
+   * always about. The panel now carries presets, and a preset's whole purpose
+   * is to name the reckoning it reproduces: it answers "how do I get the
+   * figures I am looking at elsewhere", where a note answers "what does a text
+   * ask for". The first question has a program for an answer and the second
+   * does not, so the ban belongs on the notes alone.
+   */
+  var notes = (panel.match(/<div class="field-why"[\s\S]*?<\/div>/g) || []).join(' ');
+  ok('the panel really does carry its notes where this can see them',
+    notes.length > 4000 && /No classical text asks for it/.test(notes.replace(/\s+/g, ' ')));
   ok('no settings note justifies an option by what other programs do',
-    !/software/i.test(panel) && !/Drik Panchang/.test(panel) &&
-    !/Star Jyotish/.test(panel));
+    !/software/i.test(notes) && !/Drik Panchang/.test(notes) &&
+    !/Star Jyotish/.test(notes));
+  /* And the presets are the one place a program may be named. */
+  ok('the presets name the reckonings they reproduce',
+    /data-preset="raman"/.test(panel) && /data-preset="drik"/.test(panel) &&
+    /data-preset="star"/.test(panel) &&
+    /Drik Panchang/.test(panel) && /Star Jyotish/.test(panel));
   /*
    * But the warning itself stays. A reader is owed the fact that a reading has
    * no text behind it; that is the part of the sentence worth keeping.
@@ -10280,6 +10368,181 @@ console.log('\nA figure the total leaves out says so on the cell');
     /<option value="omitted" selected>/.test(sel) &&
     /<option value="counted">/.test(sel) &&
     sel.indexOf('value="omitted"') < sel.indexOf('value="counted"'));
+})();
+
+console.log('\nEach preset reaches the figures it is named for');
+/*
+ * The point of a preset is not that it moves some selects. It is that the page
+ * then prints what the reckoning it names prints, so that is what is checked:
+ * applied through the same function a click calls, read through the same
+ * strengths path the tables read, against figures the engine suite already
+ * reconciles one at a time.
+ *
+ * Nothing here is a figure somebody expects a program to give. Each one is
+ * published or recorded: Raman's Example 51, and the Drik Panchang and Star
+ * Jyotish readings test/test.js pins.
+ */
+(function () {
+  var out = global.appExports || {};
+  if (!out.applyPreset) { ok('the presets can be driven', false); return; }
+  // Earlier blocks leave a stub chart behind; these are about the settings.
+  out.setLastChart(null);
+
+  var stateFor = function (opts) {
+    var chart = Astro.chart(opts);
+    return { chart: chart, offset: opts.tzOffsetMinutes,
+      place: { lat: opts.latitude, lon: opts.longitude }, shadbala: null };
+  };
+  var obama = function () {
+    return stateFor({ jdUT: Astro.julianDay(1961, 8, 4, 19 + 24 / 60 + 10),
+      latitude: 21.3069, longitude: -157.8583, tzOffsetMinutes: -600,
+      trueNode: true });
+  };
+  var near = function (got, want, tol) { return Math.abs(got - want) < tol; };
+
+  /* Raman: Example 51's cheshta balas, on his own chart and his own ayanamsa. */
+  ok('B. V. Raman reaches the cheshta balas of his Example 51', (function () {
+    out.applyPreset('raman');
+    var lon = 77.58333;
+    var state = stateFor({
+      jdUT: Astro.julianDay(1918, 10, 16, 14 + 6 / 60 + 16 / 3600 - lon / 15),
+      latitude: 13, longitude: lon, tzOffsetMinutes: Math.round(lon * 4),
+      ayanamsa: 'raman' });
+    var r = out.strengthsFor(state).grahas;
+    var EX51 = { Mars: 22.23, Mercury: 2.30, Jupiter: 35.26, Venus: 5.95,
+      Saturn: 21.14 };
+    return Object.keys(EX51).every(function (g) {
+      return near(r[g].cheshta, EX51[g], 0.25);
+    }) && out.currentSettings().ayanamsa === 'raman' &&
+      out.currentSettings()['time-standard'] === 'lmt';
+  })());
+
+  /*
+   * Drik Panchang: three figures, each a different part of the reckoning -
+   * Mercury read without the qualifier, the clock taken by the zone, and the
+   * saptavargaja counted in the rashi.
+   */
+  ok('Drik Panchang reaches the three figures recorded for it', (function () {
+    out.applyPreset('drik');
+    var r = out.strengthsFor(obama()).grahas;
+    var trump = stateFor({ jdUT: Astro.julianDay(1946, 6, 14, 10 + 54 / 60 + 4),
+      latitude: 40.6975, longitude: -73.8042, tzOffsetMinutes: -240 });
+    var t = out.strengthsFor(trump).grahas;
+    return near(r.Mercury.kala.paksha, 23.06, 0.05) &&
+      near(r.Moon.sthana.saptavargaja, 161.25, 0.02) &&
+      near(t.Sun.kala.nathonnatha, 54.50, 0.05);
+  })());
+  /*
+   * And it says the one thing it cannot do. Their ayana bala scales the true
+   * declination by Raman's constant, and this page gives each constant the
+   * obliquity it assumes, so no combination of settings lands on their
+   * figures. A preset that quietly came close would be the worst of both.
+   */
+  ok('and says so where its ayana bala cannot be reached', (function () {
+    out.applyPreset('drik');
+    var ayana = out.strengthsFor(obama()).grahas.Mercury.kala.ayana;
+    return !near(ayana, 55.87, 0.1) &&
+      /out of reach/.test(out.PRESETS.drik.says) &&
+      /ayana/.test(out.PRESETS.drik.says);
+  })());
+
+  /* Star Jyotish: all seven of its printed ayana integers on one chart. */
+  ok('Star Jyotish reaches all seven of its printed ayana figures', (function () {
+    out.applyPreset('star');
+    var r = out.strengthsFor(obama()).grahas;
+    var WANT = { Sun: 52, Moon: 3, Mars: 34, Mercury: 55, Jupiter: 4, Venus: 60,
+      Saturn: 57 };
+    return Object.keys(WANT).every(function (g) {
+      // The Sun's is doubled inside kala bala.
+      var v = g === 'Sun' ? r[g].kala.ayana / 2 : r[g].kala.ayana;
+      return near(v, WANT[g], 0.55);
+    }) && out.currentSettings()['saptavargaja-ladder'] === 'parashara';
+  })());
+
+  /*
+   * A preset names every control, not only the ones it moves, so two clicks in
+   * a row give the second reckoning and not a mixture of the two. This is the
+   * failure that would be invisible: the figures would be nobody's.
+   */
+  ok('a preset leaves nothing of the one before it', (function () {
+    out.applyPreset('drik');
+    out.applyPreset('star');
+    var afterBoth = out.currentSettings();
+    out.applyPreset('star');
+    var alone = out.currentSettings();
+    return out.RECKONING_IDS.every(function (id) {
+      return afterBoth[id] === alone[id];
+    });
+  })());
+  /*
+   * A reader's own default, which is the other half of the ask: the presets
+   * are starting points somebody else chose, and this is the one they choose.
+   */
+  ok('a saved default is read back whole, chart style and all', (function () {
+    out.applyPreset('raman');
+    out.byId('chart-style').value = 'south';
+    out.byId('preset-save').fire('click', {});
+    var saved = out.readMySettings();
+    return saved && saved.ayanamsa === 'raman' && saved['chart-style'] === 'south' &&
+      out.RECKONING_IDS.every(function (id) {
+        return saved[id] === out.currentSettings()[id];
+      });
+  })());
+  ok('and forgetting it leaves nothing behind', (function () {
+    out.byId('preset-forget').fire('click', {});
+    return out.readMySettings() === null;
+  })());
+  /*
+   * Only what the page still offers. A stored setting outlives the markup, and
+   * a select set to a value it no longer has goes blank rather than wrong -
+   * which is worse, because a blank select computes with whatever the engine
+   * falls back to while showing nothing at all.
+   */
+  ok('a stored value the page no longer offers is dropped, not written in',
+    (function () {
+      out.applyPreset('page');
+      var was = out.currentSettings().ayanamsa;
+      out.applySettings({ ayanamsa: 'no-such-ayanamsa', 'node-type': 'mean' });
+      return out.currentSettings().ayanamsa === was &&
+        out.currentSettings()['node-type'] === 'mean';
+    })());
+
+  /*
+   * The whole point, driven: with a chart on screen, pressing a preset recasts
+   * it. The ayanamsa is the one to watch, being the only setting here that
+   * changes every longitude on the page rather than a column of the strength
+   * table, and Raman's parts from Lahiri by about a degree and a half.
+   */
+  ok('pressing a preset recasts the chart that is open', (function () {
+    out.applyPreset('page');
+    var chart = Astro.chart({ jdUT: Astro.julianDay(1961, 8, 4, 19 + 24 / 60 + 10),
+      latitude: 21.3069, longitude: -157.8583, tzOffsetMinutes: -600 });
+    out.setLastChart({ chart: chart, place: { lat: 21.3069, lon: -157.8583 },
+      offset: -600, name: 'Test', standard: 'zone', ayanamsa: 'lahiri',
+      trueNode: true, time: { hour12: 7, minute: 24, second: 0, meridiem: 'pm' },
+      y: 1961, mo: 8, d: 4, h: 19, mi: 24, shadbala: null });
+    var before = chart.ayanamsa;
+    out.applyPreset('raman');
+    var after = out.byId('preset-status').textContent;
+    var moon = function (c) {
+      return c.planets.filter(function (p) { return p.name === 'Moon'; })[0].longitude;
+    };
+    var recast = out.lastChart();
+    return recast.ayanamsa === 'raman' &&
+      Math.abs(recast.chart.ayanamsa - before) > 1.3 &&
+      Math.abs(moon(recast.chart) - moon(chart)) > 1.3 &&
+      /Raman/.test(after) &&
+      // The time standard moved too, and that one waits for the next chart.
+      /next chart/.test(after);
+  })());
+
+  /* And "This page" really is the markup's own values, not a fourth opinion. */
+  ok('This page restores exactly what the markup ships with', (function () {
+    out.applyPreset('raman');
+    out.applyPreset('page');
+    var now = out.currentSettings(), ship = out.pageDefaults();
+    return out.RECKONING_IDS.every(function (id) { return now[id] === ship[id]; });
+  })());
 })();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');

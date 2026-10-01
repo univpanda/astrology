@@ -491,6 +491,37 @@
        here recomputes whatever chart is open. One so far; more will follow. -->
   <section class="panel settings-panel" id="panel-settings" role="tabpanel" aria-labelledby="tab-settings" hidden>
     <div class="card">
+      <!--
+        Named starting points, not modes. Each one moves the controls below and
+        in Testing to the values that reproduce a published reckoning, and then
+        every one of them is yours to change: there is no state a preset can put
+        the page in that the selects do not show.
+
+        They name the reckonings they reproduce, which the notes under each
+        control deliberately do not. A note answers "what does a text ask for",
+        and "some program computes it this way" is not an answer to that. A
+        preset is the other question - "how do I get the figures I am looking
+        at elsewhere" - and naming the elsewhere is the whole of it.
+      -->
+      <div class="presets">
+        <h3 class="presets-head">Start from</h3>
+        <div class="preset-row" id="preset-row">
+          <button type="button" class="preset" data-preset="page">This page</button>
+          <button type="button" class="preset" data-preset="raman">B. V. Raman</button>
+          <button type="button" class="preset" data-preset="drik">Drik Panchang</button>
+          <button type="button" class="preset" data-preset="star">Star Jyotish</button>
+        </div>
+        <p class="field-note preset-what" id="preset-what" hidden></p>
+        <div class="preset-row preset-mine">
+          <button type="button" id="preset-save">Save these as my default</button>
+          <button type="button" id="preset-forget" hidden>Forget my default</button>
+        </div>
+        <!--
+          Not .settings-status: statusFor() takes the first one in the panel,
+          so a third would have answered for every control below it.
+        -->
+        <p class="field-note preset-status" id="preset-status"></p>
+      </div>
       <div class="settings-grid">
       <div class="field">
         <label for="chart-style">Chart style</label>

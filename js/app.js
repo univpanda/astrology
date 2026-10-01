@@ -4957,6 +4957,271 @@
    * two of them since the settings were split across two tabs, and a message
    * written into the tab you are not looking at is a message nobody sees.
    */
+  /*
+   * Named starting points for the whole of the reckoning.
+   *
+   * Every one of these moves the same controls a reader can move by hand, and
+   * leaves them showing what they were moved to. There is no mode: after
+   * applying one, changing a single select is an ordinary change to an
+   * ordinary setting, and the preset is simply no longer the thing on screen.
+   *
+   * A preset names every control it cares about and every control it does not,
+   * because a preset that only set the differences would leave whatever the
+   * last one set behind, and two clicks would give a reckoning that is neither.
+   * So "This page" is a preset like the others, holding the values the markup
+   * ships with.
+   *
+   * What is not here is as deliberate as what is. Each of these pairings is
+   * one the test suites reconcile against a published figure, and nothing has
+   * been filled in by guessing at what a program probably does. Where a
+   * comparator's figures cannot be reached at all, the preset says so rather
+   * than quietly landing near them.
+   */
+  var RECKONING_IDS = ['time-standard', 'ayanamsa', 'node-type', 'combustion',
+    'tatkalika', 'hora-dignity', 'budha-floor', 'mercury-nature',
+    'nat-clock', 'saptavargaja-ladder', 'hora-mercury', 'moon-paksha',
+    'paksha-doubled', 'hora-length', 'ayana-constant', 'kranti', 'ayana-doubled',
+    'cheshta-method', 'kendra-method', 'mean-source', 'luminary-rule',
+    'luminary-cheshta', 'ishta-kashta'];
+
+  /*
+   * The values the markup ships with, read once before anything has been
+   * applied. Taken from the page rather than written out again here, so the
+   * two cannot drift and "This page" cannot become a fourth opinion.
+   */
+  var PAGE_DEFAULTS = null;
+  function pageDefaults() {
+    if (!PAGE_DEFAULTS) {
+      PAGE_DEFAULTS = {};
+      RECKONING_IDS.concat(['chart-style']).forEach(function (id) {
+        var select = document.getElementById(id);
+        if (select) PAGE_DEFAULTS[id] = select.value;
+      });
+    }
+    return PAGE_DEFAULTS;
+  }
+
+  var PRESETS = {
+    page: {
+      label: 'This page',
+      of: {},
+      says: 'Back to what this page reads by default: the sourced option ' +
+        'wherever the texts settle it, and the commoner convention where they ' +
+        'do not.'
+    },
+    /*
+     * Graha and Bhava Balas, worked end to end on his Standard Horoscope.
+     * Every value here is pinned by a figure he prints: his own ayanamsa and
+     * local mean time for the chart, the classical mean longitudes and the
+     * averaged kendra for the cheshta balas of Example 51, his own saptavargaja
+     * ladder counted in the rashi for the 161.25 of a moolatrikona Moon, and
+     * his footnote making Mercury a malefic in bad company.
+     */
+    raman: {
+      label: 'B. V. Raman',
+      of: { 'time-standard': 'lmt', ayanamsa: 'raman',
+        tatkalika: 'rashi', 'hora-dignity': 'lord', 'budha-floor': 'raman',
+        'mercury-nature': 'qualified', 'saptavargaja-ladder': 'raman',
+        'moon-paksha': 'group', 'ayana-constant': 'raman', kranti: 'longitude',
+        'mean-source': 'classical', 'kendra-method': 'averaged' },
+      says: 'Graha and Bhava Balas, worked end to end on his Standard ' +
+        'Horoscope. His ayanamsa and local mean time, the classical mean ' +
+        'longitudes and the averaged kendra his Example 51 computes with, and ' +
+        'his saptavargaja ladder counted in the rashi.'
+    },
+    /*
+     * Pinned by four figures the engine suite reconciles: Obama's Mercury at
+     * 23.06 paksha on the unqualified Mercury, his Moon at 161.25 saptavargaja,
+     * Trump's Sun at 54.50 nathonnatha on the zone clock, and the seasonal hora.
+     * Their ayana bala is the one thing that cannot be reached, and the preset
+     * says so rather than landing near it.
+     */
+    drik: {
+      label: 'Drik Panchang',
+      of: { 'mercury-nature': 'benefic', 'nat-clock': 'zone', tatkalika: 'rashi',
+        'hora-dignity': 'lord', 'saptavargaja-ladder': 'raman',
+        'hora-length': 'seasonal', 'ayana-constant': 'raman', kranti: 'true' },
+      says: 'Mercury read without the qualifier, the clock by the zone rather ' +
+        'than the sundial, and the saptavargaja counted in the rashi. Their ' +
+        'ayana bala is out of reach: they scale the true declination by ' +
+        'Raman\u2019s constant, and this page gives each constant the obliquity ' +
+        'it assumes, so the figures come close and do not land.'
+    },
+    /*
+     * Two settings, and only two, because only two are pinned. Its ladder is
+     * Parashara's, checked against its figures for one chart where all seven
+     * grahas come out to the unit; and its ayana bala is the declination read
+     * from longitude alone, which reproduces all seven of its printed integers
+     * on Obama. Nothing else about it is recorded here, so nothing else moves.
+     */
+    star: {
+      label: 'Star Jyotish',
+      of: { 'saptavargaja-ladder': 'parashara', kranti: 'longitude' },
+      says: 'Parashara\u2019s saptavargaja ladder and the declination read ' +
+        'from longitude alone, which are the two of its readings this page has ' +
+        'checked against its printed figures. Everything else is left where ' +
+        'this page has it, rather than guessed at.'
+    }
+  };
+
+  /*
+   * A reader's own starting point, kept in this browser.
+   *
+   * Nothing else on this page is remembered between visits, which is a
+   * deliberate choice for the twenty-odd selects: a setting silently in force
+   * from a session a month ago is worse than one that is plainly at its
+   * default. A default a reader has chosen and can forget in one click is the
+   * other case, and this is only that.
+   */
+  var MY_SETTINGS_KEY = 'jyotisha.settings.v1';
+  /* Held so the suites can drive a preset the way a click does. */
+  var presetApply = null;
+
+  function readMySettings() {
+    try {
+      var raw = window.localStorage.getItem(MY_SETTINGS_KEY);
+      var saved = raw ? JSON.parse(raw) : null;
+      return saved && typeof saved === 'object' ? saved : null;
+    } catch (e) {
+      // A browser refusing storage is not a reason to fail to start.
+      return null;
+    }
+  }
+
+  /*
+   * Only values the page actually offers. A key that no longer names a control,
+   * or a value no longer among its options, is dropped rather than written in:
+   * the stored shape outlives the markup, and a select set to a string it does
+   * not have goes blank.
+   */
+  function applySettings(values) {
+    var moved = 0;
+    Object.keys(values || {}).forEach(function (id) {
+      var select = document.getElementById(id);
+      if (!select) return;
+      var has = Array.prototype.some.call(select.options, function (option) {
+        return option.value === values[id];
+      });
+      if (!has || select.value === values[id]) return;
+      select.value = values[id];
+      moved += 1;
+    });
+    return moved;
+  }
+
+  function currentSettings() {
+    var out = {};
+    RECKONING_IDS.concat(['chart-style']).forEach(function (id) {
+      var select = document.getElementById(id);
+      if (select) out[id] = select.value;
+    });
+    return out;
+  }
+
+  /*
+   * One recompute for the whole move, rather than the twenty a preset would
+   * fire if it dispatched a change event per select. The chart itself is recast
+   * because the ayanamsa and the node may have moved, and the strengths are
+   * dropped because almost everything else reaches them.
+   */
+  function recomputeEverything(done) {
+    // Nothing cast yet, or cast but not yet answered: either way there is no
+    // chart to recompute and the settings simply wait for the next one.
+    if (!lastChart || !lastChart.chart) return done(false);
+    var ayanamsa = document.getElementById('ayanamsa').value;
+    var trueNode = document.getElementById('node-type').value === 'true';
+    computeChart({
+      jdUT: lastChart.chart.julianDay,
+      latitude: lastChart.place.lat, longitude: lastChart.place.lon,
+      tzOffsetMinutes: lastChart.offset,
+      ayanamsa: ayanamsa, trueNode: trueNode
+    }, function (chart, source) {
+      lastChart.chart = chart;
+      lastChart.ayanamsa = ayanamsa;
+      lastChart.trueNode = trueNode;
+      lastChart.source = source;
+      lastChart.shadbala = null;
+      render(lastChart);
+      writeHash(lastChart);
+      done(true);
+    });
+  }
+
+  function wirePresets() {
+    var status = document.getElementById('preset-status');
+    var what = document.getElementById('preset-what');
+    var forget = document.getElementById('preset-forget');
+
+    var showForget = function () { forget.hidden = !readMySettings(); };
+
+    var apply = function (name) {
+      var preset = PRESETS[name];
+      if (!preset) return;
+      /*
+       * Every control named, not only the ones this preset moves, so clicking
+       * two in a row gives the second and not a mixture of both.
+       */
+      var wanted = {};
+      RECKONING_IDS.forEach(function (id) {
+        wanted[id] = Object.prototype.hasOwnProperty.call(preset.of, id)
+          ? preset.of[id] : pageDefaults()[id];
+      });
+      applySettings(wanted);
+      what.textContent = preset.says;
+      what.hidden = false;
+      /*
+       * The time standard is read when a chart is cast, not after, so a preset
+       * that moves it has not moved the chart on screen. Saying so beats a
+       * reader finding out by comparing figures.
+       */
+      var standardMoved = wanted['time-standard'] !== lastStandard();
+      status.textContent = 'Recomputing\u2026';
+      recomputeEverything(function (recast) {
+        status.textContent = (recast
+          ? 'The chart on screen now reads as ' + preset.label + ' does.'
+          : 'Set to ' + preset.label + '. The next chart will use it.') +
+          (recast && standardMoved
+            ? ' The time standard takes effect on the next chart.' : '');
+      });
+    };
+    /*
+     * One listener per button rather than one on the row. Delegation would
+     * have to walk up from whatever was clicked to find the button, and the
+     * four of them are made once and never replaced.
+     */
+    Array.prototype.forEach.call(
+      document.querySelectorAll('#preset-row [data-preset]'),
+      function (button) {
+        button.addEventListener('click', function () {
+          apply(button.getAttribute('data-preset'));
+        });
+      });
+    presetApply = apply;
+
+    document.getElementById('preset-save').addEventListener('click', function () {
+      try {
+        window.localStorage.setItem(MY_SETTINGS_KEY,
+          JSON.stringify(currentSettings()));
+        status.textContent = 'Saved. Every visit will start here.';
+      } catch (e) {
+        status.textContent = 'This browser would not store the setting.';
+      }
+      showForget();
+    });
+
+    forget.addEventListener('click', function () {
+      try { window.localStorage.removeItem(MY_SETTINGS_KEY); } catch (e) { /* nothing to undo */ }
+      status.textContent = 'Forgotten. Visits will start where this page does.';
+      showForget();
+    });
+    showForget();
+  }
+
+  /* What the open chart was actually cast with, so a change can be reported. */
+  function lastStandard() {
+    return lastChart && lastChart.standard ? lastChart.standard : 'zone';
+  }
+
   function statusFor(select) {
     var node = select;
     while (node && String(node.className || '').indexOf('settings-panel') < 0) {
@@ -5343,6 +5608,7 @@
     document.querySelector('.tabs.subtabs:not(.graha-charts)'));
   wireGrahaChartKeys();
   wireSettingHelp();
+  wirePresets();
 
   function activateTab(name, moveFocus) { sections.activate(name, moveFocus); }
 
@@ -5513,6 +5779,13 @@
 
   populateSelects();
   populateSlotSelects();
+  /*
+   * The shipped values, read once the selects are filled and before anything
+   * has been applied to them. Taken any earlier and the ayanamsa has no
+   * options yet, so "This page" would restore a blank for it; taken any later
+   * and it would be a reader's own default wearing the page's name.
+   */
+  pageDefaults();
   renderSaved();
   /*
    * The database is the saved list. localStorage is only its fast/offline
@@ -5534,5 +5807,13 @@
     placeNote.textContent = 'This browser lacks historical timezone data, so births before ' +
       '1970 may use a modern offset. Chrome, Safari and Firefox all handle it.';
   }
+  /*
+   * A reader's own default, applied before the hash is read. A shared link
+   * carries the settings its chart was cast with and has to win: the point of
+   * the link is that it opens the same chart for whoever follows it, which a
+   * stranger's stored preference would quietly undo.
+   */
+  applySettings(readMySettings() || {});
+
   readHash();
 })();
