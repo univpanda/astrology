@@ -178,13 +178,11 @@ for (let y = 1930; y < 2030; y++) {
               if (!f.title) return;
               const route = Array.isArray(f.route) ? f.route.slice().sort().join('+')
                 : f.route || f.kind || f.condition || 'general';
-              (f.grahas || []).forEach(function (graha) {
-                const identity = graha + '|' + f.title + '|' + route;
-                if (!grouped[identity]) grouped[identity] = [];
-                if (grouped[identity].indexOf(reference) < 0) {
-                  grouped[identity].push(reference);
-                }
-              });
+              const identity = f.title + '|' + route;
+              if (!grouped[identity]) grouped[identity] = [];
+              if (grouped[identity].indexOf(reference) < 0) {
+                grouped[identity].push(reference);
+              }
             });
           });
           Object.keys(grouped).forEach(function (identity) {

@@ -1707,7 +1707,7 @@
          * carry the family's figure - one of them holds in every chart - where
          * Chakra is one in thousands and Pasa two in five.
          */
-        var cardKey = item.division + '|' + item.primaryReference + '|' + at + '|' +
+        var cardKey = item.division + '|' + item.primaryReference + '|' +
           item.term + '|' + item.route + '|' + item.from;
         var manifestationChance = FREQUENCIES.yogaManifestationByCardContext &&
           FREQUENCIES.yogaManifestationByCardContext[cardKey];

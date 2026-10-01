@@ -7655,7 +7655,7 @@ ok('the card asks the table for both kinds of line',
    * "every chart", where Chakra is one in thousands and Pasa two in five.
    */
   ok('and a highlighted yoga asks for its exact route, division and reference set',
-    /item\.division \+ '\|' \+ item\.primaryReference \+ '\|' \+ at \+ '\|'/.test(src) &&
+    /item\.division \+ '\|' \+ item\.primaryReference \+ '\|'/.test(src) &&
     /item\.term \+ '\|' \+ item\.route \+ '\|' \+ item\.from/.test(src) &&
     typeof F.yogaManifestationByCardContext === 'object');
   ok('and the two really do differ where a family shares a passage',
