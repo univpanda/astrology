@@ -479,6 +479,21 @@ textarea::placeholder { color: #a9bdb2; }
    is not there to see. */
 .saved-key-item { display: block; }
 
+/*
+ * The key for the two rows the graha table writes short. Under the table it
+ * belongs to rather than once on the page: there is a table per chart, and a
+ * reader on the second should not have to go back to the first.
+ */
+.table-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 1.25rem;
+  margin: 0.5rem 0 0;
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+}
+.table-key[hidden] { display: none; }
+
 .celebrity-mark {
   margin-left: 0.45rem;
   font-size: 0.7rem;

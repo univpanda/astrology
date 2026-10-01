@@ -1026,6 +1026,12 @@
     return el2 ? el2.value : 'parashara';
   }
 
+  /* The compact form shared by the table and the graha highlight card. */
+  var RELATION_SHORT = {
+    'great friend': 'GF', 'friend': 'F', 'neutral': 'N',
+    'enemy': 'E', 'great enemy': 'GE'
+  };
+
   function dignitiesByGraha(state, division, tatkalika, horaRule, horaMercury) {
     var d1 = {};
     state.chart.planets.forEach(function (p) { d1[p.name] = p; });
@@ -1037,7 +1043,7 @@
       if (!other || other === p.name || !at[other]) return '';
       var apart = ((Astro.signOf(at[other].longitude) - Astro.signOf(p.longitude)) % 12 + 12) % 12 + 1;
       var rel = Astro.compoundRelation(p.name, other, apart);
-      return rel ? Astro.RELATION_LABELS[rel].toLowerCase() : '';
+      return rel ? RELATION_SHORT[Astro.RELATION_LABELS[rel]] : '';
     };
 
     var map = {};
@@ -1088,8 +1094,9 @@
         // Its own dispositor is still its dispositor, and saying so is shorter
         // than the reader working out that Mars in Aries has nobody to answer.
         lord: lord || '',
-        relation: owned || !standing.relation || standing.relation === 'moolatrikona'
-          ? '' : Astro.RELATION_LABELS[standing.relation].toLowerCase()
+        relation: owned ? 'Own'
+          : !standing.relation || standing.relation === 'moolatrikona'
+            ? '' : RELATION_SHORT[Astro.RELATION_LABELS[standing.relation]]
       };
     });
     return map;
@@ -1566,12 +1573,25 @@
     };
 
     /* One item on a run-on line: a label, then the thing itself. */
-    var fact = function (row, label, value) {
+    var fact = function (row, label, value, says) {
       if (!value) return;
       var item = el('span', 'graha-card-item');
       if (label) item.appendChild(el('span', 'graha-card-fact-label', label));
       item.appendChild(document.createTextNode((label ? ' ' : '') + value));
+      if (says) item.title = says;
       row.appendChild(item);
+    };
+
+    /*
+     * The card writes a friendship short, as the table does, but has no key
+     * under it to spell them out - so each one carries its word on the hover.
+     */
+    var RELATION_WORD = { GF: 'great friend', F: 'friend', N: 'neutral',
+      E: 'enemy', GE: 'great enemy', Own: 'own sign' };
+    var saysRelation = function (who, mark) {
+      if (mark === 'Own') return 'This graha owns the sign it occupies.';
+      return mark && RELATION_WORD[mark] ? who + ' is a ' + RELATION_WORD[mark] +
+        ' of this graha.' : '';
     };
 
     var fill = function (t) {
@@ -1617,7 +1637,8 @@
       var dispositor = t.getAttribute('data-dispositor');
       if (dispositor) {
         var relation = t.getAttribute('data-dispositor-relation');
-        fact(seat, 'Dispositor', dispositor + (relation ? ' (' + relation + ')' : ''));
+        fact(seat, 'Dispositor', dispositor + (relation ? ' (' + relation + ')' : ''),
+          saysRelation(dispositor, relation));
       }
       fact(seat, 'Rules', t.getAttribute('data-rules'));
       if (seat.children.length) card.appendChild(seat);
@@ -1626,10 +1647,12 @@
       var inNak = el('p', 'graha-card-lords');
       var nakRel = t.getAttribute('data-nak-lord-relation');
       fact(inNak, 'Nakshatra lord', t.getAttribute('data-nak-lord') +
-        (nakRel ? ' (' + nakRel + ')' : ''));
+        (nakRel ? ' (' + nakRel + ')' : ''),
+        saysRelation(t.getAttribute('data-nak-lord'), nakRel));
       var subRel = t.getAttribute('data-sub-lord-relation');
       fact(inNak, 'Sub lord', t.getAttribute('data-sub-lord') +
-        (subRel ? ' (' + subRel + ')' : ''));
+        (subRel ? ' (' + subRel + ')' : ''),
+        saysRelation(t.getAttribute('data-sub-lord'), subRel));
       if (inNak.children.length) card.appendChild(inNak);
 
       var over = el('p', 'graha-card-lords');
@@ -1854,16 +1877,31 @@
    * twenty-one pairs disagree, so the other direction is in the hover rather
    * than lost.
    */
+  /*
+   * The six two-word nakshatras, shortened for a column.
+   *
+   * "Uttara Bhadrapada 4" is nineteen characters against a median of ten, so
+   * the column was sized by six of twenty-seven names - and they are the six a
+   * chart lands on about one position in four and a half, which is often
+   * enough that the long case is not an edge case. The key under the table
+   * spells them out; so does the hover on the cell.
+   */
+  var NAKSHATRA_SHORT = {
+    'Purva Bhadrapada': 'P Bhadra', 'Uttara Bhadrapada': 'U Bhadra',
+    'Purva Phalguni': 'P Phalguni', 'Uttara Phalguni': 'U Phalguni',
+    'Purva Ashadha': 'P Ashadha', 'Uttara Ashadha': 'U Ashadha'
+  };
+
   function dispositorRelation(graha, sign, positionsD1) {
     var lord = Astro.SIGN_LORDS[sign];
     // 'Own Sign' as Astro.dignityOf spells it, the two sitting in rows that
     // touch and the same words meaning the same thing in both.
-    if (lord === graha) return 'Own Sign';
+    if (lord === graha) return 'Own';
     if (!positionsD1[lord] || !positionsD1[graha]) return '\u2013';
     var relation = Astro.compoundRelation(graha, lord,
       ((positionsD1[lord].sign - positionsD1[graha].sign) % 12 + 12) % 12 + 1);
     // The nodes rule nothing and have no place in the friendship table.
-    return relation ? Astro.titleCase(Astro.RELATION_LABELS[relation]) : '\u2013';
+    return relation ? RELATION_SHORT[Astro.RELATION_LABELS[relation]] : '\u2013';
   }
 
   /** "great friend" reads as "a great friend"; "neutral" takes no article. */
@@ -2010,6 +2048,23 @@
       scroll.hidden = !selected;
       scroll.appendChild(grahaTableFor(state, view));
       host.appendChild(scroll);
+
+      /*
+       * The key for the two rows that are written short, under every table
+       * rather than once on the page: there is a table per chart and a reader
+       * looking at the second should not have to find the first.
+       *
+       * It is hidden with its table rather than drawn once outside them,
+       * because a key for a table nobody is looking at is a line of noise.
+       */
+      var key = el('p', 'table-key');
+      key.hidden = !selected;
+      key.appendChild(el('span', 'table-key-item',
+        'Nakshatras: P and U are Purva and Uttara.'));
+      key.appendChild(el('span', 'table-key-item',
+        'Relationship: GF great friend, F friend, N neutral, ' +
+        'E enemy, GE great enemy, Own its own sign.'));
+      host.appendChild(key);
     });
 
     // Only one chart to show, so the tab would be a control with nothing to
@@ -2142,8 +2197,9 @@
                   return Astro.SIGNS[(firstSign + h - 1) % 12] + ', the ' + Yogas.ordinal(h);
                 }).join(' and ') + '.' }
             : { text: '–', cls: 'numeric' },
+          /* The mark as written: GF is not gf, and Own is not own. */
           { text: dispositor + (relationship && relationship !== '\u2013'
-              ? ' (' + relationship.toLowerCase() + ')' : ''),
+              ? ' (' + relationship + ')' : ''),
             cls: 'dispositor',
             title: r.isAscendant
               ? Astro.SIGN_LORDS[v.sign] + ' rules ' + Astro.SIGNS[v.sign] +
@@ -2152,7 +2208,8 @@
           { text: dms(v.degreeInSign), cls: 'longitude',
             title: Astro.SIGNS[v.sign] + ' ' + dms(v.degreeInSign) +
               '. Longitude ' + v.longitude.toFixed(4) + '°.' },
-          { text: nak.name + ' - ' + nak.pada, cls: 'nakshatra-name',
+          { text: (NAKSHATRA_SHORT[nak.name] || nak.name) + ' - ' + nak.pada,
+            cls: 'nakshatra-name',
             title: 'Nakshatra ' + nak.name + ', pada ' + nak.pada +
               ' of four, ruled by ' + nak.lord + '.' },
           /* The two lords have their own columns and can be named in full. */

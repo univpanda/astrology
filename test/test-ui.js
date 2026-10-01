@@ -2736,10 +2736,12 @@ ok('and its relationship follows in brackets in the same cell', (function () {
     .map(function (t) { return t.slice(8, -1); });
   return rows.indexOf('Relationship') < 0 &&
     /dispositor \+ \(relationship && relationship !== '\\u2013'/.test(appSrc) &&
-    /' \(' \+ relationship\.toLowerCase\(\) \+ '\)'/.test(appSrc) &&
+    /' \(' \+ relationship \+ '\)'/.test(appSrc) &&
     /function dispositorRelation\(graha, sign, positionsD1\)/.test(appSrc) &&
-    /return relation \? Astro\.titleCase\(Astro\.RELATION_LABELS\[relation\]\) : '\\u2013';/
-      .test(appSrc);
+    // Written short and in capitals: the key under the table spells them out.
+    /return relation \? RELATION_SHORT\[Astro\.RELATION_LABELS\[relation\]\] : '\\u2013';/
+      .test(appSrc) &&
+    /'great friend': 'GF', 'friend': 'F', 'neutral': 'N',/.test(appSrc);
 })());
 /*
  * Own sign rather than a relation, a graha having no opinion of itself; and a
@@ -2747,7 +2749,8 @@ ok('and its relationship follows in brackets in the same cell', (function () {
  * point rather than a graha.
  */
 ok('and says own sign where there is no relation to keep',
-   /if \(lord === graha\) return 'Own Sign';/.test(appSrc) &&
+   /if \(lord === graha\) return 'Own';/.test(appSrc) &&
+   /relation: owned \? 'Own'/.test(appSrc) &&
    /The lagna is a point rather than a graha, so it keeps no friendships\./
      .test(appSrc));
 /*
@@ -5961,7 +5964,10 @@ ok('and the reserved columns leave room for a name at every width', (function ()
   var chart = Astro.chart({ jdUT: Astro.julianDay(1985, 3, 22, (10 * 60 + 55) / 60 - 5.5),
     latitude: place.latitude, longitude: place.longitude, tzOffsetMinutes: 330 });
   var dignityBody = appSrc.match(/function dignitiesByGraha\(state, division, tatkalika, horaRule, horaMercury\) \{[\s\S]*?\n  \}/)[0];
-  var dignities = new Function('Astro', dignityBody + '\nreturn dignitiesByGraha;')(Astro)(
+  var relationShort = { 'great friend': 'GF', friend: 'F', neutral: 'N',
+    enemy: 'E', 'great enemy': 'GE' };
+  var dignities = new Function('Astro', 'RELATION_SHORT',
+    dignityBody + '\nreturn dignitiesByGraha;')(Astro, relationShort)(
     { chart: chart }, 1, 'rashi', 'lord');
   var box = makeNode('div');
   Charts.render(box, { style: 'north', planets: chart.planets,
@@ -6836,7 +6842,8 @@ ok('name and pada share a column under Nakshatra with its two lords', (function 
   return ["label: 'Name - Pada'", "label: 'Lord'", "label: 'Sub lord'"]
     .every(function (label) {
       return block.indexOf(label + ", group: 'Nakshatra'") >= 0;
-    }) && /\{ text: nak\.name \+ ' - ' \+ nak\.pada, cls: 'nakshatra-name'/.test(appSrc);
+    }) && /\{ text: \(NAKSHATRA_SHORT\[nak\.name\] \|\| nak\.name\) \+ ' - ' \+ nak\.pada,/
+      .test(appSrc);
 })());
 ok('and long nakshatra names wrap between their words', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
@@ -8494,7 +8501,10 @@ console.log('\nThe card says how the graha stands in its sign');
     var chart = Astro.chart({ jdUT: Astro.julianDay(1980, 9, 21, 8 + 39 / 60 - 5.5),
       latitude: 19.0728, longitude: 72.8826, tzOffsetMinutes: 330 });
     var dignityBody = appSrc.match(/function dignitiesByGraha\(state, division, tatkalika, horaRule, horaMercury\) \{[\s\S]*?\n  \}/)[0];
-    var dig = new Function('Astro', dignityBody + '\nreturn dignitiesByGraha;')(Astro)(
+    var relationShort = { 'great friend': 'GF', friend: 'F', neutral: 'N',
+      enemy: 'E', 'great enemy': 'GE' };
+    var dig = new Function('Astro', 'RELATION_SHORT',
+      dignityBody + '\nreturn dignitiesByGraha;')(Astro, relationShort)(
       { chart: chart }, 1, 'rashi', 'lord');
     var box = makeNode('div');
     Charts.render(box, { style: 'north', planets: chart.planets,
@@ -8525,8 +8535,8 @@ console.log('\nThe card says how the graha stands in its sign');
       by.Venus['data-sub-lord'] === 'Venus',
       [by.Venus['data-house'], by.Venus['data-sign'], by.Venus['data-nakshatra']].join(' / '));
     ok('and the nakshatra lord is read as a relation, as the dispositor is',
-      by.Venus['data-nak-lord-relation'] === 'great friend' &&
-      by.Venus['data-dispositor-relation'] === 'great enemy',
+      by.Venus['data-nak-lord-relation'] === 'GF' &&
+      by.Venus['data-dispositor-relation'] === 'GE',
       by.Venus['data-nak-lord-relation'] + ' / ' + by.Venus['data-dispositor-relation']);
     ok('the sub lord is read as a relationship from the graha too',
       by.Venus['data-sub-lord-relation'] === undefined &&
@@ -8558,7 +8568,7 @@ console.log('\nThe card says how the graha stands in its sign');
       by.Moon['data-nak-lord'] === 'Moon' && !!by.Moon['data-sub-lord']);
     ok('the dispositor is named with how the graha regards it',
       by.Moon['data-dispositor'] === 'Saturn' &&
-      by.Moon['data-dispositor-relation'] === 'enemy',
+      by.Moon['data-dispositor-relation'] === 'E',
       by.Moon['data-dispositor'] + ' (' + by.Moon['data-dispositor-relation'] + ')');
 
     /*
@@ -8776,7 +8786,10 @@ console.log('\nThe card says how the graha stands in its sign');
     /var displayed = Astro\.vargaPosition\(p\.longitude, division\)/.test(body) &&
     /Astro\.dignityOf\(p\.name, displayed\.sign,\s*\n?\s*displayed\.degreeInSign\)/.test(body) &&
     /Astro\.vargaDignity\(p\.name, p\.longitude, division, d1, tatkalika, horaRule,\s*\n\s*horaMercury\)/.test(body));
-  var build = new Function('Astro', body + '\n return dignitiesByGraha;')(Astro);
+  var relationShort = { 'great friend': 'GF', friend: 'F', neutral: 'N',
+    enemy: 'E', 'great enemy': 'GE' };
+  var build = new Function('Astro', 'RELATION_SHORT',
+    body + '\n return dignitiesByGraha;')(Astro, relationShort);
   // Every assertion below is about dignity, not about tatkalika, so it names
   // the reading rather than inheriting whichever way the default happens to go.
   var built = function (state, division) { return build(state, division, 'rashi', 'lord'); };
@@ -8790,8 +8803,8 @@ console.log('\nThe card says how the graha stands in its sign');
    * and stands the dignity beside the sign, so a string reading "In Mars's
    * sign, an enemy" would only have to be taken apart again at the other end.
    */
-  ok('a graha in its moolatrikona is named as such, with no relation to report',
-    got.Sun.formal === 'Mooltrikona' && got.Sun.relation === '',
+  ok('a graha in its moolatrikona is named as such and its own sign is explicit',
+    got.Sun.formal === 'Mooltrikona' && got.Sun.relation === 'Own',
     JSON.stringify(got.Sun));
   ok('a graha with no formal dignity reports the lord of its sign instead',
     got.Moon.formal === '' && got.Moon.lord === 'Saturn' && !!got.Moon.relation,
