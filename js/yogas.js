@@ -2945,7 +2945,7 @@ var Yogas = (function () {
     return finding('Pushkala Yoga', 'Pushkala yoga', [
       Named(dispositor) + ' rules the sign the Moon occupies and ' +
         (dispositor === lagnaLord
-          ? 'is himself ' + firstLord(chart, 'the ') + 'lord of ' + firstHouse(chart, 'the ascendant') + firstLord(chart, '')
+          ? 'is himself ' + firstLord(chart, 'the lord of the ascendant')
           : 'stands with ' + named(lagnaLord) + ', ' + firstLord(chart, 'the ascendant lord')),
       inKendra
         ? Named(dispositor) + ' holds the ' + ordinal(house) + ', an angle'
@@ -3032,11 +3032,10 @@ var Yogas = (function () {
     ];
     if (grade === 'strict') {
       holds.push(amsaLord === lagnaLord
-        ? amsaLord + ' is also ' + firstLord(chart, 'the ') + 'lord of ' +
-          firstHouse(chart, 'the ascendant') + firstLord(chart, '') +
+        ? Named(amsaLord) + ' is also ' + firstLord(chart, 'the lord of the ascendant') +
           ', which satisfies the last clause in one graha'
-        : 'and with ' + named(lagnaLord) + ', ' + firstLord(chart, 'the ') + 'lord of ' +
-          firstHouse(chart, 'the ascendant') + firstLord(chart, ''));
+        : 'and with ' + named(lagnaLord) + ', ' +
+          firstLord(chart, 'the lord of the ascendant'));
       holds.push('That is the definition Raman gives first, and the strictest of ' +
         'the three he states');
     } else if (grade === 'medium') {
@@ -3504,13 +3503,22 @@ var Yogas = (function () {
     DETECTORS.forEach(function (detector) {
       if (turned && ASCENDANT_ONLY.indexOf(detector) >= 0) return;
       detector(chart, byGraha).forEach(function (finding) {
+        /* A luminary takes its article wherever prose begins. Individual
+         * detectors still use raw graha names as data; this is the one boundary
+         * where their sentences become presentation text. */
+        var articleOpening = function (line) {
+          return String(line || '').replace(/^(Sun|Moon)\b/, 'The $1');
+        };
+        finding.summary = articleOpening(finding.summary);
+        finding.reasons = (finding.reasons || []).map(articleOpening);
         /*
          * `reasons` is the matched-condition evidence; it is deliberately not
          * presentation copy. Every detector already closes with one coherent,
          * chart-specific summary, so give that sentence an explicit field and
          * keep the two responsibilities from being joined again in the UI.
          */
-        finding.manifestation = finding.manifestation || finding.summary || '';
+        finding.manifestation = articleOpening(
+          finding.manifestation || finding.summary || '');
         all.push(finding);
       });
     });

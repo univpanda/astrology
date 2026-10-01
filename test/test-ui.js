@@ -1587,7 +1587,7 @@ ok('the yogas panel carries no explanatory passage',
    !/yoga-explanation/.test(appSrc) && !/fetchPassages\(\{ subjects:/.test(appSrc));
 ok('it still says how each yoga forms',
    /yogaName\.title = finding\.manifestation/.test(appSrc) &&
-   /finding\.manifestation = finding\.manifestation \|\| finding\.summary/.test(
+   /finding\.manifestation = articleOpening\(/.test(
      fs.readFileSync(path.join(root, 'js/yogas.js'), 'utf8')));
 /*
  * The column the redesign is for. Whose yoga it is and who takes part in it are
@@ -1836,7 +1836,7 @@ ok('shadbala is computed once per chart, so the tab and the yoga agree',
    /if \(!state\.shadbala\)/.test(appSrc) &&
    (appSrc.match(/Shadbala\.compute\(/g) || []).length === 1);
 ok('matched conditions and user-facing prose are separate fields',
-   /finding\.manifestation = finding\.manifestation \|\| finding\.summary/.test(
+   /finding\.manifestation = articleOpening\(/.test(
      fs.readFileSync(path.join(root, 'js/yogas.js'), 'utf8')) &&
    /reasons: reasons/.test(fs.readFileSync(path.join(root, 'js/yogas.js'), 'utf8')));
 /*
@@ -5923,7 +5923,7 @@ ok('and the reserved columns leave room for a name at every width', (function ()
     return false;
   }
   // Below the breakpoint the reservations are given back and the row wraps.
-  var released = /@media \(max-width: [\d.]+rem\) \{[^@]*\.graha-card-whose, \.graha-card-freq \{ min-width: 0; \}/
+  var released = /@media \(max-width: [\d.]+rem\) \{[^@]*\.graha-card-term \.graha-card-whose, \.graha-card-term \.graha-card-freq \{ min-width: 0; \}/
     .test(flat);
   // At and above it, the name must still have a readable share.
   var content = breakpoint - viewportMargin - 2 * padding;

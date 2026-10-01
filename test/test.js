@@ -8151,13 +8151,14 @@ console.log('\nYogas follow the rotation the chart is drawn in');
    */
   (function () {
     var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
-    var LUMINARY = /(^|[^a-z])(?:with|and|while|of|by|to|from|than|like) (Sun|Moon)\b/;
+    var LUMINARY = /^(Sun|Moon)\b|(^|[^a-z])(?:with|and|while|of|by|to|from|than|like) (Sun|Moon)\b/;
     var SINGULAR = new RegExp('\\\\b(?:and|&) (?:the )?(?:Sun|Moon|Mars|Mercury|Jupiter|' +
       'Venus|Saturn|Rahu|Ketu) (' +
       ['stands', 'sits', 'holds', 'occupies', 'aspects', 'rules', 'is', 'has',
        'keeps', 'reaches', 'gives', 'shares'].join('|') + ')\\\\b');
     var LOWERED = /\b(?:And|and) (sun|moon|mars|mercury|jupiter|venus|saturn|rahu|ketu)\b/;
     var HOUSE_AS_LORD = /lord of the sign the \d+(?:st|nd|rd|th) from/;
+    var RUN_TOGETHER = /(?:in|Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu)lord\b/;
     var bad = [];
     var note = function (why, text) { if (bad.length < 40) bad.push(why + ': ' + text); };
     for (var i = 0; i < 260; i++) {
@@ -8186,6 +8187,7 @@ console.log('\nYogas follow the rotation the chart is drawn in');
               if (SINGULAR.test(t)) note('agreement', t);
               if (LOWERED.test(t)) note('lowered name', t);
               if (HOUSE_AS_LORD.test(t)) note('house read as the graha', t);
+              if (RUN_TOGETHER.test(t)) note('clauses run together', t);
             });
           });
         });

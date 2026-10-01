@@ -938,7 +938,10 @@ input::placeholder { color: #a9bdb2; }
 @media (max-width: 30rem) {
   .graha-card-term { flex-wrap: wrap; justify-content: flex-end; }
   .graha-card-label { flex: 1 1 100%; }
-  .graha-card-whose, .graha-card-freq { min-width: 0; }
+  /* Two selectors so the release outranks the single-class base rules below,
+     irrespective of their later source order. */
+  .graha-card-term .graha-card-whose,
+  .graha-card-term .graha-card-freq { min-width: 0; }
 }
 /* How common the finding is. Recessive, because it qualifies the statement
    rather than competing with it - but present on every line, so the reader can
