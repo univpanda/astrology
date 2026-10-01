@@ -1397,7 +1397,7 @@ td .retro-flag, td.retro-flag, th .retro-flag { color: var(--retro); }
 .flag-e { color: var(--green-deep); }
 .flag-m { color: var(--green-deep); }
 .flag-d { color: var(--retro); }
-/* [S] and [D] share the page's green. Both say the graha's surroundings are
+/* [S] and [Dr] share the page's green. Both say the graha's surroundings are
    helping it - benefic company on either side, or the house it is strongest in -
    and the bracketed letter is what tells them apart. [P] is the same figure with
    malefics either side, so it takes the red the page uses for harm.
@@ -1410,7 +1410,7 @@ td .retro-flag, td.retro-flag, th .retro-flag { color: var(--retro); }
 /* [N] joins them. All three say the graha's circumstances are helping it -
    benefic company either side, the house it is strongest in, a fall that the
    chart breaks - and the bracketed letter is what tells them apart. */
-.flag-s, .flag-d, .flag-n { color: var(--green-deep); }
+.flag-s, .flag-dr, .flag-n { color: var(--green-deep); }
 .flag-p { color: var(--retro); }
 
 /* Dignity words are read by scanning, not line by line, so the tiers carry

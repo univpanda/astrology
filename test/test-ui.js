@@ -3105,7 +3105,8 @@ ok('every mark drawn anywhere is explained in one place or the other',
      });
      var card = appSrc.match(/var STATE_NAMES = \{[^}]*\}/)[0];
      var orphans = Object.keys(drawn).filter(function (letter) {
-       return key.indexOf('[' + letter + ']') < 0 &&
+       var printed = letter === 'DR' ? 'Dr' : letter;
+       return key.indexOf('[' + printed + ']') < 0 &&
          !new RegExp("\\b" + letter + ": '").test(card) &&
          dignityMarks.indexOf("'" + letter + "'") < 0;
      });
@@ -3175,7 +3176,7 @@ ok('and the grid really carries those six and no others', (function () {
   var at = appSrc.indexOf('function renderVargas(state)');
   var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
   var marks = (block.match(/'flag flag-[a-z]+'/g) || []);
-  return marks.length === 6 && ['v', 'x', 's', 'p', 'd', 'n'].every(function (k) {
+  return marks.length === 6 && ['v', 'x', 's', 'p', 'dr', 'n'].every(function (k) {
     return block.indexOf("'flag flag-" + k + "'") >= 0;
   });
 })());
@@ -3202,7 +3203,7 @@ ok('hemming still reads neighbours from the division and benefics from the rashi
  */
 ok('dig bala and neecha bhanga are still reported, on the varga grid',
    /Astro\.hasDigBala\(planet\.name, house\)/.test(appSrc) &&
-   /signLine\.appendChild\(el\('span', 'flag flag-d', ' \[D\]'\)\)/.test(appSrc) &&
+   /signLine\.appendChild\(el\('span', 'flag flag-dr', ' \[Dr\]'\)\)/.test(appSrc) &&
    /dignityLine\.appendChild\(el\('span', 'flag flag-n', ' \[N\]'\)\)/.test(appSrc));
 ok('and the two still drawn on the grid are still named in its key',
    /flag-dr">\[Dr\]/.test(html) && /flag-n">\[N\]/.test(html));
@@ -3540,9 +3541,10 @@ ok('every mark is a bracketed letter', (function () {
  */
 ok('and the palette stays at five hues, the letters doing the rest', (function () {
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-  // [S], [D] and [N] share the green: all three say the graha's circumstances
+  // [S], [Dr] and [N] share the green: all three say the graha's circumstances
   // are helping it, and the bracketed letter is what tells them apart.
-  return /\.flag-s, \.flag-d, \.flag-n \{ color: var\(--green-deep\); \}/.test(css) &&
+  return /\.flag-s, \.flag-dr, \.flag-n \{ color: var\(--green-deep\); \}/.test(css) &&
+    /\.flag-d \{ color: var\(--retro\); \}/.test(css) &&
     /\.flag-p \{ color: var\(--retro\); \}/.test(css) &&
     !/--flag-direction/.test(css);
 })());
@@ -5972,7 +5974,9 @@ ok('and the reserved columns leave room for a name at every width', (function ()
   var labels = {};
   (function walk(n) {
     if (n.tag === 'text' && n.attrs && n.attrs['data-graha']) {
-      labels[n.attrs['data-graha']] = n.textContent;
+      labels[n.attrs['data-graha']] = (function read(node) {
+        return (node.textContent || '') + node.children.map(read).join('');
+      })(n);
     }
     n.children.forEach(walk);
   })(box);
@@ -8828,7 +8832,9 @@ console.log('\nThe card says how the graha stands in its sign');
    * app.js and check both halves answer on a chart that has each case.
    */
   var body = src.match(/function dignitiesByGraha\(state, division, tatkalika, horaRule, horaMercury\) \{[\s\S]*?\n  \}/)[0];
-  ok('the card reads the same varga dignity as the grid',
+  ok('display dignity and bala classification select separately from the same position',
+    /var displayed = Astro\.vargaPosition\(p\.longitude, division\)/.test(body) &&
+    /Astro\.dignityOf\(p\.name, displayed\.sign,\s*\n?\s*displayed\.degreeInSign\)/.test(body) &&
     /Astro\.vargaDignity\(p\.name, p\.longitude, division, d1, tatkalika, horaRule,\s*\n\s*horaMercury\)/.test(body));
   var build = new Function('Astro', body + '\n return dignitiesByGraha;')(Astro);
   // Every assertion below is about dignity, not about tatkalika, so it names
@@ -8867,13 +8873,8 @@ console.log('\nThe card says how the graha stands in its sign');
   ok('no graha is left with nothing said about where it stands',
     silent.length === 0, silent.join(', ') || 'all nine covered');
 
-  /*
-   * A divisional degree is the fraction of one division stretched over a
-   * whole sign. It can accidentally fall in a moolatrikona degree range, but
-   * that is not a degree the graha occupies. The card used to read it while
-   * the grid correctly refused it.
-   */
-  var falseMool = null;
+  /* A presentation fact remains visible even where a bala uses another rung. */
+  var divisionalMool = null;
   Astro.SHODASAVARGA.some(function (division) {
     if (division === 1) return false;
     var recast = Astro.chartInDivision(chart, division);
@@ -8881,17 +8882,23 @@ console.log('\nThe card says how the graha stands in its sign');
       if (['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn']
           .indexOf(p.name) < 0) return false;
       if (Astro.dignityOf(p.name, p.sign, p.longitude % 30) !== 'Mooltrikona') return false;
-      falseMool = { division: division, name: p.name };
+      divisionalMool = { division: division, name: p.name };
       return true;
     });
   });
-  if (falseMool) {
-    var divided = built({ chart: chart }, falseMool.division);
-    ok('a stretched varga degree cannot put moolatrikona on the card',
-      !/Mooltrikona/.test(divided[falseMool.name] || ''),
-      falseMool.name + ' D' + falseMool.division + ': ' + divided[falseMool.name]);
+  if (divisionalMool) {
+    var divided = built({ chart: chart }, divisionalMool.division);
+    var planet = chart.planets.filter(function (p) { return p.name === divisionalMool.name; })[0];
+    var d1 = {}; chart.planets.forEach(function (p) { d1[p.name] = p; });
+    var balaRung = Astro.vargaDignity(planet.name, planet.longitude,
+      divisionalMool.division, d1, 'rashi', 'lord');
+    ok('moolatrikona remains visible in a higher chart without changing its bala rung',
+      divided[divisionalMool.name].formal === 'Mooltrikona' &&
+        balaRung.key !== 'moolatrikona',
+      divisionalMool.name + ' D' + divisionalMool.division + ': display ' +
+        divided[divisionalMool.name].formal + ', bala ' + balaRung.key);
   } else {
-    ok('the regression fixture contains a false divisional moolatrikona', false);
+    ok('the regression fixture contains a divisional moolatrikona', false);
   }
 
   /*

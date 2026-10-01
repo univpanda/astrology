@@ -87,12 +87,19 @@ var Charts = (function () {
    */
   var DIGNITY_MARKS = { Exalted: 'E', Debilitated: 'D', Mooltrikona: 'M' };
 
-  function planetText(p, dignity) {
-    var mark = DIGNITY_MARKS[dignity];
+  function planetText(p) {
     var flags = (p.retrograde ? '[R]' : '') + (p.vargottama ? '[V]' : '') +
-      (p.yogakaraka ? '[Y]' : '') + (p.combust ? '[C]' : '') +
-      (mark ? '[' + mark + ']' : '');
+      (p.yogakaraka ? '[Y]' : '') + (p.combust ? '[C]' : '');
     return Astro.grahaAbbr(p.name) + (flags ? ' ' + flags : '');
+  }
+
+  function drawPlanetText(node, p, dignity) {
+    var text = planetText(p);
+    var mark = DIGNITY_MARKS[dignity];
+    node.appendChild(document.createTextNode(text));
+    if (mark) node.appendChild(el('tspan', {
+      class: 'flag flag-' + mark.toLowerCase()
+    }, (text.indexOf('[') < 0 ? ' ' : '') + '[' + mark + ']'));
   }
 
   /**
@@ -238,6 +245,7 @@ var Charts = (function () {
       }).join(REC),
       /* One flat sentence, for anyone reading by ear rather than by hover. */
       label: p.name + ' in ' + where +
+        (standing.formal ? '. ' + standing.formal : '') +
         (states.length ? '. ' + states.map(function (k) { return STATE_NAMES[k]; }).join(', ') : '') +
         (mine.length ? '. ' + mine.map(function (y) {
           return y.title + (y.from && y.from.length ? ', from ' + y.from.map(function (name) {
@@ -266,8 +274,10 @@ var Charts = (function () {
           x: (cx + offset).toFixed(1), y: y.toFixed(1),
           class: 'planet graha-' + (SLUG[p.name] || 'other'),
           'text-anchor': 'middle'
-        }, planetText(p, ctx && ctx.dignities && ctx.dignities[p.name]
-          ? ctx.dignities[p.name].formal : ''));
+        });
+        var dignity = ctx && ctx.dignities && ctx.dignities[p.name]
+          ? ctx.dignities[p.name].formal : '';
+        drawPlanetText(t, p, dignity);
         if (ctx) {
           var d = describeOccupant(p, ctx.sign, ctx.house, ctx.yogas,
             ctx.division, ctx.dignities, ctx.hemming, ctx.ruling, ctx.karakas);

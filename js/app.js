@@ -1042,21 +1042,26 @@
 
     var map = {};
     state.chart.planets.forEach(function (p) {
+      var displayed = Astro.vargaPosition(p.longitude, division);
+      /*
+       * The displayed dignity and the bala rung are two consumers of the same
+       * divisional position. vargaDignity selects the rung required by the
+       * varga-viswa calculation; it must not suppress a positional dignity on
+       * the chart merely because that bala does not score it separately.
+       */
+      var displayedDignity = Astro.dignityOf(p.name, displayed.sign,
+        displayed.degreeInSign);
       var standing = Astro.vargaDignity(p.name, p.longitude, division, d1, tatkalika, horaRule,
         horaMercury);
       if (!standing) {
         /*
-         * Nodes are deliberately outside the varga-viswa scale, but the card
-         * still reports Raman's sign-wide exaltation and debilitation for
-         * them. Neither is a degree-range dignity, so this cannot recreate the
-         * divisional moolatrikona leak the shared helper closes above.
+         * Nodes are deliberately outside the varga-viswa scale, but that only
+         * means this bala has no rung for them. Their positional dignity is a
+         * separate display fact and remains available to the chart and card.
          */
         if (Astro.NODES.indexOf(p.name) < 0) return;
-        var nodePosition = Astro.vargaPosition(p.longitude, division);
-        var nodeDignity = Astro.dignityOf(p.name, nodePosition.sign,
-          nodePosition.degreeInSign);
         map[p.name] = {
-          formal: nodeDignity || '', lord: '', relation: '',
+          formal: displayedDignity || '', lord: '', relation: '',
           nakLordRelation: relationBetween(p, nakOf(p).lord, d1),
           subLordRelation: relationBetween(p, nakOf(p).subLord, d1)
         };
@@ -1068,12 +1073,10 @@
        * string reading "In Mars's sign, an enemy" would have to be taken apart
        * again at the other end.
        */
-      var formal = standing.key === 'exalted' || standing.key === 'debilitated' ||
-        standing.key === 'moolatrikona' || standing.key === 'own';
       var lord = standing.lord;
       var owned = lord && lord === p.name;
       map[p.name] = {
-        formal: formal ? (standing.key === 'own' ? 'Own sign' : standing.label) : '',
+        formal: displayedDignity === 'Own Sign' ? 'Own sign' : displayedDignity || '',
         /*
          * How the graha regards the lords of its nakshatra and sub. Both are
          * relationships from this graha to another, so
@@ -3204,7 +3207,7 @@
         }
         var house = ((d.sign - lagna) % 12 + 12) % 12 + 1;
         if (Astro.hasDigBala(planet.name, house)) {
-          signLine.appendChild(el('span', 'flag flag-d', ' [D]'));
+          signLine.appendChild(el('span', 'flag flag-dr', ' [Dr]'));
         }
 
         /*
