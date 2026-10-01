@@ -104,7 +104,7 @@ var Charts = (function () {
   }
 
   /*
-   * Flags sit at the upper-right of the abbreviation, retrograde first.
+   * Flags ride together after the abbreviation, retrograde first: "Sa [R][V]".
    * [V] means this division has landed the graha back in the sign it holds in the
    * rashi, so it belongs to the division on screen and never appears on D1, where
    * every graha would qualify. [Y] is yogakaraka, lordship counted from house 1,
@@ -128,45 +128,18 @@ var Charts = (function () {
     return Astro.grahaAbbr(p.name) + (flags ? ' ' + flags : '');
   }
 
-  function planetLabelWidth(p, dignity) {
-    var flags = planetText(p).slice(Astro.grahaAbbr(p.name).length).trim();
-    if (DIGNITY_MARKS[dignity]) flags += '[' + DIGNITY_MARKS[dignity] + ']';
-    // Name plus a shared script column, wide enough for degrees or features.
-    return 24 + Math.max(40, flags.length * PLANET_FONT * 0.65 * 0.65);
-  }
-
-  function drawPlanetText(node, p, dignity, division, scale) {
+  function drawPlanetText(node, p, dignity) {
     var text = planetText(p);
     var mark = DIGNITY_MARKS[dignity];
-    var name = Astro.grahaAbbr(p.name);
-    var flags = text.slice(name.length).trim();
-    var position = Astro.vargaPosition(p.longitude, division || 1);
-    var minutes = Math.floor((Astro.norm360(position.longitude) % 30) * 60);
-    var degree = Math.floor(minutes / 60) + '\u00b0' +
-      String(minutes % 60).padStart(2, '0') + '\u2032';
-    var x = Number(node.getAttribute('x')), y = Number(node.getAttribute('y'));
-    var nameX = x - planetLabelWidth(p, dignity) * scale / 2;
-    var scriptX = nameX + 24 * scale;
-    node.appendChild(el('tspan', {
-      x: scriptX.toFixed(1), y: (y + 5 * scale).toFixed(1),
-      'text-anchor': 'start', class: 'planet-degree'
-    }, degree));
-    node.appendChild(el('tspan', {
-      x: nameX.toFixed(1), y: y.toFixed(1), 'text-anchor': 'start', class: 'planet-name'
-    }, name));
-    if (!flags && !mark) return;
-    var features = el('tspan', {
-      x: scriptX.toFixed(1), y: (y - 10 * scale).toFixed(1),
-      'text-anchor': 'start', class: 'planet-features'
-    }, flags);
-    if (mark) features.appendChild(el('tspan', {
+    node.appendChild(document.createTextNode(text));
+    if (mark) node.appendChild(el('tspan', {
       class: 'flag flag-' + mark.toLowerCase()
-    }, '[' + mark + ']'));
-    node.appendChild(features);
+    }, (text.indexOf('[') < 0 ? ' ' : '') + '[' + mark + ']'));
   }
 
   /**
-   * The name and both small scripts retain one shared hover target.
+   * Stack a house's occupants around an anchor point. Two columns are used once
+   * there are more than three, so a stellium still fits inside its triangle.
    */
   /*
    * Everything true of this graha in this chart and this rotation, handed to
@@ -338,16 +311,13 @@ var Charts = (function () {
     target.setAttribute('aria-label', d.label);
   }
 
-  var LINE_HEIGHT = 31;
-  // Full extent of the upper features and lower degrees, before scaling.
-  var LABEL_HEIGHT = 26;
+  var LINE_HEIGHT = 17;
   /* Matches svg.kundli .planet in the stylesheet, which is what a stack of one
      is drawn at; a crowded house is drawn at a fraction of it. */
   var PLANET_FONT = 15.5;
 
   /**
-   * Stack compact name-and-script labels around an anchor. North Indian houses
-   * use one column; South Indian cells choose columns for the largest type.
+   * Stack a house's occupants on one anchor, one to a line.
    *
    * Two to a line was the old arrangement once a house held more than three,
    * with the columns put half a label apart - the width passed in was about
@@ -355,45 +325,32 @@ var Charts = (function () {
    * They overlapped whenever a label carried a bracket, which every graha in a
    * dignity or a state now does: "Me [D]" was drawn through "Ve [R][E]".
    *
-   * The fit includes the entire degree/name/features block. Both line spacing
-   * and type scale together, and square cells also limit the label width to
-   * their column so neighbouring grahas cannot run into each other.
+   * One to a line cannot overlap sideways whatever a label grows to carry. The
+   * cost is height, and a house has only so much of it before it narrows past
+   * a label's width, so a crowd is set smaller: `fit` is how far the stack may
+   * run and how much further each step of shrinking buys, and the type shrinks
+   * until the rows fit. Line height and font shrink together, so the lines
+   * cannot close up on each other either.
    *
    * Returns the y of the first row, so a caller can keep something clear of it.
    */
   function drawOccupants(group, occupants, cx, cy, fit, ctx) {
     /*
-     * The row baselines plus a full label must fit inside the available reach.
-     * In a triangular house, shrinking also opens up more usable height.
+     * Solved rather than searched: the rows take (n-1) line heights at the
+     * scale chosen, and the room for them is the reach plus what the shrinking
+     * itself opens up, which is the same unknown on both sides.
      */
-    var maxColumns = ctx && ctx.columns || 1;
-    var columns = 1, scale = 0, labelWidth = 64;
-    occupants.forEach(function (p) {
-      var dignity = ctx && ctx.dignities && ctx.dignities[p.name];
-      labelWidth = Math.max(labelWidth, planetLabelWidth(p, dignity && dignity.formal));
-    });
-    for (var candidate = 1; candidate <= maxColumns; candidate++) {
-      var candidateRows = Math.ceil(occupants.length / candidate);
-      var candidateScale = Math.min(1, (fit[0] + fit[1]) /
-        (Math.max(0, candidateRows - 1) * LINE_HEIGHT + LABEL_HEIGHT + fit[1]));
-      if (ctx && ctx.width) {
-        candidateScale = Math.min(candidateScale, (ctx.width / candidate - 4) / labelWidth);
-      }
-      if (candidateScale > scale) { columns = candidate; scale = candidateScale; }
-    }
-    var rows = Math.ceil(occupants.length / columns);
-    var columnWidth = ctx && ctx.width ? ctx.width / columns : 0;
+    var scale = occupants.length > 1
+      ? Math.min(1, (fit[0] + fit[1]) /
+          ((occupants.length - 1) * LINE_HEIGHT + fit[1])) : 1;
     var lineHeight = LINE_HEIGHT * scale;
     // SVG puts text on its baseline, so the block sits low by about a third of
     // its own size unless it is lifted; the lift shrinks with the type.
     var top = cy + PLANET_FONT * scale * 0.26 -
-      (Math.max(0, rows - 1) * lineHeight) / 2;
+      ((occupants.length - 1) * lineHeight) / 2;
     occupants.forEach(function (p, r) {
-      var row = Math.floor(r / columns);
-      var rowColumns = Math.min(columns, occupants.length - row * columns);
-      var x = cx + ((r % columns) - (rowColumns - 1) / 2) * columnWidth;
       var t = el('text', {
-        x: x.toFixed(1), y: (top + row * lineHeight).toFixed(1),
+        x: cx.toFixed(1), y: (top + r * lineHeight).toFixed(1),
         class: 'planet graha-' + (SLUG[p.name] || 'other'),
         'text-anchor': 'middle'
       });
@@ -405,7 +362,7 @@ var Charts = (function () {
       }
       var dignity = ctx && ctx.dignities && ctx.dignities[p.name]
         ? ctx.dignities[p.name].formal : '';
-      drawPlanetText(t, p, dignity, ctx && ctx.division, scale);
+      drawPlanetText(t, p, dignity);
       if (ctx) {
         var d = describeOccupant(p, ctx.sign, ctx.house, ctx.yogas,
           ctx.division, ctx.dignities, ctx.ruling, ctx.karakas);
@@ -605,8 +562,6 @@ var Charts = (function () {
        */
       drawOccupants(g, data.bySign[i], x + cell / 2, y + cell / 2 + 2, [cell - 32, 0],
         { sign: i, house: house, yogas: yogas,
-          columns: data.bySign[i].length >= 7 ? 3 : data.bySign[i].length >= 3 ? 2 : 1,
-          width: cell - 12,
           division: division,
           dignities: dignities,
           karakas: karakas,

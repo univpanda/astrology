@@ -126,7 +126,12 @@ var GrahaView = (function () {
   }
 
   function karakaShort(name) {
-    return name.replace(/karaka$/, '');
+    var abbreviations = {
+      Atmakaraka: 'AK', Amatyakaraka: 'AmK', Bhratrukaraka: 'BK',
+      Matrukaraka: 'MK', Pitrukaraka: 'PiK', Putrakaraka: 'PuK',
+      Gnatikaraka: 'GK', Darakaraka: 'DK'
+    };
+    return abbreviations[name] || name;
   }
 
   function shortNakshatra(name) {
