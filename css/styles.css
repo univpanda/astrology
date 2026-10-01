@@ -2013,7 +2013,19 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
   color: var(--ink-soft);
   white-space: nowrap;
 }
-.yoga-table td { vertical-align: top; }
+/*
+ * Every column centred under its own label, the first excepted.
+ *
+ * The headings were centred and the cells were not, so a figure sat at the
+ * left of a column whose name sat in the middle of it and the two did not
+ * look like one column. The graha stays left because it is a list of names of
+ * varying length, and centring those would ragged both of its edges where
+ * reading down them wants one straight.
+ */
+.yoga-table td { vertical-align: top; text-align: center; }
+.yoga-table th[scope="row"], .yoga-table thead tr:first-child th:first-child {
+  text-align: left;
+}
 .yoga-table .yoga-part { color: var(--ink-soft); font-size: 0.85rem; }
 .yoga-table .yoga-graha { font-weight: 600; white-space: nowrap; }
 .yoga-table .yoga-graha.is-shared { font-weight: 400; color: var(--ink-soft); }

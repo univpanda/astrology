@@ -5843,6 +5843,21 @@ ok('the selects in a control row share its width, within a limit',
     .test(cssSrc) &&
   /\.varga-scheme-row \{ display: flex;/.test(cssSrc));
 
+/*
+ * Every column in the yoga table is centred under its own label, except the
+ * first. The headings were centred and the cells were not, so a figure sat at
+ * the left of a column whose name sat in the middle of it.
+ *
+ * The graha column stays left: it is a list of names of varying length - one
+ * graha or seven - and centring those ragged both edges where reading down
+ * them wants one straight.
+ */
+ok('the yoga table centres its columns under their labels, the first excepted',
+  /\.yoga-table td \{ vertical-align: top; text-align: center; \}/.test(cssSrc) &&
+  /\.yoga-table th\[scope="row"\], \.yoga-table thead tr:first-child th:first-child \{\s*text-align: left;/
+    .test(cssSrc) &&
+  /\.yoga-table thead th \{\s*text-align: center;/.test(cssSrc));
+
 console.log('\nAyanamsa lives in settings');
 /*
  * The ayanamsa is not a fact about a nativity. It is a choice about how every
