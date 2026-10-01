@@ -1501,16 +1501,6 @@
       head.appendChild(el('span', 'graha-card-freq', text));
     };
 
-    /* One item on a run-on line: a label, then the thing itself. */
-    var fact = function (row, label, value, says) {
-      if (!value) return;
-      var item = el('span', 'graha-card-item');
-      if (label) item.appendChild(el('span', 'graha-card-fact-label', label));
-      item.appendChild(document.createTextNode((label ? ' ' : '') + value));
-      if (says) item.title = says;
-      row.appendChild(item);
-    };
-
     /*
      * The card writes a friendship short, as the table does, but has no key
      * under it to spell them out - so each one carries its word on the hover.
@@ -1555,36 +1545,23 @@
        *   the lords of the finer frames
        *   what looks at it
        */
-      /*
-       * Who it is and where exactly, on one line: the name, the role it holds
-       * in the chara scheme, and the position that decides both. The karaka
-       * follows from the degree and the nakshatra is the degree said finer,
-       * so the three read as one answer and were being given as two.
-       *
-       * All of it trails the name without taking its weight or the graha's
-       * colour: these are things true of the graha, not part of what it is
-       * called.
-       */
-      var head = el('h4', 'graha-card-name', at);
-      var trail = el('span', 'graha-card-trail');
-      fact(trail, '', t.getAttribute('data-karaka'));
-      var sign = t.getAttribute('data-sign'), degree = t.getAttribute('data-degree');
-      fact(trail, '', sign && degree ? sign + ' ' + degree : '');
-      var nakshatra = t.getAttribute('data-nakshatra');
-      fact(trail, '', shortNakshatra(nakshatra),
-        nakshatra ? 'Nakshatra ' + nakshatra + '.' : '');
-      if (trail.children.length) head.appendChild(trail);
-      card.appendChild(head);
+      /* The name alone, with nothing hung off it. */
+      card.appendChild(el('h4', 'graha-card-name', at));
 
       /*
-       * Two rows of three in one grid, so the dots fall in the same place on
-       * both. As separate paragraphs each line spaced itself by its own
-       * content and the separators landed wherever the words left them.
+       * Three rows of three in one grid, so the dots fall in the same place on
+       * all of them. As separate paragraphs each line spaced itself by its own
+       * content and the separators landed wherever the words left them; the
+       * position used to trail the name, which left it the one line on the
+       * card set to nothing in particular.
        *
-       * The lords first - the grahas this one answers to - then where it
-       * stands, what it owns and what looks at it.
+       * Coarse to fine, then outward: where it is in the zodiac, the lords of
+       * the frames it stands in, then where it stands in the chart, what it
+       * owns and what looks at it.
        */
       var grid = el('div', 'graha-card-grid');
+      var sign = t.getAttribute('data-sign'), degree = t.getAttribute('data-degree');
+      var nakshatra = t.getAttribute('data-nakshatra');
       var dispositor = t.getAttribute('data-dispositor');
       var relation = t.getAttribute('data-dispositor-relation');
       var nakLord = t.getAttribute('data-nak-lord');
@@ -1597,6 +1574,10 @@
         return Astro.grahaAbbr(who) + (mark ? ' (' + mark + ')' : '');
       };
       [
+        [['', t.getAttribute('data-karaka'), ''],
+         ['', sign && degree ? sign + ' ' + degree : '', ''],
+         ['', shortNakshatra(nakshatra),
+          nakshatra ? 'Nakshatra ' + nakshatra + '.' : '']],
         [['Dis', withRelation(dispositor, relation),
           saysRelation(dispositor, relation,
             'This graha owns the sign it occupies.')],
