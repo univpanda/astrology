@@ -5124,26 +5124,63 @@
    * because the ayanamsa and the node may have moved, and the strengths are
    * dropped because almost everything else reaches them.
    */
+  var settingsRecast = 0;
+
+  /*
+   * Recast the open birth record from every chart-wide control at once.
+   * Besides making presets honest, this gives the three controls that can
+   * replace the ephemeris answer one request order: an older response may not
+   * overwrite a newer selection merely because the network returned it last.
+   */
   function recomputeEverything(done) {
-    // Nothing cast yet, or cast but not yet answered: either way there is no
-    // chart to recompute and the settings simply wait for the next one.
-    if (!lastChart || !lastChart.chart) return done(false);
+    if (!lastChart || !lastChart.chart) return done(false, '');
+    var target = lastChart;
+    var request = ++settingsRecast;
     var ayanamsa = document.getElementById('ayanamsa').value;
     var trueNode = document.getElementById('node-type').value === 'true';
+    var standardSelect = document.getElementById('time-standard');
+    var standard = standardSelect.value === 'lmt' ? 'lmt' : 'zone';
+    var offset = target.offset;
+    var jdUT = target.chart.julianDay;
+    var warning = '';
+
+    if (standard !== target.standard) {
+      if (standard === 'lmt') {
+        offset = Math.round(target.place.lon * 4);
+      } else {
+        try {
+          offset = Geo.offsetMinutes(target.place.zone, target.y, target.mo,
+            target.d, target.h, target.mi);
+        } catch (err) {
+          standard = target.standard || 'zone';
+          standardSelect.value = standard;
+          warning = ' The timezone could not be resolved, so the time standard was left unchanged.';
+        }
+      }
+      if (!warning) {
+        var seconds = (target.time && target.time.second) || 0;
+        jdUT = Astro.julianDay(target.y, target.mo, target.d,
+          (target.h * 3600 + target.mi * 60 + seconds) / 3600 - offset / 60);
+      }
+    }
+
     computeChart({
-      jdUT: lastChart.chart.julianDay,
-      latitude: lastChart.place.lat, longitude: lastChart.place.lon,
-      tzOffsetMinutes: lastChart.offset,
+      jdUT: jdUT,
+      latitude: target.place.lat, longitude: target.place.lon,
+      tzOffsetMinutes: offset,
       ayanamsa: ayanamsa, trueNode: trueNode
     }, function (chart, source) {
-      lastChart.chart = chart;
-      lastChart.ayanamsa = ayanamsa;
-      lastChart.trueNode = trueNode;
-      lastChart.source = source;
-      lastChart.shadbala = null;
-      render(lastChart);
-      writeHash(lastChart);
-      done(true);
+      if (request !== settingsRecast || lastChart !== target) return;
+      target.chart = chart;
+      target.offset = offset;
+      target.standard = standard;
+      target.ayanamsa = ayanamsa;
+      target.trueNode = trueNode;
+      target.source = source;
+      target.shadbala = null;
+      render(target);
+      writeHash(target);
+      done(true, warning);
     });
   }
 
@@ -5169,19 +5206,12 @@
       applySettings(wanted);
       what.textContent = preset.says;
       what.hidden = false;
-      /*
-       * The time standard is read when a chart is cast, not after, so a preset
-       * that moves it has not moved the chart on screen. Saying so beats a
-       * reader finding out by comparing figures.
-       */
-      var standardMoved = wanted['time-standard'] !== lastStandard();
       status.textContent = 'Recomputing\u2026';
-      recomputeEverything(function (recast) {
+      recomputeEverything(function (recast, warning) {
         status.textContent = (recast
           ? 'The chart on screen now reads as ' + preset.label + ' does.'
           : 'Set to ' + preset.label + '. The next chart will use it.') +
-          (recast && standardMoved
-            ? ' The time standard takes effect on the next chart.' : '');
+          (warning || '');
       });
     };
     /*
@@ -5215,11 +5245,6 @@
       showForget();
     });
     showForget();
-  }
-
-  /* What the open chart was actually cast with, so a change can be reported. */
-  function lastStandard() {
-    return lastChart && lastChart.standard ? lastChart.standard : 'zone';
   }
 
   function statusFor(select) {
@@ -5348,43 +5373,17 @@
    */
   document.getElementById('time-standard').addEventListener('change', function () {
     var status = statusFor(this);
-    var lmt = this.value === 'lmt';
     if (!lastChart) {
       status.textContent = 'Saved. The next chart will use it.';
       return;
     }
-    var offset;
-    if (lmt) {
-      offset = Math.round(lastChart.place.lon * 4);
-    } else {
-      try {
-        offset = Geo.offsetMinutes(lastChart.place.zone, lastChart.y, lastChart.mo,
-          lastChart.d, lastChart.h, lastChart.mi);
-      } catch (err) {
-        status.textContent = 'That timezone could not be resolved: ' +
-          lastChart.place.zone;
-        return;
-      }
-    }
     status.textContent = 'Recomputing\u2026';
-    var seconds = (lastChart.time && lastChart.time.second) || 0;
-    computeChart({
-      jdUT: Astro.julianDay(lastChart.y, lastChart.mo, lastChart.d,
-        (lastChart.h * 3600 + lastChart.mi * 60 + seconds) / 3600 - offset / 60),
-      latitude: lastChart.place.lat, longitude: lastChart.place.lon,
-      tzOffsetMinutes: offset,
-      ayanamsa: lastChart.ayanamsa, trueNode: lastChart.trueNode
-    }, function (chart, source) {
-      lastChart.chart = chart;
-      lastChart.offset = offset;
-      lastChart.standard = lmt ? 'lmt' : 'zone';
-      lastChart.source = source;
-      lastChart.shadbala = null;
-      render(lastChart);
-      writeHash(lastChart);
-      status.textContent = lmt
+    recomputeEverything(function (recast, warning) {
+      if (!recast) return;
+      status.textContent = (lastChart.standard === 'lmt'
         ? 'Recomputed from local mean time at the birthplace\u2019s own meridian.'
-        : 'Recomputed from zone time, as ' + lastChart.place.zone + ' kept it.';
+        : 'Recomputed from zone time, as ' + lastChart.place.zone + ' kept it.') +
+        (warning || '');
     });
   });
 
@@ -5394,23 +5393,15 @@
       status.textContent = 'Saved. The next chart will use it.';
       return;
     }
-    var wanted = this.value === 'true';
     status.textContent = 'Recomputing\u2026';
-    computeChart({
-      jdUT: lastChart.chart.julianDay,
-      latitude: lastChart.place.lat, longitude: lastChart.place.lon,
-      tzOffsetMinutes: lastChart.offset,
-      ayanamsa: lastChart.ayanamsa, trueNode: wanted
-    }, function (chart, source) {
-      lastChart.chart = chart;
-      lastChart.trueNode = wanted;
-      lastChart.source = source;
-      render(lastChart);
-      writeHash(lastChart);
-      status.textContent = lastChart.name
+    recomputeEverything(function (recast, warning) {
+      if (!recast) return;
+      var wanted = lastChart.trueNode;
+      status.textContent = (lastChart.name
         ? 'Recomputed ' + lastChart.name + '\u2019s chart with the ' +
           (wanted ? 'true' : 'mean') + ' node.'
-        : 'Recomputed with the ' + (wanted ? 'true' : 'mean') + ' node.';
+        : 'Recomputed with the ' + (wanted ? 'true' : 'mean') + ' node.') +
+          (warning || '');
     });
   });
 
@@ -5641,20 +5632,11 @@
       return;
     }
     status.textContent = 'Recomputing\u2026';
-    computeChart({
-      jdUT: lastChart.chart.julianDay,
-      latitude: lastChart.place.lat, longitude: lastChart.place.lon,
-      tzOffsetMinutes: lastChart.offset,
-      ayanamsa: wanted, trueNode: lastChart.trueNode
-    }, function (chart, source) {
-      lastChart.chart = chart;
-      lastChart.ayanamsa = wanted;
-      lastChart.source = source;
-      render(lastChart);
-      writeHash(lastChart);
-      status.textContent = lastChart.name
+    recomputeEverything(function (recast, warning) {
+      if (!recast) return;
+      status.textContent = (lastChart.name
         ? 'Recomputed ' + lastChart.name + '\u2019s chart against ' + label + '.'
-        : 'Recomputed against ' + label + '.';
+        : 'Recomputed against ' + label + '.') + (warning || '');
     });
   });
 

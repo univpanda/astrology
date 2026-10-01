@@ -1163,9 +1163,9 @@ function stripHtml(label) {
    */
   ok('and changing it recomputes whatever chart is open',
      /document\.getElementById\('node-type'\)\.addEventListener\('change'/.test(appSrc) &&
-     /computeChart\(\{\s*\n\s*jdUT: lastChart\.chart\.julianDay,/.test(appSrc) &&
-     /lastChart\.trueNode = wanted;/.test(appSrc) &&
-     /render\(lastChart\);\s*\n\s*writeHash\(lastChart\);/.test(appSrc));
+     /recomputeEverything\(function \(recast, warning\)/.test(appSrc) &&
+     /target\.trueNode = trueNode;/.test(appSrc) &&
+     /render\(target\);\s*\n\s*writeHash\(target\);/.test(appSrc));
   ok('and says so, including when there is no chart to recompute',
      /if \(!lastChart\) \{/.test(appSrc) &&
      /'Saved\. The next chart will use it\.'/.test(appSrc) &&
@@ -6195,10 +6195,8 @@ ok('and changing it recomputes the open chart', (function () {
   var at = appSrc.indexOf("getElementById('ayanamsa').addEventListener");
   if (at < 0) return false;
   var block = appSrc.slice(at, appSrc.indexOf('});\n\n', at));
-  return /ayanamsa: wanted, trueNode: lastChart\.trueNode/.test(block) &&
-    /lastChart\.ayanamsa = wanted;/.test(block) &&
-    /render\(lastChart\);/.test(block) &&
-    /writeHash\(lastChart\);/.test(block) &&
+  return /recomputeEverything\(function \(recast, warning\)/.test(block) &&
+    /if \(!recast\) return;/.test(block) &&
     /if \(!lastChart\)/.test(block);
 })());
 /*
@@ -10548,6 +10546,7 @@ console.log('\nEach preset reaches the figures it is named for');
       trueNode: true, time: { hour12: 7, minute: 24, second: 0, meridiem: 'pm' },
       y: 1961, mo: 8, d: 4, h: 19, mi: 24, shadbala: null });
     var before = chart.ayanamsa;
+    var beforeJd = chart.julianDay;
     out.applyPreset('raman');
     var after = out.byId('preset-status').textContent;
     var moon = function (c) {
@@ -10557,10 +10556,16 @@ console.log('\nEach preset reaches the figures it is named for');
     return recast.ayanamsa === 'raman' &&
       Math.abs(recast.chart.ayanamsa - before) > 1.3 &&
       Math.abs(moon(recast.chart) - moon(chart)) > 1.3 &&
+      recast.standard === 'lmt' &&
+      recast.offset === Math.round(recast.place.lon * 4) &&
+      Math.abs(recast.chart.julianDay - beforeJd) > 0.01 &&
       /Raman/.test(after) &&
-      // The time standard moved too, and that one waits for the next chart.
-      /next chart/.test(after);
+      !/next chart/.test(after);
   })());
+
+  ok('stale setting responses are forbidden from replacing the newer chart',
+    /var request = \+\+settingsRecast;/.test(appSrc) &&
+    /if \(request !== settingsRecast \|\| lastChart !== target\) return;/.test(appSrc));
 
   /*
    * Two selects had no listener at all, so they were read when a chart was
