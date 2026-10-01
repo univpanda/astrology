@@ -2858,97 +2858,12 @@
     return th;
   }
 
-  /*
-   * The note describes whichever scheme is showing, its own share-out of the
-   * twenty included. Writing one scheme's figures into the prose would be wrong
-   * for the other three the moment the select moved.
-   */
-  /*
-   * What the grid is and how to read it, and nothing else.
-   *
-   * The scoring used to sit under it, first as one four-hundred-word paragraph
-   * and then folded into a disclosure, and both were the wrong place for it.
-   * The varga viswa rungs, the four bands, strength against benefit, what the
-   * count cannot see: every one of those is doctrine about vimsopaka rather
-   * than instructions for this table, and every one was already written out at
-   * length in the Lesson tab under Vimsopaka Bala and Strength and influence.
-   * Two copies of a doctrine drift, and the copy nobody is maintaining is the
-   * one a reader happens to be looking at.
-   *
-   * What stays is what the grid raises and nothing else answers: why seven rows
-   * and not nine, and why the Sun is judged as Mars in one column. Both are
-   * visible facts about what is on screen.
-   *
-   * The hovers are pointed at once and in general. Naming the three kinds - a
-   * cell, a heading, a total - was a list the reader had to hold in order to
-   * discover that everything has one, which is the shorter thing to say.
-   *
-   * No pointer to the Lesson tab either. It is a tab, three along from this one
-   * and always on screen, and a note that ends by naming another tab reads as an
-   * apology for not being that tab.
-   *
-   * The verse citation went with the doctrine. Which verses a scheme's share-out
-   * comes from is worth knowing and is worth checking, but it is a fact about
-   * the text rather than about the grid, and a reader looking at the grid is not
-   * looking for it. The engine still records it, scheme by scheme, and the
-   * library quotes all four.
-   *
-   * [V] is not among them. The flag key at the top of the tab defines all four
-   * flags, this one included, and a second definition a few inches below it is
-   * the same drift in miniature.
-   */
+  // Short reading key, matching the Graha table's label-and-explanation style.
   function vargaNote(scheme) {
-    /*
-     * One idea a sentence. It had been "Where each graha stands in the 16
-     * divisions of the Shodasavarga, judged against the lord of the sign each
-     * one gives" - a fragment with no verb of its own, trailing a clause whose
-     * "each one" meant the divisions three lines back.
-     */
-    return 'Each of the ' + scheme.count + ' divisions of the ' + scheme.label +
-      ' puts a graha in a sign. A cell gives that sign and its dignity there, judged ' +
-      'against the sign\u2019s lord, and the last row scores those dignities out of ' +
-      'twenty. ' +
-      /*
-       * The short forms with their words, built from the engine's own two tables
-       * rather than typed out here. Nine abbreviations and nine words written
-       * into a sentence is the pair of tables copied, and a rename would have
-       * left the sentence saying the old one.
-       *
-       * No excuse for the shortening: that sixteen columns leave no room for
-       * words is visible in the sixteen columns.
-       */
-      /*
-       * Placement, not definition. The flag key at the top of the tab defines
-       * [V] and *, so the note says only where they sit and why they are here:
-       * each is one of the four things vimsopaka cannot see, put against the
-       * value it qualifies. The other two have no value to sit against - an
-       * exchange is about a pair of grahas and directional strength about a
-       * house, and the grid prints neither - so they hang on the graha's name.
-       */
-      /*
-       * Names nothing. The flag key at the top of the tab defines all eight
-       * marks, and the note listing them again was that list in a second place,
-       * which is what carried it back over two hundred words.
-       *
-       * The two channels are worth separating, though, because they make
-       * different claims. A mark is one thing the score is blind to, and the
-       * letter is the whole of it. A chip is a yoga with no letter: it was every
-       * yoga, marked ones included, so a cell wearing [X] [D] said so twice,
-       * once in two letters and once in four sentences of the same. Restricting
-       * it to the unlettered takes the chip from nearly every cell to about half
-       * of them, and each one now carries something new.
-       */
-      'A marked cell is one the score reads wrong and the mark says how, each being ' +
-      'something it cannot see, set against the value in that cell it bears on. Hovering ' +
-      'a cell opens the same graha card as the charts above. The Yogas tab reads a ' +
-      'division in full. ' +
-      /*
-       * Both say what the grid does before why. A reader looking at seven rows
-       * wants "they are left out" first and the reason after it, not a clause
-       * about friendship to hold until the sentence gets to the point.
-       */
-      'Rahu and Ketu are left out: they own no sign and keep no friendships. In D30 the Sun ' +
-      'is judged as Mars and the Moon as Venus, no luminary ruling a trimsamsa.';
+    return 'Cells: Sign and relationship to its lord in each division. ' +
+      'Vimsopaka: Weighted total out of 20. ' +
+      'Marks: Additional conditions, separate from the score. ' +
+      'Hover: The same graha card used in the charts.';
   }
 
   /** Whichever scheme the select is on, falling back to the widest. */

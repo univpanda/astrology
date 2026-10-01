@@ -3333,29 +3333,12 @@ ok('and no mark explains itself in a hover, the letter being the whole of it',
        !/is cancelled and the graha stands in an angle or a trine/
          .test(block.replace(/'\s*\+\s*'/g, ''));
    })());
-/*
- * Every mark is per cell, a cell being one graha in one division, and every mark
- * is one of the four things vimsopaka cannot see. A marked cell is one the score
- * reads wrong; an unmarked cell is one it has whole.
- */
-/*
- * Two channels, two claims. A tint says the graha takes part in a yoga in that
- * division, which most cells do; a mark says a particular thing the score is
- * blind to, which about a third do. Putting both in letters would have made the
- * common one look like the rare ones.
- */
-/*
- * Two channels, two claims, and the note says which is which without naming a
- * single mark: the flag key at the top of the tab defines all eight, and listing
- * them here as well is that list in a second place - it is what carried the note
- * back past two hundred words once already.
- */
-ok('the note separates the two channels without naming a mark', (function () {
-  var flat = appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
-  return /A marked cell is one the score reads wrong and the mark says how, each being something it cannot see/
-    .test(flat) &&
-    /Hovering a cell opens the same graha card as the charts above/
-      .test(flat);
+// Additional conditions do not mean the score is calculated incorrectly.
+ok('the note distinguishes marks from the score', (function () {
+  var at = appSrc.indexOf('function vargaNote');
+  var note = appSrc.slice(at, appSrc.indexOf('function currentScheme', at));
+  return note.includes('Marks: Additional conditions, separate from the score.') &&
+    !note.includes('score reads wrong');
 })());
 ok('and names none of them, the key doing that', (function () {
   var at = appSrc.indexOf('function vargaNote');
@@ -4635,8 +4618,8 @@ ok('and the title breaks the score into its divisions',
 ok('the totals row says what it is, and what it is out of',
    /var head = el\('th', null, 'Vimsopaka'\);/.test(appSrc) &&
    /head\.appendChild\(el\('span', 'varga-weight', ' 20'\)\);/.test(appSrc));
-ok('and the note still says what the totals row totals, the heading no longer doing it',
-   /the last row scores those dignities out of twenty/
+ok('and the note explains the weighted total and its maximum',
+   /Vimsopaka: Weighted total out of 20\./
      .test(appSrc.replace(/'\s*\+\s*'/g, '')));
 /*
  * Which verses a share-out comes from is a fact about the text, not about the
@@ -5044,7 +5027,7 @@ ok('and points at the hovers once, in general rather than kind by kind',
      var flat = note.replace(/\/\*[\s\S]*?\*\//g, '')
        .replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
      return (flat.match(/hover/gi) || []).length === 1 &&
-       /Hovering a cell opens the same graha card as the charts above/.test(flat) &&
+       /Hover: The same graha card used in the charts\./.test(flat) &&
        !/a heading for what that division is worth/.test(flat);
    })());
 /*
@@ -5105,45 +5088,13 @@ ok('and says moolatrikona shares the top figure without being ownership',
  */
 ok('and that it is claimed in the rashi only',
    /And in the rashi only\. Moolatrikona is a span of degrees inside a sign/.test(seeds));
-/*
- * These two stay in the note. They are not doctrine about vimsopaka, they are
- * facts about what is on the screen: why the grid has seven rows and not nine,
- * and why the Sun is judged as Mars in one column of it. The library carries the
- * longer account of both, but a reader should not have to leave the table to
- * find out why two grahas are missing from it.
- */
-ok('the note still says why the trimsamsa needs a stand-in',
-   /In D30 the Sun is judged as Mars and the Moon as Venus, no luminary ruling a trimsamsa/
-     .test(appSrc.replace(/'\s*\+\s*'/g, '')) &&
+// Detailed scoring exceptions remain in the library, not the short reading key.
+ok('the library explains the trimsamsa stand-in',
    /the Sun and the Moon rule no trimsamsa at all/.test(seeds));
-ok('and that the nodes are left out, in the note and at length in the library',
-   /Rahu and Ketu are left out: they own no sign and keep no friendships/
-     .test(appSrc.replace(/'\s*\+\s*'/g, '')) &&
+ok('the library explains why nodes have no score',
    /A row for them would be blank in every column and totalled in none/.test(seeds));
-/*
- * Both of these say what the grid does before why it does it. A reader counting
- * seven rows wants "they are left out" first; the reason is what they read next,
- * not a clause to hold until the sentence arrives at the point.
- */
-ok('and both exceptions lead with the fact, not the reason', (function () {
-  var at = appSrc.indexOf('function vargaNote');
-  var flat = appSrc.slice(at, appSrc.indexOf('ABBREVIATE_ABOVE', at))
-    .replace(/'\s*\+\s*'/g, '');
-  return !/own no sign and keep no friendships, so/.test(flat) &&
-    !/No luminary rules a trimsamsa, so/.test(flat) &&
-    flat.indexOf('Rahu and Ketu are left out') < flat.indexOf('they own no sign') &&
-    flat.indexOf('In D30 the Sun is judged') < flat.indexOf('no luminary ruling');
-})());
-
-/*
- * It used to be explained in the hover of whichever D30 cell it fired in. The
- * hover is the yogas alone now, so the note says it once for the grid - which is
- * where a reader looks on meeting a Sun judged as Mars, rather than having to
- * hover the cell that surprised them.
- */
-ok('the trimsamsa stand-in is explained in the note, once for the grid',
-   /In D30 the Sun is judged as Mars and the Moon as Venus, no luminary ruling a trimsamsa/
-     .test(appSrc.replace(/'\s*\+\s*'/g, '')) && !/d\.viaProxy/.test(appSrc));
+ok('the table does not repeat proxy explanations in individual cells',
+   !/d\.viaProxy/.test(appSrc));
 
 /*
  * Each graha spans two rows, its sign above its dignity. The sign was only in a
@@ -6625,37 +6576,18 @@ ok('the two lines sit inside one cell, with no rule between them', (function () 
     !/#vargas-table th\[rowspan\]/.test(css) &&
     /#vargas-table td\.varga-cell \{ vertical-align: top; \}/.test(css);
 })());
-/*
- * A cell, not a pair of rows. The sentence still described the layout from
- * before the grid turned - "the two rows under a graha", "the last column
- * scores" - where a graha is now a column and the score a row along the bottom.
- */
-ok('the note says what one cell holds, and where the score is',
-   (function () {
-     var flat = appSrc.replace(/'\s*\+\s*'/g, '');
-     return /A cell gives that sign and its dignity there/.test(flat) &&
-       /the last row scores those dignities out of twenty/.test(flat) &&
-       !/two rows under a graha/.test(flat) && !/the last column scores/.test(flat);
-   })());
-/*
- * One idea a sentence. The opening had been a fragment with no verb of its own -
- * "Where each graha stands in the 16 divisions of the Shodasavarga" - trailing a
- * clause whose "each one" referred to the divisions three lines back.
- */
-ok('and opens with a sentence rather than a fragment', (function () {
-  var at = appSrc.indexOf('function vargaNote');
-  var src = appSrc.slice(at, appSrc.indexOf('ABBREVIATE_ABOVE', at));
-  // Collapsed on both counts: the string joins, then the line wrapping between
-  // them, so re-wrapping the expression cannot fail this.
-  var flat = src.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
-  /*
-   * The old wording is quoted in a comment right there, explaining why it went,
-   * so "is it gone" has to ask the strings and not the source around them.
-   */
-  var prose = (flat.match(/'[^']*'/g) || []).join(' ');
-  return /Each of the ' \+ scheme\.count \+ ' divisions of the ' \+ scheme\.label \+ ' puts a graha in a sign\./
-    .test(flat) && !/Where each graha stands in/.test(prose) &&
-    !/the lord of the sign each one gives/.test(prose);
+// Execute the helper to check the approved copy across all schemes.
+ok('the note uses four short label-and-explanation sentences', (function () {
+  var source = appSrc.match(/function vargaNote\(scheme\) \{([\s\S]*?)\n  \}/);
+  if (!source) return false;
+  var note = new Function('scheme', source[1]);
+  var expected = 'Cells: Sign and relationship to its lord in each division. ' +
+    'Vimsopaka: Weighted total out of 20. ' +
+    'Marks: Additional conditions, separate from the score. ' +
+    'Hover: The same graha card used in the charts.';
+  return Object.keys(Astro.VARGA_SCHEMES).every(function (key) {
+    return note(Astro.VARGA_SCHEMES[key]) === expected;
+  });
 })());
 
 /*
