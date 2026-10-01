@@ -1887,8 +1887,7 @@
    * The flags spread out with the column that held them. There is no Chart
    * column any more and no need for one, so each flag now sits on the value it
    * qualifies: [R] and [C] on the name, being facts about the graha; [V] on
-   * the sign the division gives; [Y] on the lordship it is a fact about; [D] on the house; and
-   * [N] stays on the dignity it cancels.
+   * the sign the division gives. Other conditions are named on the graha card.
    */
   function renderGrahaTable(state) {
     var c = state.chart;
@@ -2005,7 +2004,7 @@
 
     /*
      * The benefics, the recast chart and a neecha bhanga pass used to be
-     * worked out here for [N]. With that mark off this table
+     * worked out here for cancellation markers. With those off this table
      * nothing reads them, so the table no longer runs a yoga detector on every
      * render for a letter it does not draw.
      */
@@ -2064,7 +2063,7 @@
              */
             flags: [view.division !== 1 && v.sign === Astro.signOf(r.longitude)
               ? 'V' : null] },
-          /* [N], [Dr] and [Y] are said in full on the graha's card. */
+          /* Directional strength, yogakaraka and yogas are named on the card. */
           { text: String(house), cls: 'numeric' },
           owned.length
             ? { text: owned.join(', '), cls: 'numeric',
@@ -3018,11 +3017,10 @@
        * disagree about what D9 holds. The exchange is pulled out of the same
        * pass, being one of the marks.
        */
-      var exchanging = {}, cancelled = {};
+      var exchanging = {};
       Yogas.detect(chart, strengths).forEach(function (yoga) {
         (yoga.grahas || []).forEach(function (name) {
           if (yoga.yoga === 'Parivartana') exchanging[name] = yoga.title;
-          if (yoga.yoga === 'Neecha Bhanga' && yoga.kind === 'raja') cancelled[name] = true;
         });
       });
       var cardOptions = {
@@ -3077,20 +3075,10 @@
          * six steps and they are these; a word outside them is a word about a
          * different reckoning, and this grid is the vimsopaka one.
          *
-         * The dignity is still known and still marks the cell where it changes
-         * something: a cancelled debilitation keeps its [N].
+         * The full dignity and any cancellation are available in the graha card.
          */
         var dignityLine = el('span', 'varga-dignity dig dig-' + d.relation,
           d.relationLabel);
-        /*
-         * [N] rather than a star. It was a star while it was the only mark that
-         * sat on a dignity rather than on a sign, and a star is a footnote: it
-         * says look elsewhere, where every other mark here names its own
-         * condition. The letter says which condition without being looked up.
-         */
-        if (d.dignity === 'debilitated' && cancelled[planet.name]) {
-          dignityLine.appendChild(el('span', 'flag flag-n', ' [N]'));
-        }
 
         td.appendChild(signLine);
         td.appendChild(dignityLine);
@@ -3163,7 +3151,7 @@
         tatkalika, horaRule, horaMercury);
       if (!score) return null;                     // the nodes keep no friendships
       var rashi = Astro.signOf(planet.longitude);
-      var good = 0, marks = { V: 0, X: 0, D: 0, N: 0 };
+      var good = 0, marks = { V: 0, X: 0, D: 0 };
       scheme.divisions.forEach(function (division) {
         var d = Astro.vargaDignity(planet.name, planet.longitude, division, positionsD1,
           tatkalika, horaRule, horaMercury);
@@ -3176,9 +3164,6 @@
           return (yoga.grahas || []).indexOf(planet.name) >= 0;
         })) marks.X++;
         if (Astro.hasDigBala(planet.name, ((d.sign - lagna) % 12 + 12) % 12 + 1)) marks.D++;
-        if (d.key === 'debilitated' && Yogas.neechaBhanga(chart).some(function (yoga) {
-          return yoga.kind === 'raja' && (yoga.grahas || []).indexOf(planet.name) >= 0;
-        })) marks.N++;
       });
       return { graha: planet.name, vimsopaka: score.total, band: score.band,
                good: good, vargottama: marks.V, marks: marks };
@@ -3298,7 +3283,7 @@
         /*
          * A bar's hover names what it is. In the per-graha facets the bar is a
          * mark, so row.name carries the word the bracketed letter stands for: a
-         * chart of [V] [X] [D] [N] wants that on hover rather than a
+         * chart of [V] [X] [Dr] wants that on hover rather than a
          * legend repeating the flag key.
          */
         g.appendChild(svgEl('title', {}, (row.name || row.graha) + ', ' + s.label +
@@ -3361,8 +3346,7 @@
   var MARKS = [
     { key: 'V', label: '[V]', name: 'Vargottama' },
     { key: 'X', label: '[X]', name: 'Exchange of signs' },
-    { key: 'D', label: '[Dr]', name: 'Directional strength' },
-    { key: 'N', label: '[N]', name: 'Neecha bhanga raja yoga' }
+    { key: 'D', label: '[Dr]', name: 'Directional strength' }
   ];
 
   /**

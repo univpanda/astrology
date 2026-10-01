@@ -1695,10 +1695,6 @@ td .retro-flag, td.retro-flag, th .retro-flag { color: var(--retro); }
 .flag-e { color: var(--green-deep); }
 .flag-m { color: var(--green-deep); }
 .flag-d { color: var(--retro); }
-/* [N] joins [Dr]. Both say the graha's circumstances are helping it -
-   benefic company either side, the house it is strongest in, a fall that the
-   chart breaks - and the bracketed letter is what tells them apart. */
-.flag-dr, .flag-n { color: var(--green-deep); }
 
 /* Dignity words are read by scanning, not line by line, so the tiers carry
    weight and colour. Kept to the page's two hues rather than a red-to-green
@@ -1978,12 +1974,10 @@ td.vimsopaka-poor { color: var(--retro); }
    lightness, and the text greens and reds sit above the band on a dark surface.
    The validator cannot separate the purple from the blue - 1.6 deutan, 10.5 to
    normal vision - so the colour here is redundant, not the encoding: every bar
-   is labelled with its own letter underneath and names itself on hover. [D]
-   and [N] share the green in both places; the letter is what separates them. */
+   is labelled with its own letter underneath and names itself on hover. */
 .chart-bar.mark-v rect { fill: var(--chart-vargottama); }
 .chart-bar.mark-x rect { fill: var(--chart-exchange); }
-.chart-bar.mark-d rect,
-.chart-bar.mark-n rect { fill: var(--chart-vimsopaka); }
+.chart-bar.mark-d rect { fill: var(--chart-vimsopaka); }
 /* Five small charts where two large ones sit, so they take a narrower track.
    min-width: 0 lets each shrink to its own rather than holding the row open. */
 .varga-facets {

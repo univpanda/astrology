@@ -3075,7 +3075,7 @@ ok('the key names every mark the grid draws', (function () {
   if (!key) return false;
   // [Dr] rather than [D]: the letter now means debilitated on the chart and
   // on the card, and one letter cannot mean two things on one page.
-  return ['v', 'x', 'dr', 'n'].every(function (c) {
+  return ['v', 'x', 'dr'].every(function (c) {
     var letter = c === 'dr' ? 'Dr' : c.toUpperCase();
     return new RegExp('<span class="flag flag-' + c + '">\\[' +
       letter + '\\]</span>').test(key[0]);
@@ -3187,7 +3187,7 @@ ok('and the grid carries the four remaining marks and no others', (function () {
   var at = appSrc.indexOf('function renderVargas(state)');
   var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
   var marks = (block.match(/'flag flag-[a-z]+'/g) || []);
-  return marks.length === 4 && ['v', 'x', 'dr', 'n'].every(function (k) {
+  return marks.length === 3 && ['v', 'x', 'dr'].every(function (k) {
     return block.indexOf("'flag flag-" + k + "'") >= 0;
   });
 })());
@@ -3211,12 +3211,12 @@ ok('hemming is no longer computed merely to draw a mark',
  * and the card says them in words. Dropping a mark from one surface should not
  * mean losing the fact.
  */
-ok('dig bala and neecha bhanga are still reported, on the varga grid',
+ok('dig bala stays marked while neecha bhanga has no letter',
    /Astro\.hasDigBala\(planet\.name, house\)/.test(appSrc) &&
    /signLine\.appendChild\(el\('span', 'flag flag-dr', ' \[Dr\]'\)\)/.test(appSrc) &&
-   /dignityLine\.appendChild\(el\('span', 'flag flag-n', ' \[N\]'\)\)/.test(appSrc));
-ok('and the two still drawn on the grid are still named in its key',
-   /flag-dr">\[Dr\]/.test(html) && /flag-n">\[N\]/.test(html));
+   !/flag flag-n/.test(appSrc));
+ok('the key explains directional strength and omits the removed N marker',
+   /flag-dr">\[Dr\]/.test(html) && !/flag-n">\[N\]/.test(html));
 ok('while yogakaraka, drawn only in the chart, is named only on the card',
    !/flag-y">\[Y\]/.test(html) && /Y: 'Yogakaraka'/.test(appSrc));
 /*
@@ -3243,7 +3243,7 @@ ok('and nothing excludes the ascendant from the hemming, defined on it first',
    !/isAscendant[^\n]*hemmedBy/.test(appSrc) &&
    !/hemmedBy[^\n]*isAscendant/.test(appSrc));
 ok('each mark in the key carries its own colour',
-   ['v', 'x', 'dr', 'n'].every(function (c) {
+   ['v', 'x', 'dr'].every(function (c) {
      var letter = c === 'dr' ? 'Dr' : c.toUpperCase();
      return new RegExp('<span class="flag flag-' + c + '">\\[' +
        letter + '\\]</span>').test(html.replace(/\s+/g, ' '));
@@ -3315,10 +3315,8 @@ var seeds = ['strength', 'varga', 'dignity', 'yogas'].map(function (name) {
  * dignity rather than a sign, and a star is a footnote: it says look elsewhere,
  * where every other mark here names its own condition.
  */
-ok('a cancelled debilitation is marked where it is scored',
-   /if \(d\.dignity === 'debilitated' && cancelled\[planet\.name\]\)/.test(appSrc) &&
-   /dignityLine\.appendChild\(el\('span', 'flag flag-n', ' \[N\]'\)\)/.test(appSrc) &&
-   !/neecha-bhanga/.test(appSrc));
+ok('a cancelled debilitation gets no letter on the table',
+   !/cancelled\[planet\.name\]|flag flag-n/.test(appSrc));
 /*
  * And the letter is the whole of it. Every mark used to explain itself in the
  * hover as well as wear its letter, so a cell carrying [X] [D] said the same
@@ -3419,7 +3417,7 @@ ok('and no yoga becomes a seventh mark', (function () {
   var at = appSrc.indexOf('function renderVargas(state)');
   var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
   var marks = (block.match(/'flag flag-[a-z]+'/g) || []);
-  return marks.length === 4 && /Charts\.decorateCardTarget\(td, cardOptions, planet\.name\)/.test(block) &&
+  return marks.length === 3 && /Charts\.decorateCardTarget\(td, cardOptions, planet\.name\)/.test(block) &&
     !/function grahaFootnote/.test(appSrc);
 })());
 ok('which is measurably a third of the cells rather than three fifths', (function () {
@@ -3458,9 +3456,7 @@ ok('which is measurably a third of the cells rather than three fifths', (functio
  * it; the raja form is the case where the floor misreports the graha outright.
  * Marking both put a star on two debilitations in three.
  */
-ok('the mark is the raja form and not a plain cancellation',
-   /if \(yoga\.yoga === 'Neecha Bhanga' && yoga\.kind === 'raja'\) cancelled\[name\] = true;/
-     .test(appSrc));
+ok('neither cancellation form produces a marker', !/cancelled\[name\]/.test(appSrc));
 ok('and that really does thin it out', (function () {
   var deb = 0, any = 0, raja = 0;
   var scheme = Astro.VARGA_SCHEMES.shodasavarga;
@@ -3498,10 +3494,8 @@ ok('and that really does thin it out', (function () {
  * a sweep of its own: it is one of them, and asking twice was two chances for
  * the two answers to differ.
  */
-ok('cancellation is asked of the division being scored, in the same pass',
-   /var chart = Astro\.chartInDivision\(state\.chart, division\);/.test(appSrc) &&
-   /if \(yoga\.yoga === 'Neecha Bhanga' && yoga\.kind === 'raja'\) cancelled\[name\] = true;/
-     .test(appSrc) &&
+ok('the card asks the shared yoga detector for its division',
+   /yogas: yogasByGraha\(state, division, 'Ascendant'\)/.test(appSrc) &&
    !/function cancelledDebilitations/.test(appSrc));
 ok('and it agrees with the detector, cell by cell, on a chart that has one',
    (function () {
@@ -3529,7 +3523,7 @@ ok('every mark is a bracketed letter', (function () {
   var flat = html.replace(/\s+/g, ' ');
   var key = (flat.match(/<p class="varga-key">.*?<\/p>/) || [''])[0];
   var marks = key.match(/<span class="flag flag-[a-z]+">[^<]*<\/span>/g) || [];
-  return marks.length === 4 && !/flag-dig/.test(flat) && !/flag-star/.test(flat) &&
+  return marks.length === 3 && !/flag-dig/.test(flat) && !/flag-star/.test(flat) &&
     marks.every(function (m) { return /\[(?:Dr|[RVYCXSPDNEM])\]/.test(m); });
 })());
 /*
@@ -3542,7 +3536,7 @@ ok('and the palette stays at five hues, the letters doing the rest', (function (
   var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
   // [S], [Dr] and [N] share the green: all three say the graha's circumstances
   // are helping it, and the bracketed letter is what tells them apart.
-  return /\.flag-dr, \.flag-n \{ color: var\(--green-deep\); \}/.test(css) &&
+  return /\.flag-dr \{ color: var\(--green-deep\); \}/.test(css) &&
     /\.flag-d \{ color: var\(--retro\); \}/.test(css) &&
     !/\.flag-p \{/.test(css) && !/\.flag-s(?:,| \{)/.test(css) &&
     !/--flag-direction/.test(css);
@@ -5998,9 +5992,9 @@ ok('and holds the six the grid draws, the other three being the card\u2019s',
      var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
      var flat = page.replace(/\s+/g, ' ');
      var key = (flat.match(/<p class="varga-key">.*?<\/p>/) || [''])[0];
-     return ['flag-v', 'flag-x', 'flag-dr', 'flag-n']
+     return ['flag-v', 'flag-x', 'flag-dr']
          .every(function (f) { return key.indexOf(f) >= 0; }) &&
-       ['flag-r', 'flag-y', 'flag-c', 'flag-s', 'flag-p']
+       ['flag-r', 'flag-y', 'flag-c', 'flag-s', 'flag-p', 'flag-n']
          .every(function (f) { return key.indexOf(f) < 0; });
    })());
 /*
@@ -6356,7 +6350,7 @@ ok('and the margins shrink with the labels that needed them',
 ok('every mark in the grid is counted in a facet', (function () {
   var at = appSrc.indexOf('var MARKS = [');
   var block = appSrc.slice(at, appSrc.indexOf('var ceiling', at));
-  return ['V', 'X', 'D', 'N'].every(function (k) {
+  return ['V', 'X', 'D'].every(function (k) {
     return block.indexOf("key: '" + k + "'") >= 0;
   });
 })());
@@ -6381,7 +6375,7 @@ ok('vargaSummary runs and counts every mark', (function () {
   var rows = summary({ chart: c }, Astro.VARGA_SCHEMES.shodasavarga);
   return rows.length === 7 && rows.every(function (r) {
     return typeof r.vimsopaka === 'number' && r.good >= 0 &&
-      ['V', 'X', 'D', 'N'].every(function (k) { return r.marks[k] >= 0; });
+      ['V', 'X', 'D'].every(function (k) { return r.marks[k] >= 0; });
   });
 })());
 
@@ -6843,7 +6837,7 @@ ok('the removed kartari markers do not enter the row', (function () {
   var keys = (block.match(/key: '([VXSPDN])'/g) || []).map(function (m) {
     return m.slice(-2, -1);
   });
-  return keys.join('') === 'VXDN';
+  return keys.join('') === 'VXD';
 })());
 /*
  * A bar takes the colour of its own mark - the same colour that mark's letter
@@ -6857,7 +6851,7 @@ ok('and each bar wears the colour of its own mark',
    /\.chart-bar\.mark-v rect \{ fill: var\(--chart-vargottama\); \}/.test(cssSrc) &&
    /\.chart-bar\.mark-x rect \{ fill: var\(--chart-exchange\); \}/.test(cssSrc) &&
    !/\.chart-bar\.mark-[sp] rect/.test(cssSrc) &&
-   /\.chart-bar\.mark-d rect,\n\.chart-bar\.mark-n rect \{ fill: var\(--chart-vimsopaka\); \}/
+   /\.chart-bar\.mark-d rect \{ fill: var\(--chart-vimsopaka\); \}/
      .test(cssSrc));
 /*
  * A filled bar and a coloured letter want different lightness. The text hues for
@@ -6878,7 +6872,7 @@ ok('and every bar fill is declared for both modes',
  * two meanings on one page.
  */
 ok('and every mark has a letter for the axis and a word for the hover',
-   ['V', 'X', 'N'].every(function (k) {
+   ['V', 'X'].every(function (k) {
      return new RegExp("\\{ key: '" + k + "', label: '\\[" + k + "\\]', name: '").test(appSrc);
    }) && /\{ key: 'D', label: '\[Dr\]', name: 'Directional strength' \}/.test(appSrc));
 /*
@@ -9313,6 +9307,12 @@ console.log('\nVimsopaka cells use the divisional charts\u2019 own cards');
     restored.Saturn.some(function (y) {
       return y.title === 'Shubha kartari yoga' && y.route === 'graha-hemming';
     }));
+  ok('plain Neecha Bhanga and its raja form remain named yogas after removing N',
+    out.yogasByGraha(state, 7, 'Ascendant').Moon.some(function (y) {
+      return y.title === 'Neecha bhanga';
+    }) && out.yogasByGraha(state, 27, 'Ascendant').Venus.some(function (y) {
+      return y.title === 'Neecha bhanga raja yoga';
+    }));
   var failures = [], exchanges = 0, hemmings = 0, comparisons = 0;
   var textOf = function (n) {
     return (n.textContent || '') + (n.children || []).map(textOf).join('');
@@ -9360,7 +9360,15 @@ console.log('\nVimsopaka cells use the divisional charts\u2019 own cards');
           var exchange = (map[p.name] || []).some(function (y) { return y.subject === 'Parivartana'; });
           if (exchange !== /Exchange of signs \[X\]/.test(conditions)) failures.push('exchange ' + p.name);
           if (exchange) exchanges++;
-          if (/\[[SP]\]/.test(textOf(cells.grahaCard))) failures.push('removed marker');
+          if (/\[[SPN]\]/.test(textOf(cells.grahaCard))) failures.push('removed marker');
+          var listText = cells.grahaCard.children.filter(function (n) {
+            return n.className === 'graha-card-list';
+          }).map(textOf).join('');
+          (map[p.name] || []).filter(function (y) {
+            return y.subject === 'Parivartana' || /^Neecha Bhanga/.test(y.subject);
+          }).forEach(function (y) {
+            if (listText.indexOf(y.title) < 0) failures.push('missing yoga ' + y.title);
+          });
           comparisons++;
         });
     });
