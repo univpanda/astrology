@@ -1017,19 +1017,20 @@ ok('every flag rides on the value it qualifies', (function () {
     var i = cells.indexOf(label);
     return cells.slice(i, cells.indexOf('{ text:', i + 10));
   };
-  return /flag\(th, \[col\.entity\.retrograde \? 'R' : null,/.test(block) &&
+  return /flag\(th, col\.flags\)/.test(block) &&
     /'V' : null/.test(after('Astro.SIGNS[v.sign]')) &&
     !/graha-chart/.test(block);
 })());
-ok('and the three that qualified a graha rather than a sign are gone from it',
+ok('the removed markers stay absent while requested graha conditions are restored',
    (function () {
      var at = appSrc.indexOf('function grahaTableFor');
      var block = appSrc.slice(at, appSrc.indexOf('function renderShadbala', at));
-     return !/'Y' : null/.test(block) && !/'D' : null/.test(block) &&
+     return !/'Y' : null/.test(block) && /'D' : null/.test(block) &&
        !/'S' : null/.test(block) && !/'P' : null/.test(block) &&
+       !/'N' : null/.test(block) &&
        !/cell\.star/.test(appSrc) && !/star: /.test(block) &&
        // and the work those marks needed is not done for nothing
-       !/Yogas\.neechaBhanga/.test(block) && !/chartInDivision/.test(block);
+       !/Yogas\.neechaBhanga/.test(block) && /Yogas\.parivartana/.test(block);
    })());
 /*
  * Three tokens sitting together have to read as three different facts, so each
@@ -3187,10 +3188,10 @@ ok('Vimsopaka uses the shared heading but leaves combustion to each cell',
  * All three grids head a graha with the same cell now, so [R] and [C] are
  * written in one place and cannot reach one table and miss another.
  */
-ok('the other tables retain their rashi heading flags',
+ok('Shadbala retains rashi heading flags and Graha names render their own conditions',
    /function grahaColumnHead\(planet, sun\)/.test(appSrc) &&
    (appSrc.match(/appendChild\(grahaColumnHead\(planet, sun\)\)/g) || []).length === 1 &&
-   /flag\(th, \[col\.entity\.retrograde \? 'R' : null,/.test(appSrc) &&
+   /flag\(th, col\.flags\)/.test(appSrc) &&
    /th\.appendChild\(el\('span', 'flag flag-' \+ f\.toLowerCase\(\)/
      .test(appSrc.slice(appSrc.indexOf('function grahaColumnHead'),
                         appSrc.indexOf('function renderVargasHead'))));
@@ -3244,7 +3245,8 @@ ok('yogakaraka is named in the table key and the card',
  */
 ok('the ascendant takes none of what is about a graha',
    /var owned = r\.isAscendant \? \[\] : Astro\.housesOwned/.test(appSrc) &&
-   !/Astro\.dignityOf\(r\.name, v\.sign/.test(appSrc));
+   /var dignity = r\.isAscendant \? '' : Astro\.dignityOf\(r\.name, v\.sign/.test(appSrc) &&
+   /flags: r\.isAscendant \? \[\] : \[/.test(appSrc));
 /*
  * The graha table used to withhold the hemming marks from the ascendant, the
  * one placement the texts define kartari on. That is moot now the table draws
@@ -6953,7 +6955,7 @@ ok('and the box is drawn to that half width, not the old full one',
  * graha like the states are, rather than a row of dashes with three words in
  * it: over nine grahas a chart carries two or three dignities at most.
  */
-ok('the table carries twelve property columns', (function () {
+ok('the table carries thirteen property columns', (function () {
   var at = appSrc.indexOf('var GRAHA_ROWS = [');
   if (at < 0) return false;
   var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
@@ -6961,8 +6963,93 @@ ok('the table carries twelve property columns', (function () {
     .map(function (t) { return t.slice(8, -1); });
   return found.join('|') === ['Rashi', 'House', 'Lordship', 'Dispositor',
     'Longitude', 'Name - Pada', 'Lord', 'Sub lord', 'Karaka', 'Role',
-    'State', 'Age'].join('|') &&
+    'State', 'Age', 'Vimsopaka Bala'].join('|') &&
     !/<th scope="col">Chart<\/th>/.test(html);
+})());
+ok('Graha Vimsopaka uses Dashavarga in every chart tab and follows scoring settings', (function () {
+  var src = appSrc.slice(appSrc.indexOf('  var GRAHA_ROWS = ['),
+    appSrc.indexOf('  function strengthsFor'));
+  var settings = { tatkalika: 'varga', hora: 'effects', mercury: 'friend' };
+  var tableDocument = {
+    createElement: document.createElement,
+    getElementById: function () { return { value: settings.combustion || 'division' }; }
+  };
+  var makeElement = function (tag, cls, text) {
+    var node = makeNode(tag);
+    if (cls) node.setAttribute('class', cls);
+    if (text != null) node.textContent = text;
+    return node;
+  };
+  var renderTable = new Function('Astro', 'GrahaView', 'Yogas', 'document', 'el',
+    'dms', 'karakaRank', 'tatkalikaSetting', 'horaSetting', 'horaMercurySetting',
+    src + '; return grahaTableFor;')(Astro, GrahaView, Yogas, tableDocument, makeElement,
+      String, String, function () { return settings.tatkalika; },
+      function () { return settings.hora; }, function () { return settings.mercury; });
+  var chart = Astro.chart({ jdUT: Astro.julianDay(1977, 8, 20, 3),
+    latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 });
+  var positions = {};
+  chart.planets.forEach(function (p) { positions[p.name] = p; });
+  var readings = [];
+  var seenMarks = { R: 0, C: 0, X: 0, D: 0, E: 0 };
+  var valid = [
+    { tatkalika: 'varga', hora: 'effects', mercury: 'friend', combustion: 'division' },
+    { tatkalika: 'rashi', hora: 'lord', mercury: 'ordinary', combustion: 'rashi' }
+  ].every(function (chosen) {
+    settings = chosen;
+    var values = [];
+    var views = Astro.VARGAS.reduce(function (all, varga) {
+      return all.concat(['Ascendant', 'Moon'].map(function (reference) {
+        return { division: varga.division, reference: reference };
+      }));
+    }, []);
+    var match = views.every(function (view) {
+      var division = view.division;
+      var table = renderTable({ chart: chart }, view);
+      var heading = table.children[0].children[0].children.slice(-1)[0];
+      if (heading.textContent !== 'Vimsopaka Bala' || !/10 Dashavarga/.test(heading.title)) return false;
+      var rows = table.children[1].children;
+      if (rows.length !== 10) return false;
+      return rows.every(function (row) {
+        var name = row.children[0].textContent;
+        var cell = row.children.slice(-1)[0];
+        var planet = positions[name];
+        var score = planet && Astro.vimsopaka(name, planet.longitude,
+          Astro.VARGA_SCHEMES.dasavarga, positions, settings.tatkalika, settings.hora, settings.mercury);
+        var expectedMarks = [];
+        if (planet) {
+          var position = Astro.vargaPosition(planet.longitude, division);
+          var formal = Astro.dignityOf(name, position.sign, position.degreeInSign);
+          var inDivision = settings.combustion === 'division';
+          var combust = Astro.isCombust(name,
+            inDivision ? position.longitude : planet.longitude,
+            inDivision ? Astro.vargaPosition(positions.Sun.longitude, division).longitude : positions.Sun.longitude,
+            planet.retrograde);
+          var exchange = Yogas.parivartana(Astro.chartInDivision(chart, division)).some(function (yoga) {
+            return yoga.grahas.indexOf(name) >= 0;
+          });
+          expectedMarks = [planet.retrograde ? 'R' : null, combust ? 'C' : null,
+            exchange ? 'X' : null, formal === 'Debilitated' ? 'D' : null,
+            formal === 'Exalted' ? 'E' : null].filter(Boolean);
+          expectedMarks.forEach(function (mark) { seenMarks[mark]++; });
+        }
+        var actualMarks = row.children[0].children.map(function (node) { return node.textContent.trim(); });
+        if (division === 1 && view.reference === 'Ascendant') values.push(cell.textContent);
+        return row.children.length === 14 &&
+          actualMarks.join('') === expectedMarks.map(function (mark) { return '[' + mark + ']'; }).join('') &&
+          cell.textContent === (score ? score.total.toFixed(2) : '–') &&
+          (score ? /of 20 across the 10 Dashavarga divisions/.test(cell.title) : true);
+      });
+    });
+    readings.push(values.join(','));
+    return match;
+  });
+  return valid && readings[0] !== readings[1] &&
+    Object.keys(seenMarks).every(function (mark) { return seenMarks[mark] > 0; });
+})());
+ok('directional strength stays out of Graha table names and key', (function () {
+  var block = appSrc.slice(appSrc.indexOf('  function renderGrahaTable'),
+    appSrc.indexOf('  function strengthsFor'));
+  return !/hasDigBala|\[Dr\]|'Dr' : null/.test(block);
 })());
 ok('functional role stays in the table and out of the highlight card',
    /Astro\.functionalRole\(r\.name, c\.ascendant\.sign\)/.test(appSrc) &&

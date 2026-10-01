@@ -1886,8 +1886,8 @@
    *
    * The flags spread out with the column that held them. There is no Chart
    * column any more and no need for one, so each flag now sits on the value it
-   * qualifies: [R] and [C] on the name, being facts about the graha; [V] on
-   * the sign the division gives. Other conditions are named on the graha card.
+   * qualifies: graha conditions on the name, and [V] on the divisional sign.
+   * Directional strength stays on the chart because it follows chart rotation.
    */
   function renderGrahaTable(state) {
     var c = state.chart;
@@ -1940,6 +1940,11 @@
       key.appendChild(el('span', 'table-key-item',
         'Relationship: GF great friend, Fr friend, Neu neutral, ' +
         'En enemy, GE great enemy, Own its own sign.'));
+      key.appendChild(el('span', 'table-key-item',
+        'Vimsopaka Bala: Dashavarga (10 divisions), out of 20.'));
+      key.appendChild(el('span', 'table-key-item',
+        'Marks: [R] Retrograde, [C] Combust, ' +
+        '[X] Exchange of signs, [D] Debilitated, [E] Exalted, [V] Vargottama.'));
       host.appendChild(key);
     });
 
@@ -1988,7 +1993,8 @@
     { label: 'Karaka', says: 'The Jaimini chara karaka, assigned by how far into its sign the graha has travelled - furthest is Atmakaraka. Read in the rashi, and so the same in every chart here.' },
     { label: 'Role', says: 'The graha’s ascendant-specific functional nature: benefic, neutral, papa, maraka or yogakaraka. Read from the rashi ascendant and kept separate from natural nature and yoga detection.' },
     { label: 'State', says: 'Waking, dreaming or sleeping according to whether the graha is in its own or exaltation sign, a friend’s or neutral’s sign, or an enemy’s or debilitation sign. Read in the rashi.' },
-    { label: 'Age', says: 'Child, teen, youth, old or dead: six degrees to a stage and reversed in an even sign. Read in the rashi, and so the same in every chart here.' }
+    { label: 'Age', says: 'Child, teen, youth, old or dead: six degrees to a stage and reversed in an even sign. Read in the rashi, and so the same in every chart here.' },
+    { label: 'Vimsopaka Bala', says: 'Weighted strength across the 10 Dashavarga divisions, out of 20. Uses the selected scoring settings and stays the same across these chart tabs.' }
   ];
 
   /**
@@ -2002,12 +2008,16 @@
     c.planets.forEach(function (p) { positionsD1[p.name] = p; });
     var sun = positionsD1.Sun;
 
-    /*
-     * The benefics, the recast chart and a neecha bhanga pass used to be
-     * worked out here for cancellation markers. With those off this table
-     * nothing reads them, so the table no longer runs a yoga detector on every
-     * render for a letter it does not draw.
-     */
+    var exchanging = {};
+    Yogas.parivartana(Astro.chartInDivision(c, view.division)).forEach(function (yoga) {
+      (yoga.grahas || []).forEach(function (name) { exchanging[name] = true; });
+    });
+    var combustion = document.getElementById('combustion').value;
+    var burnAt = function (longitude) {
+      return combustion !== 'rashi' && view.division !== 1
+        ? Astro.vargaPosition(longitude, view.division).longitude : longitude;
+    };
+    var sunBurn = sun ? burnAt(sun.longitude) : null;
 
     // House 1 for this chart: the ascendant, or the graha it is turned onto.
     var firstSign = Astro.vargaPosition(c.ascendant.longitude, view.division).sign;
@@ -2052,8 +2062,19 @@
         : Astro.jagratadiAvastha(r.name, rashiSign(r));
       var baladi = r.isAscendant ? ''
         : Astro.baladiAvastha(rashiSign(r), rashiDegree(r));
+      var vimsopaka = r.isAscendant ? null
+        : Astro.vimsopaka(r.name, r.longitude, Astro.VARGA_SCHEMES.dasavarga,
+          positionsD1, tatkalikaSetting(), horaSetting(), horaMercurySetting());
+      var dignity = r.isAscendant ? '' : Astro.dignityOf(r.name, v.sign, v.degreeInSign);
       return {
         entity: r,
+        flags: r.isAscendant ? [] : [
+          r.retrograde ? 'R' : null,
+          sun && Astro.isCombust(r.name, burnAt(r.longitude), sunBurn, r.retrograde) ? 'C' : null,
+          exchanging[r.name] ? 'X' : null,
+          dignity === 'Debilitated' ? 'D' : null,
+          dignity === 'Exalted' ? 'E' : null
+        ],
         cells: [
           { text: Astro.SIGNS[v.sign],
             /*
@@ -2063,7 +2084,7 @@
              */
             flags: [view.division !== 1 && v.sign === Astro.signOf(r.longitude)
               ? 'V' : null] },
-          /* Directional strength, yogakaraka and yogas are named on the card. */
+          /* Directional strength belongs to the rotated chart, not this table. */
           { text: String(house), cls: 'numeric' },
           owned.length
             ? { text: owned.join(', '), cls: 'numeric',
@@ -2126,7 +2147,14 @@
                 'stands ' + rashiDegree(r).toFixed(1) + '° into it, making its age ' +
                 GrahaView.BALADI_ENGLISH[baladi].toLowerCase() + '; it gives ' +
                 Astro.BALADI_WORTH[baladi] +
-                '.' }
+                '.' },
+          { text: vimsopaka ? vimsopaka.total.toFixed(2) : '–', cls: 'numeric',
+            title: vimsopaka
+              ? r.name + ': ' + vimsopaka.total.toFixed(2) +
+                ' of 20 across the 10 Dashavarga divisions.'
+              : r.isAscendant
+                ? 'The ascendant is a point, so it has no Vimsopaka Bala.'
+                : 'Rahu and Ketu have no score in this Vimsopaka scheme.' }
         ]
       };
     });
@@ -2172,11 +2200,7 @@
       var tr = document.createElement('tr');
       var th = el('th', null, col.entity.name);
       th.setAttribute('scope', 'row');
-      if (!col.entity.isAscendant) {
-        flag(th, [col.entity.retrograde ? 'R' : null,
-          sun && Astro.isCombust(col.entity.name, col.entity.longitude, sun.longitude,
-            col.entity.retrograde) ? 'C' : null]);
-      }
+      flag(th, col.flags);
       tr.appendChild(th);
       col.cells.forEach(function (cell) {
         var td = el('td', cell.cls, cell.text);
