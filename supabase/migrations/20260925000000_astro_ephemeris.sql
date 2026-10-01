@@ -30,7 +30,7 @@ create table if not exists astro_ephemeris (
 );
 
 comment on table astro_ephemeris is
-  'Mean tropical longitudes per body, sampled on a per-body step. Int32 LE, 1e-4 degrees, base64. Sidereal = stored - ayanamsa.';
+  'Mean tropical longitudes per body, sampled on a per-body step. Int32 LE, 1e-5 degrees, base64. Sidereal = stored - ayanamsa.';
 comment on column astro_ephemeris.first_jd is
   'Julian Day (UT) of sample 0, which sits two steps before the decade begins.';
 comment on column astro_ephemeris.step_days is

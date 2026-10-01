@@ -80,6 +80,18 @@ ok('nine bodies across 31 decades', +meta[1] === 9 && +meta[2] === 31, meta[1] +
 ok('row level security is on', meta[3] === 'true', meta[3]);
 ok('a public read policy exists', +meta[4] === 1);
 ok('sample count matches the generator', +meta[5] === 995721, (+meta[5]).toLocaleString() + ' samples');
+ok('the catalogue records the packed unit as 1e-5 degrees',
+   /1e-5 degrees/.test(sql("select obj_description('astro_ephemeris'::regclass);")));
+
+console.log('\nIntegrity constraints');
+ok('an empty reading passage is rejected by cardinality, not array_length',
+   /cardinality\(points\) > 0/.test(sql(
+     "select pg_get_constraintdef(oid) from pg_constraint " +
+     "where conrelid='astro_readings'::regclass and conname='astro_readings_has_points';")));
+ok('one public chart per person is allowed in each saved collection',
+   /owner_token.*lower\(name\)/.test(sql(
+     "select indexdef from pg_indexes where tablename='astro_charts' " +
+     "and indexname='astro_charts_one_public_figure';")));
 
 /* ------------------------------------------ query 2: positions at each epoch */
 
