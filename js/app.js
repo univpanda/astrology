@@ -4839,7 +4839,15 @@
      * it - which is what would happen if this took the form's word for it.
      */
     if (at >= 0) entry.flagged = list[at].flagged === true;
+    /*
+     * A shared URL made before the public-figure field was carried arrives as
+     * a fresh chart, with no currentEntry. If it is the same saved record, keep
+     * that record's classification instead of replacing true with the form's
+     * unchecked default. A deliberate edit still takes the checkbox's value.
+     */
+    if (at >= 0 && !currentEntry) entry.celebrity = list[at].celebrity === true;
     state.flagged = entry.flagged;
+    state.celebrity = entry.celebrity;
 
     var previous = at >= 0 ? list[at] : null;
     if (at >= 0) list[at] = entry; else list.unshift(entry);
@@ -5465,7 +5473,8 @@
       'place=' + encodeURIComponent(placeLabelOf(p)),
       'ay=' + encodeURIComponent(state.ayanamsa),
       'node=' + (state.trueNode ? 'true' : 'mean'),
-      'g=' + encodeURIComponent(state.gender || 'unstated')
+      'g=' + encodeURIComponent(state.gender || 'unstated'),
+      'public=' + (state.celebrity ? 'true' : 'false')
     ];
     if (state.standard === 'lmt') parts.push('std=lmt');
     parts.push('n=' + encodeURIComponent(state.name));
@@ -5493,6 +5502,7 @@
     document.getElementById('node-type').value = q.node === 'mean' ? 'mean' : 'true';
     document.getElementById('gender').value =
       q.g === 'female' || q.g === 'male' || q.g === 'other' ? q.g : '';
+    document.getElementById('celebrity').checked = q.public === 'true';
     selectedCity = {
       name: (q.place || 'Saved location').split(',')[0],
       region: '', nation: '',

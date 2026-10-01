@@ -7526,7 +7526,8 @@ console.log('\nShareable chart URLs');
 ok('a shared chart carries every input that changes its calculation or readings',
    /'ay=' \+ encodeURIComponent\(state\.ayanamsa\)/.test(appSrc) &&
    /'node=' \+ \(state\.trueNode \? 'true' : 'mean'\)/.test(appSrc) &&
-   /'g=' \+ encodeURIComponent\(state\.gender \|\| 'unstated'\)/.test(appSrc));
+   /'g=' \+ encodeURIComponent\(state\.gender \|\| 'unstated'\)/.test(appSrc) &&
+   /'public=' \+ \(state\.celebrity \? 'true' : 'false'\)/.test(appSrc));
 ok('and a written URL restores those choices before it submits', (function () {
   var share = appSrc.slice(appSrc.indexOf('function writeHash'),
                            appSrc.indexOf('/* ------------------------------------------------------------------ init'));
@@ -7534,7 +7535,7 @@ ok('and a written URL restores those choices before it submits', (function () {
     name: { value: '', focus: function () {} },
     'time-standard': { value: 'zone' },
     ayanamsa: { value: 'lahiri', options: [{ value: 'lahiri' }, { value: 'raman' }] },
-    'node-type': { value: 'true' }, gender: { value: '' }
+    'node-type': { value: 'true' }, gender: { value: '' }, celebrity: { checked: false }
   };
   var location = { hash: '' }, submitted = 0, restoredDate = '', restoredTime = [];
   var history = { replaceState: function (_a, _b, hash) { location.hash = hash; } };
@@ -7553,15 +7554,20 @@ ok('and a written URL restores those choices before it submits', (function () {
       history, location, document, placeInput, placeNote, form);
   mod.writeHash({ y: 1946, mo: 6, d: 14, h: 10, mi: 54, time: { second: 12 },
     place: { lat: 40.6915, lon: -73.8057, zone: 'America/New_York', label: 'Queens, New York' },
-    standard: 'lmt', name: 'Donald Trump', ayanamsa: 'raman', trueNode: false, gender: 'female' });
+    standard: 'lmt', name: 'Donald Trump', ayanamsa: 'raman', trueNode: false,
+    gender: 'female', celebrity: true });
   fields.ayanamsa.value = 'lahiri'; fields['node-type'].value = 'true'; fields.gender.value = '';
   mod.readHash();
   var result = mod.result();
   return submitted === 1 && result.restoredDate === '1946-06-14' &&
     result.restoredTime.join(':') === '10:54:12' && fields.ayanamsa.value === 'raman' &&
     fields['node-type'].value === 'mean' && fields.gender.value === 'female' &&
+    fields.celebrity.checked === true &&
     fields['time-standard'].value === 'lmt' && result.selectedCity.zone === 'America/New_York';
 })());
+ok('an old link cannot demote an existing public figure while a deliberate edit can',
+   /if \(at >= 0 && !currentEntry\) entry\.celebrity = list\[at\]\.celebrity === true;/.test(appSrc) &&
+   /state\.celebrity = entry\.celebrity;/.test(appSrc));
 ok('old shared links stop and ask for the gender their readings are missing', (function () {
   var restore = appSrc.slice(appSrc.indexOf('function readHash'), appSrc.indexOf('/* ------------------------------------------------------------------ init'));
   return /if \(!document\.getElementById\('gender'\)\.value\) \{[\s\S]*?fail\('Choose a gender to restore this older link\.'\);[\s\S]*?getElementById\('gender'\)\.focus\(\);[\s\S]*?return;/.test(restore);
