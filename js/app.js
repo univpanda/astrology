@@ -1598,6 +1598,13 @@
         /\b(Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu)\b/g,
         function (name) { return Astro.grahaAbbr(name); });
     };
+    var shortNakshatra = function (value) {
+      var full = String(value || '');
+      var name = full.replace(/\s+[1-4]$/, '');
+      return NAKSHATRA_SHORT[name]
+        ? NAKSHATRA_SHORT[name] + full.slice(name.length)
+        : full;
+    };
 
     var fill = function (t) {
       card.innerHTML = '';
@@ -1629,7 +1636,9 @@
       var trail = el('span', 'graha-card-trail');
       fact(trail, '', t.getAttribute('data-karaka'));
       fact(trail, '', t.getAttribute('data-sign') + ' ' + t.getAttribute('data-degree'));
-      fact(trail, '', t.getAttribute('data-nakshatra'));
+      var nakshatra = t.getAttribute('data-nakshatra');
+      fact(trail, '', shortNakshatra(nakshatra),
+        nakshatra ? 'Nakshatra ' + nakshatra + '.' : '');
       if (trail.children.length) head.appendChild(trail);
       card.appendChild(head);
 

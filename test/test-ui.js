@@ -8603,7 +8603,7 @@ console.log('\nThe card says how the graha stands in its sign');
     /fact\(seat, 'Rules', t\.getAttribute\('data-rules'\)\)/.test(src) &&
     /fact\(over, 'Aspected by', shortGrahas\(seenBy\)/.test(src) &&
     /\.graha-card-fact-label \{/.test(css) &&
-    src.indexOf("fact(trail, '', t.getAttribute('data-nakshatra'))") <
+    src.indexOf("fact(trail, '', shortNakshatra(nakshatra)") <
       src.indexOf("fact(seat, 'Dispositor'") &&
     src.indexOf("fact(seat, 'Dispositor'") < src.indexOf("fact(seat, 'Rules'") &&
     src.indexOf("fact(seat, 'Rules'") < src.indexOf("fact(inNak, 'Nakshatra lord'") &&
@@ -8669,7 +8669,7 @@ console.log('\nThe card says how the graha stands in its sign');
     /fact\(trail, '', t\.getAttribute\('data-karaka'\)\)/.test(src) &&
     /fact\(trail, '', t\.getAttribute\('data-sign'\) \+ ' ' \+ t\.getAttribute\('data-degree'\)\)/
       .test(src) &&
-    /fact\(trail, '', t\.getAttribute\('data-nakshatra'\)\)/.test(src) &&
+    /fact\(trail, '', shortNakshatra\(nakshatra\)/.test(src) &&
     /head\.appendChild\(trail\)/.test(src) &&
     /\.graha-card-trail \{[^}]*font-weight: 400;/.test(css.replace(/\n/g, '')) &&
     !/graha-card-karaka/.test(src + css));
@@ -8690,6 +8690,10 @@ console.log('\nThe card says how the graha stands in its sign');
     /Astro\.grahaAbbr\(t\.getAttribute\('data-nak-lord'\)\)/.test(src) &&
     /Astro\.grahaAbbr\(t\.getAttribute\('data-sub-lord'\)\)/.test(src) &&
     /fact\(over, 'Aspected by', shortGrahas\(seenBy\)/.test(src));
+  ok('the highlight abbreviates the six long nakshatras and keeps the full hover',
+    /var shortNakshatra = function \(value\)/.test(src) &&
+    /NAKSHATRA_SHORT\[name\] \+ full\.slice\(name\.length\)/.test(src) &&
+    /nakshatra \? 'Nakshatra ' \+ nakshatra \+ '\.'/.test(src));
 
   ok('Moon is not repeated when it occupies the selected reference house',
     (function () {
