@@ -3081,11 +3081,18 @@ ok('the key names every mark the grid draws', (function () {
       letter + '\\]</span>').test(key[0]);
   });
 })());
-ok('and sits with the grid it explains, not under the charts', (function () {
+ok('the compact key sits at the bottom of the Vimsopaka panel', (function () {
   var flat = html.replace(/\s+/g, ' ');
   return !/flag-legend/.test(flat) &&
-    flat.indexOf('<p class="varga-key">') > flat.indexOf('id="varga-scheme"') &&
-    flat.indexOf('<p class="varga-key">') < flat.indexOf('id="vargas-table"');
+    flat.indexOf('<p class="varga-key">') > flat.indexOf('id="vargas-table"') &&
+    flat.indexOf('<p class="varga-key">') > flat.indexOf('id="vargas-note"') &&
+    flat.indexOf('<p class="varga-key">') < flat.indexOf('id="panel-yogas"');
+})());
+ok('the key uses compact labels like the Graha relationship key', (function () {
+  var key = html.replace(/\s+/g, ' ').match(/<p class="varga-key">(.*?)<\/p>/);
+  return key && key[1].replace(/<[^>]+>/g, '').trim() ===
+    'Marks: [V] Vargottama, [X] Parivartana, [Y] Yogakaraka, ' +
+    '[Dr] Directional strength, [E] Exalted, [D] Debilitated, [C] Combust.';
 })());
 /*
  * Every entry says where its mark is drawn, and the marks have moved between
@@ -3257,9 +3264,9 @@ ok('and the card says which of the two each of its own marks is true of',
  * every mark in words with the reason underneath - which a bracketed letter
  * cannot do, and which is why four of the nine came off the table.
  */
-ok('the key points at the card for the long form',
-   /Hovering a graha in either chart above names every mark it carries in words/
-     .test(html.replace(/\s+/g, ' ')));
+ok('the reading note points at the card without repeating it in the key',
+   /Hover: The same graha card used in the charts\./.test(appSrc) &&
+   !/Hovering a graha in either chart above/.test(html));
 ok('the card explains [C], which the grid does not draw',
    /C: 'Combust'/.test(appSrc) && /inside the ' \+ orb \+/.test(
      fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8')));
@@ -3273,10 +3280,7 @@ ok('a graha with neither carries no brackets', /Ju<\/text>|>Ju</.test(renderIn(1
 ok('the four a chart label can carry are all covered somewhere', (function () {
   var flat = html.replace(/\s+/g, ' ');
   var charts = fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8');
-  return /division has landed the graha back in the sign it holds in the rashi/
-      .test(flat) &&
-    /Never on D1, where every graha would qualify\. In D9 it is vargottama proper/
-      .test(flat) &&
+  return /\[V\]<\/span> Vargottama,/.test(flat) &&
     /R: 'Retrograde'/.test(charts) && /C: 'Combust'/.test(charts) &&
     /Y: 'Yogakaraka'/.test(charts);
 })());
@@ -3345,7 +3349,7 @@ ok('and names none of them, the key doing that', (function () {
   var note = appSrc.slice(at, appSrc.indexOf('ABBREVIATE_ABOVE', at))
     .replace(/\/\*[\s\S]*?\*\//g, '');
   return !/\[V\] repeats the rashi sign/.test(note) && !/\[D\] is the house/.test(note) &&
-    /<span class="flag flag-v">\[V\]<\/span> vargottama:/
+    /<span class="flag flag-v">\[V\]<\/span> Vargottama,/
       .test(html.replace(/\s+/g, ' '));
 })());
 /*
@@ -6449,17 +6453,14 @@ ok('and both switches are wired from one place',
  * the note under the grid defining it again was the same duplication in
  * miniature that moved the scoring out to the library.
  */
-ok('the key explains the mark, and no note explains it again', (function () {
+ok('the key names the mark, and no note explains it again', (function () {
   var flat = appSrc.replace(/'\s*\+\s*'/g, '');
-  return /division has landed the graha back in the sign it holds in the rashi/
-    .test(html.replace(/\s+/g, ' ')) &&
-    /Never on D1, where every graha would qualify\. In D9 it is vargottama proper/
-      .test(html.replace(/\s+/g, ' ')) &&
+  return /\[V\]<\/span> Vargottama,/.test(html.replace(/\s+/g, ' ')) &&
     !/A sign marked \[V\]/.test(flat);
 })());
-ok('and the D9 case is named as vargottama proper in the key, not per cell',
-   /Never on D1, where every graha would qualify\. In D9 it is vargottama proper/
-     .test(html.replace(/\s+/g, ' ')) &&
+ok('the compact key omits the old D1 and D9 explanatory prose',
+   !/Never on D1, where every graha would qualify/.test(html) &&
+   !/In D9 it is vargottama proper/.test(html) &&
    !/division === 9 \? ' In D9 that is vargottama proper\.' : ''/.test(appSrc));
 /*
  * The same question the grid asks, asked of whichever division is drawn. Never
@@ -6735,7 +6736,7 @@ ok('a chart is titled by its graha, the units living in the note',
 ok('the vargottama mark is named, not described',
    /\{ key: 'V', label: '\[V\]', name: 'Vargottama' \}/.test(appSrc) &&
    !/Repeats the rashi sign/.test(appSrc) &&
-   /<span class="flag flag-v">\[V\]<\/span> vargottama:/
+   /<span class="flag flag-v">\[V\]<\/span> Vargottama,/
      .test(html.replace(/\s+/g, ' ')));
 /*
  * Each facet is titled with the mark it counts, so the chart and the grid above
@@ -6831,9 +6832,7 @@ ok('the facets share one note, and it says what is written and what is drawn',
        .test(flat) &&
        /on one scale across all seven charts, so a tall bar is tall against the other grahas/
          .test(flat) &&
-       !/strictly the word is the D9 case/.test(appSrc) &&
-       /Never on D1, where every graha would qualify\. In D9 it is vargottama proper/
-         .test(html.replace(/\s+/g, ' '));
+       !/strictly the word is the D9 case/.test(appSrc);
    })());
 ok('the titles are centred over their own plots',
    (function () {
