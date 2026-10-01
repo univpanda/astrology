@@ -1893,6 +1893,38 @@ ok('and the reasons read as sentences rather than running together', (function (
     'The 8th lord is itself a source of harm. ' +
     'Saturn also owns the 9th, which the same placement damages.';
 })());
+/*
+ * And the commonest finding of all does not say its condition twice in two
+ * different wordings. Its summary names both lords and both houses, so the
+ * reason carries only what the summary leaves out, which is which of them is
+ * the angle and which the trine - the part the rule turns on.
+ *
+ * Only this one is cut. The overlap is the shape of summary-and-reasons
+ * generally: over 4,332 reason lines, 958 share four fifths of their words
+ * with their own summary. A threshold that dropped them would also drop the
+ * Kesari note that this is Phaladeepika's yoga and not Parashara's, which
+ * shares every word with its summary and says something the summary does not.
+ */
+ok('the angle-trine reason adds the classification rather than restating', (function () {
+  var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+  var seen = 0, restated = 0;
+  for (var y = 1950; y < 2025; y += 6) {
+    var c = Astro.chart({ jdUT: Astro.julianDay(y, 6, 15, 3), latitude: 28.61,
+      longitude: 77.21, tzOffsetMinutes: 330 });
+    Yogas.detect(c, Shadbala.compute(c, place)).forEach(function (f) {
+      if (f.subject !== 'Raja Yoga') return;
+      seen++;
+      // The lords are named once, in the summary, and not again below it.
+      (f.reasons || []).forEach(function (r) {
+        if (/\brules the\b/.test(r)) restated++;
+      });
+    });
+  }
+  return seen > 0 && restated === 0;
+})());
+ok('and still says which houses are the angles and which the trines',
+  /' are angles' : ' is an angle'/.test(fs.readFileSync(path.join(root, 'js/yogas.js'), 'utf8')));
+
 /* And a reason already in the summary is still dropped rather than restated. */
 ok('and the two rules hold together', (function () {
   var body = appSrc.match(/function yogaAccount\(finding\) \{[\s\S]*?\n  \}/)[0];

@@ -677,9 +677,18 @@ var Yogas = (function () {
         var tenthLord = Astro.SIGN_LORDS[(lagna + 9) % 12];
         var dharmaKarma = ninthLord !== tenthLord &&
           ((a === ninthLord && b === tenthLord) || (a === tenthLord && b === ninthLord));
+        /*
+         * Which of the two houses is the angle and which the trine, and no
+         * more. The summary already names both lords and both houses, so a
+         * reason repeating them said the whole thing twice in different
+         * words - "Mercury, lord of the 1st and the 4th, and Venus, lord of
+         * the 5th, are related" against "Mercury rules the 1st and the 4th,
+         * an angle, and Venus the 5th, a trine". The classification is the
+         * part the summary does not carry, and the part the rule turns on.
+         */
         var reasons = [
-          Named(angleLord) + ' rules the ' + houseList(angles) + ', an angle, and ' +
-            named(trineLord) + ' the ' + houseList(trines) + ', a trine',
+          'the ' + houseList(angles) + (angles.length > 1 ? ' are angles' : ' is an angle') +
+            ', the ' + houseList(trines) + (trines.length > 1 ? ' trines' : ' a trine'),
           relation
         ];
         if (dharmaKarma) {
