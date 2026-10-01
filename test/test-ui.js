@@ -6803,7 +6803,7 @@ ok('the table carries eleven property columns', (function () {
 })());
 ok('both avastha columns are displayed in English',
    /Jagrat: 'Waking', Swapna: 'Dreaming', Sushupta: 'Sleeping'/.test(grahaViewSrc) &&
-   /Bala: 'Infant', Kumara: 'Teen', Yuva: 'Youth'/.test(grahaViewSrc) &&
+   /Bala: 'Child', Kumara: 'Teen', Yuva: 'Youth'/.test(grahaViewSrc) &&
    /Vriddha: 'Old', Mrita: 'Dead'/.test(grahaViewSrc) &&
    /GrahaView\.JAGRATADI_ENGLISH\[jagratadi\]/.test(appSrc) &&
    /GrahaView\.BALADI_ENGLISH\[baladi\]/.test(appSrc));

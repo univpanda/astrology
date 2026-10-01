@@ -2015,7 +2015,7 @@
      */
     { label: 'Karaka', says: 'The Jaimini chara karaka, assigned by how far into its sign the graha has travelled - furthest is Atmakaraka. Read in the rashi, and so the same in every chart here.' },
     { label: 'State', says: 'Waking, dreaming or sleeping according to whether the graha is in its own or exaltation sign, a friend’s or neutral’s sign, or an enemy’s or debilitation sign. Read in the rashi.' },
-    { label: 'Age', says: 'Infant, teen, youth, old or dead: six degrees to a stage and reversed in an even sign. Read in the rashi, and so the same in every chart here.' }
+    { label: 'Age', says: 'Child, teen, youth, old or dead: six degrees to a stage and reversed in an even sign. Read in the rashi, and so the same in every chart here.' }
   ];
 
   /**
@@ -2139,7 +2139,7 @@
               : jagratadi
                 ? GrahaView.JAGRATADI_ENGLISH[jagratadi] + ': ' + r.name +
                   ' is judged from its rashi sign and that sign’s natural lord.'
-                : 'The classical friendship table does not assign Rahu or Ketu an awareness state.' },
+                : 'No awareness state is available.' },
           { text: r.isAscendant ? '–'
               : GrahaView.BALADI_ENGLISH[baladi],
             title: r.isAscendant

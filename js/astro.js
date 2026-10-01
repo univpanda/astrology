@@ -742,18 +742,20 @@ var Astro = (function () {
    * This is deliberately sign-based. The verse says exaltation rashi, not the
    * deep-exaltation degree, and the friendship here is the fixed, natural
    * relation to the sign lord rather than the chart-dependent compound one.
-   * The classical friendship table does not include Rahu and Ketu, so the
-   * function leaves them unclassified instead of inventing a node convention.
+   * The classical friendship table does not include Rahu and Ketu. Their
+   * exaltation and debilitation still decide the two ends; every other sign is
+   * the neutral middle, Swapna, rather than leaving the nodes without a state.
    */
   var JAGRATADI = ['Jagrat', 'Swapna', 'Sushupta'];
 
   function jagratadiAvastha(planet, sign) {
     var dignity = DIGNITY[planet];
-    if (!dignity || NODES.indexOf(planet) >= 0) return '';
+    if (!dignity) return '';
     if (sign === dignity.exalt.sign || dignity.own.indexOf(sign) >= 0) {
       return 'Jagrat';
     }
     if (sign === dignity.debil) return 'Sushupta';
+    if (NODES.indexOf(planet) >= 0) return 'Swapna';
     var relation = naturalRelation(planet, SIGN_LORDS[sign]);
     return relation === -1 ? 'Sushupta' : 'Swapna';
   }

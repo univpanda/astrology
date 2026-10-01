@@ -29,7 +29,7 @@ var GrahaView = (function () {
   };
 
   var BALADI_ENGLISH = {
-    Bala: 'Infant', Kumara: 'Teen', Yuva: 'Youth',
+    Bala: 'Child', Kumara: 'Teen', Yuva: 'Youth',
     Vriddha: 'Old', Mrita: 'Dead'
   };
 

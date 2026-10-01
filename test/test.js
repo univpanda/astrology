@@ -4684,10 +4684,14 @@ console.log('\nChara karakas and avasthas');
      A.jagratadiAvastha('Sun', 2) === 'Swapna' &&       // Mercury is neutral
      A.jagratadiAvastha('Sun', 1) === 'Sushupta' &&     // Venus is an enemy
      A.jagratadiAvastha('Sun', 6) === 'Sushupta');      // debilitation Libra
-  ok('Jagratadi is sign-based and does not invent a node friendship scheme',
+  ok('the nodes wake exalted, sleep debilitated and dream elsewhere',
      A.jagratadiAvastha('Moon', 1) === 'Jagrat' &&      // exaltation rashi
-     A.jagratadiAvastha('Rahu', 1) === '' &&
-     A.jagratadiAvastha('Ketu', 7) === '');
+     A.jagratadiAvastha('Rahu', 1) === 'Jagrat' &&
+     A.jagratadiAvastha('Rahu', 7) === 'Sushupta' &&
+     A.jagratadiAvastha('Rahu', 0) === 'Swapna' &&
+     A.jagratadiAvastha('Ketu', 7) === 'Jagrat' &&
+     A.jagratadiAvastha('Ketu', 1) === 'Sushupta' &&
+     A.jagratadiAvastha('Ketu', 0) === 'Swapna');
 })();
 
 console.log('\nCombustion');
