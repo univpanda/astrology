@@ -8077,13 +8077,64 @@ console.log('\nYogas follow the rotation the chart is drawn in');
      Yogas.firstHouse({}) === 'the lagna' &&
      Yogas.firstHouse({}, 'the ascendant') === 'the ascendant' &&
      Yogas.firstLord({}, 'the lagna lord') === 'the lagna lord');
-  ok('a rotation names the graha, with an article only for the luminaries',
-     Yogas.firstHouse({ reference: 'Moon' }) === 'the Moon' &&
-     Yogas.firstHouse({ reference: 'Sun' }) === 'the Sun' &&
-     Yogas.firstHouse({ reference: 'Venus' }) === 'Venus' &&
-     Yogas.firstHouse({ reference: 'Saturn' }) === 'Saturn',
+  /*
+   * Rotated, house 1 is named as a house rather than as the graha. The bare
+   * name is right after "in" and wrong after everything else: "Saturn rules
+   * the Moon" says a graha rules a graha, and "Saturn and the Moon have
+   * exchanged the Moon and the 6th" says the Moon twice for two different
+   * things - the graha, and the house counted from it.
+   */
+  ok('a rotation names house 1 as a house, the luminaries articled',
+     Yogas.firstHouse({ reference: 'Moon' }) === 'the 1st from the Moon' &&
+     Yogas.firstHouse({ reference: 'Sun' }) === 'the 1st from the Sun' &&
+     Yogas.firstHouse({ reference: 'Venus' }) === 'the 1st from Venus' &&
+     Yogas.firstHouse({ reference: 'Saturn' }) === 'the 1st from Saturn',
      [Yogas.firstHouse({ reference: 'Venus' }), Yogas.firstHouse({ reference: 'Moon' })].join(', '));
   ok('the ascendant is not a rotation', Yogas.firstHouse({ reference: 'Ascendant' }) === 'the lagna');
+
+  /*
+   * Every summary a rotated chart can produce, swept for the faults a frame
+   * introduces: a graha list standing bare where a subject belongs, a plural
+   * subject on a singular verb, and the clause joiner lowering a proper noun
+   * because it lowers the first letter of everything.
+   */
+  (function () {
+    var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+    var bad = [];
+    for (var i = 0; i < 400; i++) {
+      var c = Astro.chart({ jdUT: Astro.julianDay(1950, 1, 1, 0) + i * 31.7,
+        latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 });
+      var strengths = Shadbala.compute(c, place);
+      ['Moon', 'Sun', 'Saturn'].forEach(function (ref) {
+        var chart = {};
+        for (var k in c) chart[k] = c[k];
+        chart.reference = ref;
+        var anchor = c.planets.filter(function (p) { return p.name === ref; })[0];
+        if (!anchor) return;
+        var lagna = Astro.signOf(anchor.longitude);
+        chart.ascendant = { longitude: anchor.longitude, sign: lagna };
+        chart.planets = c.planets.map(function (p) {
+          var q = {};
+          for (var j in p) q[j] = p[j];
+          q.house = ((p.sign - lagna) % 12 + 12) % 12 + 1;
+          return q;
+        });
+        Yogas.detect(chart, strengths).forEach(function (f) {
+          var t = f.summary || '';
+          // A luminary left bare where the article belongs.
+          if (/(^|[^a-z])(?:with|and|while) (Sun|Moon)\b/.test(t)) bad.push('bare: ' + t);
+          // A proper noun lowered by the joiner.
+          if (/\bAnd (sun|moon|mars|mercury|jupiter|venus|saturn|rahu|ketu)\b/.test(t)) {
+            bad.push('lowered: ' + t);
+          }
+          // Two or more grahas on a singular verb.
+          if (/\band [A-Z][a-z]+ stands\b/.test(t)) bad.push('agreement: ' + t);
+        });
+      });
+    }
+    ok('a rotated reading produces no bare luminary, lowered name or bad agreement',
+       bad.length === 0, bad.slice(0, 3).join(' | '));
+  })();
 
   var strays = [];
   ['Moon', 'Sun', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Mercury'].forEach(function (r) {

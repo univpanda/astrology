@@ -42,9 +42,22 @@ var Yogas = (function () {
     return !!chart.reference && chart.reference !== 'Ascendant';
   }
 
+  /*
+   * House 1, named so it reads in any sentence it lands in.
+   *
+   * Rotated, this used to be the graha's bare name, which is fine after "in"
+   * and wrong after everything else: "Saturn rules the Moon", "Saturn and the
+   * Moon have exchanged the Moon and the 6th". The second says the Moon twice
+   * for two different things - the graha, and the house counted from it - and
+   * the first says a graha rules a graha.
+   *
+   * "The 1st from the Moon" is a house wherever it stands, and names the
+   * frame while it is at it.
+   */
   function firstHouse(chart, classical) {
     if (!rotated(chart)) return classical || 'the lagna';
-    return (FIRST_HOUSE_ARTICLE[chart.reference] ? 'the ' : '') + chart.reference;
+    return 'the 1st from ' +
+      (FIRST_HOUSE_ARTICLE[chart.reference] ? 'the ' : '') + chart.reference;
   }
 
   /* The same house when a sentence needs its lord rather than the house. */
@@ -94,8 +107,8 @@ var Yogas = (function () {
           graha: null,
           grahas: [a, b],
           houses: houses,
-          summary: a + ' in ' + Astro.SIGNS[signOfA] + ' and ' + b + ' in ' +
-            Astro.SIGNS[signOfB] + ', exchanging the ' + ordinal(houses[0]) +
+          summary: Named(a) + ' in ' + Astro.SIGNS[signOfA] + ' and ' + named(b) +
+            ' in ' + Astro.SIGNS[signOfB] + ', exchanging the ' + ordinal(houses[0]) +
             ' and the ' + ordinal(houses[1])
         });
       }
@@ -183,8 +196,8 @@ var Yogas = (function () {
        * never the same graha in both: where the lord of the sign and the graha
        * exalted in it are one, the two are reported together.
        */
-      var ruler = function () { return dispositor + ', the lord of this sign,'; };
-      var exalted = function () { return exaltedHere + ', exalted in this sign,'; };
+      var ruler = function () { return named(dispositor) + ', the lord of this sign,'; };
+      var exalted = function () { return named(exaltedHere) + ', exalted in this sign,'; };
 
       /*
        * In Virgo the lord and the graha exalted there are both Mercury, so the two
@@ -992,9 +1005,22 @@ var Yogas = (function () {
   }
 
   /** "Mars", "Mars and Ketu", "Mars, Saturn and Ketu". */
+  /*
+   * A list of grahas, the luminaries articled. Every one of the fifty-odd uses
+   * is prose, and bare names read wrong in all of them: "Mercury stands with
+   * Sun", "Moon holds the 1st". named() is idempotent, so a caller that has
+   * articled its names already loses nothing by passing them through.
+   */
   function listOf(names) {
-    if (names.length < 2) return names[0] || '';
-    return names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1];
+    var said = (names || []).map(function (g) { return named(g); });
+    if (said.length < 2) return said[0] || '';
+    return said.slice(0, -1).join(', ') + ' and ' + said[said.length - 1];
+  }
+
+  /** The same, opening a sentence. */
+  function Listed(names) {
+    var one = listOf(names);
+    return one.charAt(0).toUpperCase() + one.slice(1);
   }
 
   /* ------------------------------------------------- the Moon's company */
@@ -1458,9 +1484,16 @@ var Yogas = (function () {
       title: title, family: 'Wealth and want', graha: null,
       grahas: grahas, houses: houses,
       reasons: reasons,
+      /*
+       * "And the Moon stands..." wants its article lowered; "And Saturn
+       * stands..." does not. Lowering the first letter of every clause turned
+       * every graha that opened one into "saturn", "mercury", "ketu".
+       */
       summary: parts.length === 1 ? parts[0].summary
         : parts[0].summary + ' And ' + parts.slice(1).map(function (p) {
-            return p.summary.charAt(0).toLowerCase() + p.summary.slice(1);
+            return /^(The|A|An) /.test(p.summary)
+              ? p.summary.charAt(0).toLowerCase() + p.summary.slice(1)
+              : p.summary;
           }).join(' And ')
     }];
   }
@@ -1571,9 +1604,11 @@ var Yogas = (function () {
         listOf(hit) + ' is a maraka and reaches them, which the verse asks for; ' +
           'the marakas are the lords of the 2nd and the 7th, malefics standing ' +
           'in those houses, and malefics keeping their company'
-      ], named(lord) + ' and ' + named(other) + ' have exchanged ' +
-        firstHouse(chart, 'the ascendant') + ' and the ' + ordinal(house) +
-        ', with ' + listOf(hit) + ' upon them.', [lord, other].concat(hit), [1, house]);
+      ], Named(lord) + ', lord of ' + firstHouse(chart, 'the ascendant') + ', and ' +
+        named(other) + ', lord of the ' + ordinal(house) +
+        ', have exchanged houses, and ' + listOf(hit) +
+        (hit.length > 1 ? ' are marakas reaching them.' : ' is a maraka reaching them.'),
+        [lord, other].concat(hit), [1, house]);
     });
 
     /* 4: the ascendant or the Moon with Ketu, the ascendant lord in the 8th. */
@@ -1582,10 +1617,10 @@ var Yogas = (function () {
         : (c.at.Moon && c.at.Moon.sign === c.at.Ketu.sign ? 'the Moon' : null);
       if (withKetu) {
         say('ketu', [
-          'Ketu stands with ' + withKetu,
+          'Ketu stands in ' + withKetu,
           named(lord) + ', who rules ' + firstHouse(chart, 'the ascendant') +
             ', is in the 8th'
-        ], 'Ketu is with ' + withKetu + ' while ' + named(lord) + ', the lord of ' +
+        ], 'Ketu is in ' + withKetu + ' while ' + named(lord) + ', the lord of ' +
           firstHouse(chart, 'the ascendant') + ', is in the 8th.',
         ['Ketu', lord], [8]);
       }
@@ -1611,7 +1646,7 @@ var Yogas = (function () {
             (seat === 'Debilitated' ? 'debilitated'
               : 'in the sign of ' + signLord + ', a natural enemy'),
           'the verse says this reduces even a royal scion to pennilessness'
-        ], named(lord) + ' is in the ' + ordinal(lordHouse) + ' with ' +
+        ], Named(lord) + ' is in the ' + ordinal(lordHouse) + ' with ' +
           listOf(beside) + ' while ' + named(second) + ', the 2nd lord, is ' +
           (seat === 'Debilitated' ? 'debilitated.' : 'in an enemy’s sign.'),
         [lord, second].concat(beside), [lordHouse, 2]);
@@ -1637,7 +1672,7 @@ var Yogas = (function () {
               : ', who rules one of the 6th, 8th and 12th'),
           'and no benefic aspects him, which is the clause that would have ' +
             'saved it'
-        ], named(lord) + ' stands with ' + listOf(bad) +
+        ], Named(lord) + ' stands with ' + listOf(bad) +
           ' and no benefic looks on.', [lord].concat(bad), [c.houseOf(lord)]);
       }
     }
@@ -1655,16 +1690,25 @@ var Yogas = (function () {
           'the two trine lords are the wealth-givers of the chapter before this ' +
             'one, and here both are in houses of loss',
           listOf(struck) + ' is a maraka and reaches them'
-        ], 'The lords of the 5th and the 9th are in the 6th and the 12th with ' +
-          listOf(struck) + ' upon them.',
+        ], 'The lords of the 5th and the 9th are in the 6th and the 12th, and ' +
+          listOf(struck) +
+          (struck.length > 1 ? ' are marakas reaching them.' : ' is a maraka reaching them.'),
         [fifthLord, ninthLord].concat(struck), [6, 12]);
       }
     }
 
     /* 8: malefics other than the 9th and 10th lords in the ascendant. */
     var spared = [c.lordOf(9), c.lordOf(10)];
+    /*
+     * Not the graha the chart is being read from. It stands in the 1st from
+     * itself in every chart ever drawn, so counting it is counting the frame
+     * rather than the chart: read from a waning Moon, every nativity would
+     * carry a malefic in the first house and the verse would never fail.
+     */
+    var frame = rotated(chart) ? chart.reference : null;
     var inLagna = GRAHAS.filter(function (g) {
-      return benefics[g] !== true && c.houseOf(g) === 1 && spared.indexOf(g) < 0;
+      return benefics[g] !== true && c.houseOf(g) === 1 && spared.indexOf(g) < 0 &&
+        g !== frame;
     });
     if (inLagna.length) {
       var reached = [];
@@ -1678,10 +1722,12 @@ var Yogas = (function () {
           listOf(inLagna) + ' stands in ' + firstHouse(chart, 'the ascendant') +
             ', a malefic ruling neither the 9th nor the 10th, which the verse ' +
             'excepts',
-          listOf(reached) + ' is a maraka and reaches ' +
+          listOf(reached) + (reached.length > 1 ? ' are marakas and reach ' : ' is a maraka and reaches ') +
             (inLagna.length > 1 ? 'them' : 'him')
-        ], listOf(inLagna) + ' holds ' + firstHouse(chart, 'the ascendant') +
-          ' with ' + listOf(reached) + ' upon it.',
+        ], Listed(inLagna) + (inLagna.length > 1 ? ' stand in ' : ' stands in ') +
+          firstHouse(chart, 'the ascendant') + ', and ' + listOf(reached) +
+          (reached.length > 1 ? ' are marakas reaching ' : ' is a maraka reaching ') +
+          (inLagna.length > 1 ? 'them.' : 'him.'),
         inLagna.concat(reached), [1]);
       }
     }
@@ -2829,7 +2875,7 @@ var Yogas = (function () {
       'Raman warns against reading the old results literally: "No yogas ' +
         'should be interpreted verbatim if the results are to hold good to ' +
         'modern life and conditions"'
-    ], fourth + ' and ' + ninth + ', lords of the 4th and 9th, stand in angles ' +
+    ], Named(fourth) + ' and ' + named(ninth) + ', lords of the 4th and 9th, stand in angles ' +
        'from each other, with ' + named(lagnaLord) + ' strong. That is Kahala yoga.',
        [fourth, ninth, lagnaLord], [4, 9]);
   }
@@ -3179,7 +3225,7 @@ var Yogas = (function () {
       lagnaLord + ', ' + firstLord(chart, 'lord of the ascendant') + ', is strong',
       'an odd pairing to read as fortunate, the 6th being a house of harm; ' +
         'what the rule joins is the house of merit to the house of effort'
-    ], fifth + ' and ' + sixth + ', lords of the 5th and 6th, stand in angles ' +
+    ], Named(fifth) + ' and ' + named(sixth) + ', lords of the 5th and 6th, stand in angles ' +
        'from each other, with ' + named(lagnaLord) + ' strong. That is Sankha yoga.',
        [fifth, sixth, lagnaLord], [5, 6]);
   }
