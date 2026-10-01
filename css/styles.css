@@ -1831,7 +1831,7 @@ table.graha-table th[scope="row"] {
 }
 table.graha-table thead th, table.graha-table td { text-align: center; }
 table.graha-table thead tr:first-child th:first-child { text-align: left; }
-/* Ten facts still need horizontal room, but one graha remains a single line
+/* The facts still need horizontal room, but one graha remains a single line
    and the sticky name keeps that line identified while it scrolls. */
 table.graha-table th, table.graha-table td {
   padding-left: 0.5rem;
@@ -1840,6 +1840,14 @@ table.graha-table th, table.graha-table td {
      everything centres against the tallest cell in its row rather than sitting
      at the top of it and leaving the label stranded. */
   vertical-align: middle;
+}
+/* A long nakshatra should spend height rather than widening every graha row.
+   The spaces give the browser the meaningful break: Uttara Bhadrapada becomes
+   two words on two lines, without breaking either word apart. */
+table.graha-table td.nakshatra-name {
+  width: 6.5rem;
+  max-width: 6.5rem;
+  white-space: normal;
 }
 
 /* The strip of chart tabs inside the Grahas panel. Smaller than the panel tabs
