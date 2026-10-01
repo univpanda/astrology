@@ -946,6 +946,12 @@
   var REFERENCES = ['Ascendant', 'Sun', 'Moon', 'Mars', 'Jupiter', 'Venus',
     'Mercury', 'Saturn', 'Rahu', 'Ketu'];
 
+  /*
+   * The value a picker carries when it is not narrowing anything. Distinct
+   * from the empty string, which a division picker would read as 1.
+   */
+  var EVERY = 'every';
+
   function populateSlotSelects() {
     SLOTS.forEach(function (slot, i) {
       var ref = document.getElementById('ref-' + slot);
@@ -3636,6 +3642,15 @@
     ['yoga-division', 'aspect-division'].forEach(function (id) {
       var select = document.getElementById(id);
       select.innerHTML = '';
+      /*
+       * Only the yoga table can read every division at once: the aspects panel
+       * draws one grid and has nowhere to put sixteen.
+       */
+      if (id === 'yoga-division') {
+        var every = el('option', null, 'Every divisional chart');
+        every.value = EVERY;
+        select.appendChild(every);
+      }
       Astro.VARGAS.forEach(function (v) {
         var opt = el('option', null, v.name + ' \u00b7 ' + v.label);
         opt.value = String(v.division);
@@ -3655,11 +3670,22 @@
      * fill in now.
      */
     var byGraha = document.getElementById('yoga-graha');
+    /*
+     * Each option says what it is, there being no label beside it any more.
+     * "Asc" was legible under a heading reading From and says nothing without
+     * one, so every reference now reads as the phrase a reader would use.
+     */
     var byReference = document.getElementById('yoga-reference');
     if (byReference) {
+      var everyRef = el('option', null, 'From every planet');
+      everyRef.value = EVERY;
+      byReference.appendChild(everyRef);
       REFERENCES.forEach(function (name) {
-        var option = el('option', null, name === 'Ascendant' ? 'Asc' : name);
+        var option = el('option', null,
+          name === 'Ascendant' ? 'From the ascendant'
+            : 'From ' + (name === 'Sun' || name === 'Moon' ? 'the ' + name : name));
         option.value = name;
+        if (name === 'Ascendant') option.selected = true;
         byReference.appendChild(option);
       });
     }
@@ -3737,11 +3763,39 @@
     list.innerHTML = '';
 
     var strengths = strengthsFor(state).grahas;
-    var chosen = divisionFor('yoga-division');
+    var divisionPick = document.getElementById('yoga-division');
     var referencePick = document.getElementById('yoga-reference');
-    var reference = referencePick ? referencePick.value || 'Ascendant' : 'Ascendant';
-    var chart = rotatedOnto(Astro.chartInDivision(state.chart, chosen.division), reference);
-    var found = Yogas.detect(chart, strengths);
+    var everyDivision = !!divisionPick && divisionPick.value === EVERY;
+    var everyReference = !!referencePick && referencePick.value === EVERY;
+    var reference = everyReference ? 'Ascendant'
+      : (referencePick && referencePick.value) || 'Ascendant';
+    var chosen = everyDivision
+      ? { division: 1, name: 'every divisional chart', label: '' }
+      : divisionFor('yoga-division');
+
+    /*
+     * One reading, or the cross product of the two pickers.
+     *
+     * Each finding carries where it was read, because the same yoga found in
+     * D1 from the ascendant and in D9 from the Moon are two different
+     * statements, and a table running them together would be claiming one.
+     * The Chart and From columns were showing the selection, which is the
+     * same in every row until a reader asks for more than one.
+     */
+    var divisions = everyDivision ? Astro.SHODASAVARGA : [chosen.division];
+    var references = everyReference ? REFERENCES : [reference];
+    var found = [];
+    divisions.forEach(function (division) {
+      var inDivision = Astro.chartInDivision(state.chart, division);
+      var varga = Astro.VARGAS.filter(function (v) { return v.division === division; })[0];
+      references.forEach(function (from) {
+        Yogas.detect(rotatedOnto(inDivision, from), strengths).forEach(function (f) {
+          f.inChart = varga ? varga.name : 'D' + division;
+          f.from = from === 'Ascendant' ? 'Asc' : from;
+          found.push(f);
+        });
+      });
+    });
 
     /*
      * What this page looks for, and which of them this chart gave.
@@ -3873,8 +3927,8 @@
       }
       tr.appendChild(whose);
 
-      tr.appendChild(el('td', 'yoga-chart', chosen.name));
-      tr.appendChild(el('td', 'yoga-from', reference === 'Ascendant' ? 'Asc' : reference));
+      tr.appendChild(el('td', 'yoga-chart', finding.inChart));
+      tr.appendChild(el('td', 'yoga-from', finding.from));
       var yogaName = el('td', 'yoga-name', finding.title);
       yogaName.title = [finding.summary].concat(finding.reasons || []).filter(Boolean).join(' ');
       tr.appendChild(yogaName);

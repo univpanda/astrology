@@ -1614,7 +1614,18 @@ ok('the yoga result comes from the database’s constrained effect field', (func
 ok('the Yogas tab offers graha, chart and reference filters in that order',
    html.indexOf('for="yoga-graha"') < html.indexOf('for="yoga-division"') &&
    html.indexOf('for="yoga-division"') < html.indexOf('for="yoga-reference"') &&
-   /rotatedOnto\(Astro\.chartInDivision/.test(appSrc));
+   /rotatedOnto\(inDivision, from\)/.test(appSrc));
+/*
+ * And the labels are gone from sight, each control saying what it is in the
+ * option it is showing. They stay in the document for a screen reader, which
+ * has no option text to read until the control is reached.
+ */
+ok('the filters carry no visible labels, only readable ones',
+   /<label class="visually-hidden" for="yoga-graha">/.test(html) &&
+   /<label class="visually-hidden" for="yoga-division">/.test(html) &&
+   /<label class="visually-hidden" for="yoga-reference">/.test(html) &&
+   /'Every divisional chart'/.test(appSrc) && /'From every planet'/.test(appSrc) &&
+   /'From the ascendant'/.test(appSrc));
 ok('it points at the Lesson tab for the meaning',
    /The Lesson tab explains/.test(appSrc));
 ok('the library is still fetched for the lesson tab', /fetchPassages\(\{\}/.test(appSrc));
@@ -1816,9 +1827,20 @@ ok('and it says how many of them this chart gave', (function () {
     /catalogue-count/.test(appSrc);
 })());
 ok('and the yoga check is handed the strengths it needs',
-   /Yogas\.detect\(chart, strengths\)/.test(appSrc) &&
-   /rotatedOnto\(Astro\.chartInDivision\(state\.chart, chosen\.division\), reference\)/.test(appSrc) &&
+   /Yogas\.detect\(rotatedOnto\(inDivision, from\), strengths\)/.test(appSrc) &&
+   /var inDivision = Astro\.chartInDivision\(state\.chart, division\)/.test(appSrc) &&
    /function strengthsFor/.test(appSrc));
+/*
+ * And a finding carries where it was read rather than the table printing the
+ * selection into every row. The same yoga found in D1 from the ascendant and
+ * in D9 from the Moon are two statements, and a column showing the picker
+ * would claim they were one.
+ */
+ok('each finding records the chart and the reference it was found in',
+   /f\.inChart = varga \? varga\.name : 'D' \+ division;/.test(appSrc) &&
+   /f\.from = from === 'Ascendant' \? 'Asc' : from;/.test(appSrc) &&
+   /el\('td', 'yoga-chart', finding\.inChart\)/.test(appSrc) &&
+   /el\('td', 'yoga-from', finding\.from\)/.test(appSrc));
 ok('shadbala is computed once per chart, so the tab and the yoga agree',
    /if \(!state\.shadbala\)/.test(appSrc) &&
    (appSrc.match(/Shadbala\.compute\(/g) || []).length === 1);
