@@ -2711,8 +2711,8 @@ ok('and the war row appears only in a chart that has one',
 // Twice: the table's column and the card's own line, which is the same fact
 // put where the eye already is. Neither is typed into the markup.
 ok('the tables carry one dispositor column each, built once',
-   (appSrc.match(/'Dispositor'/g) || []).length === 2 &&
-   /fact\(seat, 'Dispositor',/.test(appSrc) &&
+   (appSrc.match(/'Dispositor'/g) || []).length === 1 &&
+   /\['Dis', withRelation\(dispositor, relation\)/.test(appSrc) &&
    !/<th scope="col">Dispositor<\/th>/.test(html));
 ok('the dispositor is the lord of the sign shown in that column',
    /Astro\.SIGN_LORDS\[sign\]/.test(grahaViewSrc) &&
@@ -3878,6 +3878,7 @@ ok('every script the page loads parses', (function () {
     '  __out.renderShadbala = renderShadbala; __out.renderYogas = renderYogas;\n' +
     '  __out.renderAspects = renderAspects;\n' +
     '  __out.rotatedOnto = rotatedOnto;\n' +
+    '  __out.wireGrahaCard = wireGrahaCard;\n' +
     '  __out.yogasByGraha = yogasByGraha;\n' +
     '  __out.rulingAndAspects = rulingAndAspects;\n' +
     '  __out.renderSaved = renderSaved; __out.setFlag = setFlag; __out.removeSaved = removeSaved;\n' +
@@ -8456,6 +8457,34 @@ console.log('\nThe card says how the graha stands in its sign');
   // The wired copy of app.js, built where the harness is put together above.
   var out = global.appExports || {};
 
+  /*
+   * A card as the page builds it, from a label carrying the attributes a chart
+   * would have put on it. The hover is fired rather than the builder called,
+   * so what is under test is the path a reader actually takes.
+   */
+  var textOf = function (n) {
+    // Joined with a space: adjacent spans are separated by the grid's gap on
+    // the page, and reading them back glued together is the stub's artefact.
+    return [n.textContent == null ? '' : n.textContent]
+      .concat(n.children.map(textOf))
+      .filter(function (t) { return t !== ''; })
+      .join(' ').replace(/\s+/g, ' ').trim();
+  };
+  var cardFor = function (data) {
+    var container = makeNode('div');
+    out.wireGrahaCard(container);
+    var label = makeNode('text');
+    Object.keys(data).forEach(function (k) { label.setAttribute(k, data[k]); });
+    container.fire('mouseover', { target: label });
+    return container.grahaCard;
+  };
+  var cellsOf = function (card) {
+    var grid = card.children.filter(function (n) {
+      return n.className === 'graha-card-grid';
+    })[0];
+    return grid ? grid.children.map(textOf) : [];
+  };
+
   ok('the map is built and handed to the renderer with the yogas',
     /function dignitiesByGraha\(state, division, tatkalika, horaRule, horaMercury\)/.test(grahaViewSrc) &&
     /dignities: GrahaView\.dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src));
@@ -8588,16 +8617,65 @@ console.log('\nThe card says how the graha stands in its sign');
    * the chart position with the lords of ownership, then the finer lords, then
    * what looks at it.
    */
-  ok('and the card follows identity, position, seat, lords, aspects, conditions',
-    /fact\(seat, 'Rules', t\.getAttribute\('data-rules'\)\)/.test(src) &&
-    /fact\(over, 'Aspected by', shortGrahas\(seenBy\)/.test(src) &&
-    /\.graha-card-fact-label \{/.test(css) &&
-    src.indexOf("fact(trail, '', shortNakshatra(nakshatra)") <
-      src.indexOf("fact(seat, 'Dispositor'") &&
-    src.indexOf("fact(seat, 'Dispositor'") < src.indexOf("fact(seat, 'Rules'") &&
-    src.indexOf("fact(seat, 'Rules'") < src.indexOf("fact(inNak, 'Nakshatra lord'") &&
-    src.indexOf("fact(inNak, 'Sub lord'") < src.indexOf("fact(over, 'Aspected by'") &&
-    src.indexOf("fact(over, 'Aspected by'") < src.indexOf("'graha-card-conditions'"));
+  /*
+   * Driven rather than read off the source, because what was being checked was
+   * the order of six calls and the thing that went wrong was the order of the
+   * lines. The two stopped being the same question once the lines became cells
+   * in a grid.
+   */
+  ok('and the card reads identity, lords, seat, conditions, findings', (function () {
+    var card = cardFor({
+      'data-graha': 'Mars', 'data-karaka': 'Pitrukaraka', 'data-sign': 'Aries',
+      'data-degree': '8\u00b036\u203201\u2033',
+      'data-nakshatra': 'Uttara Bhadrapada 3', 'data-house': '10th house',
+      'data-rules': '5th, 10th', 'data-dispositor': 'Mars',
+      'data-dispositor-relation': 'Own', 'data-nak-lord': 'Saturn',
+      'data-nak-lord-relation': 'E', 'data-sub-lord': 'Jupiter',
+      'data-sub-lord-relation': 'N', 'data-seen-by': 'Jupiter (9th)'
+    });
+    var lines = card.children.map(function (n) { return n.className; });
+    return lines.join(' ') === 'graha-card-name graha-card-grid' &&
+      /\.graha-card-fact-label \{/.test(css) &&
+      textOf(card.children[0]) ===
+        'Mars Pitrukaraka Aries 8\u00b036\u203201\u2033 U Bhadra 3' &&
+      cellsOf(card).join(' | ') === 'Dis Ma (Own) | N Lord Sa (E) | ' +
+        'N SLord Ju (N) | 10th house | Rules 5th, 10th | Aspected by Ju (9th)';
+  })());
+  /*
+   * The two rows share three columns, so the dots fall in the same two places
+   * on both. The dot is written at the start of a cell, which is why: a cell
+   * that opens a line has to drop it, or the second row would begin on one.
+   */
+  ok('the placement is one grid of three columns, not two lines of their own',
+    /\.graha-card-grid \{[^}]*grid-template-columns: repeat\(3, auto\)/
+      .test(css.replace(/\n/g, '')) &&
+    /\.graha-card-grid \{[^}]*justify-content: start/.test(css.replace(/\n/g, '')) &&
+    /\.graha-card-grid > \.graha-card-item:nth-child\(3n \+ 1\)::before \{ content: none; \}/
+      .test(css) &&
+    /\.graha-card-item \+ \.graha-card-item::before \{[^}]*content: '\\00b7'/
+      .test(css.replace(/\n/g, '')));
+  /*
+   * A cell with nothing to say is still drawn. It holds its column open, and
+   * the column is what keeps the dots in line: the Ascendant has no dispositor
+   * and no rulership, and without the empty cells its row would slide left.
+   */
+  ok('a missing reading leaves its column standing', (function () {
+    // The ascendant is a degree, not a graha: nothing disposits it, it rules
+    // nothing, and houses are counted from it rather than it sitting in one.
+    var cells = cellsOf(cardFor({ 'data-graha': 'Ascendant',
+      'data-sign': 'Aries', 'data-degree': '8\u00b036\u203201\u2033',
+      'data-nakshatra': 'Ashwini 3', 'data-nak-lord': 'Ketu',
+      'data-sub-lord': 'Venus', 'data-seen-by': 'Jupiter (9th)' }));
+    return cells.join(' | ') === ' | N Lord Ke | N SLord Ve |  |  | ' +
+      'Aspected by Ju (9th)';
+  })());
+  /* And a row with nothing in it at all is not drawn, rather than left blank. */
+  ok('a row with nothing to say is left out', (function () {
+    var card = cardFor({ 'data-graha': 'Mars', 'data-sign': 'Aries',
+      'data-degree': '8\u00b036\u203201\u2033', 'data-house': '10th house',
+      'data-rules': '5th, 10th' });
+    return cellsOf(card).join(' | ') === '10th house | Rules 5th, 10th | ';
+  })());
   /*
    * Retrograde, combust and yogakaraka are not on the conditions line. The
    * list below gives each with how rare it is, which is more than the line can
@@ -8635,7 +8713,7 @@ console.log('\nThe card says how the graha stands in its sign');
     // Ruled off, and set like every other line: no weight, no colour of its own.
     /\.graha-card-conditions \{[^}]*border-top: 1px solid var\(--line-soft\);\s*\}/
       .test(css.replace(/\n/g, '')) &&
-    /\.graha-card-conditions,\s*\.graha-card-lords \{ font-size: 0\.8rem; color: var\(--ink\); \}/
+    /\.graha-card-conditions \{ font-size: 0\.8rem; color: var\(--ink\); \}/
       .test(css) &&
     /\.graha-card-conditions \{[^}]*border-top: 1px solid var\(--line-soft\)/
       .test(css.replace(/\n/g, '')) &&
@@ -8656,8 +8734,9 @@ console.log('\nThe card says how the graha stands in its sign');
   ok('the karaka and the position trail the name without joining it',
     /var trail = el\('span', 'graha-card-trail'\);/.test(src) &&
     /fact\(trail, '', t\.getAttribute\('data-karaka'\)\)/.test(src) &&
-    /fact\(trail, '', t\.getAttribute\('data-sign'\) \+ ' ' \+ t\.getAttribute\('data-degree'\)\)/
-      .test(src) &&
+    // Both or neither: a chart that carried one and not the other wrote the
+    // missing half out as the word "null".
+    /fact\(trail, '', sign && degree \? sign \+ ' ' \+ degree : ''\)/.test(src) &&
     /fact\(trail, '', shortNakshatra\(nakshatra\)/.test(src) &&
     /head\.appendChild\(trail\)/.test(src) &&
     /\.graha-card-trail \{[^}]*font-weight: 400;/.test(css.replace(/\n/g, '')) &&
@@ -8675,10 +8754,18 @@ console.log('\nThe card says how the graha stands in its sign');
     /data-nak-lord-relation/.test(chartsSrc) && /data-sub-lord-relation/.test(chartsSrc));
   ok('the highlighted graha stays full while secondary grahas are abbreviated',
     /var head = el\('h4', 'graha-card-name', at\);/.test(src) &&
-    /Astro\.grahaAbbr\(dispositor\)/.test(src) &&
-    /Astro\.grahaAbbr\(t\.getAttribute\('data-nak-lord'\)\)/.test(src) &&
-    /Astro\.grahaAbbr\(t\.getAttribute\('data-sub-lord'\)\)/.test(src) &&
-    /fact\(over, 'Aspected by', shortGrahas\(seenBy\)/.test(src));
+    /return Astro\.grahaAbbr\(who\) \+ \(mark \? ' \(' \+ mark \+ '\)' : ''\);/.test(src) &&
+    /\['Aspected by', shortGrahas\(seenBy\),/.test(src) &&
+    (function () {
+      var card = cardFor({ 'data-graha': 'Mars', 'data-sign': 'Aries',
+        'data-degree': '8\u00b036\u203201\u2033', 'data-dispositor': 'Saturn',
+        'data-dispositor-relation': 'GE', 'data-nak-lord': 'Jupiter',
+        'data-sub-lord': 'Venus', 'data-seen-by': 'Jupiter (9th)' });
+      // Full name in the heading, two letters everywhere a second graha is named.
+      return textOf(card.children[0]) === 'Mars Aries 8\u00b036\u203201\u2033' &&
+        cellsOf(card).join(' | ') ===
+          'Dis Sa (GE) | N Lord Ju | N SLord Ve |  |  | Aspected by Ju (9th)';
+    })());
   ok('the highlight abbreviates the six long nakshatras and keeps the full hover',
     /var shortNakshatra = function \(value\)/.test(src) &&
     /GrahaView\.NAKSHATRA_SHORT\[name\] \+ full\.slice\(name\.length\)/.test(src) &&
@@ -8704,6 +8791,62 @@ console.log('\nThe card says how the graha stands in its sign');
       return calls.join(',') === 'Venus,Sun' && map.Mars.length === 1 &&
         map.Mars[0].from.join(',') === 'Venus,Sun';
     })());
+
+  /*
+   * One frame named once. A yoga several graha pairs form in one chart was read
+   * once for each pair and the frame pushed every time, so the card said
+   * "from Moon & Moon & Moon" - which reads as three findings and is one.
+   */
+  ok('a frame is named once however many times the yoga formed there',
+    (function () {
+      var original = Yogas.detect, map;
+      Yogas.detect = function () {
+        return [
+          { title: 'Pushkala yoga', subject: 'Pushkala', condition: 'general',
+            grahas: ['Moon'] },
+          { title: 'Pushkala yoga', subject: 'Pushkala', condition: 'general',
+            grahas: ['Moon'] },
+          { title: 'Pushkala yoga', subject: 'Pushkala', condition: 'general',
+            grahas: ['Moon'] }
+        ];
+      };
+      var fake = { ascendant: { longitude: 5 }, planets: [
+        { name: 'Moon', longitude: 41, sign: 1 }
+      ] };
+      try { map = out.yogasByGraha({ chart: fake, shadbala: {} }, 1, 'Moon'); }
+      finally { Yogas.detect = original; }
+      return map.Moon.length === 1 && map.Moon[0].from.join(' & ') === 'Moon';
+    })());
+  /* And no finding in a real chart carries a frame twice. */
+  var report = '';
+  ok('no finding repeats a frame in a chart read from every graha',
+    (function () {
+      var doubled = [], counted = 0, charts = [];
+      for (var y = 1950; y < 1990; y += 3) {
+        charts.push({ chart: Astro.chart({ jdUT: Astro.julianDay(y, 4, 9, 7),
+          latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 }),
+          shadbala: {} });
+      }
+      charts.forEach(function (state) {
+      ['Ascendant', 'Moon', 'Sun', 'Jupiter'].forEach(function (reference) {
+        var map = out.yogasByGraha(state, 1, reference);
+        Object.keys(map).forEach(function (graha) {
+          map[graha].forEach(function (f) {
+            counted++;
+            var seen = {};
+            f.from.forEach(function (name) {
+              if (seen[name]) doubled.push(graha + ': ' + f.title + ' ' +
+                f.from.join(' & '));
+              seen[name] = 1;
+            });
+          });
+        });
+      });
+      });
+      report = counted + ' findings' +
+        (doubled.length ? ', doubled: ' + doubled.slice(0, 3).join(' | ') : '');
+      return counted > 500 && doubled.length === 0;
+    })(), report);
 
   /*
    * And the figures are real. Driven through the same function the page calls,

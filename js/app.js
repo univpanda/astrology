@@ -1205,7 +1205,12 @@
               y.condition === (yoga.condition || '') && y.route === route;
           })[0];
           if (same) {
-            same.from.push(from);
+            /*
+             * Once per frame, not once per pair that made it. A yoga several
+             * graha pairs form in one chart was read once for each of them,
+             * and the card said "from Moon & Moon & Moon".
+             */
+            if (same.from.indexOf(from) < 0) same.from.push(from);
           } else {
             /* The library key and the reference frame travel with the finding. */
             list.push({ title: yoga.title, summary: yoga.summary || '',
@@ -1558,7 +1563,8 @@
       var head = el('h4', 'graha-card-name', at);
       var trail = el('span', 'graha-card-trail');
       fact(trail, '', t.getAttribute('data-karaka'));
-      fact(trail, '', t.getAttribute('data-sign') + ' ' + t.getAttribute('data-degree'));
+      var sign = t.getAttribute('data-sign'), degree = t.getAttribute('data-degree');
+      fact(trail, '', sign && degree ? sign + ' ' + degree : '');
       var nakshatra = t.getAttribute('data-nakshatra');
       fact(trail, '', shortNakshatra(nakshatra),
         nakshatra ? 'Nakshatra ' + nakshatra + '.' : '');
@@ -1566,38 +1572,49 @@
       card.appendChild(head);
 
       /*
-       * Where it stands in the chart, whose ground that is, and what ground it
-       * owns in return.
+       * Two rows of three in one grid, so the dots fall in the same place on
+       * both. As separate paragraphs each line spaced itself by its own
+       * content and the separators landed wherever the words left them.
+       *
+       * The lords first - the grahas this one answers to - then where it
+       * stands, what it owns and what looks at it.
        */
-      var seat = el('p', 'graha-card-where');
-      fact(seat, '', t.getAttribute('data-house'));
+      var grid = el('div', 'graha-card-grid');
       var dispositor = t.getAttribute('data-dispositor');
-      if (dispositor) {
-        var relation = t.getAttribute('data-dispositor-relation');
-        fact(seat, 'Dispositor', Astro.grahaAbbr(dispositor) +
-          (relation ? ' (' + relation + ')' : ''),
-          saysRelation(dispositor, relation));
-      }
-      fact(seat, 'Rules', t.getAttribute('data-rules'));
-      if (seat.children.length) card.appendChild(seat);
-
-      /* The lords of the finer frames, read as relations the way the dispositor is. */
-      var inNak = el('p', 'graha-card-lords');
+      var relation = t.getAttribute('data-dispositor-relation');
+      var nakLord = t.getAttribute('data-nak-lord');
       var nakRel = t.getAttribute('data-nak-lord-relation');
-      fact(inNak, 'Nakshatra lord', Astro.grahaAbbr(t.getAttribute('data-nak-lord')) +
-        (nakRel ? ' (' + nakRel + ')' : ''),
-        saysRelation(t.getAttribute('data-nak-lord'), nakRel));
+      var subLord = t.getAttribute('data-sub-lord');
       var subRel = t.getAttribute('data-sub-lord-relation');
-      fact(inNak, 'Sub lord', Astro.grahaAbbr(t.getAttribute('data-sub-lord')) +
-        (subRel ? ' (' + subRel + ')' : ''),
-        saysRelation(t.getAttribute('data-sub-lord'), subRel));
-      if (inNak.children.length) card.appendChild(inNak);
-
-      var over = el('p', 'graha-card-lords');
       var seenBy = t.getAttribute('data-seen-by');
-      fact(over, 'Aspected by', shortGrahas(seenBy),
-        seenBy ? 'Aspected by ' + seenBy + '.' : '');
-      if (over.children.length) card.appendChild(over);
+      var withRelation = function (who, mark) {
+        if (!who) return '';
+        return Astro.grahaAbbr(who) + (mark ? ' (' + mark + ')' : '');
+      };
+      [
+        [['Dis', withRelation(dispositor, relation), saysRelation(dispositor, relation)],
+         ['N Lord', withRelation(nakLord, nakRel), saysRelation(nakLord, nakRel)],
+         ['N SLord', withRelation(subLord, subRel), saysRelation(subLord, subRel)]],
+        [['', t.getAttribute('data-house'), ''],
+         ['Rules', t.getAttribute('data-rules'), ''],
+         ['Aspected by', shortGrahas(seenBy),
+          seenBy ? 'Aspected by ' + seenBy + '.' : '']]
+      ].forEach(function (row) {
+        // A row with nothing in it is not drawn; a cell with nothing in it is,
+        // because the column it holds open is what keeps the dots in line.
+        if (!row.some(function (cell) { return cell[1]; })) return;
+        row.forEach(function (cell) {
+          var item = el('span', 'graha-card-item');
+          if (cell[1] && cell[0]) {
+            item.appendChild(el('span', 'graha-card-fact-label', cell[0]));
+          }
+          item.appendChild(document.createTextNode(
+            cell[1] ? (cell[0] ? ' ' : '') + cell[1] : ''));
+          if (cell[2]) item.title = cell[2];
+          grid.appendChild(item);
+        });
+      });
+      if (grid.children.length) card.appendChild(grid);
 
       /*
        * How this graha stands, on one line and ruled off from the placement
