@@ -1601,7 +1601,9 @@ ok('it still says how each yoga forms',
  * finding rather than place it.
  */
 ok('the table names the graha a yoga resolves to, apart from its participants',
-   /'Graha', 'Chart', 'From', 'Yoga', 'Result',[\s\S]{0,100}'Manifestation probability', 'Yoga probability'/.test(appSrc) &&
+   /\['Graha', 'Chart', 'From', 'Yoga', 'Result'\]\.forEach/.test(appSrc) &&
+   /el\('th', 'yoga-group', 'Yoga probability'\)/.test(appSrc) &&
+   /\['Chart condition', 'Overall'\]\.forEach/.test(appSrc) &&
    /finding\.graha \? 'yoga-graha' : 'yoga-graha is-shared'/.test(appSrc) &&
    /\(finding\.grahas \|\| \[\]\)\.join\(', '\)/.test(appSrc));
 ok('family remains detector metadata and is not rendered as a user-facing column',
@@ -4134,8 +4136,43 @@ ok('every script the page loads parses', (function () {
           walk(kid);
         });
       })(host);
-      return heads.join(',') ===
-        'Graha,Chart,From,Yoga,Result,Manifestation probability,Yoga probability';
+      return heads.join(',') === 'Graha,Chart,From,Yoga,Result,Chart condition,Overall';
+    })());
+  /*
+   * The last two columns are one question asked against two backgrounds, so
+   * they sit under one heading rather than beside each other as if they
+   * measured different things. "Manifestation probability" next to "Yoga
+   * probability" read as two unrelated measures.
+   */
+  ok('and the two probabilities sit under one heading that pairs them',
+    (function () {
+      var host = byId['yoga-list'];
+      host.children.length = 0;
+      out.renderYogas(peace);
+      var group = null;
+      (function walk(n) {
+        if (!n || !n.children) return;
+        n.children.forEach(function (kid) {
+          if (kid.tag === 'th' && kid.attrs && kid.attrs.scope === 'colgroup') group = kid;
+          walk(kid);
+        });
+      })(host);
+      return !!group && group.textContent === 'Yoga probability' &&
+        group.attrs.colspan === '2';
+    })());
+  /* And the columns beside them span both rows, so the header is one block. */
+  ok('and the single columns span both header rows',
+    (function () {
+      var host = byId['yoga-list'];
+      var spanned = 0;
+      (function walk(n) {
+        if (!n || !n.children) return;
+        n.children.forEach(function (kid) {
+          if (kid.tag === 'th' && kid.attrs && kid.attrs.rowspan === '2') spanned++;
+          walk(kid);
+        });
+      })(host);
+      return spanned === 5;
     })());
   /*
    * And the table narrows to one graha.

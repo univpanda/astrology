@@ -3860,14 +3860,32 @@
      * graha got", and the column answering it was third, behind two that
      * describe the finding rather than place it.
      */
-    ['Graha', 'Chart', 'From', 'Yoga', 'Result',
-      'Manifestation probability', 'Yoga probability']
-      .forEach(function (h) {
+    /*
+     * Two rows, because the last two columns are one question asked twice.
+     * "Manifestation probability" beside "Yoga probability" read as two
+     * unrelated measures of different things, where they are the same measure
+     * against two backgrounds: how often this yoga forms in a chart conditioned
+     * like this one, and how often it forms in any chart at all.
+     */
+    ['Graha', 'Chart', 'From', 'Yoga', 'Result'].forEach(function (h) {
       var th = el('th', null, h);
       th.setAttribute('scope', 'col');
+      th.setAttribute('rowspan', '2');
       headRow.appendChild(th);
     });
+    var span = el('th', 'yoga-group', 'Yoga probability');
+    span.setAttribute('scope', 'colgroup');
+    span.setAttribute('colspan', '2');
+    headRow.appendChild(span);
     head.appendChild(headRow);
+
+    var subRow = document.createElement('tr');
+    ['Chart condition', 'Overall'].forEach(function (h) {
+      var th = el('th', 'yoga-subhead', h);
+      th.setAttribute('scope', 'col');
+      subRow.appendChild(th);
+    });
+    head.appendChild(subRow);
     table.appendChild(head);
     var body = document.createElement('tbody');
 
