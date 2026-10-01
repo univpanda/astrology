@@ -175,6 +175,7 @@ var Yogas = (function () {
        * graha. Naming both ends costs a few words and removes the question.
        */
       var reasons = [];
+      var routes = [];
       var from;
 
       /*
@@ -194,6 +195,7 @@ var Yogas = (function () {
       var bothRoles = exaltedHere === dispositor;
       if ((from = inKendraFromEither(
             positions[dispositor] ? positions[dispositor].sign : -1, dispositor))) {
+        routes.push('sign-lord-in-kendra');
         reasons.push(bothRoles
           ? dispositor + ', which both rules this sign and is exalted in it, is in a kendra ' +
             'from ' + from
@@ -201,6 +203,7 @@ var Yogas = (function () {
       }
       if (!bothRoles && exaltedHere && positions[exaltedHere] &&
           (from = inKendraFromEither(positions[exaltedHere].sign, exaltedHere))) {
+        routes.push('exaltation-lord-in-kendra');
         reasons.push(exalted() + ' is in a kendra from ' + from);
       }
       /*
@@ -242,6 +245,7 @@ var Yogas = (function () {
         graha: graha,
         grahas: [graha],
         houses: [house],
+        route: routes,
         reasons: reasons,
         summary: graha + ' is debilitated in ' + Astro.SIGNS[p.sign] + ', in the ' +
           ordinal(house) + ', and the debilitation is cancelled because ' +

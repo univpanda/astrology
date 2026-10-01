@@ -3746,6 +3746,11 @@
 
   function yogaFrequency(finding) {
     if (typeof FREQUENCIES === 'undefined') return;
+    var context = finding.frequencyDivision + '|' + finding.frequencyReference + '|';
+    if (FREQUENCIES.yogaTitleByContext &&
+        typeof FREQUENCIES.yogaTitleByContext[context + finding.title] === 'number') {
+      return FREQUENCIES.yogaTitleByContext[context + finding.title];
+    }
     if (typeof FREQUENCIES.yogaTitle[finding.title] === 'number') {
       return FREQUENCIES.yogaTitle[finding.title];
     }
@@ -3755,6 +3760,20 @@
       return FREQUENCIES.yogaNoFloor[key];
     }
     return FREQUENCIES.yoga[key];
+  }
+
+  function yogaManifestationFrequency(finding) {
+    if (typeof FREQUENCIES === 'undefined' || !FREQUENCIES.yogaManifestation) return;
+    var route = Array.isArray(finding.route) ? finding.route.slice().sort().join('+')
+      : finding.route || finding.kind || finding.condition || 'general';
+    var context = finding.frequencyDivision + '|' + finding.frequencyReference + '|';
+    if (FREQUENCIES.yogaManifestationByContext &&
+        typeof FREQUENCIES.yogaManifestationByContext[
+          context + finding.title + '|' + route] === 'number') {
+      return FREQUENCIES.yogaManifestationByContext[
+        context + finding.title + '|' + route];
+    }
+    return FREQUENCIES.yogaManifestation[finding.title + '|' + route];
   }
 
   function renderYogas(state) {
@@ -3792,6 +3811,8 @@
         Yogas.detect(rotatedOnto(inDivision, from), strengths).forEach(function (f) {
           f.inChart = varga ? varga.name : 'D' + division;
           f.from = from === 'Ascendant' ? 'Asc' : from;
+          f.frequencyDivision = division;
+          f.frequencyReference = from;
           found.push(f);
         });
       });
@@ -3894,7 +3915,8 @@
      * graha got", and the column answering it was third, behind two that
      * describe the finding rather than place it.
      */
-    ['Graha', 'Chart', 'From', 'Yoga', 'Family', 'Result', 'Charts']
+    ['Graha', 'Chart', 'From', 'Yoga', 'Family', 'Result',
+      'This manifestation', 'Yoga overall']
       .forEach(function (h) {
       var th = el('th', null, h);
       th.setAttribute('scope', 'col');
@@ -3941,8 +3963,12 @@
       var effect = passage && passage.effect ? passage.effect : 'mixed';
       tr.appendChild(el('td', 'yoga-effect yoga-effect-' + effect,
         effect.charAt(0).toUpperCase() + effect.slice(1)));
+      var manifestationPct = yogaManifestationFrequency(finding);
+      tr.appendChild(el('td', 'yoga-frequency yoga-manifestation-frequency',
+        typeof manifestationPct === 'number' ? manifestationPct + '%' : '\u2013'));
       var pct = yogaFrequency(finding);
-      tr.appendChild(el('td', 'yoga-frequency', typeof pct === 'number' ? pct + '%' : '\u2013'));
+      tr.appendChild(el('td', 'yoga-frequency yoga-overall-frequency',
+        typeof pct === 'number' ? pct + '%' : '\u2013'));
       body.appendChild(tr);
     });
     table.appendChild(body);

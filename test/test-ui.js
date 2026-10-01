@@ -1601,7 +1601,7 @@ ok('it still says how each yoga forms',
  * finding rather than place it.
  */
 ok('the table names the graha a yoga resolves to, apart from its participants',
-   /'Graha', 'Chart', 'From', 'Yoga', 'Family', 'Result', 'Charts'/.test(appSrc) &&
+   /'Graha', 'Chart', 'From', 'Yoga', 'Family', 'Result',[\s\S]{0,80}'This manifestation', 'Yoga overall'/.test(appSrc) &&
    /finding\.graha \? 'yoga-graha' : 'yoga-graha is-shared'/.test(appSrc) &&
    /\(finding\.grahas \|\| \[\]\)\.join\(', '\)/.test(appSrc));
 ok('the yoga result comes from the database’s constrained effect field', (function () {
@@ -4179,7 +4179,7 @@ ok('every script the page loads parses', (function () {
    * The Graha column, driven. A source match would not catch the column being
    * filled from the wrong field, which is the fault this replaces.
    */
-  ok('the rendered table carries the requested seven columns',
+  ok('the rendered table carries the requested columns and both probabilities',
     (function () {
       var host = byId['yoga-list'];
       if (!host) return false;
@@ -4195,7 +4195,8 @@ ok('every script the page loads parses', (function () {
           walk(kid);
         });
       })(host);
-      return heads.join(',') === 'Graha,Chart,From,Yoga,Family,Result,Charts';
+      return heads.join(',') ===
+        'Graha,Chart,From,Yoga,Family,Result,This manifestation,Yoga overall';
     })());
   /*
    * And the table narrows to one graha.
@@ -7581,7 +7582,12 @@ console.log('\nHow rare a finding is, said out loud');
    * figure silently - the line would simply render bare, which looks like a
    * design choice rather than a gap. Sweep for the pairs and demand each one.
    */
-  var missingYoga = {}, missingState = {};
+  var missingYoga = {}, missingManifestation = {}, missingState = {};
+  var manifestationKey = function (f) {
+    var route = Array.isArray(f.route) ? f.route.slice().sort().join('+')
+      : f.route || f.kind || f.condition || 'general';
+    return f.title + '|' + route;
+  };
   var STATES = ['R', 'C', 'Y', 'V'];
   for (var y = 1950; y < 2025; y += 5) {
     for (var m = 1; m <= 12; m += 4) {
@@ -7591,6 +7597,8 @@ console.log('\nHow rare a finding is, said out loud');
       Yogas.detect(c, Shadbala.compute(c, place)).forEach(function (f) {
         var k = (f.subject || '?') + '|' + (f.condition || '?');
         if (typeof F.yoga[k] !== 'number') missingYoga[k] = true;
+        var mk = manifestationKey(f);
+        if (typeof F.yogaManifestation[mk] !== 'number') missingManifestation[mk] = true;
       });
       var at = {};
       c.planets.forEach(function (p) { at[p.name] = p; });
@@ -7612,6 +7620,9 @@ console.log('\nHow rare a finding is, said out loud');
   }
   ok('every yoga a chart can produce has a measured frequency',
     Object.keys(missingYoga).length === 0, Object.keys(missingYoga).join(', '));
+  ok('every yoga route a chart can produce has a manifestation frequency',
+    Object.keys(missingManifestation).length === 0,
+    Object.keys(missingManifestation).join(', '));
   ok('every state a graha can be in has a measured frequency',
     Object.keys(missingState).length === 0, Object.keys(missingState).join(', '));
 
@@ -7638,6 +7649,13 @@ console.log('\nHow rare a finding is, said out loud');
    */
   ok('raja yoga by angle-and-trine is reported as the common thing it is',
     F.yoga['Raja Yoga|angle-trine'] > 50, String(F.yoga['Raja Yoga|angle-trine']));
+  ok('its routes are measured apart while the named yoga remains their union',
+    F.yogaManifestation['Angle-trine raja yoga|exchange'] > 0 &&
+    F.yogaManifestation['Angle-trine raja yoga|conjunction'] >
+      F.yogaManifestation['Angle-trine raja yoga|exchange'] &&
+    F.yogaManifestation['Angle-trine raja yoga|aspect'] > 0 &&
+    F.yogaTitle['Angle-trine raja yoga'] >
+      F.yogaManifestation['Angle-trine raja yoga|conjunction']);
 })();
 
 console.log('\nThe card prints the figure beside the finding');

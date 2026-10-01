@@ -23,6 +23,7 @@ const Shadbala = (global.Shadbala = require('../js/shadbala.js'));
 
 const GRAHAS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn',
   'Rahu', 'Ketu'];
+const REFERENCES = ['Ascendant'].concat(GRAHAS);
 const PLACES = [
   [28.61, 77.21, 330], [40.71, -74.01, -300], [-33.87, 151.21, 600],
   [51.51, -0.13, 0], [-23.55, -46.63, -180]
@@ -36,7 +37,34 @@ const yoga = {}, state = {}, yogaNoFloor = {};
  * figures would all carry the family's figure - one of them holds in every
  * chart - where Chakra is one in thousands and Pasa is two in five.
  */
-const byTitle = {};
+const byTitle = {}, byManifestation = {};
+const titleByContext = {}, manifestationByContext = {};
+
+/*
+ * A manifestation is the stable route by which a named yoga formed, not the
+ * chart-specific sentence that describes the grahas and houses involved.  The
+ * latter is deliberately prose; using it as a key would make almost every
+ * chart its own "route".  Detectors with several clauses supply `route`; the
+ * common one-route detectors fall back to their existing kind/condition.
+ */
+const manifestationKey = function (f) {
+  const route = Array.isArray(f.route) ? f.route.slice().sort().join('+')
+    : f.route || f.kind || f.condition || 'general';
+  return f.title + '|' + route;
+};
+const rotatedOnto = function (chart, reference) {
+  if (reference === 'Ascendant') return chart;
+  const anchor = chart.planets.find(function (p) { return p.name === reference; });
+  if (!anchor) return chart;
+  const turned = Object.assign({}, chart);
+  turned.ascendant = Object.assign({}, anchor, { longitude: anchor.longitude });
+  const lagna = Astro.signOf(anchor.longitude);
+  turned.planets = chart.planets.map(function (p) {
+    return Object.assign({}, p, { house: ((p.sign - lagna + 12) % 12) + 1 });
+  });
+  turned.reference = reference;
+  return turned;
+};
 
 for (let y = 1930; y < 2030; y++) {
   for (let m = 1; m <= 12; m++) {
@@ -89,17 +117,51 @@ for (let y = 1930; y < 2030; y++) {
       const strengths = Shadbala.compute(chart, {
         latitude: place[0], longitude: place[1], tzOffsetMinutes: place[2]
       });
-      const sweep = function (into, titles) {
-        const seen = {}, seenTitle = {};
+      const sweep = function (into, titles, manifestations) {
+        const seen = {}, seenTitle = {}, seenManifestation = {};
         Yogas.detect(chart, strengths).forEach(function (f) {
           const k = (f.subject || '?') + '|' + (f.condition || '?');
           if (!seen[k]) { seen[k] = 1; into[k] = (into[k] || 0) + 1; }
-          if (!titles || !f.title || seenTitle[f.title]) return;
-          seenTitle[f.title] = 1;
-          titles[f.title] = (titles[f.title] || 0) + 1;
+          if (!f.title) return;
+          if (titles && !seenTitle[f.title]) {
+            seenTitle[f.title] = 1;
+            titles[f.title] = (titles[f.title] || 0) + 1;
+          }
+          if (manifestations) {
+            const mk = manifestationKey(f);
+            if (!seenManifestation[mk]) {
+              seenManifestation[mk] = 1;
+              manifestations[mk] = (manifestations[mk] || 0) + 1;
+            }
+          }
         });
       };
-      sweep(yoga, byTitle);
+      sweep(yoga, byTitle, byManifestation);
+      /*
+       * The Yogas table can read every division from every reference. Its two
+       * probabilities must be measured in that same frame; an ascendant/D1
+       * rate beside a Moon/D9 finding would answer a different question.
+       */
+      Astro.SHODASAVARGA.forEach(function (division) {
+        const inDivision = Astro.chartInDivision(chart, division);
+        REFERENCES.forEach(function (reference) {
+          const seenTitle = {}, seenManifestation = {};
+          Yogas.detect(rotatedOnto(inDivision, reference), strengths).forEach(function (f) {
+            if (!f.title) return;
+            const prefix = division + '|' + reference + '|';
+            const tk = prefix + f.title;
+            const mk = prefix + manifestationKey(f);
+            if (!seenTitle[tk]) {
+              seenTitle[tk] = 1;
+              titleByContext[tk] = (titleByContext[tk] || 0) + 1;
+            }
+            if (!seenManifestation[mk]) {
+              seenManifestation[mk] = 1;
+              manifestationByContext[mk] = (manifestationByContext[mk] || 0) + 1;
+            }
+          });
+        });
+      });
       /*
        * Again with Raman's floor dropped, because a setting that changes what
        * forms changes how often it forms, and the card would otherwise print a
@@ -155,6 +217,19 @@ ${dump(moved)}
    */
   yogaTitle: {
 ${dump(byTitle)}
+  },
+  /*
+   * By named yoga and the route that made it. A chart is counted once for a
+   * route even when several graha pairs make that route in the same chart.
+   */
+  yogaManifestation: {
+${dump(byManifestation)}
+  },
+  yogaTitleByContext: {
+${dump(titleByContext)}
+  },
+  yogaManifestationByContext: {
+${dump(manifestationByContext)}
   }
 };
 
