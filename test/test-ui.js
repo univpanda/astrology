@@ -1586,8 +1586,9 @@ ok('the library is fetched once and searched in the page',
 ok('the yogas panel carries no explanatory passage',
    !/yoga-explanation/.test(appSrc) && !/fetchPassages\(\{ subjects:/.test(appSrc));
 ok('it still says how each yoga forms',
-   /yogaName\.title = yogaAccount\(finding\);/.test(appSrc) &&
-   /function yogaAccount\(finding\)/.test(appSrc));
+   /el\('td', 'yoga-manifestation', finding\.manifestation\)/.test(appSrc) &&
+   /finding\.manifestation = finding\.manifestation \|\| finding\.summary/.test(
+     fs.readFileSync(path.join(root, 'js/yogas.js'), 'utf8')));
 /*
  * The column the redesign is for. Whose yoga it is and who takes part in it are
  * different questions, and the page only ever asked the second: Shubha Vesi is
@@ -1600,7 +1601,7 @@ ok('it still says how each yoga forms',
  * finding rather than place it.
  */
 ok('the table names the graha a yoga resolves to, apart from its participants',
-   /'Graha', 'Chart', 'From', 'Yoga', 'Family', 'Result', 'Charts'/.test(appSrc) &&
+   /'Graha', 'Chart', 'From', 'Yoga', 'Family', 'Result', 'Manifestation', 'Charts'/.test(appSrc) &&
    /finding\.graha \? 'yoga-graha' : 'yoga-graha is-shared'/.test(appSrc) &&
    /\(finding\.grahas \|\| \[\]\)\.join\(', '\)/.test(appSrc));
 ok('the yoga result comes from the database’s constrained effect field', (function () {
@@ -1845,8 +1846,10 @@ ok('each finding records the chart and the reference it was found in',
 ok('shadbala is computed once per chart, so the tab and the yoga agree',
    /if \(!state\.shadbala\)/.test(appSrc) &&
    (appSrc.match(/Shadbala\.compute\(/g) || []).length === 1);
-ok('a yoga resting on several conditions names the ones that applied',
-   /return \[finding\.summary\]\.concat\(\(finding\.reasons \|\| \[\]\)\.filter/.test(appSrc));
+ok('matched conditions and user-facing prose are separate fields',
+   /finding\.manifestation = finding\.manifestation \|\| finding\.summary/.test(
+     fs.readFileSync(path.join(root, 'js/yogas.js'), 'utf8')) &&
+   /reasons: reasons/.test(fs.readFileSync(path.join(root, 'js/yogas.js'), 'utf8')));
 /*
  * And a condition already stated in the summary is not stated again under it.
  *
@@ -1856,43 +1859,16 @@ ok('a yoga resting on several conditions names the ones that applied',
  * different findings - are contained in their own summary, so this is a shape
  * the detectors fall into rather than a fault in one of them.
  */
-ok('and no reason is repeated out of the summary it is already in', (function () {
-  var body = appSrc.match(/function yogaAccount\(finding\) \{[\s\S]*?\n  \}/)[0];
-  var yogaAccount = new Function(body + '\nreturn yogaAccount;')();
-  var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
-  var doubled = [];
-  for (var y = 1950; y < 2025; y += 9) {
-    var c = Astro.chart({ jdUT: Astro.julianDay(y, 6, 15, 3), latitude: 28.61,
-      longitude: 77.21, tzOffsetMinutes: 330 });
-    Yogas.detect(c, Shadbala.compute(c, place)).forEach(function (f) {
-      var text = yogaAccount(f).toLowerCase().replace(/\s+/g, ' ');
-      (f.reasons || []).forEach(function (reason) {
-        var one = String(reason).toLowerCase().replace(/\s+/g, ' ').replace(/[.,;]+$/, '').trim();
-        if (!one) return;
-        var at = text.indexOf(one);
-        if (at >= 0 && text.indexOf(one, at + 1) >= 0) doubled.push(f.title + ': ' + reason);
-      });
-    });
-  }
-  return doubled.length === 0;
-})());
+ok('and presentation never joins the matched-condition bullets',
+   !/finding\.reasons.*join/.test(appSrc) &&
+   /el\('td', 'yoga-manifestation', finding\.manifestation\)/.test(appSrc));
 /*
  * And the fragments are set as sentences. They are written to be read in a
  * list, so a bare space ran them into one another: "rather than on a house
  * worth protecting Saturn also owns the 9th".
  */
-ok('and the reasons read as sentences rather than running together', (function () {
-  var body = appSrc.match(/function yogaAccount\(finding\) \{[\s\S]*?\n  \}/)[0];
-  var yogaAccount = new Function(body + '\nreturn yogaAccount;')();
-  var out = yogaAccount({
-    summary: 'Saturn, lord of the 8th, is placed in the 6th.',
-    reasons: ['the 8th lord is itself a source of harm',
-              'Saturn also owns the 9th, which the same placement damages']
-  });
-  return out === 'Saturn, lord of the 8th, is placed in the 6th. ' +
-    'The 8th lord is itself a source of harm. ' +
-    'Saturn also owns the 9th, which the same placement damages.';
-})());
+ok('and the manifestation is a column rather than a tooltip assembled at render time',
+   !/yogaName\.title/.test(appSrc) && /'Manifestation'/.test(appSrc));
 /*
  * And the commonest finding of all does not say its condition twice in two
  * different wordings. Its summary names both lords and both houses, so the
@@ -1925,23 +1901,8 @@ ok('the angle-trine reason adds the classification rather than restating', (func
 ok('and still says which houses are the angles and which the trines',
   /' are angles' : ' is an angle'/.test(fs.readFileSync(path.join(root, 'js/yogas.js'), 'utf8')));
 
-/* And a reason already in the summary is still dropped rather than restated. */
-ok('and the two rules hold together', (function () {
-  var body = appSrc.match(/function yogaAccount\(finding\) \{[\s\S]*?\n  \}/)[0];
-  var yogaAccount = new Function(body + '\nreturn yogaAccount;')();
-  return yogaAccount({
-    summary: 'Mercury is debilitated, and it is cancelled because Venus is in a kendra.',
-    reasons: ['Venus is in a kendra', 'the lagna lord is strong']
-  }) === 'Mercury is debilitated, and it is cancelled because Venus is in a kendra. ' +
-    'The lagna lord is strong.';
-})());
-
-/* The same account builder serves every division and every reference frame.
-   Keep the sweep broader than D1 so wording produced only after rotation does
-   not escape the checks above. */
+/* The manifestation field serves every division and reference frame. */
 ok('and the other yogas read cleanly across divisions and reference frames', (function () {
-  var body = appSrc.match(/function yogaAccount\(finding\) \{[\s\S]*?\n  \}/)[0];
-  var yogaAccount = new Function(body + '\nreturn yogaAccount;')();
   var bad = [], seen = {};
   var rotate = function (chart, reference) {
     if (reference === 'Ascendant') return chart;
@@ -1963,7 +1924,7 @@ ok('and the other yogas read cleanly across divisions and reference frames', (fu
       ['Ascendant', 'Moon', 'Sun'].forEach(function (reference) {
         Yogas.detect(rotate(chart, reference), strength)
           .forEach(function (finding) {
-            var account = yogaAccount(finding);
+            var account = finding.manifestation;
             seen[finding.title] = true;
             if (!account || /\.\s+[a-z]|[.!?]{2,}|\s[.,;]/.test(account)) {
               bad.push(finding.title + ': ' + account);
@@ -4194,7 +4155,7 @@ ok('every script the page loads parses', (function () {
    * The Graha column, driven. A source match would not catch the column being
    * filled from the wrong field, which is the fault this replaces.
    */
-  ok('the rendered table carries the requested seven columns',
+  ok('the rendered table carries the requested eight columns',
     (function () {
       var host = byId['yoga-list'];
       if (!host) return false;
@@ -4210,7 +4171,7 @@ ok('every script the page loads parses', (function () {
           walk(kid);
         });
       })(host);
-      return heads.join(',') === 'Graha,Chart,From,Yoga,Family,Result,Charts';
+      return heads.join(',') === 'Graha,Chart,From,Yoga,Family,Result,Manifestation,Charts';
     })());
   /*
    * And the table narrows to one graha.
@@ -5675,8 +5636,9 @@ ok('the states line holds conditions and the list holds combinations',
  * the reasons for every finding, so the card is a shorter view of something
  * complete rather than the only view of something trimmed.
  */
-ok('and the Yogas tab still carries the summary and the reasons',
-   /yogaName\.title = yogaAccount\(finding\);/.test(appSrc));
+ok('and the Yogas tab carries one coherent manifestation instead of the bullets',
+   /el\('td', 'yoga-manifestation', finding\.manifestation\)/.test(appSrc) &&
+   !/yogaAccount/.test(appSrc));
 
 /*
  * And the card survives the library being absent: it loses a line, not its

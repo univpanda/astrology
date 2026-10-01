@@ -3410,7 +3410,16 @@ var Yogas = (function () {
     var all = [];
     DETECTORS.forEach(function (detector) {
       if (turned && ASCENDANT_ONLY.indexOf(detector) >= 0) return;
-      detector(chart, byGraha).forEach(function (finding) { all.push(finding); });
+      detector(chart, byGraha).forEach(function (finding) {
+        /*
+         * `reasons` is the matched-condition evidence; it is deliberately not
+         * presentation copy. Every detector already closes with one coherent,
+         * chart-specific summary, so give that sentence an explicit field and
+         * keep the two responsibilities from being joined again in the UI.
+         */
+        finding.manifestation = finding.manifestation || finding.summary || '';
+        all.push(finding);
+      });
     });
     return all;
   }

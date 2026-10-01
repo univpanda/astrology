@@ -3744,45 +3744,6 @@
     });
   }
 
-  /*
-   * The summary and the reasons behind it, with the reasons that are already
-   * in the summary left out.
-   *
-   * A one-condition finding usually states its condition in the summary and
-   * then lists it again underneath, so the two run together as a sentence
-   * said twice: "Mercury is debilitated in Pisces and the debilitation is
-   * cancelled because Venus, exalted in this sign, is in a kendra from the
-   * lagna. Venus, exalted in this sign, is in a kendra from the lagna."
-   *
-   * Across a sweep of 4,332 reason lines, 711 of them - one in six, spread
-   * over twenty-two different findings - are contained in their own summary.
-   * That is a shape the detectors fall into rather than a fault in any one of
-   * them, so it is answered here, where the two are put together.
-   */
-  function yogaAccount(finding) {
-    var tidy = function (text) {
-      return String(text || '').toLowerCase().replace(/\s+/g, ' ')
-        .replace(/[.,;]+$/, '').trim();
-    };
-    /*
-     * The reasons are written as fragments to be read in a list, so joining
-     * them with a space runs them into one another: "rather than on a house
-     * worth protecting Saturn also owns the 9th". Set as sentences they read
-     * as sentences.
-     */
-    var sentence = function (text) {
-      var one = String(text || '').trim();
-      if (!one) return '';
-      one = one.charAt(0).toUpperCase() + one.slice(1);
-      return /[.!?]$/.test(one) ? one : one + '.';
-    };
-    var summary = tidy(finding.summary);
-    return [finding.summary].concat((finding.reasons || []).filter(function (reason) {
-      var one = tidy(reason);
-      return one && summary.indexOf(one) < 0;
-    })).filter(Boolean).map(sentence).join(' ');
-  }
-
   function yogaFrequency(finding) {
     if (typeof FREQUENCIES === 'undefined') return;
     if (typeof FREQUENCIES.yogaTitle[finding.title] === 'number') {
@@ -3933,7 +3894,8 @@
      * graha got", and the column answering it was third, behind two that
      * describe the finding rather than place it.
      */
-    ['Graha', 'Chart', 'From', 'Yoga', 'Family', 'Result', 'Charts'].forEach(function (h) {
+    ['Graha', 'Chart', 'From', 'Yoga', 'Family', 'Result', 'Manifestation', 'Charts']
+      .forEach(function (h) {
       var th = el('th', null, h);
       th.setAttribute('scope', 'col');
       headRow.appendChild(th);
@@ -3968,9 +3930,7 @@
 
       tr.appendChild(el('td', 'yoga-chart', finding.inChart));
       tr.appendChild(el('td', 'yoga-from', finding.from));
-      var yogaName = el('td', 'yoga-name', finding.title);
-      yogaName.title = yogaAccount(finding);
-      tr.appendChild(yogaName);
+      tr.appendChild(el('td', 'yoga-name', finding.title));
       tr.appendChild(el('td', 'yoga-family', finding.family || '\u2013'));
       var passage = (lessonLibrary || []).filter(function (p) {
         return p.topic === 'yoga' && p.subject === finding.subject &&
@@ -3979,6 +3939,7 @@
       var effect = passage && passage.effect ? passage.effect : 'mixed';
       tr.appendChild(el('td', 'yoga-effect yoga-effect-' + effect,
         effect.charAt(0).toUpperCase() + effect.slice(1)));
+      tr.appendChild(el('td', 'yoga-manifestation', finding.manifestation));
       var pct = yogaFrequency(finding);
       tr.appendChild(el('td', 'yoga-frequency', typeof pct === 'number' ? pct + '%' : '\u2013'));
       body.appendChild(tr);
