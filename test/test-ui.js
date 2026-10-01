@@ -1601,7 +1601,7 @@ ok('it still says how each yoga forms',
  * finding rather than place it.
  */
 ok('the table names the graha a yoga resolves to, apart from its participants',
-   /'Graha', 'Chart', 'From', 'Yoga', 'Result',[\s\S]{0,80}'This manifestation', 'Yoga overall'/.test(appSrc) &&
+   /'Graha', 'Chart', 'From', 'Yoga', 'Result',[\s\S]{0,100}'Manifestation probability', 'Yoga probability'/.test(appSrc) &&
    /finding\.graha \? 'yoga-graha' : 'yoga-graha is-shared'/.test(appSrc) &&
    /\(finding\.grahas \|\| \[\]\)\.join\(', '\)/.test(appSrc));
 ok('family remains detector metadata and is not rendered as a user-facing column',
@@ -4198,7 +4198,7 @@ ok('every script the page loads parses', (function () {
         });
       })(host);
       return heads.join(',') ===
-        'Graha,Chart,From,Yoga,Result,This manifestation,Yoga overall';
+        'Graha,Chart,From,Yoga,Result,Manifestation probability,Yoga probability';
     })());
   /*
    * And the table narrows to one graha.

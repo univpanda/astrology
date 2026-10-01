@@ -3916,7 +3916,7 @@
      * describe the finding rather than place it.
      */
     ['Graha', 'Chart', 'From', 'Yoga', 'Result',
-      'This manifestation', 'Yoga overall']
+      'Manifestation probability', 'Yoga probability']
       .forEach(function (h) {
       var th = el('th', null, h);
       th.setAttribute('scope', 'col');
