@@ -1713,7 +1713,9 @@
           var head = el('p', 'graha-card-term');
           head.appendChild(el('span', 'graha-card-label', item.term));
           var from = item.from ? 'from ' + item.from.split(',').map(function (name) {
-            return name === 'Ascendant' ? 'asc' : name;
+            // Shortened, but a name among names: the grahas beside it in the
+            // same list are all capitalised.
+            return name === 'Ascendant' ? 'Asc' : name;
           }).join(' & ') : '';
           if (from) head.appendChild(el('span', 'graha-card-whose', from));
           if (typeof manifestationChance === 'number') {

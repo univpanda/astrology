@@ -284,7 +284,9 @@ var Charts = (function () {
         (states.length ? '. ' + states.map(function (k) { return STATE_NAMES[k]; }).join(', ') : '') +
         (mine.length ? '. ' + mine.map(function (y) {
           return y.title + (y.from && y.from.length ? ', from ' + y.from.map(function (name) {
-            return name === 'Ascendant' ? 'asc' : name;
+            // Spoken in full. The card shortens it to fit a column; a label
+            // that is read out has no column and nothing to gain by it.
+            return name === 'Ascendant' ? 'the ascendant' : name;
           }).join(' and ') : '');
         }).join(', ') : '')
     };

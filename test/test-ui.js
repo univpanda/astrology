@@ -4093,7 +4093,9 @@ ok('every script the page loads parses', (function () {
   ok('the card carries the yoga’s reference through the renderer',
     /\(y\.from \|\| \[\]\)\.join\(','\)/.test(chartsSrc) &&
     /from: bits\[5\] \|\| ''/.test(src) &&
-    /name === 'Ascendant' \? 'asc' : name/.test(src) &&
+    // Shortened on the card, but a name among names: the grahas beside it in
+    // the same list are all capitalised.
+    /name === 'Ascendant' \? 'Asc' : name/.test(src) &&
     /graha-card-whose/.test(src) && /\.graha-card-whose \{/.test(css));
   ok('and the map clubs matching yogas from distinct reference houses',
     /same\.from\.push\(from\)/.test(src) &&
@@ -4102,8 +4104,12 @@ ok('every script the page loads parses', (function () {
    * And spoken, not only shown. A label that read the titles out flat would
    * leave a listener with exactly the fault the card had just lost.
    */
+  /*
+   * And in full, where the card shortens it. A label that is read out has no
+   * column to fit and nothing to gain by an abbreviation.
+   */
   ok('the graha’s accessible label says where each yoga is read from too',
-    /name === 'Ascendant' \? 'asc' : name/.test(chartsSrc) &&
+    /name === 'Ascendant' \? 'the ascendant' : name/.test(chartsSrc) &&
     /\.join\(' and '\)/.test(chartsSrc));
   /*
    * The stacked cards are gone, and their rules went with them rather than
