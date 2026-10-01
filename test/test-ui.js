@@ -10082,6 +10082,58 @@ console.log('\nUttara Kalamrita on the Moon in paksha bala');
 })();
 
 
+console.log('\nThe default-settings row is one line');
+/*
+ * Four stacked rows for three words and two controls gave the one thing on
+ * that page which is not a setting more height than any setting has. The
+ * pieces are checked rather than the pixels: each of these is a declaration
+ * that was forcing a break, and together they are what a break needs.
+ *
+ * The total width is deliberately not computed. It would need a model of how
+ * wide the words are in this face at this size, which is the part of such an
+ * arithmetic that is guessed at, and the row wraps safely when it does not
+ * fit - so a wrong model would be the only thing failing.
+ */
+(function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var flat = css.replace(/\n/g, ' ');
+  var rule = function (selector) {
+    var m = new RegExp(selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') +
+      ' \\{([^}]*)\\}').exec(flat);
+    return m ? m[1] : '';
+  };
+  ok('the heading and the controls share one flex row',
+    /display: flex/.test(rule('.presets')) &&
+    /flex-wrap: wrap/.test(rule('.presets')) &&
+    /align-items: center/.test(rule('.presets')));
+  /*
+   * And the heading does not push a line under itself. `.card h3` sets a rem
+   * of bottom margin and outranks a single class, so this one has to carry
+   * the extra class to beat it - which is also why the font, size and colour
+   * it used to declare were never in force.
+   */
+  ok('the heading claims no line of its own',
+    /margin: 0;/.test(rule('.card .presets-head')) &&
+    !/\.presets-head \{/.test(flat.replace('.card .presets-head {', '')));
+  /* The label used to take the full width, which put the select below it. */
+  ok('the label sits beside the select rather than above it',
+    !/width: 100%/.test(rule('.preset-picker label')) &&
+    /align-items: center/.test(rule('.preset-picker')));
+  /*
+   * And the select is sized to its longest name. Every other select on the
+   * page fills its field, which here would have pushed the button off the row
+   * whatever else was done.
+   */
+  ok('the select is sized to its content, not to the card',
+    /width: auto/.test(rule('.preset-picker select')) &&
+    /min-width: 12rem/.test(rule('.preset-picker select')));
+  /* Only the two notes take a line of their own, and they do it from inside
+     the row so they stay under the controls they are about. */
+  ok('only the notes below it claim a line',
+    /width: 100%/.test(rule('.preset-what')) &&
+    /width: 100%/.test(rule('.preset-status')));
+})();
+
 console.log('\nThe settings notes do not argue from what software does');
 /*
  * "It is offered because some software computes it that way" is not a reason a

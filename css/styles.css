@@ -700,28 +700,50 @@ input::placeholder { color: #a9bdb2; }
  * a reader changes one select the lit button would be a lie about what the
  * page is reading.
  */
+/*
+ * One line: the heading, what is in force, and the way to make your own. It
+ * was four stacked rows for three words and two controls, which gave the one
+ * thing on the page that is not a setting more height than any setting has.
+ *
+ * The two notes below it are the only children that take a line of their own,
+ * which they do by claiming the full width rather than by being outside the
+ * row - so they sit under the controls they are about.
+ */
 .presets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.9rem;
   margin: 0 0 1.5rem;
   padding: 0 0 1.3rem;
   border-bottom: 1px solid var(--line-soft);
 }
-.presets-head {
-  margin: 0 0 0.6rem;
-  font-family: var(--font);
-  font-size: 0.78rem;
-  font-weight: 600;
+/*
+ * The card's own heading, and it takes the card heading's face and colour
+ * from `.card h3`. That selector outranks a single class, so the family, the
+ * size, the weight and the colour this rule used to declare were never the
+ * ones in force: only the uppercasing was, which is why it looked like a
+ * title in small capitals rather than the label it was written as.
+ *
+ * So the rule now says only what is really different about this heading. The
+ * margin needs the extra class to beat the same selector, which was pushing a
+ * rem of space under a heading that now sits on a row.
+ */
+.card .presets-head {
+  margin: 0;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--ink-soft);
 }
 .preset-picker {
   display: flex;
   flex-wrap: wrap;
-  align-items: end;
+  align-items: center;
   gap: 0.5rem;
 }
-.preset-picker label { width: 100%; font-size: 0.82rem; color: var(--ink-soft); }
-.preset-picker select { min-width: 12rem; }
+.preset-picker label { font-size: 0.82rem; color: var(--ink-soft); }
+/* Wide enough for the longest name it holds, and no wider: every other select
+   on the page fills its field, and this one is sitting in a sentence. */
+.preset-picker select { width: auto; min-width: 12rem; }
 .preset-picker button, .preset-dialog button {
   font: inherit;
   font-size: 0.85rem;
@@ -741,8 +763,8 @@ input::placeholder { color: #a9bdb2; }
 }
 /* What the preset is, and where it cannot reach. Kept at the note's size and
    colour, since it is the same kind of thing the notes are. */
-.preset-what { margin: 0.7rem 0 0; max-width: 46rem; }
-.preset-status { margin: 0.6rem 0 0; min-height: 1.2em; }
+.preset-what { width: 100%; margin: 0.2rem 0 0; max-width: 46rem; }
+.preset-status { width: 100%; margin: 0; min-height: 1.2em; }
 
 .preset-dialog {
   width: min(48rem, calc(100vw - 2rem));
