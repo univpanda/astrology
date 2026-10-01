@@ -3075,7 +3075,7 @@ ok('the key names every mark the grid draws', (function () {
   if (!key) return false;
   // [Dr] rather than [D]: the letter now means debilitated on the chart and
   // on the card, and one letter cannot mean two things on one page.
-  return ['v', 'x', 'dr'].every(function (c) {
+  return ['v', 'x', 'y', 'dr'].every(function (c) {
     var letter = c === 'dr' ? 'Dr' : c.toUpperCase();
     return new RegExp('<span class="flag flag-' + c + '">\\[' +
       letter + '\\]</span>').test(key[0]);
@@ -3187,7 +3187,7 @@ ok('and the grid carries the four remaining marks and no others', (function () {
   var at = appSrc.indexOf('function renderVargas(state)');
   var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
   var marks = (block.match(/'flag flag-[a-z]+'/g) || []);
-  return marks.length === 3 && ['v', 'x', 'dr'].every(function (k) {
+  return marks.length === 4 && ['v', 'x', 'y', 'dr'].every(function (k) {
     return block.indexOf("'flag flag-" + k + "'") >= 0;
   });
 })());
@@ -3217,8 +3217,8 @@ ok('dig bala stays marked while neecha bhanga has no letter',
    !/flag flag-n/.test(appSrc));
 ok('the key explains directional strength and omits the removed N marker',
    /flag-dr">\[Dr\]/.test(html) && !/flag-n">\[N\]/.test(html));
-ok('while yogakaraka, drawn only in the chart, is named only on the card',
-   !/flag-y">\[Y\]/.test(html) && /Y: 'Yogakaraka'/.test(appSrc));
+ok('yogakaraka is named in the table key and the card',
+   /flag-y">\[Y\]/.test(html) && /Y: 'Yogakaraka'/.test(appSrc));
 /*
  * The ascendant is a point, so what is about a graha is withheld from it:
  * ownership, dignity, the neecha-bhanga star, dig bala.
@@ -3243,7 +3243,7 @@ ok('and nothing excludes the ascendant from the hemming, defined on it first',
    !/isAscendant[^\n]*hemmedBy/.test(appSrc) &&
    !/hemmedBy[^\n]*isAscendant/.test(appSrc));
 ok('each mark in the key carries its own colour',
-   ['v', 'x', 'dr'].every(function (c) {
+   ['v', 'x', 'y', 'dr'].every(function (c) {
      var letter = c === 'dr' ? 'Dr' : c.toUpperCase();
      return new RegExp('<span class="flag flag-' + c + '">\\[' +
        letter + '\\]</span>').test(html.replace(/\s+/g, ' '));
@@ -3417,7 +3417,7 @@ ok('and no yoga becomes a seventh mark', (function () {
   var at = appSrc.indexOf('function renderVargas(state)');
   var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
   var marks = (block.match(/'flag flag-[a-z]+'/g) || []);
-  return marks.length === 3 && /Charts\.decorateCardTarget\(td, cardOptions, planet\.name\)/.test(block) &&
+  return marks.length === 4 && /Charts\.decorateCardTarget\(td, cardOptions, planet\.name\)/.test(block) &&
     !/function grahaFootnote/.test(appSrc);
 })());
 ok('which is measurably a third of the cells rather than three fifths', (function () {
@@ -3523,7 +3523,7 @@ ok('every mark is a bracketed letter', (function () {
   var flat = html.replace(/\s+/g, ' ');
   var key = (flat.match(/<p class="varga-key">.*?<\/p>/) || [''])[0];
   var marks = key.match(/<span class="flag flag-[a-z]+">[^<]*<\/span>/g) || [];
-  return marks.length === 3 && !/flag-dig/.test(flat) && !/flag-star/.test(flat) &&
+  return marks.length === 4 && !/flag-dig/.test(flat) && !/flag-star/.test(flat) &&
     marks.every(function (m) { return /\[(?:Dr|[RVYCXSPDNEM])\]/.test(m); });
 })());
 /*
@@ -5992,9 +5992,9 @@ ok('and holds the six the grid draws, the other three being the card\u2019s',
      var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
      var flat = page.replace(/\s+/g, ' ');
      var key = (flat.match(/<p class="varga-key">.*?<\/p>/) || [''])[0];
-     return ['flag-v', 'flag-x', 'flag-dr']
+     return ['flag-v', 'flag-x', 'flag-y', 'flag-dr']
          .every(function (f) { return key.indexOf(f) >= 0; }) &&
-       ['flag-r', 'flag-y', 'flag-c', 'flag-s', 'flag-p', 'flag-n']
+       ['flag-r', 'flag-c', 'flag-s', 'flag-p', 'flag-n']
          .every(function (f) { return key.indexOf(f) < 0; });
    })());
 /*

@@ -3061,6 +3061,9 @@
         if (exchanging[planet.name]) {
           signLine.appendChild(el('span', 'flag flag-x', ' [X]'));
         }
+        if (Astro.isYogakaraka(planet.name, lagna)) {
+          signLine.appendChild(el('span', 'flag flag-y', ' [Y]'));
+        }
         var house = ((d.sign - lagna) % 12 + 12) % 12 + 1;
         if (Astro.hasDigBala(planet.name, house)) {
           signLine.appendChild(el('span', 'flag flag-dr', ' [Dr]'));
