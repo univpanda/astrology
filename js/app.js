@@ -1941,6 +1941,8 @@
         'Relationship: GF great friend, Fr friend, Neu neutral, ' +
         'En enemy, GE great enemy, Own its own sign.'));
       key.appendChild(el('span', 'table-key-item',
+        'State: S sleeping, D dreaming, W waking.'));
+      key.appendChild(el('span', 'table-key-item',
         'Vimsopaka Bala: Dashavarga (10 divisions), out of 20.'));
       key.appendChild(el('span', 'table-key-item',
         'Marks: [R] Retrograde, [C] Combust, ' +
@@ -1994,7 +1996,7 @@
     { label: 'Role', says: 'The graha’s ascendant-specific functional nature: benefic, neutral, papa, maraka or yogakaraka. Read from the rashi ascendant and kept separate from natural nature and yoga detection.' },
     { label: 'State', says: 'Waking, dreaming or sleeping according to whether the graha is in its own or exaltation sign, a friend’s or neutral’s sign, or an enemy’s or debilitation sign. Read in the rashi.' },
     { label: 'Age', says: 'Child, teen, youth, old or dead: six degrees to a stage and reversed in an even sign. Read in the rashi, and so the same in every chart here.' },
-    { label: 'Vim.', says: 'Vimsopaka Bala: weighted strength across the 10 Dashavarga divisions, out of 20. Uses the selected scoring settings and stays the same across these chart tabs.' }
+    { label: 'Vim Bala', says: 'Vimsopaka Bala: weighted strength across the 10 Dashavarga divisions, out of 20. Uses the selected scoring settings and stays the same across these chart tabs.' }
   ];
 
   /**
@@ -2131,7 +2133,7 @@
                 ' for a ' + Astro.SIGNS[c.ascendant.sign] + ' ascendant. This is ' +
                 'interpretive context; it does not create a yoga or alter a bala.' },
           { text: r.isAscendant ? '–'
-              : (GrahaView.JAGRATADI_ENGLISH[jagratadi] || '–'),
+              : (GrahaView.JAGRATADI_ENGLISH[jagratadi] || '–').charAt(0),
             title: r.isAscendant
               ? 'The lagna is a point rather than a graha, so it takes no avastha.'
               : jagratadi
@@ -4894,7 +4896,9 @@
 
   var PRESETS = {
     page: {
-      label: 'This page',
+      // Named as the picker names it. It was "This page", which the status
+      // line then read out as a sentence about a page rather than a reading.
+      label: 'the standard default',
       of: {},
       says: 'Back to what this page reads by default: the sourced option ' +
         'wherever the texts settle it, and the commoner convention where they ' +
@@ -5014,9 +5018,9 @@
     }
     if (!saved || typeof saved !== 'object') return null;
     if (saved.values && typeof saved.values === 'object') {
-      return { name: String(saved.name || 'My default'), values: saved.values };
+      return { name: String(saved.name || 'My custom settings'), values: saved.values };
     }
-    return { name: 'My default', values: saved };
+    return { name: 'My custom settings', values: saved };
   }
 
   function readMySettings() {
@@ -5172,10 +5176,10 @@
       var exists = !!mine;
       mineOption.hidden = !exists;
       mineOption.disabled = !exists;
-      mineOption.textContent = exists ? mine.name : 'My default';
+      mineOption.textContent = exists ? mine.name : 'My custom settings';
       forget.hidden = !exists;
       document.getElementById('preset-create').textContent = exists
-        ? 'Edit my default settings' : 'Create my default settings';
+        ? 'Edit my custom settings' : 'Create my custom settings';
     };
 
     /*
@@ -5189,7 +5193,14 @@
      * takes its whole column, which is the job the "Start with" select used to
      * do and says what it does where the doing happens.
      */
-    var COLUMNS = ['page', 'raman', 'parashara', 'star'];
+    /*
+     * The readings, without this page among them. Its own values were a column
+     * here and are already the whole of "Yours" until a reader moves
+     * something, so the table opened with two identical columns and one of
+     * them named after the thing a reader is looking at rather than after a
+     * reading they could compare themselves to.
+     */
+    var COLUMNS = ['raman', 'parashara', 'star'];
     var editorSelects = {};
     var editorCells = [];
 
@@ -5377,14 +5388,13 @@
       var preset = PRESETS[name];
       what.textContent = preset ? preset.says
         : 'Your one saved combination. Edit it to replace it; this browser keeps no second copy.';
-      what.hidden = false;
     };
 
     var apply = function (name) {
       var wanted = settingsForPreset(name);
       if (!wanted) return;
       var preset = PRESETS[name];
-      var label = preset ? preset.label : 'My default';
+      var label = preset ? preset.label : 'My custom settings';
       applySettings(wanted);
       explain(name);
       status.textContent = 'Recomputing\u2026';
@@ -5426,12 +5436,12 @@
       var values = {};
       Object.keys(editorSelects).forEach(function (id) { values[id] = editorSelects[id].value; });
       // Named, so the picker can say which one is in force rather than "mine".
-      var named = (nameBox.value || '').trim().slice(0, 40) || 'My default';
+      var named = (nameBox.value || '').trim().slice(0, 40) || 'My custom settings';
       try {
         window.localStorage.setItem(MY_SETTINGS_KEY,
           JSON.stringify({ name: named, values: values }));
         window.localStorage.setItem(DEFAULT_SETTINGS_KEY, 'mine');
-        status.textContent = 'My default saved. Saving again will replace it.';
+        status.textContent = 'Saved, and now in use. Saving again replaces it.';
       } catch (e) {
         status.textContent = 'This browser would not store the setting.';
         return;
@@ -5449,7 +5459,7 @@
       closePage();
       showMine();
       apply('page');
-      status.textContent = 'My default deleted. Standard default is in use.';
+      status.textContent = 'Deleted. The standard default is in use again.';
     });
     showMine();
     choice.value = readDefaultChoice();

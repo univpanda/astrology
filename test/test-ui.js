@@ -6963,7 +6963,7 @@ ok('the table carries thirteen property columns', (function () {
     .map(function (t) { return t.slice(8, -1); });
   return found.join('|') === ['Rashi', 'House', 'Lordship', 'Dispositor',
     'Longitude', 'Name - Pada', 'Lord', 'Sub lord', 'Karaka', 'Role',
-    'State', 'Age', 'Vim.'].join('|') &&
+    'State', 'Age', 'Vim Bala'].join('|') &&
     !/<th scope="col">Chart<\/th>/.test(html);
 })());
 ok('Graha Vimsopaka uses Dashavarga in every chart tab and follows scoring settings', (function () {
@@ -7006,13 +7006,16 @@ ok('Graha Vimsopaka uses Dashavarga in every chart tab and follows scoring setti
       var division = view.division;
       var table = renderTable({ chart: chart }, view);
       var heading = table.children[0].children[0].children.slice(-1)[0];
-      if (heading.textContent !== 'Vim.' || !/Vimsopaka Bala:.*10 Dashavarga/.test(heading.title)) return false;
+      if (heading.textContent !== 'Vim Bala' || !/Vimsopaka Bala:.*10 Dashavarga/.test(heading.title)) return false;
       var rows = table.children[1].children;
       if (rows.length !== 10) return false;
       return rows.every(function (row) {
         var name = row.children[0].textContent;
         var cell = row.children.slice(-1)[0];
         var planet = positions[name];
+        var stateCell = row.children[11];
+        var stateName = planet && GrahaView.JAGRATADI_ENGLISH[
+          Astro.jagratadiAvastha(name, Astro.signOf(planet.longitude))];
         var score = planet && Astro.vimsopaka(name, planet.longitude,
           Astro.VARGA_SCHEMES.dasavarga, positions, settings.tatkalika, settings.hora, settings.mercury);
         var expectedMarks = [];
@@ -7035,6 +7038,8 @@ ok('Graha Vimsopaka uses Dashavarga in every chart tab and follows scoring setti
         var actualMarks = row.children[0].children.map(function (node) { return node.textContent.trim(); });
         if (division === 1 && view.reference === 'Ascendant') values.push(cell.textContent);
         return row.children.length === 14 &&
+          stateCell.textContent === (stateName ? stateName.charAt(0) : '–') &&
+          (!stateName || stateCell.title.indexOf(stateName + ':') === 0) &&
           actualMarks.join('') === expectedMarks.map(function (mark) { return '[' + mark + ']'; }).join('') &&
           cell.textContent === (score ? score.total.toFixed(2) : '–') &&
           (score ? /of 20 across the 10 Dashavarga divisions/.test(cell.title) : true);
@@ -7055,12 +7060,14 @@ ok('functional role stays in the table and out of the highlight card',
    /Astro\.functionalRole\(r\.name, c\.ascendant\.sign\)/.test(appSrc) &&
    !/data-role/.test(appSrc +
      fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8')));
-ok('both avastha columns are displayed in English',
+ok('State uses English initials and Age retains English words',
    /Jagrat: 'Waking', Swapna: 'Dreaming', Sushupta: 'Sleeping'/.test(grahaViewSrc) &&
    /Bala: 'Child', Kumara: 'Teen', Yuva: 'Youth'/.test(grahaViewSrc) &&
    /Vriddha: 'Old', Mrita: 'Dead'/.test(grahaViewSrc) &&
    /GrahaView\.JAGRATADI_ENGLISH\[jagratadi\]/.test(appSrc) &&
    /GrahaView\.BALADI_ENGLISH\[baladi\]/.test(appSrc));
+ok('the State key spells out S, D and W without introducing bracketed markers',
+   /State: S sleeping, D dreaming, W waking\./.test(appSrc));
 /*
  * Every column says what it is on hover.
  */
@@ -10237,12 +10244,36 @@ console.log('\nThe default-settings row is one line');
   ok('the select is sized to its content, not to the card',
     /width: auto/.test(rule('.preset-picker select')) &&
     /min-width: 12rem/.test(rule('.preset-picker select')));
-  /* Only the two notes take a line of their own, and they do it from inside
-     the row so they stay under the controls they are about. */
-  ok('Why keeps the explanation collapsed until requested',
-    /<details class="preset-why">\s*<summary>Why\?<\/summary>\s*<p class="field-note preset-what" id="preset-what"><\/p>\s*<\/details>/.test(html) &&
-    /position: absolute/.test(rule('.preset-what')) &&
-    /right: 0/.test(rule('.preset-what')));
+  /*
+   * The explanation takes a line of its own rather than hiding behind a "Why?"
+   * toggle. It is the one thing on that row which is not a control, and a
+   * reader should not have to go looking for it; neither note is drawn until
+   * it has something to say, so nothing stands empty above the settings.
+   */
+  ok('the explanation is read where it stands, not folded away',
+    !/preset-why|<summary>Why/.test(html + css) &&
+    /<p class="field-note preset-what" id="preset-what"><\/p>/.test(html) &&
+    /display: none/.test(rule('.preset-what:empty')) &&
+    /display: none/.test(rule('.preset-status:empty')));
+  /*
+   * And the select is named for a screen reader without being labelled on
+   * screen. Its own words say what it is, and "Use" above them said it twice.
+   */
+  ok('the picker is named without a visible label',
+    /<label for="preset-choice" class="visually-hidden">Use<\/label>/.test(html) &&
+    /\.visually-hidden \{[^}]*clip: rect\(0 0 0 0\)/.test(css.replace(/\n/g, ' ')));
+  /*
+   * A reader's own set is called what they would call it. "Default" is what
+   * the page does with it, not what it is: it is the custom one, and saying
+   * both words in one phrase said neither.
+   */
+  ok('a reader\u2019s own set is called custom, and saving it makes it the default',
+    />Create my custom settings</.test(html) &&
+    /'Edit my custom settings' : 'Create my custom settings'/.test(appSrc) &&
+    />My custom settings</.test(html) &&
+    !/my default settings/i.test(html) &&
+    // Saved and in force in one step, which is what the page already did.
+    /window\.localStorage\.setItem\(DEFAULT_SETTINGS_KEY, 'mine'\)/.test(appSrc));
   ok('status is right-aligned and does not reserve an empty row',
     /text-align: right/.test(rule('.preset-status')) &&
     /display: none/.test(rule('.preset-status:empty')));
@@ -10801,7 +10832,7 @@ console.log('\nEach preset reaches the figures it is named for');
    * presets really compute with - a table of plausible-looking words would be
    * worse than no table.
    */
-  ok('every setting is shown against all four readings at once', (function () {
+  ok('every setting is shown against all three readings at once', (function () {
     out.byId('preset-create').fire('click', {});
     var rows = {};
     (function walk(n) {
@@ -10813,10 +10844,10 @@ console.log('\nEach preset reaches the figures it is named for');
       n.children.forEach(walk);
     })(out.byId('preset-editor'));
     var names = Object.keys(rows);
-    // One row per setting, and six columns: the name, yours, and the four.
+    // One row per setting, and five columns: the name, yours, and the three.
     // The group headings have no td of their own, so they are not counted.
     return names.length === out.RECKONING_IDS.length &&
-      names.every(function (name) { return rows[name].length === 5; });
+      names.every(function (name) { return rows[name].length === 4; });
   })());
   ok('and each column really holds what that reading computes with', (function () {
     var cells = [];
@@ -10841,10 +10872,14 @@ console.log('\nEach preset reaches the figures it is named for');
       n.children.forEach(walk);
     })(out.byId('preset-editor'));
     var words = row.slice(1).map(textOf);
-    return cells.length === out.RECKONING_IDS.length * 4 &&
-      words.length === 4 &&
-      /Lahiri/.test(words[0]) && /Raman/.test(words[1]) &&
-      /Lahiri/.test(words[2]) && /Lahiri/.test(words[3]);
+    /*
+     * Raman has his own and the other two are silent, so they show this
+     * page's, faint. This page is no longer a column of its own: its values
+     * are already the whole of "Yours" until a reader moves something.
+     */
+    return cells.length === out.RECKONING_IDS.length * 3 &&
+      words.length === 3 &&
+      /Raman/.test(words[0]) && /Lahiri/.test(words[1]) && /Lahiri/.test(words[2]);
   })());
   /*
    * And a cell says whether it is that reading's own position or this page
@@ -10875,12 +10910,12 @@ console.log('\nEach preset reaches the figures it is named for');
     var floor = rowFor('budha-floor').map(function (c) {
       return /preset-cell-unrecorded/.test(c.className);
     });
-    // Every reading has a position on the ayanamsa, Raman's being his own.
+    // Raman alone has a position on the ayanamsa too.
     var ayan = rowFor('ayanamsa').map(function (c) {
       return /preset-cell-unrecorded/.test(c.className);
     });
-    return floor.join(',') === 'false,false,true,true' &&
-      ayan.join(',') === 'false,false,true,true';
+    return floor.join(',') === 'false,true,true' &&
+      ayan.join(',') === 'false,true,true';
   })());
   /* And the table says what the faintness means, or it is only decoration. */
   ok('and the table says what a faint cell means', (function () {
@@ -10916,7 +10951,7 @@ console.log('\nEach preset reaches the figures it is named for');
       // Each group opens with its own name, spanning the whole table.
       var spans = bodies.every(function (b) {
         var cell = b.children[0].children[0];
-        return cell.tag === 'th' && cell.attrs.colspan === '6' &&
+        return cell.tag === 'th' && cell.attrs.colspan === '5' &&
           cell.attrs.scope === 'colgroup';
       });
       return opens.join(' | ') === 'Chart settings | Test settings' && spans;
@@ -10968,9 +11003,9 @@ console.log('\nEach preset reaches the figures it is named for');
       if (n.className === 'preset-column-take') take.push(n);
       n.children.forEach(walk);
     })(out.byId('preset-editor'));
-    take[1].fire('click', {});   // B. V. Raman
+    take[0].fire('click', {});   // B. V. Raman, now the first column
     var fields = editorFields(), wanted = out.PRESETS.raman.of;
-    return take.length === 4 &&
+    return take.length === 3 &&
       Object.keys(wanted).every(function (id) {
         return fields[id] && fields[id].value === wanted[id];
       });
@@ -10991,7 +11026,8 @@ console.log('\nEach preset reaches the figures it is named for');
   ok('a set saved before names had been thought of still opens', (function () {
     out.storeRaw(JSON.stringify({ ayanamsa: 'kp', 'chart-style': 'south' }));
     var mine = out.readMyDefault();
-    return mine && mine.name === 'My default' && mine.values.ayanamsa === 'kp';
+    return mine && mine.name === 'My custom settings' &&
+      mine.values.ayanamsa === 'kp';
   })());
 
   ok('saving again replaces the one personal default instead of adding another',

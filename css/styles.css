@@ -736,22 +736,25 @@ input::placeholder { color: #a9bdb2; }
   border-color: var(--green);
   background: var(--green-soft);
 }
-/* What the preset is, and where it cannot reach. Kept at the note's size and
-   colour, since it is the same kind of thing the notes are. */
-.preset-why { position: relative; }
-.preset-why summary { cursor: pointer; font-size: 0.82rem; color: var(--ink-soft); }
+/*
+ * What the preset is, and where it cannot reach. Kept at the note's size and
+ * colour, being the same kind of thing the notes under the controls are.
+ *
+ * A line of its own rather than a panel behind a "Why?" toggle: it is the one
+ * thing on that row which is not a control, and a reader should not have to go
+ * looking for it. The text stays left-aligned where the row is right-aligned,
+ * because a paragraph set ragged-left is read a line at a time.
+ *
+ * Neither note is drawn until it has something to say, so an unchosen reading
+ * leaves no empty band above the settings.
+ */
 .preset-what {
-  position: absolute;
-  right: 0;
-  top: 100%;
-  z-index: 10;
-  width: min(28rem, calc(100vw - 4rem));
-  margin: 0.5rem 0 0;
-  padding: 0.8rem;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  width: 100%;
+  max-width: 46rem;
+  margin: 0.2rem 0 0 auto;
+  text-align: left;
 }
+.preset-what:empty { display: none; }
 .preset-status { width: 100%; margin: 0; text-align: right; }
 .preset-status:empty { display: none; }
 
@@ -840,14 +843,14 @@ input::placeholder { color: #a9bdb2; }
  */
 .preset-table {
   width: 100%;
-  min-width: 46rem;
+  min-width: 40rem;
   table-layout: fixed;
   border-collapse: collapse;
   font-size: 0.82rem;
 }
-.preset-table th:first-child { width: 15%; }
-.preset-table th:nth-child(2) { width: 21%; }
-.preset-table th:nth-child(n + 3) { width: 16%; }
+.preset-table th:first-child { width: 16%; }
+.preset-table th:nth-child(2) { width: 24%; }
+.preset-table th:nth-child(n + 3) { width: 20%; }
 .preset-table th,
 .preset-table td {
   padding: 0.35rem 0.4rem;
