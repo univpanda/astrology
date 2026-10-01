@@ -8652,15 +8652,15 @@ console.log('\nThe card says how the graha stands in its sign');
    * lines. The two stopped being the same question once the lines became cells
    * in a grid.
    */
-  ok('and the card reads identity, position, lords, seat, findings', (function () {
+  ok('and the card reads identity, sign, nakshatra, seat, findings', (function () {
     var card = cardFor(labels().Venus);
     return card.children.map(function (n) { return n.className; }).join(' ') ===
       'graha-card-name graha-card-grid' &&
       /\.graha-card-fact-label \{/.test(css) &&
       textOf(card.children[0]) === 'Venus' &&
       cellsOf(card).join(' | ') ===
-        'Matrukaraka | Cancer 20\u00b049\u203235\u2033 | Ashlesha 2 | ' +
-        'Dis Mo (GE) | N Lord Me (GF) | N SLord Ve (Own) | ' +
+        'Matrukaraka | Cancer 20\u00b049\u203235\u2033 | Dis Mo (GE) | ' +
+        'Ashlesha 2 | N Lord Me (GF) | N SLord Ve (Own) | ' +
         'House 10 | Rules 1st, 8th | Aspected by Mo (7th), Ke (7th)';
   })());
   /*
@@ -8691,7 +8691,7 @@ console.log('\nThe card says how the graha stands in its sign');
   ok('a missing reading leaves its column standing', (function () {
     var cells = cellsOf(cardFor(labels().Ketu));
     return cells.join(' | ') === ' | Capricorn 24\u00b019\u203226\u2033 | ' +
-      'Dhanishta 1 | Dis Sa | N Lord Ma | N SLord Ra | House 4 |  | ' +
+      'Dis Sa | Dhanishta 1 | N Lord Ma | N SLord Ra | House 4 |  | ' +
       'Aspected by Ma (4th), Ve (7th), Ra (7th)' &&
       // A node holds no chara karaka either, so its first column is empty too.
       cells[0] === '' && cells[7] === '';
@@ -8707,7 +8707,7 @@ console.log('\nThe card says how the graha stands in its sign');
   ok('a row with nothing to say is left out', (function () {
     var card = cardFor(labels().Ascendant);
     return cellsOf(card).join(' | ') === ' | Libra 4\u00b053\u203219\u2033 | ' +
-      'Chitra 4 | Dis Ve | N Lord Ma | N SLord Ve';
+      'Dis Ve | Chitra 4 | N Lord Ma | N SLord Ve';
   })());
   /*
    * Retrograde, combust and yogakaraka are not on the conditions line. The
@@ -8764,14 +8764,15 @@ console.log('\nThe card says how the graha stands in its sign');
  * All of it trails the name without taking its weight or the graha's colour:
  * these are things true of the graha, not part of what it is called.
  */
-  ok('the karaka and the position are a row of the grid, not a tail on the name',
+  ok('the karaka and the position are rows of the grid, not a tail on the name',
     (function () {
       var card = cardFor(labels().Venus);
       // The name alone in the heading, with nothing hung off it.
       return textOf(card.children[0]) === 'Venus' &&
         card.children[0].children.length === 0 &&
-        cellsOf(card).slice(0, 3).join(' | ') ===
-          'Matrukaraka | Cancer 20\u00b049\u203235\u2033 | Ashlesha 2';
+        cellsOf(card).slice(0, 6).join(' | ') ===
+          'Matrukaraka | Cancer 20\u00b049\u203235\u2033 | Dis Mo (GE) | ' +
+          'Ashlesha 2 | N Lord Me (GF) | N SLord Ve (Own)';
     })() &&
     // Both or neither: a chart that carried one and not the other wrote the
     // missing half out as the word "null".
@@ -8797,7 +8798,7 @@ console.log('\nThe card says how the graha stands in its sign');
       // Full name in the heading, two letters everywhere a second graha is named.
       return textOf(card.children[0]) === 'Venus' &&
         cellsOf(card).join(' | ').indexOf('Venus') < 0 &&
-        cellsOf(card)[3] === 'Dis Mo (GE)' &&
+        cellsOf(card)[2] === 'Dis Mo (GE)' &&
         /Aspected by Mo \(7th\), Ke \(7th\)$/.test(cellsOf(card)[8]) &&
         /*
          * And the brackets are words the app has. The card echoes whatever the

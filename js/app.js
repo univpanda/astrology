@@ -1555,9 +1555,11 @@
        * position used to trail the name, which left it the one line on the
        * card set to nothing in particular.
        *
-       * Coarse to fine, then outward: where it is in the zodiac, the lords of
-       * the frames it stands in, then where it stands in the chart, what it
-       * owns and what looks at it.
+       * A frame to a row, each with its own lord beside it: the sign and the
+       * graha that rules it, then the nakshatra and the two lords that divide
+       * it, then where the graha stands in the chart, what it owns and what
+       * looks at it. The three lords stood together on one row before, which
+       * put each of them a line away from the frame it is the lord of.
        */
       var grid = el('div', 'graha-card-grid');
       var sign = t.getAttribute('data-sign'), degree = t.getAttribute('data-degree');
@@ -1576,11 +1578,11 @@
       [
         [['', t.getAttribute('data-karaka'), ''],
          ['', sign && degree ? sign + ' ' + degree : '', ''],
-         ['', shortNakshatra(nakshatra),
-          nakshatra ? 'Nakshatra ' + nakshatra + '.' : '']],
-        [['Dis', withRelation(dispositor, relation),
+         ['Dis', withRelation(dispositor, relation),
           saysRelation(dispositor, relation,
-            'This graha owns the sign it occupies.')],
+            'This graha owns the sign it occupies.')]],
+        [['', shortNakshatra(nakshatra),
+          nakshatra ? 'Nakshatra ' + nakshatra + '.' : ''],
          ['N Lord', withRelation(nakLord, nakRel),
           saysRelation(nakLord, nakRel,
             'This graha lords the nakshatra it occupies.')],
