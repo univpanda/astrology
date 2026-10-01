@@ -1163,7 +1163,8 @@ function stripHtml(label) {
    */
   ok('and changing it recomputes whatever chart is open',
      /document\.getElementById\('node-type'\)\.addEventListener\('change'/.test(appSrc) &&
-     /recomputeEverything\(function \(recast, warning\)/.test(appSrc) &&
+     // Naming what it changed, so the other two are taken from the chart.
+     /recomputeEverything\(\{ trueNode: this\.value === 'true' \},/.test(appSrc) &&
      /target\.trueNode = trueNode;/.test(appSrc) &&
      /render\(target\);\s*\n\s*writeHash\(target\);/.test(appSrc));
   ok('and says so, including when there is no chart to recompute',
@@ -6195,7 +6196,8 @@ ok('and changing it recomputes the open chart', (function () {
   var at = appSrc.indexOf("getElementById('ayanamsa').addEventListener");
   if (at < 0) return false;
   var block = appSrc.slice(at, appSrc.indexOf('});\n\n', at));
-  return /recomputeEverything\(function \(recast, warning\)/.test(block) &&
+  return /recomputeEverything\(\{ ayanamsa: wanted \}, function \(recast, warning\)/
+      .test(block) &&
     /if \(!recast\) return;/.test(block) &&
     /if \(!lastChart\)/.test(block);
 })());
@@ -10590,6 +10592,43 @@ console.log('\nEach preset reaches the figures it is named for');
     var svg = box.children.filter(function (n) { return n.tag === 'svg'; })[0];
     return svg ? String(svg.attrs.class || '') : '';
   };
+  /*
+   * One recast path for the three chart-wide settings is right, but it must
+   * recast what the reader moved and not everything the selects happen to be
+   * showing. Those three selects are the form's as well, and the form fills
+   * them from a row without casting it: pressing Edit on a saved kundali
+   * leaves them holding that row's values while another chart is on screen.
+   *
+   * Reading all three on any one change meant the next unrelated setting
+   * dragged the other two in. Moving the node type alone shifted the open
+   * chart from zone time to local mean time, half an hour at Honolulu, and
+   * from Lahiri to Raman, a degree and a half, while the status line said
+   * only that the node had changed.
+   */
+  ok('a setting recasts what was moved and nothing else', (function () {
+    openChart();
+    // What Edit does: fills the form from a row, casts nothing.
+    out.byId('time-standard').value = 'lmt';
+    out.byId('ayanamsa').value = 'raman';
+    var node = out.byId('node-type');
+    node.value = 'mean';
+    node.fire('change', { target: node });
+    var after = out.lastChart();
+    return after.trueNode === false &&
+      after.standard === 'zone' && after.offset === -600 &&
+      after.ayanamsa === 'lahiri';
+  })());
+  /* And the same the other way round: the standard moves, the ayanamsa does not. */
+  ok('and the time standard does not drag the ayanamsa with it', (function () {
+    openChart();
+    out.byId('ayanamsa').value = 'raman';
+    var standard = out.byId('time-standard');
+    standard.value = 'lmt';
+    standard.fire('change', { target: standard });
+    var after = out.lastChart();
+    return after.standard === 'lmt' && after.ayanamsa === 'lahiri';
+  })());
+
   ok('changing the chart style redraws what is on screen', (function () {
     openChart();
     var style = out.byId('chart-style');

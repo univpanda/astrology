@@ -5132,14 +5132,27 @@
    * replace the ephemeris answer one request order: an older response may not
    * overwrite a newer selection merely because the network returned it last.
    */
-  function recomputeEverything(done) {
+  /*
+   * `changes` names what the reader actually moved. Anything it does not name
+   * is taken from the chart rather than from the select showing it, because
+   * the three selects are also the form's, and the form fills them from a row
+   * without casting it: pressing Edit on a saved kundali leaves them holding
+   * that row's values while another chart is still on screen. Reading all
+   * three on any change made the next unrelated setting drag the other two in,
+   * so moving the node type alone could shift the open chart half an hour and
+   * a degree and a half and say only that the node had changed.
+   */
+  function recomputeEverything(changes, done) {
     if (!lastChart || !lastChart.chart) return done(false, '');
     var target = lastChart;
     var request = ++settingsRecast;
-    var ayanamsa = document.getElementById('ayanamsa').value;
-    var trueNode = document.getElementById('node-type').value === 'true';
+    var has = function (key) {
+      return Object.prototype.hasOwnProperty.call(changes || {}, key);
+    };
+    var ayanamsa = has('ayanamsa') ? changes.ayanamsa : target.ayanamsa;
+    var trueNode = has('trueNode') ? changes.trueNode : target.trueNode;
     var standardSelect = document.getElementById('time-standard');
-    var standard = standardSelect.value === 'lmt' ? 'lmt' : 'zone';
+    var standard = has('standard') ? changes.standard : (target.standard || 'zone');
     var offset = target.offset;
     var jdUT = target.chart.julianDay;
     var warning = '';
@@ -5207,7 +5220,16 @@
       what.textContent = preset.says;
       what.hidden = false;
       status.textContent = 'Recomputing\u2026';
-      recomputeEverything(function (recast, warning) {
+      /*
+       * A preset is the one caller that really does move all three, having
+       * just set every select itself.
+       */
+      recomputeEverything({
+        ayanamsa: document.getElementById('ayanamsa').value,
+        trueNode: document.getElementById('node-type').value === 'true',
+        standard: document.getElementById('time-standard').value === 'lmt'
+          ? 'lmt' : 'zone'
+      }, function (recast, warning) {
         status.textContent = (recast
           ? 'The chart on screen now reads as ' + preset.label + ' does.'
           : 'Set to ' + preset.label + '. The next chart will use it.') +
@@ -5378,7 +5400,8 @@
       return;
     }
     status.textContent = 'Recomputing\u2026';
-    recomputeEverything(function (recast, warning) {
+    recomputeEverything({ standard: this.value === 'lmt' ? 'lmt' : 'zone' },
+      function (recast, warning) {
       if (!recast) return;
       status.textContent = (lastChart.standard === 'lmt'
         ? 'Recomputed from local mean time at the birthplace\u2019s own meridian.'
@@ -5394,7 +5417,8 @@
       return;
     }
     status.textContent = 'Recomputing\u2026';
-    recomputeEverything(function (recast, warning) {
+    recomputeEverything({ trueNode: this.value === 'true' },
+      function (recast, warning) {
       if (!recast) return;
       var wanted = lastChart.trueNode;
       status.textContent = (lastChart.name
@@ -5632,7 +5656,7 @@
       return;
     }
     status.textContent = 'Recomputing\u2026';
-    recomputeEverything(function (recast, warning) {
+    recomputeEverything({ ayanamsa: wanted }, function (recast, warning) {
       if (!recast) return;
       status.textContent = (lastChart.name
         ? 'Recomputed ' + lastChart.name + '\u2019s chart against ' + label + '.'
