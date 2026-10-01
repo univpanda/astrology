@@ -1821,21 +1821,17 @@ td.nak-lords { font-family: var(--font-mono); color: var(--ink-soft); }
 /* A named modern rule rather than a classical one, so it reads as an aside. */
 td.rao-aspects { color: var(--ink-soft); font-style: italic; }
 tr td.rulership:not(:empty) { white-space: nowrap; }
-/* A graha spans its chart rows, so the name sits centred against them and the
-   rule belongs under the group rather than between its lines. */
-/* The graha tables are built one per chart and carry a class rather than an id,
-   there being several of them. Grahas across the top and what is asked of them
-   down the side, the same turn the two grids beside them take, so the corner
-   above the graha names is blank and the row labels name themselves. */
+/* The graha tables are built one per chart and carry a class rather than an id.
+   One graha occupies one row, with its name fixed at the left while its facts
+   run across the columns. */
 table.graha-table th[scope="row"] {
   white-space: nowrap;
   text-align: left;
   color: var(--ink);
 }
 table.graha-table thead th, table.graha-table td { text-align: center; }
-/* It is the widest table on the page: each graha column has to hold that
-   graha's longest field, which is nearly always its nakshatra. Let it breathe
-   less than the others so the scroll is shorter. */
+/* Twelve facts still need horizontal room, but one graha remains a single line
+   and the sticky name keeps that line identified while it scrolls. */
 table.graha-table th, table.graha-table td {
   padding-left: 0.5rem;
   padding-right: 0.5rem;
@@ -1848,18 +1844,6 @@ table.graha-table th, table.graha-table td {
 /* A word a line. The break is put in rather than left to the layout, which
    would move it as the table resized and could split the pair anywhere. */
 table.graha-table .stacked { display: block; }
-
-/* Degrees, minutes and seconds are three rows of one measurement, so the
-   measurement is named in a row above them rather than left to be inferred from
-   three bare unit names. That row holds nothing itself; the three under it step
-   in and back, being parts of the thing named rather than things of their own.
-   The same reading the Shadbala grid gives its shares and their parts. */
-table.graha-table tr.row-part th[scope="row"] {
-  color: var(--ink-soft);
-  padding-left: 1.4rem;
-}
-table.graha-table th.row-head { border-bottom: none; }
-table.graha-table td.row-head-fill { border-bottom: none; }
 
 /* The strip of chart tabs inside the Grahas panel. Smaller than the panel tabs
    above it: it chooses between three tables at most and should not compete with

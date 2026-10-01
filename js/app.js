@@ -2033,37 +2033,16 @@
     });
   }
 
-  /*
-   * The rows of one chart's table: what is asked about every graha, in the
-   * order a reader asks it. Sign first, then what the graha is worth there,
-   * then where that puts it and what it owns from there; the precise position
-   * and its nakshatra close, being the detail rather than the reading.
-   */
+  /* The columns read left to right for each graha. */
   var GRAHA_ROWS = [
     { label: 'Rashi', says: 'The sign this chart puts the graha in.' },
     { label: 'House', says: 'Counted from this chart’s own house 1, which the tab above says what is counted from.' },
-    { label: 'Lordship', says: 'Which houses the graha rules, counted from the same house 1 as the row above.' },
+    { label: 'Lordship', says: 'Which houses the graha rules, counted from the same house 1 as the House column.' },
     { label: 'Dispositor', says: 'The lord of the sign the graha stands in.' },
     { label: 'Relationship', says: 'What the graha makes of its dispositor - the compound relation, natural and temporary together. The graha’s own view, which is not always returned.' },
-    /*
-     * Three rows rather than one cell reading 29° 39' 38". The unit is in the
-     * label, as the pada's is, so the cells carry the figure alone - and a
-     * column that held eleven characters for this now holds two, which is what
-     * the Moon's, Jupiter's and Saturn's columns were sized by.
-     */
-    /*
-     * A heading of its own, then the three units under it. Three bare unit
-     * names beside a table of numbers do not say what they are units of, and
-     * the heading costs a row, which is the cheap direction in a table this
-     * shape.
-     */
-    { label: 'Longitude', head: true,
-      says: 'Where the graha stands within its sign, in the three rows below.' },
-    { label: 'Degrees', part: true, says: 'Whole degrees into the sign, from 0 to 29.' },
-    { label: 'Minutes', part: true, says: 'Minutes of arc, a sixtieth of a degree each.' },
-    { label: 'Seconds', part: true, says: 'Seconds of arc, a sixtieth of a minute each.' },
+    { label: 'Longitude', says: 'Where the graha stands within its sign, in degrees, minutes and seconds.' },
     { label: 'Nakshatra', says: 'Which of the 27 nakshatras the graha falls in.' },
-    { label: 'Pada', says: 'Which quarter of that nakshatra, of four. Read with the row above it: a bare 3 means nothing on its own.' },
+    { label: 'Pada', says: 'Which quarter of that nakshatra, of four. Read with the Nakshatra column: a bare 3 means nothing on its own.' },
     { label: 'Nakshatra lord', says: 'The graha that rules that nakshatra, which is what runs the Vimshottari dasha.' },
     { label: 'Sub lord', says: 'The KP sub lord: the nakshatra divided again in the Vimshottari proportions, and whichever graha owns the part the position falls in.' },
     /*
@@ -2078,18 +2057,9 @@
   ];
 
   /**
-   * One chart's table: grahas across the top, what is asked of them down the
-   * side.
-   *
-   * Turned to match the two grids beside it. It read the other way, a row per
-   * graha, which is the shape of the data - but the question a reader brings is
-   * usually about one thing across all the grahas, "who is exalted", "who owns
-   * the tenth", and that is a row to scan rather than a column to hunt down.
-   *
-   * It costs width. Each graha column has to be as wide as that graha's longest
-   * field, and the longest field is nearly always its nakshatra, so the table
-   * runs about half as wide again as it did. The scroll container is what pays
-   * for it.
+   * One chart's table: one graha per row, its facts across the columns. This
+   * keeps a graha's reading on one horizontal line and makes its name the sticky
+   * row heading while the detail scrolls.
    */
   function grahaTableFor(state, view) {
     var c = state.chart;
@@ -2133,13 +2103,12 @@
       });
     };
 
-    /* Everything one column needs, worked out once and read down the rows. */
+    /* Everything one graha row needs, worked out once. */
     var columns = entities.map(function (r) {
       var v = Astro.vargaPosition(r.longitude, view.division);
       var nak = Astro.nakshatraOf(v.longitude);
       var house = ((v.sign - firstSign) % 12 + 12) % 12 + 1;
       var owned = r.isAscendant ? [] : Astro.housesOwned(r.name, firstSign);
-      var arc = dmsParts(v.degreeInSign);
       return {
         entity: r,
         cells: [
@@ -2154,15 +2123,7 @@
              */
             flags: [view.division !== 1 && v.sign === Astro.signOf(r.longitude)
               ? 'V' : null] },
-          /*
-           * [N], [D] and [Y] used to hang off these three cells - neecha
-           * bhanga on the dignity, dig bala on the house, yogakaraka on the
-           * lordship. Four rows of a wide table each carrying a bracketed
-           * letter is a lot of punctuation for a reader scanning signs and
-           * house numbers, and every one of the three is now said in full on
-           * the graha's card, where there is room for the reason. The marks
-           * that remain here are about the sign the cell names.
-           */
+          /* [N], [Dr] and [Y] are said in full on the graha's card. */
           { text: String(house), cls: 'numeric' },
           owned.length
             ? { text: owned.join(', '), cls: 'numeric',
@@ -2173,53 +2134,22 @@
           { text: r.isAscendant ? Astro.SIGN_LORDS[v.sign] : dispositorOf(r.name, v.sign),
             cls: 'dispositor',
             title: Astro.SIGN_LORDS[v.sign] + ' rules ' + Astro.SIGNS[v.sign] + '.' },
-          /*
-           * Stacked like the dignity above it and the nakshatra below: Great
-           * Friend is twelve characters and its longer word is six, and one
-           * graha in a great friend's sign was setting that column's width for
-           * every row in it.
-           */
+          /* Keep a long two-word relationship from widening the whole table. */
           { text: r.isAscendant ? '\u2013'
               : dispositorRelation(r.name, v.sign, positionsD1),
             cls: 'dispositor', stack: true,
             title: r.isAscendant
               ? 'The lagna is a point rather than a graha, so it keeps no friendships.'
               : dispositorDetail(r.name, v.sign, positionsD1) },
-          { text: String(arc.d), cls: 'longitude',
+          { text: dms(v.degreeInSign), cls: 'longitude',
             title: Astro.SIGNS[v.sign] + ' ' + dms(v.degreeInSign) +
               '. Longitude ' + v.longitude.toFixed(4) + '°.' },
-          /*
-           * Unpadded. The zeroes are there in dms(), where 5° 06' 03" is one
-           * string and the padding is what keeps it readable; here each part is
-           * its own number in its own row and a leading zero says nothing.
-           */
-          { text: String(arc.m), cls: 'longitude',
-            title: Astro.SIGNS[v.sign] + ' ' + dms(v.degreeInSign) + '.' },
-          { text: String(arc.s), cls: 'longitude',
-            title: Astro.SIGNS[v.sign] + ' ' + dms(v.degreeInSign) + '.' },
-          /*
-           * Two rows, where they were one cell reading "Rohini - 1". Joined was
-           * right while they were a column each and a column cost width; turned,
-           * a row costs none and a column costs whatever its widest cell holds,
-           * so splitting them actually narrows the table - Purva Phalguni - 1
-           * was setting Mars's column by itself.
-           */
-          /*
-           * Six of the twenty-seven are two words - Purva and Uttara Phalguni,
-           * Ashadha and Bhadrapada - and one of them sets the whole column's
-           * width. Stacked, the column is as wide as the longer word rather than
-           * as the pair: "Uttara Bhadrapada" is seventeen characters and its
-           * longer half is ten.
-           */
+          /* Six nakshatras are two words; stack them to keep this column narrow. */
           { text: nak.name, stack: true,
             title: 'Nakshatra ' + nak.name + ', ruled by ' + nak.lord + '.' },
           { text: String(nak.pada), cls: 'numeric',
             title: 'Pada ' + nak.pada + ' of four, in ' + nak.name + '.' },
-          /*
-           * A row each and the names in full. They shared a cell reading
-           * "Ma / Sa" while they shared a column, which is what forced both to
-           * be abbreviated; a row costs no width.
-           */
+          /* The two lords have their own columns and can be named in full. */
           { text: nak.lord,
             title: nak.name + ' is ruled by ' + nak.lord + '.' },
           { text: nak.subLord,
@@ -2254,49 +2184,30 @@
 
     var thead = el('thead');
     var headRow = el('tr');
-    // Blank, the row headings under it naming themselves.
-    var corner = el('th');
+    var corner = el('th', null, 'Graha');
     corner.setAttribute('scope', 'col');
     headRow.appendChild(corner);
-    columns.forEach(function (col) {
-      if (col.entity.isAscendant) {
-        var th = el('th', null, col.entity.name);
-        th.setAttribute('scope', 'col');
-        headRow.appendChild(th);
-        return;
-      }
-      // The same cell the Vimsopaka and Shadbala grids head a graha with, so
-      // [R] and [C] are in one place for all three.
-      headRow.appendChild(grahaColumnHead(col.entity, sun));
+    GRAHA_ROWS.forEach(function (column) {
+      var th = el('th', null, column.label);
+      th.setAttribute('scope', 'col');
+      th.title = column.says;
+      headRow.appendChild(th);
     });
     thead.appendChild(headRow);
     table.appendChild(thead);
 
     var tbody = el('tbody');
-    /*
-     * A heading row names what the rows under it are units of and holds nothing
-     * itself; the rows under it step in. Everything else is one row of values
-     * with its own name.
-     */
-    var cellIndex = 0;
-    GRAHA_ROWS.forEach(function (row) {
+    columns.forEach(function (col) {
       var tr = document.createElement('tr');
-      if (row.part) tr.className = 'row-part';
-      var th = el('th', row.head ? 'row-head' : null, row.label);
+      var th = el('th', null, col.entity.name);
       th.setAttribute('scope', 'row');
-      th.title = row.says;
-      tr.appendChild(th);
-      if (row.head) {
-        // Nothing to put in it: the values are in the rows it names.
-        var blank = el('td', 'row-head-fill');
-        blank.setAttribute('colspan', String(columns.length));
-        tr.appendChild(blank);
-        tbody.appendChild(tr);
-        return;
+      if (!col.entity.isAscendant) {
+        flag(th, [col.entity.retrograde ? 'R' : null,
+          sun && Astro.isCombust(col.entity.name, col.entity.longitude, sun.longitude,
+            col.entity.retrograde) ? 'C' : null]);
       }
-      var i = cellIndex++;
-      columns.forEach(function (col) {
-        var cell = col.cells[i];
+      tr.appendChild(th);
+      col.cells.forEach(function (cell) {
         var td = el('td', cell.cls, cell.stack ? null : cell.text);
         // One word a line, rather than left to wherever the column happens to
         // wrap: a break the layout chooses moves as the table resizes.

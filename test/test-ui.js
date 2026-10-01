@@ -1002,7 +1002,7 @@ ok('every flag rides on the value it qualifies', (function () {
     var i = cells.indexOf(label);
     return cells.slice(i, cells.indexOf('{ text:', i + 10));
   };
-  return /headRow\.appendChild\(grahaColumnHead\(col\.entity, sun\)\);/.test(block) &&
+  return /flag\(th, \[col\.entity\.retrograde \? 'R' : null,/.test(block) &&
     /'V' : null/.test(after('Astro.SIGNS[v.sign]')) &&
     !/graha-chart/.test(block);
 })());
@@ -3164,10 +3164,10 @@ ok('and the two grids head a graha the same way, from one place',
  * All three grids head a graha with the same cell now, so [R] and [C] are
  * written in one place and cannot reach one table and miss another.
  */
-ok('and all three tables head a graha with the same cell',
+ok('and all three tables mark retrogression and combustion on the graha name',
    /function grahaColumnHead\(planet, sun\)/.test(appSrc) &&
-   (appSrc.match(/appendChild\(grahaColumnHead\((?:planet|col\.entity), sun\)\)/g) || [])
-     .length === 3 &&
+   (appSrc.match(/appendChild\(grahaColumnHead\(planet, sun\)\)/g) || []).length === 2 &&
+   /flag\(th, \[col\.entity\.retrograde \? 'R' : null,/.test(appSrc) &&
    /th\.appendChild\(el\('span', 'flag flag-' \+ f\.toLowerCase\(\)/
      .test(appSrc.slice(appSrc.indexOf('function grahaColumnHead'),
                         appSrc.indexOf('function renderVargasHead'))));
@@ -6598,46 +6598,26 @@ ok('a chart on D1 lends its own rotation to that row, rather than a second row a
  * name used to span a row per division, which put two or three charts' worth of
  * rows under every graha whether a reader wanted them or not.
  */
-ok('a graha is one column, the tables being one chart each', (function () {
+ok('a graha is one row, the tables being one chart each', (function () {
   var at = appSrc.indexOf('function grahaTableFor');
   var block = appSrc.slice(at, appSrc.indexOf('function renderShadbala', at));
   return !/rowspan/.test(block) &&
     /views\.forEach\(function \(view\) \{/.test(appSrc) &&
     /scroll\.appendChild\(grahaTableFor\(state, view\)\);/.test(appSrc);
 })());
-/*
- * Three bare unit names beside a table of numbers do not say which measurement
- * they are units of, so the measurement gets a row above them and the three
- * step in under it. The row holds nothing: its values are in the rows it names.
- * The same reading the Shadbala grid gives a share and its parts.
- */
-ok('and the three units are named by a row above them', (function () {
-  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+ok('and longitude is one column rather than three separate dimensions', (function () {
   var at = appSrc.indexOf('var GRAHA_ROWS = [');
   var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
   var rows = (block.match(/label: '[^']+'/g) || [])
     .map(function (t) { return t.slice(8, -1); });
-  return (block.match(/part: true/g) || []).length === 3 &&
-    /\{ label: 'Longitude', head: true,/.test(block) &&
-    rows.indexOf('Degrees') === rows.indexOf('Longitude') + 1 &&
-    /var blank = el\('td', 'row-head-fill'\);/.test(appSrc) &&
-    /blank\.setAttribute\('colspan', String\(columns\.length\)\);/.test(appSrc) &&
-    /table\.graha-table tr\.row-part th\[scope="row"\] \{/.test(css);
+  return rows.indexOf('Longitude') >= 0 && rows.indexOf('Degrees') < 0 &&
+    rows.indexOf('Minutes') < 0 && rows.indexOf('Seconds') < 0 &&
+    /\{ text: dms\(v\.degreeInSign\), cls: 'longitude',/.test(appSrc);
 })());
-/*
- * A heading row takes no values, so the cells must not advance with it: the
- * three unit rows read cells 6, 7 and 8, not 7, 8 and 9. The counter is the
- * thing that keeps the labels and the values in step.
- */
-ok('and the heading row consumes no values', (function () {
-  var at = appSrc.indexOf('var cellIndex = 0;');
-  var block = appSrc.slice(at, appSrc.indexOf('table.appendChild(tbody);', at));
-  if (at < 0 || !/if \(row\.head\) \{/.test(block)) return false;
-  // The early return has to come before the counter moves, or the three unit
-  // rows would read the cells one along from the ones they name.
-  return block.indexOf('return;') < block.indexOf('var i = cellIndex++;') &&
-    /var i = cellIndex\+\+;/.test(block);
-})());
+ok('and every graha row emits its cells directly without a transposition index',
+   /columns\.forEach\(function \(col\) \{/.test(appSrc) &&
+   /col\.cells\.forEach\(function \(cell\) \{/.test(appSrc) &&
+   !/var cellIndex = 0/.test(appSrc));
 /*
  * And the strip disappears where it would have one tab. Both charts on D1 gives
  * one view, and a control with nothing to choose between is furniture.
@@ -6820,27 +6800,26 @@ ok('and the box is drawn to that half width, not the old full one',
  * graha like the states are, rather than a row of dashes with three words in
  * it: over nine grahas a chart carries two or three dignities at most.
  */
-ok('the table carries fifteen rows, one of them a heading', (function () {
+ok('the table carries twelve property columns', (function () {
   var at = appSrc.indexOf('var GRAHA_ROWS = [');
   if (at < 0) return false;
   var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
   var found = (block.match(/label: '[^']+'/g) || [])
     .map(function (t) { return t.slice(8, -1); });
   return found.join('|') === ['Rashi', 'House', 'Lordship', 'Dispositor',
-    'Relationship', 'Longitude', 'Degrees', 'Minutes', 'Seconds', 'Nakshatra',
+    'Relationship', 'Longitude', 'Nakshatra',
     'Pada', 'Nakshatra lord', 'Sub lord', 'Karaka', 'Avastha'].join('|') &&
     !/<th scope="col">Chart<\/th>/.test(html);
 })());
 /*
- * And every row says what it is on hover, there being no space for more than a
- * label down the side.
+ * Every column says what it is on hover.
  */
-ok('and every row says what it measures', (function () {
+ok('and every column says what it measures', (function () {
   var at = appSrc.indexOf('var GRAHA_ROWS = [');
   var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
   return (block.match(/label: '/g) || []).length ===
     (block.match(/says: '/g) || []).length &&
-    /th\.title = row\.says;/.test(appSrc);
+    /th\.title = column\.says;/.test(appSrc);
 })());
 /*
  * Lordship was removed as a "Rules" column and has come back as this one. It is
@@ -6930,41 +6909,13 @@ ok('what a graha is comes before where it is', (function () {
   var at = appSrc.indexOf('var GRAHA_ROWS = [');
   var head = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
   return head.indexOf("'Rashi'") < head.indexOf("'House'") &&
-         head.indexOf("'Lordship'") < head.indexOf("'Degrees'");
+         head.indexOf("'Lordship'") < head.indexOf("'Longitude'");
 })());
-/*
- * Degrees, minutes and seconds are three rows, the unit living in the label as
- * the pada's does. They are split from one rounding rather than rounded three
- * times, so 29 59' 60" cannot appear.
- */
-ok('the position splits into three rows from one rounding', (function () {
-  var at = appSrc.indexOf('var GRAHA_ROWS = [');
-  var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
-  var rows = (block.match(/label: '[^']+'/g) || [])
-    .map(function (t) { return t.slice(8, -1); });
-  return rows.indexOf('Minutes') === rows.indexOf('Degrees') + 1 &&
-    rows.indexOf('Seconds') === rows.indexOf('Minutes') + 1 &&
-    /function dmsParts\(deg\)/.test(appSrc) &&
-    /var arc = dmsParts\(v\.degreeInSign\);/.test(appSrc) &&
-    /var p = dmsParts\(deg\);/.test(appSrc);
-})());
-/*
- * And each part goes in as the number it is. The zero padding belongs to dms(),
- * where 5° 06' 03" is one string and the zeroes are what hold it together; a
- * row of its own holds a number, and a leading zero on a number says nothing.
- */
-ok('and each part goes in unpadded, being a number rather than a field',
-   /\{ text: String\(arc\.d\), cls: 'longitude',/.test(appSrc) &&
-   /\{ text: String\(arc\.m\), cls: 'longitude',/.test(appSrc) &&
-   /\{ text: String\(arc\.s\), cls: 'longitude',/.test(appSrc) &&
-   /String\(p\.m\)\.padStart\(2, '0'\)/.test(appSrc));
-/*
- * And a cell holding a bare 39 still says what it is a part of: every one of
- * the three carries the whole position in its hover.
- */
-ok('and each of the three names the whole position on hover',
-   (appSrc.match(/Astro\.SIGNS\[v\.sign\] \+ ' ' \+ dms\(v\.degreeInSign\)/g) || [])
-     .length === 3);
+ok('longitude keeps all three units and names the whole position on hover',
+   /function dmsParts\(deg\)/.test(appSrc) &&
+   /\{ text: dms\(v\.degreeInSign\), cls: 'longitude',/.test(appSrc) &&
+   /String\(p\.m\)\.padStart\(2, '0'\)/.test(appSrc) &&
+   /Astro\.SIGNS\[v\.sign\] \+ ' ' \+ dms\(v\.degreeInSign\)/.test(appSrc));
 /*
  * Cells were positional until House and Vargottama went in mid-table, which moved
  * every title onto the wrong column. They are named now, so this checks the names
