@@ -6884,6 +6884,10 @@ ok('the table carries twelve property columns', (function () {
     'State', 'Age'].join('|') &&
     !/<th scope="col">Chart<\/th>/.test(html);
 })());
+ok('functional role stays in the table and out of the highlight card',
+   /Astro\.functionalRole\(r\.name, c\.ascendant\.sign\)/.test(appSrc) &&
+   !/data-role/.test(appSrc +
+     fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8')));
 ok('both avastha columns are displayed in English',
    /Jagrat: 'Waking', Swapna: 'Dreaming', Sushupta: 'Sleeping'/.test(grahaViewSrc) &&
    /Bala: 'Child', Kumara: 'Teen', Yuva: 'Youth'/.test(grahaViewSrc) &&
@@ -8594,7 +8598,7 @@ console.log('\nThe card says how the graha stands in its sign');
     /function dignitiesByGraha\(state, division, tatkalika, horaRule, horaMercury\)/.test(grahaViewSrc) &&
     /dignities: GrahaView\.dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src));
   ok('and the renderer carries it onto the graha',
-    /ctx\.division, ctx\.dignities, ctx\.hemming, ctx\.ruling, ctx\.karakas,\s*\n?\s*ctx\.roles\)/.test(chartsSrc) &&
+    /ctx\.division, ctx\.dignities, ctx\.hemming, ctx\.ruling, ctx\.karakas\)/.test(chartsSrc) &&
     /t\.setAttribute\('data-dignity', d\.dignity\)/.test(chartsSrc));
   /*
    * What a graha rules and what looks at it, both on the card. Lordship is a

@@ -1643,16 +1643,8 @@
        *
        * Each keeps its rarity and its reason on the title, where they cost no
        * height, as the yogas do.
-       */
+      */
       var conditions = el('p', 'graha-card-conditions');
-      var role = t.getAttribute('data-role');
-      if (role) {
-        var roleItem = el('span', 'graha-card-item', role);
-        roleItem.title = role + ' is this graha’s functional nature for the natal ' +
-          'ascendant. It is interpretive context, separate from natural nature, ' +
-          'yoga detection and bala.';
-        conditions.appendChild(roleItem);
-      }
       split(t.getAttribute('data-states')).forEach(function (item) {
         if (KARTARI[item.term]) return;   // a combination, listed with the yogas
         var chance = chanceOf('state', at + '/' + item.term);
@@ -1811,12 +1803,8 @@
       /*
        * Read in the rashi and so the same in every chart here, which is why it
        * is built from the state rather than from the division being drawn.
-       */
+      */
       karakas: Astro.charaKarakas(state.chart),
-      roles: Astro.GRAHA_ORDER.reduce(function (out, name) {
-        out[name] = Astro.functionalRole(name, state.chart.ascendant.sign);
-        return out;
-      }, {}),
       combustion: document.getElementById('combustion').value
     });
     wireGrahaCard(document.getElementById('chart-' + slot));
