@@ -964,7 +964,9 @@ ok('and every scrolling table really does head its rows with a th', (function ()
   // Shadbala - and the rest with a graha. Nothing spans a group: the graha
   // table's Longitude heading is a row of its own, not a cell over three.
   // Seven since the yogas became a table, its rows headed by the yoga's name.
-  return (appSrc.match(/setAttribute\('scope', 'row'\)/g) || []).length === 7 &&
+  // Eight since the settings comparison, which is not a scrolling table but is
+  // headed the same way: a row is a setting, so the setting names the row.
+  return (appSrc.match(/setAttribute\('scope', 'row'\)/g) || []).length === 8 &&
     !/'rowgroup'/.test(appSrc) &&
     (appSrc.match(/el\(i === 0 \? 'th' : 'td'/g) || []).length === 1;
 })());
@@ -3951,6 +3953,8 @@ ok('every script the page loads parses', (function () {
     '  __out.PRESETS = PRESETS; __out.RECKONING_IDS = RECKONING_IDS;\n' +
     '  __out.currentSettings = currentSettings; __out.pageDefaults = pageDefaults;\n' +
     '  __out.readMySettings = readMySettings; __out.readDefaultChoice = readDefaultChoice;\n' +
+    '  __out.readMyDefault = readMyDefault;\n' +
+    '  __out.storeRaw = function (v) { window.localStorage.setItem(MY_SETTINGS_KEY, v); };\n' +
     '  __out.strengthsFor = strengthsFor;\n' +
     '  __out.applySettings = applySettings;\n' +
     '  __out.lastChart = function () { return lastChart; };\n' +
@@ -9669,7 +9673,9 @@ console.log('\nThe settings sit three to a row, explaining themselves on hover')
     (function () {
       var ids = (panel.match(/<select id="([a-z-]+)"/g) || [])
         .map(function (m) { return m.slice('<select id="'.length, -1); })
-        .filter(function (id) { return id !== 'preset-choice' && id !== 'preset-base'; });
+        // Everything in the preset block names the set of settings rather than
+    // being one of them, and they all share the prefix.
+    .filter(function (id) { return id.indexOf('preset-') !== 0; });
       return ids.length === (panel.match(/<div class="field">/g) || []).length &&
         ids.every(function (id) {
         return panel.indexOf('aria-describedby="why-' + id + '"') >= 0 &&
@@ -10276,7 +10282,9 @@ console.log('\nThe settings run from the chart outward');
                          page.indexOf('</section>', page.indexOf('id="panel-testing"')));
   var order = (panel.match(/<label for="([a-z-]+)">/g) || [])
     .map(function (m) { return m.slice('<label for="'.length, -2); })
-    .filter(function (id) { return id !== 'preset-choice' && id !== 'preset-base'; });
+    // Everything in the preset block names the set of settings rather than
+    // being one of them, and they all share the prefix.
+    .filter(function (id) { return id.indexOf('preset-') !== 0; });
   var chartPanel = page.slice(page.indexOf('id="panel-settings"'),
                               page.indexOf('</section>', page.indexOf('id="panel-settings"')));
   var testPanel = page.slice(page.indexOf('id="panel-testing"'),
@@ -10284,7 +10292,9 @@ console.log('\nThe settings run from the chart outward');
   var idsIn = function (p) {
     return (p.match(/<label for="([a-z-]+)">/g) || [])
       .map(function (m) { return m.slice('<label for="'.length, -2); })
-      .filter(function (id) { return id !== 'preset-choice' && id !== 'preset-base'; });
+      // Everything in the preset block names the set of settings rather than
+    // being one of them, and they all share the prefix.
+    .filter(function (id) { return id.indexOf('preset-') !== 0; });
   };
   /*
    * Drawing comes before reading, and the moment before the zodiac. The style
@@ -10481,6 +10491,22 @@ console.log('\nEach preset reaches the figures it is named for');
       trueNode: true });
   };
   var near = function (got, want, tol) { return Math.abs(got - want) < tol; };
+  var textOf = function (n) {
+    return [n.textContent == null ? '' : n.textContent]
+      .concat(n.children.map(textOf))
+      .filter(function (t) { return t !== ''; })
+      .join(' ').replace(/\s+/g, ' ').trim();
+  };
+  /* The editor is a table now, so its selects are not two levels down. */
+  var editorFields = function () {
+    var found = {};
+    (function walk(n) {
+      if (n.id && n.id.indexOf('my-') === 0) found[n.id.slice(3)] = n;
+      n.children.forEach(walk);
+    })(out.byId('preset-editor'));
+    return found;
+  };
+
 
   /* Raman: Example 51's cheshta balas, on his own chart and his own ayanamsa. */
   ok('B. V. Raman reaches the cheshta balas of his Example 51', (function () {
@@ -10574,16 +10600,8 @@ console.log('\nEach preset reaches the figures it is named for');
   ok('a saved default is read back whole, chart style and all', (function () {
     out.applyPreset('raman');
     out.byId('preset-create').fire('click', {});
-    var editor = out.byId('preset-editor');
-    var editorSelects = {};
-    editor.children.forEach(function (field) {
-      field.children.forEach(function (child) {
-        if (child.id && child.id.indexOf('my-') === 0) {
-          editorSelects[child.id.slice(3)] = child;
-        }
-      });
-    });
-    editorSelects['chart-style'].value = 'south';
+    out.byId('preset-name').value = 'Mine, as I read it';
+    editorFields()['chart-style'].value = 'south';
     out.byId('preset-save').fire('click', {});
     var saved = out.readMySettings();
     return saved && saved.ayanamsa === 'raman' && saved['chart-style'] === 'south' &&
@@ -10591,17 +10609,109 @@ console.log('\nEach preset reaches the figures it is named for');
         return saved[id] === out.currentSettings()[id];
       }) && out.byId('preset-choice').value === 'mine';
   })());
+  /*
+   * The comparison, which is what the dialog is for: a row per setting, the
+   * reader's own choice, and beside it what each of the four published
+   * readings chooses. Driven, because the four columns have to be the four
+   * presets really compute with - a table of plausible-looking words would be
+   * worse than no table.
+   */
+  ok('every setting is shown against all four readings at once', (function () {
+    out.byId('preset-create').fire('click', {});
+    var rows = {};
+    (function walk(n) {
+      if (n.tag === 'tr') {
+        var head = n.children.filter(function (c) { return c.tag === 'th'; })[0];
+        var cells = n.children.filter(function (c) { return c.tag === 'td'; });
+        if (head && cells.length) rows[textOf(head)] = cells;
+      }
+      n.children.forEach(walk);
+    })(out.byId('preset-editor'));
+    var names = Object.keys(rows);
+    // One row per setting, and six columns: the name, yours, and the four.
+    return names.length === out.RECKONING_IDS.length + 1 &&
+      names.every(function (name) { return rows[name].length === 5; });
+  })());
+  ok('and each column really holds what that reading computes with', (function () {
+    var cells = [];
+    (function walk(n) {
+      // By prefix: a cell that is the chosen one carries a second class.
+      if (/^preset-cell/.test(n.className || '')) cells.push(n);
+      n.children.forEach(walk);
+    })(out.byId('preset-editor'));
+    /*
+     * Checked on the ayanamsa, where the four part: Raman has his own and the
+     * other three take the page's. Read off the cells' own words, which is
+     * what a reader is looking at.
+     */
+    var fields = editorFields();
+    var row = [];
+    (function walk(n) {
+      if (n.tag === 'tr' && n.children.some(function (c) {
+        return c.children.indexOf(fields.ayanamsa) >= 0;
+      })) {
+        row = n.children.filter(function (c) { return c.tag === 'td'; });
+      }
+      n.children.forEach(walk);
+    })(out.byId('preset-editor'));
+    var words = row.slice(1).map(textOf);
+    return cells.length === (out.RECKONING_IDS.length + 1) * 4 &&
+      words.length === 4 &&
+      /Lahiri/.test(words[0]) && /Raman/.test(words[1]) &&
+      /Lahiri/.test(words[2]) && /Lahiri/.test(words[3]);
+  })());
+  /* Pressing a cell takes that reading for that setting, and nothing else. */
+  ok('pressing one reading takes it for that setting alone', (function () {
+    var fields = editorFields();
+    var before = fields['node-type'].value;
+    var cell = null;
+    (function walk(n) {
+      if (!cell && /^preset-cell/.test(n.className || '') &&
+        /Raman/.test(textOf(n))) cell = n;
+      n.children.forEach(walk);
+    })(out.byId('preset-editor'));
+    cell.fire('click', {});
+    return fields.ayanamsa.value === 'raman' &&
+      fields['node-type'].value === before &&
+      /preset-cell-chosen/.test(cell.className);
+  })());
+  /* And a column heading takes the whole of its reading. */
+  ok('and a column heading takes every setting from that reading', (function () {
+    var take = [];
+    (function walk(n) {
+      if (n.className === 'preset-column-take') take.push(n);
+      n.children.forEach(walk);
+    })(out.byId('preset-editor'));
+    take[1].fire('click', {});   // B. V. Raman
+    var fields = editorFields(), wanted = out.PRESETS.raman.of;
+    return take.length === 4 &&
+      Object.keys(wanted).every(function (id) {
+        return fields[id] && fields[id].value === wanted[id];
+      });
+  })());
+  /* The set is named, and the picker says the name rather than "mine". */
+  ok('a saved default carries the name it was given', (function () {
+    out.byId('preset-create').fire('click', {});
+    out.byId('preset-name').value = 'As I read it';
+    out.byId('preset-save').fire('click', {});
+    var mine = out.readMyDefault();
+    return mine && mine.name === 'As I read it' &&
+      out.byId('preset-mine-option').textContent === 'As I read it' &&
+      // And the values are still read back by everything that wants them.
+      // Compared by content: each read parses the store afresh.
+      JSON.stringify(out.readMySettings()) === JSON.stringify(mine.values);
+  })());
+  /* A set stored before names existed is read, not thrown away. */
+  ok('a set saved before names had been thought of still opens', (function () {
+    out.storeRaw(JSON.stringify({ ayanamsa: 'kp', 'chart-style': 'south' }));
+    var mine = out.readMyDefault();
+    return mine && mine.name === 'My default' && mine.values.ayanamsa === 'kp';
+  })());
+
   ok('saving again replaces the one personal default instead of adding another',
     (function () {
       out.byId('preset-create').fire('click', {});
-      var editor = out.byId('preset-editor');
-      var style;
-      editor.children.forEach(function (field) {
-        field.children.forEach(function (child) {
-          if (child.id === 'my-chart-style') style = child;
-        });
-      });
-      style.value = 'north';
+      editorFields()['chart-style'].value = 'north';
       out.byId('preset-save').fire('click', {});
       var saved = out.readMySettings();
       return saved && saved['chart-style'] === 'north' &&

@@ -793,14 +793,100 @@ input::placeholder { color: #a9bdb2; }
 }
 .preset-dialog-head h3 { margin: 0; }
 .preset-dialog-head p { margin: 0.2rem 0 0; }
-.preset-base-field { max-width: 20rem; margin-bottom: 1.25rem; }
-.preset-editor {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem 1.25rem;
+.preset-name-field { max-width: 22rem; margin-bottom: 1.25rem; }
+.preset-name-field label {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
 }
-.preset-editor .field label { display: block; }
-.preset-editor select { width: 100%; }
+/*
+ * Six columns and a row per setting: the name of the setting, the reader's own
+ * choice, and the four published readings side by side. It scrolls sideways
+ * rather than wrapping, because a row only means anything read across.
+ */
+/*
+ * Sideways only. The vertical axis is stated rather than left implicit,
+ * because overflow-x alone makes the box a scroll container on both axes and
+ * grows a vertical bar the moment anything overflows by a pixel. Nothing is
+ * clipped by hidden here: the box is as tall as its rows and the dialog does
+ * the vertical scrolling.
+ */
+.preset-editor { overflow-x: auto; overflow-y: hidden; }
+.preset-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.preset-table th,
+.preset-table td {
+  padding: 0.3rem 0.4rem;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--line-soft);
+}
+/* Not sticky: the dialog is what scrolls vertically, and a header pinned to
+   this box would pin to a box that does not move. */
+.preset-table thead th {
+  padding-top: 0;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  background: var(--surface);
+}
+.preset-table tbody th {
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.preset-table select { width: auto; min-width: 11rem; height: 2rem; }
+/*
+ * Taking a whole column, which is the job a "Start with" select used to do
+ * above the table. A heading that fills its own column says what it does
+ * where the doing happens.
+ */
+.preset-column-take {
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 3px;
+}
+.preset-column-take:hover { color: var(--green-deep); }
+/* One reading, pressable, and marked when it is the one chosen. */
+.preset-cell {
+  font: inherit;
+  width: 100%;
+  text-align: left;
+  color: var(--ink-soft);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 0.25rem 0.4rem;
+  cursor: pointer;
+}
+.preset-cell:hover { border-color: var(--line); background: var(--paper-tint); }
+.preset-cell-chosen {
+  color: var(--green-deep);
+  font-weight: 600;
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+/*
+ * Most rows read the same across all four: the readings part in a handful of
+ * places and nowhere else. Marking the ones that differ puts the eye on what
+ * is actually being decided between.
+ */
+.preset-row-differs th[scope="row"] { font-weight: 700; }
+.preset-row-differs td { background: var(--paper-tint); }
 .preset-dialog-actions {
   display: flex;
   flex-wrap: wrap;

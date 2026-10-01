@@ -529,15 +529,23 @@
           </div>
           <button type="button" id="preset-cancel" aria-label="Close">Close</button>
         </div>
-        <div class="field preset-base-field">
-          <label for="preset-base">Start with</label>
-          <select id="preset-base">
-            <option value="page">Standard default</option>
-            <option value="raman">B. V. Raman</option>
-            <option value="drik">Drik Panchang</option>
-            <option value="star">Star Jyotish</option>
-          </select>
+        <!-- Not a .field: the panel's own tests count those as settings, and
+             this names the set rather than being one of them. -->
+        <div class="preset-name-field">
+          <label for="preset-name">Name</label>
+          <input id="preset-name" type="text" maxlength="40" autocomplete="off"
+                 placeholder="My default">
         </div>
+        <!--
+          A row per setting, and beside your own choice the four published
+          readings side by side. Most rows agree across all four, so the ones
+          that do not are what a reader is actually deciding between, and they
+          are marked.
+
+          The column headings take a whole column at once, which is what the
+          "Start with" select used to do. A heading that fills its own column
+          says what it does where the doing happens, and one control fewer.
+        -->
         <div class="preset-editor" id="preset-editor"></div>
         <div class="preset-dialog-actions">
           <button type="button" class="primary" id="preset-save">Save my default</button>

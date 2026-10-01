@@ -5077,15 +5077,30 @@
   /* Held so the suites can drive a preset the way a click does. */
   var presetApply = null;
 
-  function readMySettings() {
+  /*
+   * The reader's own set, named. A set saved before names existed is a bare
+   * map of settings with no `values` key, and is read as one rather than
+   * thrown away: somebody who saved one did not ask to lose it.
+   */
+  function readMyDefault() {
+    var saved;
     try {
       var raw = window.localStorage.getItem(MY_SETTINGS_KEY);
-      var saved = raw ? JSON.parse(raw) : null;
-      return saved && typeof saved === 'object' ? saved : null;
+      saved = raw ? JSON.parse(raw) : null;
     } catch (e) {
       // A browser refusing storage is not a reason to fail to start.
       return null;
     }
+    if (!saved || typeof saved !== 'object') return null;
+    if (saved.values && typeof saved.values === 'object') {
+      return { name: String(saved.name || 'My default'), values: saved.values };
+    }
+    return { name: 'My default', values: saved };
+  }
+
+  function readMySettings() {
+    var mine = readMyDefault();
+    return mine ? mine.values : null;
   }
 
   /*
@@ -5228,44 +5243,149 @@
     var mineOption = document.getElementById('preset-mine-option');
     var dialog = document.getElementById('preset-dialog');
     var editor = document.getElementById('preset-editor');
-    var base = document.getElementById('preset-base');
+    var nameBox = document.getElementById('preset-name');
 
     var showMine = function () {
-      var exists = !!readMySettings();
+      var mine = readMyDefault();
+      var exists = !!mine;
       mineOption.hidden = !exists;
       mineOption.disabled = !exists;
+      mineOption.textContent = exists ? mine.name : 'My default';
       forget.hidden = !exists;
       document.getElementById('preset-create').textContent = exists
         ? 'Edit my default settings' : 'Create my default settings';
     };
 
+    /*
+     * A row per setting: your own choice, and beside it what each of the four
+     * published readings chooses. Most rows agree across all four - the
+     * readings differ in a handful of places and nowhere else - so the rows
+     * that do differ are the ones a reader is actually deciding between, and
+     * those are marked.
+     *
+     * Every cell is pressable and sets its row. Every heading is pressable and
+     * takes its whole column, which is the job the "Start with" select used to
+     * do and says what it does where the doing happens.
+     */
+    var COLUMNS = ['page', 'raman', 'drik', 'star'];
     var editorSelects = {};
-    RECKONING_IDS.concat(['chart-style']).forEach(function (id) {
+    var editorCells = [];
+
+    var labelFor = function (id) {
       var source = document.getElementById(id);
-      if (!source) return;
-      var field = el('div', 'field');
-      var sourceLabel = source.parentNode && source.parentNode.querySelector
+      var near = source && source.parentNode && source.parentNode.querySelector
         ? source.parentNode.querySelector('label') : null;
-      var label = el('label', null, sourceLabel && sourceLabel.textContent
-        ? sourceLabel.textContent : id.replace(/-/g, ' '));
-      var select = el('select');
-      label.setAttribute('for', 'my-' + id);
-      select.id = 'my-' + id;
-      Array.prototype.forEach.call(source.options, function (option) {
-        var copy = el('option', null, option.textContent || option.value);
-        copy.value = option.value;
-        select.appendChild(copy);
+      return near && near.textContent ? near.textContent : id.replace(/-/g, ' ');
+    };
+    /* The option's own words, so a cell reads as the control reads. */
+    var wordsFor = function (id, value) {
+      var source = document.getElementById(id);
+      var found = '';
+      if (source) {
+        Array.prototype.forEach.call(source.options, function (option) {
+          if (option.value === value) found = option.textContent || option.value;
+        });
+      }
+      return found || value || '';
+    };
+
+    var markChosen = function () {
+      editorCells.forEach(function (cell) {
+        var chosen = editorSelects[cell.setting] &&
+          editorSelects[cell.setting].value === cell.value;
+        cell.node.className = 'preset-cell' + (chosen ? ' preset-cell-chosen' : '');
+        cell.node.setAttribute('aria-pressed', chosen ? 'true' : 'false');
       });
-      field.appendChild(label);
-      field.appendChild(select);
-      editor.appendChild(field);
-      editorSelects[id] = select;
-    });
+    };
+
+    /*
+     * Built the first time the dialog is opened, not while the page is being
+     * wired. The columns are read from the presets, which fall back to the
+     * values the page ships with - and those are not known until
+     * populateSelects has filled the ayanamsa, which happens later. Built
+     * early, the whole first column would have held a blank for the one
+     * setting that moves every longitude.
+     */
+    var built = false;
+    var buildEditor = function () {
+      if (built) return;
+      built = true;
+      var table = el('table', 'preset-table');
+      var head = el('tr');
+      head.appendChild(el('th', 'preset-col-setting', 'Setting'));
+      head.appendChild(el('th', 'preset-col-yours', 'Yours'));
+      COLUMNS.forEach(function (name) {
+        var th = el('th');
+        var take = el('button', 'preset-column-take', PRESETS[name].label);
+        take.setAttribute('type', 'button');
+        take.setAttribute('title', 'Take every setting from ' + PRESETS[name].label);
+        take.addEventListener('click', function () {
+          var wanted = settingsForPreset(name);
+          Object.keys(editorSelects).forEach(function (id) {
+            if (wanted && wanted[id] !== undefined) editorSelects[id].value = wanted[id];
+          });
+          markChosen();
+        });
+        th.appendChild(take);
+        head.appendChild(th);
+      });
+      var thead = el('thead');
+      thead.appendChild(head);
+      table.appendChild(thead);
+
+      var body = el('tbody');
+      RECKONING_IDS.concat(['chart-style']).forEach(function (id) {
+        var source = document.getElementById(id);
+        if (!source) return;
+        var values = COLUMNS.map(function (name) {
+          var wanted = settingsForPreset(name);
+          return wanted ? wanted[id] : undefined;
+        });
+        var agree = values.every(function (v) { return v === values[0]; });
+        var row = el('tr', agree ? '' : 'preset-row-differs');
+
+        var name = el('th', null, labelFor(id));
+        name.setAttribute('scope', 'row');
+        row.appendChild(name);
+
+        var cell = el('td');
+        var select = el('select');
+        select.id = 'my-' + id;
+        select.setAttribute('aria-label', labelFor(id));
+        Array.prototype.forEach.call(source.options, function (option) {
+          var copy = el('option', null, option.textContent || option.value);
+          copy.value = option.value;
+          select.appendChild(copy);
+        });
+        select.addEventListener('change', markChosen);
+        cell.appendChild(select);
+        row.appendChild(cell);
+        editorSelects[id] = select;
+
+        values.forEach(function (value) {
+          var td = el('td');
+          var button = el('button', 'preset-cell', wordsFor(id, value));
+          button.setAttribute('type', 'button');
+          button.addEventListener('click', function () {
+            select.value = value;
+            markChosen();
+          });
+          td.appendChild(button);
+          row.appendChild(td);
+          editorCells.push({ setting: id, value: value, node: button });
+        });
+        body.appendChild(row);
+      });
+      table.appendChild(body);
+      editor.appendChild(table);
+    };
 
     var fillEditor = function (values) {
+      buildEditor();
       Object.keys(editorSelects).forEach(function (id) {
         if (values && values[id] !== undefined) editorSelects[id].value = values[id];
       });
+      markChosen();
     };
 
     var closeDialog = function () {
@@ -5308,23 +5428,24 @@
     });
 
     document.getElementById('preset-create').addEventListener('click', function () {
-      base.value = 'page';
-      fillEditor(readMySettings() || currentSettings());
+      var mine = readMyDefault();
+      nameBox.value = mine ? mine.name : '';
+      fillEditor((mine && mine.values) || currentSettings());
       if (typeof dialog.showModal === 'function') dialog.showModal();
       else dialog.setAttribute('open', '');
-    });
-
-    base.addEventListener('change', function () {
-      fillEditor(settingsForPreset(this.value));
     });
 
     document.getElementById('preset-cancel').addEventListener('click', closeDialog);
 
     document.getElementById('preset-save').addEventListener('click', function () {
-      var saved = {};
-      Object.keys(editorSelects).forEach(function (id) { saved[id] = editorSelects[id].value; });
+      buildEditor();
+      var values = {};
+      Object.keys(editorSelects).forEach(function (id) { values[id] = editorSelects[id].value; });
+      // Named, so the picker can say which one is in force rather than "mine".
+      var named = (nameBox.value || '').trim().slice(0, 40) || 'My default';
       try {
-        window.localStorage.setItem(MY_SETTINGS_KEY, JSON.stringify(saved));
+        window.localStorage.setItem(MY_SETTINGS_KEY,
+          JSON.stringify({ name: named, values: values }));
         window.localStorage.setItem(DEFAULT_SETTINGS_KEY, 'mine');
         status.textContent = 'My default saved. Saving again will replace it.';
       } catch (e) {
@@ -5346,7 +5467,6 @@
       apply('page');
       status.textContent = 'My default deleted. Standard default is in use.';
     });
-    fillEditor(readMySettings() || currentSettings());
     showMine();
     choice.value = readDefaultChoice();
   }
