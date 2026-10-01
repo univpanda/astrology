@@ -7644,7 +7644,8 @@ console.log('\nThe card prints the figure beside the finding');
  */
 ok('the card asks the table for both kinds of line',
     /chanceOf\('state', at \+ '\/' \+ item\.term\)/.test(src) &&
-    /chanceOf\(kind, key\)/.test(src) && /rarity\(head, kind, key\)/.test(src) &&
+    /FREQUENCIES\.yogaManifestationByCardContext\[cardKey\]/.test(src) &&
+    /typeof manifestationChance === 'number'/.test(src) &&
     /'In ' \+\s*\n?\s*\(chance >= 10 \? Math\.round\(chance\) : chance\) \+ '% of charts\.'/
       .test(src));
   /*
@@ -7653,9 +7654,10 @@ ok('the card asks the table for both kinds of line',
    * of them holds in every chart: keyed on the subject they would all have read
    * "every chart", where Chakra is one in thousands and Pasa two in five.
    */
-  ok('and a yoga is looked up by its own name before its family’s',
-    /chanceOf\('yogaTitle', item\.term\) !== undefined/.test(src) &&
-    typeof F.yogaTitle === 'object');
+  ok('and a highlighted yoga asks for its exact route, division and reference set',
+    /item\.division \+ '\|' \+ item\.primaryReference \+ '\|' \+ at \+ '\|'/.test(src) &&
+    /item\.term \+ '\|' \+ item\.route \+ '\|' \+ item\.from/.test(src) &&
+    typeof F.yogaManifestationByCardContext === 'object');
   ok('and the two really do differ where a family shares a passage',
     F.yoga['Nabhasa Yoga|general'] > 95 &&
     F.yogaTitle['Rajju yoga'] < 2 && F.yogaTitle['Pasa yoga'] > 30,
@@ -8994,16 +8996,7 @@ console.log('\nThe card leads with what is rare');
   var strengths = Shadbala.compute(chart,
     { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 });
 
-  var byGraha = {};
-  Yogas.detect(chart, strengths).forEach(function (f) {
-    (f.grahas || []).forEach(function (name) {
-      var list = byGraha[name] || (byGraha[name] = []);
-      if (!list.some(function (y) { return y.title === f.title; })) {
-        list.push({ title: f.title, summary: f.summary || '',
-                    subject: f.subject || '', condition: f.condition || '' });
-      }
-    });
-  });
+  var byGraha = out.yogasByGraha({ chart: chart, shadbala: strengths }, 1, 'Ascendant');
 
   var box = makeNode('div');
   Charts.render(box, { style: 'north', planets: chart.planets,

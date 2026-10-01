@@ -39,6 +39,7 @@ const yoga = {}, state = {}, yogaNoFloor = {};
  */
 const byTitle = {}, byManifestation = {};
 const titleByContext = {}, manifestationByContext = {};
+const manifestationByCardContext = {};
 
 /*
  * A manifestation is the stable route by which a named yoga formed, not the
@@ -144,9 +145,12 @@ for (let y = 1930; y < 2030; y++) {
        */
       Astro.SHODASAVARGA.forEach(function (division) {
         const inDivision = Astro.chartInDivision(chart, division);
+        const findingsByReference = {};
         REFERENCES.forEach(function (reference) {
           const seenTitle = {}, seenManifestation = {};
-          Yogas.detect(rotatedOnto(inDivision, reference), strengths).forEach(function (f) {
+          const findings = findingsByReference[reference] =
+            Yogas.detect(rotatedOnto(inDivision, reference), strengths);
+          findings.forEach(function (f) {
             if (!f.title) return;
             const prefix = division + '|' + reference + '|';
             const tk = prefix + f.title;
@@ -159,6 +163,35 @@ for (let y = 1930; y < 2030; y++) {
               seenManifestation[mk] = 1;
               manifestationByContext[mk] = (manifestationByContext[mk] || 0) + 1;
             }
+          });
+        });
+        REFERENCES.forEach(function (primaryReference) {
+          const seenSigns = {}, grouped = {};
+          [primaryReference, 'Moon', 'Sun'].forEach(function (reference) {
+            const anchor = reference === 'Ascendant' ? inDivision.ascendant
+              : inDivision.planets.find(function (p) { return p.name === reference; });
+            if (!anchor) return;
+            const sign = Astro.signOf(anchor.longitude);
+            if (seenSigns[sign]) return;
+            seenSigns[sign] = 1;
+            (findingsByReference[reference] || []).forEach(function (f) {
+              if (!f.title) return;
+              const route = Array.isArray(f.route) ? f.route.slice().sort().join('+')
+                : f.route || f.kind || f.condition || 'general';
+              (f.grahas || []).forEach(function (graha) {
+                const identity = graha + '|' + f.title + '|' + route;
+                if (!grouped[identity]) grouped[identity] = [];
+                if (grouped[identity].indexOf(reference) < 0) {
+                  grouped[identity].push(reference);
+                }
+              });
+            });
+          });
+          Object.keys(grouped).forEach(function (identity) {
+            const key = division + '|' + primaryReference + '|' + identity + '|' +
+              grouped[identity].join(',');
+            manifestationByCardContext[key] =
+              (manifestationByCardContext[key] || 0) + 1;
           });
         });
       });
@@ -230,6 +263,9 @@ ${dump(titleByContext)}
   },
   yogaManifestationByContext: {
 ${dump(manifestationByContext)}
+  },
+  yogaManifestationByCardContext: {
+${dump(manifestationByCardContext)}
   }
 };
 

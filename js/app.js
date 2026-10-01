@@ -1262,11 +1262,13 @@
       seenSigns[sign] = true;
       var chart = rotatedOnto(base, from);
       Yogas.detect(chart, strengthsFor(state)).forEach(function (yoga) {
+        var route = Array.isArray(yoga.route) ? yoga.route.slice().sort().join('+')
+          : yoga.route || yoga.kind || yoga.condition || 'general';
         (yoga.grahas || []).forEach(function (name) {
           var list = map[name] || (map[name] = []);
           var same = list.filter(function (y) {
             return y.title === yoga.title && y.subject === (yoga.subject || '') &&
-              y.condition === (yoga.condition || '');
+              y.condition === (yoga.condition || '') && y.route === route;
           })[0];
           if (same) {
             same.from.push(from);
@@ -1274,7 +1276,8 @@
             /* The library key and the reference frame travel with the finding. */
             list.push({ title: yoga.title, summary: yoga.summary || '',
               subject: yoga.subject || '', condition: yoga.condition || '',
-              graha: yoga.graha || '', from: [from] });
+              graha: yoga.graha || '', from: [from], route: route,
+              division: division, primaryReference: reference || 'Ascendant' });
           }
         });
       });
@@ -1490,7 +1493,9 @@
         var bits = r.split(FLD);
         return { term: bits[0], why: bits[1] || '',
                  subject: bits[2] || '', condition: bits[3] || '',
-                 graha: bits[4] || '', from: bits[5] || '' };
+                 graha: bits[4] || '', from: bits[5] || '',
+                 route: bits[6] || '', division: bits[7] || '1',
+                 primaryReference: bits[8] || 'Ascendant' };
       });
     };
 
@@ -1702,10 +1707,11 @@
          * carry the family's figure - one of them holds in every chart - where
          * Chakra is one in thousands and Pasa two in five.
          */
-        var key = item.term && chanceOf('yogaTitle', item.term) !== undefined
-          ? item.term : item.subject + '|' + item.condition;
-        var kind = key === item.term ? 'yogaTitle' : 'yoga';
-        found.push({ chance: chanceOf(kind, key), build: function () {
+        var cardKey = item.division + '|' + item.primaryReference + '|' + at + '|' +
+          item.term + '|' + item.route + '|' + item.from;
+        var manifestationChance = FREQUENCIES.yogaManifestationByCardContext &&
+          FREQUENCIES.yogaManifestationByCardContext[cardKey];
+        found.push({ chance: manifestationChance, build: function () {
           var li = el('li', 'graha-card-yoga');
           var head = el('p', 'graha-card-term');
           head.appendChild(el('span', 'graha-card-label', item.term));
@@ -1713,7 +1719,12 @@
             return name === 'Ascendant' ? 'asc' : name;
           }).join(' & ') : '';
           if (from) head.appendChild(el('span', 'graha-card-whose', from));
-          rarity(head, kind, key);
+          if (typeof manifestationChance === 'number') {
+            var text = manifestationChance >= 99.95 ? 'every chart'
+              : (manifestationChance >= 10 ? Math.round(manifestationChance)
+                : manifestationChance) + '% of charts';
+            head.appendChild(el('span', 'graha-card-freq', text));
+          }
           li.appendChild(head);
           var means = meaningOf(item);
           li.title = [means, item.why].filter(Boolean).join(' ');

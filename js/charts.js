@@ -222,7 +222,8 @@ var Charts = (function () {
         // title, why it holds here, the pair that names its passage, and the
         // graha whose yoga it is - which is not always the one being hovered.
         return [y.title, y.summary || '', y.subject || '', y.condition || '',
-          y.graha || '', (y.from || []).join(',')].join(FLD);
+          y.graha || '', (y.from || []).join(','), y.route || '',
+          y.division || 1, y.primaryReference || 'Ascendant'].join(FLD);
       }).join(REC),
       /* One flat sentence, for anyone reading by ear rather than by hover. */
       label: p.name + ' in ' + where +
