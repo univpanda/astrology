@@ -116,6 +116,26 @@ var Charts = new Function('document', 'Astro',
   fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8') + '\nreturn Charts;')(document, Astro);
 var Shadbala = require('../js/shadbala.js');
 
+// Read the three visual lines independently, without treating SVG markup as text.
+function chartLabels(root) {
+  var labels = {};
+  function content(node) {
+    return (node.textContent || '') + node.children.map(content).join('');
+  }
+  (function walk(node) {
+    if (node.tag === 'text' && node.attrs['data-graha']) {
+      var parts = {};
+      node.children.forEach(function (child) { parts[child.attrs.class] = content(child); });
+      labels[node.attrs['data-graha']] = {
+        node: node, degree: parts['planet-degree'], name: parts['planet-name'],
+        features: parts['planet-features'] || ''
+      };
+    }
+    node.children.forEach(walk);
+  })(root);
+  return labels;
+}
+
 /* --------------------------------------------------------- place lookup */
 
 console.log('\nPlace lookup');
@@ -2854,10 +2874,49 @@ var renderIn = function (division) {
     style: 'north', division: division,
     planets: vgChart.planets, ascendant: vgChart.ascendant.longitude
   });
-  return serialise(box);
+  return chartLabels(box);
 };
 
-ok('flags ride together, retrograde first', /Ve \[R\]/.test(renderIn(1)));
+ok('flags ride together below the name, retrograde first', /^\[R\]/.test(renderIn(1).Venus.features));
+
+ok('all chart styles and divisions place degrees above names and existing marks below', (function () {
+  return ['north', 'south'].every(function (style) {
+    return Astro.VARGAS.every(function (varga) {
+      var box = makeNode('div');
+      Charts.render(box, { style: style, division: varga.division,
+        planets: vgChart.planets, ascendant: vgChart.ascendant.longitude,
+        dignities: GrahaView.dignitiesByGraha({ chart: vgChart }, varga.division, 'varga', 'effects', 'friend') });
+      var labels = chartLabels(box);
+      return vgChart.planets.concat([{ name: 'Ascendant', longitude: vgChart.ascendant.longitude }])
+        .every(function (planet) {
+          var label = labels[planet.name];
+          var position = Astro.vargaPosition(planet.longitude, varga.division);
+          var minutes = Math.floor((Astro.norm360(position.longitude) % 30) * 60);
+          var expected = Math.floor(minutes / 60) + '°' + String(minutes % 60).padStart(2, '0') + '′';
+          var degree = label.node.children[0], name = label.node.children[1], features = label.node.children[2];
+          var states = label.node.attrs['data-states'].split('\u001e').map(function (s) { return s.split('\u001f')[0]; });
+          var expectedFlags = ['R', 'V', 'Y', 'C'].filter(function (s) { return states.indexOf(s) >= 0; })
+            .map(function (s) { return '[' + s + ']'; }).join('');
+          var dignityMark = { Exalted: 'E', Debilitated: 'D', Mooltrikona: 'M' }[label.node.attrs['data-dignity']];
+          if (dignityMark) expectedFlags += '[' + dignityMark + ']';
+          return label.degree === expected && label.name === Astro.grahaAbbr(planet.name) &&
+            label.features === expectedFlags && Number(degree.attrs.y) < Number(name.attrs.y) &&
+            (!features || Number(features.attrs.y) > Number(name.attrs.y)) &&
+            label.node.attrs.tabindex === '0' && !!label.node.attrs['aria-label'];
+        });
+    });
+  });
+})());
+ok('chart degrees and features use smaller type than the planet name',
+  /svg\.kundli \.planet-degree, svg\.kundli \.planet-features \{\s*font-size: 0\.65em;/.test(cssSrc) &&
+  /svg\.kundli \.planet-features \.flag \{ font-size: 1em; \}/.test(cssSrc));
+ok('degrees near a sign boundary do not round up to thirty', (function () {
+  var box = makeNode('div');
+  Charts.render(box, { style: 'north', division: 1, ascendant: 29.99999,
+    planets: [{ name: 'Sun', longitude: 359.99999, retrograde: false }] });
+  var labels = chartLabels(box);
+  return labels.Sun.degree === '29°59′' && labels.Ascendant.degree === '29°59′';
+})());
 
 /*
  * A yogakaraka owns both an angle and a trine from the lagna, which only six of
@@ -2884,7 +2943,7 @@ ok('a yogakaraka is flagged [Y]', (function () {
   var box = makeNode('div');
   Charts.render(box, { style: 'north', division: 1, ascendant: asc,
     planets: [{ name: 'Mars', longitude: 4 * 30 + 4, retrograde: false }] });
-  return /Ma \[Y\]/.test(serialise(box));
+  return chartLabels(box).Mars.features.indexOf('[Y]') >= 0;
 })());
 
 /*
@@ -2906,14 +2965,14 @@ ok('it follows the rotation, as the houses do', (function () {
   Charts.render(fromLagna, opts('Ascendant'));
   Charts.render(fromMoon, opts('Moon'));
   // Rotated onto the Moon in Sagittarius, nobody owns an angle and a trine.
-  return /Ma \[Y\]/.test(serialise(fromLagna)) && !/\[Y\]/.test(serialise(fromMoon)) &&
+  return chartLabels(fromLagna).Mars.features.indexOf('[Y]') >= 0 && !/\[Y\]/.test(serialise(fromMoon)) &&
     Astro.isYogakaraka('Mars', 4) && !Astro.isYogakaraka('Mars', 8);
 })());
 ok('and the default view is still the classical one, from the ascendant', (function () {
   var box = makeNode('div');
   Charts.render(box, { style: 'north', division: 1, ascendant: 4 * 30 + 7,
     planets: [{ name: 'Mars', longitude: 4 * 30 + 4, retrograde: false }] });
-  return /Ma \[Y\]/.test(serialise(box));
+  return chartLabels(box).Mars.features.indexOf('[Y]') >= 0;
 })());
 
 ok('the lagna itself is never one, owning nothing',
@@ -2993,8 +3052,10 @@ ok('and the column head on the two strength grids stays a rashi fact either way'
     var box = makeNode('div');
     Charts.render(box, { style: 'north', division: division, combustion: combustion,
       planets: c.planets, ascendant: c.ascendant.longitude });
-    return (serialise(box).match(/\S\S \[[A-Z\]\[]*\]/g) || [])
-      .filter(function (t) { return t.indexOf('[C]') >= 0; }).sort().join(' ');
+    var labels = chartLabels(box);
+    return Object.keys(labels).filter(function (name) {
+      return labels[name].features.indexOf('[C]') >= 0;
+    }).sort().join(' ');
   };
   ok('a chart was found where the two readings part, or nothing below means anything',
     !!c && burnt(9, 'rashi') !== '' || (!!c && burnt(9, 'division') !== ''),
@@ -3280,8 +3341,8 @@ ok('the card explains [C], which the grid does not draw',
 ok('the card explains [Y], and says which house 1 it is counted from',
    /Owns both an angle and a trine, counted from house 1 of this chart\./.test(
      fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8')));
-ok('retrograde alone stays bare [R]', /Sa \[R\]<|Sa \[R\]\s/.test(renderIn(1)));
-ok('a graha with neither carries no brackets', /Ju<\/text>|>Ju</.test(renderIn(1)));
+ok('retrograde alone stays bare [R]', renderIn(1).Saturn.features === '[R]');
+ok('a graha with neither carries no feature line', renderIn(1).Jupiter.features === '');
 
 ok('the four a chart label can carry are all covered somewhere', (function () {
   var flat = html.replace(/\s+/g, ' ');
@@ -5817,11 +5878,9 @@ console.log('\nThe North chart groups sign numbers at its four junctions');
     return (
       // One column: every label on the same x, so none can meet another.
       marks.every(function (a) { return a.x === marks[0].x; }) &&
-      // And the lines are at least the type's own size apart, so the stack
-      // cannot close up on itself as it shrinks.
-      ys.every(function (y, i) { return i === 0 || y - ys[i - 1] >= size; }) &&
-      // Shrunk, but not past reading: nine in one house is the worst case.
-      size < 15.5 && size >= 11
+      // Whole three-line blocks, not just names, stay separated as they shrink.
+      ys.every(function (y, i) { return i === 0 || y - ys[i - 1] >= size * 35 / 15.5; }) &&
+      size < 15.5 && size >= 6
     );
   })());
   ok('crowding no longer moves the sign number',
@@ -6100,7 +6159,7 @@ ok('and the reserved columns leave room for a name at every width', (function ()
   })(box);
 
   ok('the chart marks a dignity beside the graha, as it marks a state',
-    /Ve \[R\]\[E\]/.test(labels.Venus) && /\[D\]/.test(labels.Jupiter) &&
+    /Ve\[R\]\[E\]/.test(labels.Venus) && /\[D\]/.test(labels.Jupiter) &&
     /\[M\]/.test(labels.Mars),
     [labels.Venus, labels.Jupiter, labels.Mars].join(' / '));
   ok('and a graha in its own sign takes none, that being said by its dispositor',
@@ -6585,11 +6644,10 @@ ok('and the chart agrees with the Vargas grid, being the same comparison', (func
     var box = makeNode('div');
     Charts.render(box, { style: 'north', division: division,
       planets: c.planets, ascendant: c.ascendant.longitude });
-    var svg = serialise(box);
+    var labels = chartLabels(box);
     return c.planets.every(function (p) {
       var repeats = Astro.vargaPosition(p.longitude, division).sign === Astro.signOf(p.longitude);
-      var abbr = Astro.grahaAbbr(p.name);
-      var flagged = new RegExp('>' + abbr + ' \\[[RVYC\\]\\[]*V').test(svg);
+      var flagged = labels[p.name].features.indexOf('[V]') >= 0;
       return repeats === flagged;
     });
   });

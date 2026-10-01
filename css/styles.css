@@ -1502,6 +1502,11 @@ svg.kundli .sign-num {
   font-weight: 600;
 }
 svg.kundli .planet { font-size: 15.5px; font-weight: 500; }
+svg.kundli .planet-degree, svg.kundli .planet-features {
+  font-size: 0.65em;
+  font-weight: 400;
+}
+svg.kundli .planet-features .flag { font-size: 1em; }
 
 /*
  * One colour per graha, following Parashara's complexions (ch.1 vv.16-17)
