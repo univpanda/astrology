@@ -6805,12 +6805,12 @@ ok('the table carries eleven property columns', (function () {
     .map(function (t) { return t.slice(8, -1); });
   return found.join('|') === ['Rashi', 'House', 'Lordship', 'Dispositor',
     'Longitude', 'Name - Pada', 'Lord', 'Sub lord', 'Karaka',
-    'Awareness', 'Age'].join('|') &&
+    'State', 'Age'].join('|') &&
     !/<th scope="col">Chart<\/th>/.test(html);
 })());
 ok('both avastha columns are displayed in English',
    /Jagrat: 'Waking', Swapna: 'Dreaming', Sushupta: 'Sleeping'/.test(appSrc) &&
-   /Bala: 'Infant', Kumara: 'Adolescent', Yuva: 'Youth'/.test(appSrc) &&
+   /Bala: 'Infant', Kumara: 'Child', Yuva: 'Young adult'/.test(appSrc) &&
    /Vriddha: 'Old', Mrita: 'Dead'/.test(appSrc) &&
    /JAGRATADI_ENGLISH\[jagratadi\]/.test(appSrc) &&
    /BALADI_ENGLISH\[baladi\]/.test(appSrc));

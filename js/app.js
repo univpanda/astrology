@@ -1942,7 +1942,7 @@
     Jagrat: 'Waking', Swapna: 'Dreaming', Sushupta: 'Sleeping'
   };
   var BALADI_ENGLISH = {
-    Bala: 'Infant', Kumara: 'Adolescent', Yuva: 'Youth',
+    Bala: 'Infant', Kumara: 'Child', Yuva: 'Young adult',
     Vriddha: 'Old', Mrita: 'Dead'
   };
 
@@ -2055,8 +2055,8 @@
      * measured inside a division.
      */
     { label: 'Karaka', says: 'The Jaimini chara karaka, assigned by how far into its sign the graha has travelled - furthest is Atmakaraka. Read in the rashi, and so the same in every chart here.' },
-    { label: 'Awareness', says: 'Waking, dreaming or sleeping according to whether the graha is in its own or exaltation sign, a friend’s or neutral’s sign, or an enemy’s or debilitation sign. Read in the rashi.' },
-    { label: 'Age', says: 'Infant, adolescent, youth, old or dead: six degrees to a stage and reversed in an even sign. Read in the rashi, and so the same in every chart here.' }
+    { label: 'State', says: 'Waking, dreaming or sleeping according to whether the graha is in its own or exaltation sign, a friend’s or neutral’s sign, or an enemy’s or debilitation sign. Read in the rashi.' },
+    { label: 'Age', says: 'Infant, child, young adult, old or dead: six degrees to a stage and reversed in an even sign. Read in the rashi, and so the same in every chart here.' }
   ];
 
   /**
