@@ -5294,7 +5294,9 @@
       editorCells.forEach(function (cell) {
         var chosen = editorSelects[cell.setting] &&
           editorSelects[cell.setting].value === cell.value;
-        cell.node.className = 'preset-cell' + (chosen ? ' preset-cell-chosen' : '');
+        cell.node.className = 'preset-cell' +
+          (cell.own ? '' : ' preset-cell-unrecorded') +
+          (chosen ? ' preset-cell-chosen' : '');
         cell.node.setAttribute('aria-pressed', chosen ? 'true' : 'false');
       });
     };
@@ -5338,11 +5340,25 @@
       RECKONING_IDS.concat(['chart-style']).forEach(function (id) {
         var source = document.getElementById(id);
         if (!source) return;
+        /*
+         * What each reading has to say here, and whether it says anything.
+         * A preset names the settings it is pinned on and takes the rest from
+         * this page, so a cell can be either a reading's own position or this
+         * page's standing in for one. They looked identical, which made the
+         * table claim four opinions where it had one: nothing is recorded
+         * about where Drik Panchang or Star Jyotish put Budha-Aditya's floor,
+         * and the row read as though all four had settled it.
+         */
         var values = COLUMNS.map(function (name) {
           var wanted = settingsForPreset(name);
-          return wanted ? wanted[id] : undefined;
+          return {
+            value: wanted ? wanted[id] : undefined,
+            own: name === 'page' ||
+              Object.prototype.hasOwnProperty.call(PRESETS[name].of, id)
+          };
         });
-        var agree = values.every(function (v) { return v === values[0]; });
+        var spoken = values.filter(function (v) { return v.own; });
+        var agree = spoken.every(function (v) { return v.value === spoken[0].value; });
         var row = el('tr', agree ? '' : 'preset-row-differs');
 
         var name = el('th', null, labelFor(id));
@@ -5363,22 +5379,37 @@
         row.appendChild(cell);
         editorSelects[id] = select;
 
-        values.forEach(function (value) {
+        values.forEach(function (entry, column) {
           var td = el('td');
-          var button = el('button', 'preset-cell', wordsFor(id, value));
+          var button = el('button', 'preset-cell', wordsFor(id, entry.value));
           button.setAttribute('type', 'button');
+          if (!entry.own) {
+            button.setAttribute('title', PRESETS[COLUMNS[column]].label +
+              ' is not recorded on this. Choosing it leaves this page\u2019s own' +
+              ' reading, which is what the cell shows.');
+          }
           button.addEventListener('click', function () {
-            select.value = value;
+            select.value = entry.value;
             markChosen();
           });
           td.appendChild(button);
           row.appendChild(td);
-          editorCells.push({ setting: id, value: value, node: button });
+          editorCells.push({ setting: id, value: entry.value, node: button,
+            own: entry.own });
         });
         body.appendChild(row);
       });
       table.appendChild(body);
       editor.appendChild(table);
+      /*
+       * And the table says which of its cells are a reading's own position.
+       * Without it the faintness is decoration; with it the table is honest
+       * about how much of itself is recorded.
+       */
+      editor.appendChild(el('p', 'field-note preset-key',
+        'Faint cells are settings that reading is not recorded on. Choosing ' +
+        'it leaves this page\u2019s own, which is what the cell shows. A row ' +
+        'in bold is one the recorded readings disagree on.'));
     };
 
     var fillEditor = function (values) {

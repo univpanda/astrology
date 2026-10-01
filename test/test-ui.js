@@ -10707,6 +10707,52 @@ console.log('\nEach preset reaches the figures it is named for');
       /Lahiri/.test(words[0]) && /Raman/.test(words[1]) &&
       /Lahiri/.test(words[2]) && /Lahiri/.test(words[3]);
   })());
+  /*
+   * And a cell says whether it is that reading's own position or this page
+   * standing in for one. A preset names the settings it is pinned on and takes
+   * the rest from here, so the two looked identical and the table claimed four
+   * opinions where it had one: nothing is recorded about where Drik Panchang
+   * or Star Jyotish put Budha-Aditya's floor, and the row read as though all
+   * four had settled it.
+   */
+  ok('a cell says whether that reading has a position at all', (function () {
+    var rowFor = function (setting) {
+      var fields = editorFields(), found = [];
+      (function walk(n) {
+        if (n.tag === 'tr' && n.children.some(function (c) {
+          return c.children.indexOf(fields[setting]) >= 0;
+        })) {
+          found = [];
+          (function cells(m) {
+            if (/^preset-cell/.test(m.className || '')) found.push(m);
+            m.children.forEach(cells);
+          })(n);
+        }
+        n.children.forEach(walk);
+      })(out.byId('preset-editor'));
+      return found;
+    };
+    // Raman alone states a floor for Budha-Aditya; the other two are silent.
+    var floor = rowFor('budha-floor').map(function (c) {
+      return /preset-cell-unrecorded/.test(c.className);
+    });
+    // Every reading has a position on the ayanamsa, Raman's being his own.
+    var ayan = rowFor('ayanamsa').map(function (c) {
+      return /preset-cell-unrecorded/.test(c.className);
+    });
+    return floor.join(',') === 'false,false,true,true' &&
+      ayan.join(',') === 'false,false,true,true';
+  })());
+  /* And the table says what the faintness means, or it is only decoration. */
+  ok('and the table says what a faint cell means', (function () {
+    var key = null;
+    (function walk(n) {
+      if (!key && /preset-key/.test(n.className || '')) key = n;
+      n.children.forEach(walk);
+    })(out.byId('preset-editor'));
+    return key && /not recorded on/.test(textOf(key));
+  })());
+
   /* Pressing a cell takes that reading for that setting, and nothing else. */
   ok('pressing one reading takes it for that setting alone', (function () {
     var fields = editorFields();

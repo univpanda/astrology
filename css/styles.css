@@ -926,6 +926,14 @@ input::placeholder { color: #a9bdb2; }
   cursor: pointer;
 }
 .preset-cell:hover { border-color: var(--line); background: var(--paper-tint); }
+/*
+ * A setting that reading is not recorded on. The value shown is this page's
+ * own, which is what choosing that reading would leave in force - so the cell
+ * is not wrong about what happens, only about whose opinion it is. Faint, so
+ * the eye reads the table as four opinions only where there are four.
+ */
+.preset-cell-unrecorded { color: var(--ink-faint); }
+.preset-key { margin: 0.9rem 0 0; max-width: 46rem; }
 .preset-cell-chosen {
   color: var(--green-deep);
   font-weight: 600;
