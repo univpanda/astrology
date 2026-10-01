@@ -1904,6 +1904,45 @@ ok('and the two rules hold together', (function () {
     'The lagna lord is strong.';
 })());
 
+/* The same account builder serves every division and every reference frame.
+   Keep the sweep broader than D1 so wording produced only after rotation does
+   not escape the checks above. */
+ok('and the other yogas read cleanly across divisions and reference frames', (function () {
+  var body = appSrc.match(/function yogaAccount\(finding\) \{[\s\S]*?\n  \}/)[0];
+  var yogaAccount = new Function(body + '\nreturn yogaAccount;')();
+  var bad = [], seen = {};
+  var rotate = function (chart, reference) {
+    if (reference === 'Ascendant') return chart;
+    var anchor = chart.planets.filter(function (p) { return p.name === reference; })[0];
+    var turned = Object.assign({}, chart, { reference: reference,
+      ascendant: Object.assign({}, anchor) });
+    turned.planets = chart.planets.map(function (p) {
+      return Object.assign({}, p, { house: ((p.sign - anchor.sign + 12) % 12) + 1 });
+    });
+    return turned;
+  };
+  for (var y = 1930; y < 2030; y += 11) {
+    var rashi = Astro.chart({ jdUT: Astro.julianDay(y, 6, 15, 3), latitude: 28.61,
+      longitude: 77.21, tzOffsetMinutes: 330 });
+    var strength = Shadbala.compute(rashi,
+      { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 });
+    [1, 9, 30].forEach(function (division) {
+      var chart = division === 1 ? rashi : Astro.chartInDivision(rashi, division);
+      ['Ascendant', 'Moon', 'Sun'].forEach(function (reference) {
+        Yogas.detect(rotate(chart, reference), strength)
+          .forEach(function (finding) {
+            var account = yogaAccount(finding);
+            seen[finding.title] = true;
+            if (!account || /\.\s+[a-z]|[.!?]{2,}|\s[.,;]/.test(account)) {
+              bad.push(finding.title + ': ' + account);
+            }
+          });
+      });
+    });
+  }
+  return Object.keys(seen).length > 40 && bad.length === 0;
+})());
+
 // Aspects, both directions.
 ok('aspects have a subtab of their own',
    /id="tab-aspects"[\s\S]{0,140}aria-controls="panel-aspects"/.test(html) &&
