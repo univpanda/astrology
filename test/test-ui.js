@@ -1586,7 +1586,8 @@ ok('the library is fetched once and searched in the page',
 ok('the yogas panel carries no explanatory passage',
    !/yoga-explanation/.test(appSrc) && !/fetchPassages\(\{ subjects:/.test(appSrc));
 ok('it still says how each yoga forms',
-   /yogaName\.title = \[finding\.summary\]\.concat\(finding\.reasons \|\| \[\]\)/.test(appSrc));
+   /yogaName\.title = yogaAccount\(finding\);/.test(appSrc) &&
+   /function yogaAccount\(finding\)/.test(appSrc));
 /*
  * The column the redesign is for. Whose yoga it is and who takes part in it are
  * different questions, and the page only ever asked the second: Shubha Vesi is
@@ -1845,7 +1846,63 @@ ok('shadbala is computed once per chart, so the tab and the yoga agree',
    /if \(!state\.shadbala\)/.test(appSrc) &&
    (appSrc.match(/Shadbala\.compute\(/g) || []).length === 1);
 ok('a yoga resting on several conditions names the ones that applied',
-   /\[finding\.summary\]\.concat\(finding\.reasons \|\| \[\]\)/.test(appSrc));
+   /return \[finding\.summary\]\.concat\(\(finding\.reasons \|\| \[\]\)\.filter/.test(appSrc));
+/*
+ * And a condition already stated in the summary is not stated again under it.
+ *
+ * A one-condition finding usually gives its condition in the summary and
+ * lists it again below, so the two run together as a sentence said twice.
+ * Over a sweep of 4,332 reason lines, 711 - one in six, across twenty-two
+ * different findings - are contained in their own summary, so this is a shape
+ * the detectors fall into rather than a fault in one of them.
+ */
+ok('and no reason is repeated out of the summary it is already in', (function () {
+  var body = appSrc.match(/function yogaAccount\(finding\) \{[\s\S]*?\n  \}/)[0];
+  var yogaAccount = new Function(body + '\nreturn yogaAccount;')();
+  var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+  var doubled = [];
+  for (var y = 1950; y < 2025; y += 9) {
+    var c = Astro.chart({ jdUT: Astro.julianDay(y, 6, 15, 3), latitude: 28.61,
+      longitude: 77.21, tzOffsetMinutes: 330 });
+    Yogas.detect(c, Shadbala.compute(c, place)).forEach(function (f) {
+      var text = yogaAccount(f).toLowerCase().replace(/\s+/g, ' ');
+      (f.reasons || []).forEach(function (reason) {
+        var one = String(reason).toLowerCase().replace(/\s+/g, ' ').replace(/[.,;]+$/, '').trim();
+        if (!one) return;
+        var at = text.indexOf(one);
+        if (at >= 0 && text.indexOf(one, at + 1) >= 0) doubled.push(f.title + ': ' + reason);
+      });
+    });
+  }
+  return doubled.length === 0;
+})());
+/*
+ * And the fragments are set as sentences. They are written to be read in a
+ * list, so a bare space ran them into one another: "rather than on a house
+ * worth protecting Saturn also owns the 9th".
+ */
+ok('and the reasons read as sentences rather than running together', (function () {
+  var body = appSrc.match(/function yogaAccount\(finding\) \{[\s\S]*?\n  \}/)[0];
+  var yogaAccount = new Function(body + '\nreturn yogaAccount;')();
+  var out = yogaAccount({
+    summary: 'Saturn, lord of the 8th, is placed in the 6th.',
+    reasons: ['the 8th lord is itself a source of harm',
+              'Saturn also owns the 9th, which the same placement damages']
+  });
+  return out === 'Saturn, lord of the 8th, is placed in the 6th. ' +
+    'The 8th lord is itself a source of harm. ' +
+    'Saturn also owns the 9th, which the same placement damages.';
+})());
+/* And a reason already in the summary is still dropped rather than restated. */
+ok('and the two rules hold together', (function () {
+  var body = appSrc.match(/function yogaAccount\(finding\) \{[\s\S]*?\n  \}/)[0];
+  var yogaAccount = new Function(body + '\nreturn yogaAccount;')();
+  return yogaAccount({
+    summary: 'Mercury is debilitated, and it is cancelled because Venus is in a kendra.',
+    reasons: ['Venus is in a kendra', 'the lagna lord is strong']
+  }) === 'Mercury is debilitated, and it is cancelled because Venus is in a kendra. ' +
+    'The lagna lord is strong.';
+})());
 
 // Aspects, both directions.
 ok('aspects have a subtab of their own',
@@ -5548,7 +5605,7 @@ ok('the states line holds conditions and the list holds combinations',
  * complete rather than the only view of something trimmed.
  */
 ok('and the Yogas tab still carries the summary and the reasons',
-   /yogaName\.title = \[finding\.summary\]\.concat\(finding\.reasons \|\| \[\]\)/.test(appSrc));
+   /yogaName\.title = yogaAccount\(finding\);/.test(appSrc));
 
 /*
  * And the card survives the library being absent: it loses a line, not its
