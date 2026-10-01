@@ -1599,7 +1599,13 @@
          ['N SLord', withRelation(subLord, subRel),
           saysRelation(subLord, subRel,
             'This graha lords the sub it occupies.')]],
-        [['', t.getAttribute('data-house'), ''],
+        /*
+         * Labelled, because the row holds two house numbers and only one of
+         * them was named: "House 10 . Rules 1st, 8th" puts where the graha
+         * stands beside what it owns, and the second was the one that said
+         * which it was.
+         */
+        [['In', t.getAttribute('data-house'), ''],
          ['Rules', t.getAttribute('data-rules'), ''],
          ['Aspected by', shortGrahas(seenBy),
           seenBy ? 'Aspected by ' + seenBy + '.' : '']]

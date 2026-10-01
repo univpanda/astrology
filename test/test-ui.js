@@ -8661,7 +8661,7 @@ console.log('\nThe card says how the graha stands in its sign');
       cellsOf(card).join(' | ') ===
         'Cancer | 20\u00b049\u203235\u2033 | Dis Mo (GE) | ' +
         'Ashlesha 2 | N Lord Me (GF) | N SLord Ve (Own) | ' +
-        'House 10 | Rules 1st, 8th | Aspected by Mo (7th), Ke (7th)';
+        'In House 10 | Rules 1st, 8th | Aspected by Mo (7th), Ke (7th)';
   })());
   /*
    * The two rows share three columns, so the dots fall in the same two places
@@ -8691,7 +8691,7 @@ console.log('\nThe card says how the graha stands in its sign');
   ok('a missing reading leaves its column standing', (function () {
     var cells = cellsOf(cardFor(labels().Ketu));
     return cells.join(' | ') === 'Capricorn | 24\u00b019\u203226\u2033 | ' +
-      'Dis Sa | Dhanishta 1 | N Lord Ma | N SLord Ra | House 4 |  | ' +
+      'Dis Sa | Dhanishta 1 | N Lord Ma | N SLord Ra | In House 4 |  | ' +
       'Aspected by Ma (4th), Ve (7th), Ra (7th)' && cells[7] === '';
   })());
   /*
