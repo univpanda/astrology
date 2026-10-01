@@ -1830,7 +1830,8 @@ table.graha-table th[scope="row"] {
   color: var(--ink);
 }
 table.graha-table thead th, table.graha-table td { text-align: center; }
-/* Twelve facts still need horizontal room, but one graha remains a single line
+table.graha-table thead tr:first-child th:first-child { text-align: left; }
+/* Ten facts still need horizontal room, but one graha remains a single line
    and the sticky name keeps that line identified while it scrolls. */
 table.graha-table th, table.graha-table td {
   padding-left: 0.5rem;
@@ -1840,10 +1841,6 @@ table.graha-table th, table.graha-table td {
      at the top of it and leaving the label stranded. */
   vertical-align: middle;
 }
-
-/* A word a line. The break is put in rather than left to the layout, which
-   would move it as the table resized and could split the pair anywhere. */
-table.graha-table .stacked { display: block; }
 
 /* The strip of chart tabs inside the Grahas panel. Smaller than the panel tabs
    above it: it chooses between three tables at most and should not compete with

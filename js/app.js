@@ -1932,14 +1932,9 @@
     return views;
   }
 
-  /*
-   * Atmakaraka over two lines, which is the whole of the name but not the whole
-   * of it on one line: every one of the eight ends in karaka, so the part that
-   * tells them apart is the part before it and that is what goes on top.
-   * Bhratru is seven characters where Bhratrukaraka is thirteen.
-   */
-  function karakaLines(name) {
-    return name.replace(/karaka$/, ' Karaka');
+  /* The column already says Karaka; its cells carry only the distinguishing name. */
+  function karakaShort(name) {
+    return name.replace(/karaka$/, '');
   }
 
   /** "first", "second" ... for a karaka's place in the order of eight. */
@@ -2038,13 +2033,11 @@
     { label: 'Rashi', says: 'The sign this chart puts the graha in.' },
     { label: 'House', says: 'Counted from this chart’s own house 1, which the tab above says what is counted from.' },
     { label: 'Lordship', says: 'Which houses the graha rules, counted from the same house 1 as the House column.' },
-    { label: 'Dispositor', says: 'The lord of the sign the graha stands in.' },
-    { label: 'Relationship', says: 'What the graha makes of its dispositor - the compound relation, natural and temporary together. The graha’s own view, which is not always returned.' },
+    { label: 'Dispositor', says: 'The lord of the sign the graha stands in, followed in brackets by the graha’s compound relationship to that lord.' },
     { label: 'Longitude', says: 'Where the graha stands within its sign, in degrees, minutes and seconds.' },
-    { label: 'Nakshatra', says: 'Which of the 27 nakshatras the graha falls in.' },
-    { label: 'Pada', says: 'Which quarter of that nakshatra, of four. Read with the Nakshatra column: a bare 3 means nothing on its own.' },
-    { label: 'Nakshatra lord', says: 'The graha that rules that nakshatra, which is what runs the Vimshottari dasha.' },
-    { label: 'Sub lord', says: 'The KP sub lord: the nakshatra divided again in the Vimshottari proportions, and whichever graha owns the part the position falls in.' },
+    { label: 'Nakshatra - Pada', says: 'Which of the 27 nakshatras the graha falls in and which of its four quarters.' },
+    { label: 'Lord', group: 'Nakshatra', says: 'The graha that rules that nakshatra, which is what runs the Vimshottari dasha.' },
+    { label: 'Sub lord', group: 'Nakshatra', says: 'The KP sub lord: the nakshatra divided again in the Vimshottari proportions, and whichever graha owns the part the position falls in.' },
     /*
      * Two facts about the graha rather than about the chart it is read in, so
      * they repeat across the tabs as [R] and [C] do. Both are taken from the
@@ -2109,6 +2102,10 @@
       var nak = Astro.nakshatraOf(v.longitude);
       var house = ((v.sign - firstSign) % 12 + 12) % 12 + 1;
       var owned = r.isAscendant ? [] : Astro.housesOwned(r.name, firstSign);
+      var dispositor = r.isAscendant ? Astro.SIGN_LORDS[v.sign]
+        : dispositorOf(r.name, v.sign);
+      var relationship = r.isAscendant ? ''
+        : dispositorRelation(r.name, v.sign, positionsD1);
       return {
         entity: r,
         cells: [
@@ -2131,24 +2128,19 @@
                   return Astro.SIGNS[(firstSign + h - 1) % 12] + ', the ' + Yogas.ordinal(h);
                 }).join(' and ') + '.' }
             : { text: '–', cls: 'numeric' },
-          { text: r.isAscendant ? Astro.SIGN_LORDS[v.sign] : dispositorOf(r.name, v.sign),
+          { text: dispositor + (relationship && relationship !== '\u2013'
+              ? ' (' + relationship.toLowerCase() + ')' : ''),
             cls: 'dispositor',
-            title: Astro.SIGN_LORDS[v.sign] + ' rules ' + Astro.SIGNS[v.sign] + '.' },
-          /* Keep a long two-word relationship from widening the whole table. */
-          { text: r.isAscendant ? '\u2013'
-              : dispositorRelation(r.name, v.sign, positionsD1),
-            cls: 'dispositor', stack: true,
             title: r.isAscendant
-              ? 'The lagna is a point rather than a graha, so it keeps no friendships.'
+              ? Astro.SIGN_LORDS[v.sign] + ' rules ' + Astro.SIGNS[v.sign] +
+                '. The lagna is a point rather than a graha, so it keeps no friendships.'
               : dispositorDetail(r.name, v.sign, positionsD1) },
           { text: dms(v.degreeInSign), cls: 'longitude',
             title: Astro.SIGNS[v.sign] + ' ' + dms(v.degreeInSign) +
               '. Longitude ' + v.longitude.toFixed(4) + '°.' },
-          /* Six nakshatras are two words; stack them to keep this column narrow. */
-          { text: nak.name, stack: true,
-            title: 'Nakshatra ' + nak.name + ', ruled by ' + nak.lord + '.' },
-          { text: String(nak.pada), cls: 'numeric',
-            title: 'Pada ' + nak.pada + ' of four, in ' + nak.name + '.' },
+          { text: nak.name + ' - ' + nak.pada,
+            title: 'Nakshatra ' + nak.name + ', pada ' + nak.pada +
+              ' of four, ruled by ' + nak.lord + '.' },
           /* The two lords have their own columns and can be named in full. */
           { text: nak.lord,
             title: nak.name + ' is ruled by ' + nak.lord + '.' },
@@ -2156,8 +2148,7 @@
             title: 'The sub lord of this point in ' + nak.name + ' is ' +
               nak.subLord + '.' },
           { text: r.isAscendant || !karakas[r.name] ? '–'
-              : karakaLines(karakas[r.name]),
-            stack: true,
+              : karakaShort(karakas[r.name]),
             title: r.isAscendant
               ? 'The lagna is a point rather than a graha, so it takes no karaka.'
               : karakas[r.name]
@@ -2184,16 +2175,35 @@
 
     var thead = el('thead');
     var headRow = el('tr');
+    var subHeadRow = el('tr');
     var corner = el('th', null, 'Graha');
     corner.setAttribute('scope', 'col');
+    corner.setAttribute('rowspan', '2');
     headRow.appendChild(corner);
-    GRAHA_ROWS.forEach(function (column) {
+    GRAHA_ROWS.forEach(function (column, index) {
+      if (column.group) {
+        if (!index || GRAHA_ROWS[index - 1].group !== column.group) {
+          var grouped = el('th', null, column.group);
+          grouped.setAttribute('scope', 'colgroup');
+          grouped.setAttribute('colspan', String(GRAHA_ROWS.filter(function (candidate) {
+            return candidate.group === column.group;
+          }).length));
+          headRow.appendChild(grouped);
+        }
+        var sub = el('th', null, column.label);
+        sub.setAttribute('scope', 'col');
+        sub.title = column.says;
+        subHeadRow.appendChild(sub);
+        return;
+      }
       var th = el('th', null, column.label);
       th.setAttribute('scope', 'col');
+      th.setAttribute('rowspan', '2');
       th.title = column.says;
       headRow.appendChild(th);
     });
     thead.appendChild(headRow);
+    thead.appendChild(subHeadRow);
     table.appendChild(thead);
 
     var tbody = el('tbody');
@@ -2208,14 +2218,7 @@
       }
       tr.appendChild(th);
       col.cells.forEach(function (cell) {
-        var td = el('td', cell.cls, cell.stack ? null : cell.text);
-        // One word a line, rather than left to wherever the column happens to
-        // wrap: a break the layout chooses moves as the table resizes.
-        if (cell.stack) {
-          String(cell.text).split(' ').forEach(function (word) {
-            td.appendChild(el('span', 'stacked', word));
-          });
-        }
+        var td = el('td', cell.cls, cell.text);
         if (cell.title) td.title = cell.title;
         if (cell.flags) flag(td, cell.flags);
         tr.appendChild(td);

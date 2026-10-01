@@ -2726,15 +2726,17 @@ ok('a graha in its own sign disposits itself',
  */
 ok('the dispositor names its lord in full, not in the abbreviation',
    /return lord === graha \? 'itself' : lord;/.test(appSrc) &&
-   /r\.isAscendant \? Astro\.SIGN_LORDS\[v\.sign\] : dispositorOf\(r\.name, v\.sign\)/
+   /var dispositor = r\.isAscendant \? Astro\.SIGN_LORDS\[v\.sign\]/
      .test(appSrc) &&
    !/Astro\.grahaAbbr\(Astro\.SIGN_LORDS\[v\.sign\]\)/.test(appSrc));
-ok('and the relation it keeps has a row to itself', (function () {
+ok('and its relationship follows in brackets in the same cell', (function () {
   var at = appSrc.indexOf('var GRAHA_ROWS = [');
   var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
   var rows = (block.match(/label: '[^']+'/g) || [])
     .map(function (t) { return t.slice(8, -1); });
-  return rows.indexOf('Relationship') === rows.indexOf('Dispositor') + 1 &&
+  return rows.indexOf('Relationship') < 0 &&
+    /dispositor \+ \(relationship && relationship !== '\\u2013'/.test(appSrc) &&
+    /' \(' \+ relationship\.toLowerCase\(\) \+ '\)'/.test(appSrc) &&
     /function dispositorRelation\(graha, sign, positionsD1\)/.test(appSrc) &&
     /return relation \? Astro\.titleCase\(Astro\.RELATION_LABELS\[relation\]\) : '\\u2013';/
       .test(appSrc);
@@ -2746,7 +2748,7 @@ ok('and the relation it keeps has a row to itself', (function () {
  */
 ok('and says own sign where there is no relation to keep',
    /if \(lord === graha\) return 'Own Sign';/.test(appSrc) &&
-   /'The lagna is a point rather than a graha, so it keeps no friendships\.'/
+   /The lagna is a point rather than a graha, so it keeps no friendships\./
      .test(appSrc));
 /*
  * Spelt as Astro.dignityOf spells it. The two rows touch and a graha in its own
@@ -2767,22 +2769,14 @@ ok('and spells it as the dignity row does', (function () {
  * Relationship carry the same kind of value - a two-word name in a column too
  * narrow for it - so both stack, as the nakshatra below them does.
  */
-ok('and a two-word label stacks, as the nakshatra does', (function () {
+ok('and the Karaka column carries only the distinguishing name', (function () {
   var block = appSrc.slice(appSrc.indexOf('cells: ['),
                            appSrc.indexOf('var table = el('));
-  var stacked = (block.match(/stack: true/g) || []).length;
-  // Relationship, Nakshatra and Karaka: Amatyakaraka is one word but the row
-  // holds two-word company, and stacking costs nothing where there is only one
-  // word to put on a line. Dignity has left the table for the chart.
-  return stacked === 3 &&
-    // And the karaka is split before the word every one of the eight ends in,
-    // the part that tells them apart going on top.
-    /function karakaLines\(name\)/.test(appSrc) &&
-    /return name\.replace\(\/karaka\$\/, ' Karaka'\);/.test(appSrc) &&
+  return /function karakaShort\(name\)/.test(appSrc) &&
+    /return name\.replace\(\/karaka\$\/, ''\);/.test(appSrc) &&
+    /karakaShort\(karakas\[r\.name\]\)/.test(block) &&
     Astro.CHARA_KARAKAS.every(function (k) { return /karaka$/.test(k); }) &&
-    !/Astro\.dignityOf\(r\.name, v\.sign, v\.degreeInSign\)\)/
-      .test(block) &&
-    /cls: 'dispositor', stack: true,/.test(block);
+    !/karakaLines/.test(appSrc);
 })());
 /*
  * The relation words are stored in the prose form, most of what reads them being
@@ -2804,12 +2798,13 @@ ok('and the prose still reads as prose, the article taking the lower-case form',
  * they shared a column, and sharing is what forced both to be abbreviated; a
  * row costs no width, so neither has to be.
  */
-ok('the nakshatra lord and sub lord have a row each, named in full', (function () {
+ok('the nakshatra lord and sub lord have grouped columns, named in full', (function () {
   var at = appSrc.indexOf('var GRAHA_ROWS = [');
   var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
   var rows = (block.match(/label: '[^']+'/g) || [])
     .map(function (t) { return t.slice(8, -1); });
-  return rows.indexOf('Sub lord') === rows.indexOf('Nakshatra lord') + 1 &&
+  return rows.indexOf('Sub lord') === rows.indexOf('Lord') + 1 &&
+    (block.match(/group: 'Nakshatra'/g) || []).length === 2 &&
     /\{ text: nak\.lord,/.test(appSrc) && /\{ text: nak\.subLord,/.test(appSrc) &&
     !/Astro\.grahaAbbr\(nak\.lord\)/.test(appSrc);
 })());
@@ -2820,7 +2815,7 @@ ok('the nakshatra lord and sub lord have a row each, named in full', (function (
   */
 ok('and no note under the table explains the codes',
    !/two-letter code the kundli uses/.test(html) &&
-   /title: 'Pada ' \+ nak\.pada \+ ' of four/.test(appSrc));
+   /'Nakshatra ' \+ nak\.name \+ ', pada ' \+ nak\.pada/.test(appSrc));
 
 console.log('\nVargottama flags');
 /*
@@ -6601,7 +6596,8 @@ ok('a chart on D1 lends its own rotation to that row, rather than a second row a
 ok('a graha is one row, the tables being one chart each', (function () {
   var at = appSrc.indexOf('function grahaTableFor');
   var block = appSrc.slice(at, appSrc.indexOf('function renderShadbala', at));
-  return !/rowspan/.test(block) &&
+  return /columns\.forEach\(function \(col\) \{/.test(block) &&
+    /col\.cells\.forEach\(function \(cell\) \{/.test(block) &&
     /views\.forEach\(function \(view\) \{/.test(appSrc) &&
     /scroll\.appendChild\(grahaTableFor\(state, view\)\);/.test(appSrc);
 })());
@@ -6800,15 +6796,14 @@ ok('and the box is drawn to that half width, not the old full one',
  * graha like the states are, rather than a row of dashes with three words in
  * it: over nine grahas a chart carries two or three dignities at most.
  */
-ok('the table carries twelve property columns', (function () {
+ok('the table carries ten property columns', (function () {
   var at = appSrc.indexOf('var GRAHA_ROWS = [');
   if (at < 0) return false;
   var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
   var found = (block.match(/label: '[^']+'/g) || [])
     .map(function (t) { return t.slice(8, -1); });
   return found.join('|') === ['Rashi', 'House', 'Lordship', 'Dispositor',
-    'Relationship', 'Longitude', 'Nakshatra',
-    'Pada', 'Nakshatra lord', 'Sub lord', 'Karaka', 'Avastha'].join('|') &&
+    'Longitude', 'Nakshatra - Pada', 'Lord', 'Sub lord', 'Karaka', 'Avastha'].join('|') &&
     !/<th scope="col">Chart<\/th>/.test(html);
 })());
 /*
@@ -6819,7 +6814,7 @@ ok('and every column says what it measures', (function () {
   var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
   return (block.match(/label: '/g) || []).length ===
     (block.match(/says: '/g) || []).length &&
-    /th\.title = column\.says;/.test(appSrc);
+    /th\.title = column\.says;/.test(appSrc) && /sub\.title = column\.says;/.test(appSrc);
 })());
 /*
  * Lordship was removed as a "Rules" column and has come back as this one. It is
@@ -6833,34 +6828,17 @@ ok('and every column says what it measures', (function () {
  * cell holds, so they are two rows again - and splitting them narrows the
  * table, "Purva Phalguni - 1" having set Mars's column on its own.
  */
-ok('the pada is its own row, next to the nakshatra it quarters', (function () {
+ok('the pada follows its nakshatra in the same cell', (function () {
   var at = appSrc.indexOf('var GRAHA_ROWS = [');
   var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
   var rows = (block.match(/label: '[^']+'/g) || [])
     .map(function (t) { return t.slice(8, -1); });
-  return rows.indexOf('Pada') === rows.indexOf('Nakshatra') + 1 &&
-    /\{ text: nak\.name,/.test(appSrc) &&
-    /\{ text: String\(nak\.pada\), cls: 'numeric',/.test(appSrc) &&
-    !/nak\.name \+ ' - ' \+ nak\.pada/.test(appSrc);
+  return rows.indexOf('Pada') < 0 && rows.indexOf('Nakshatra - Pada') >= 0 &&
+    /\{ text: nak\.name \+ ' - ' \+ nak\.pada,/.test(appSrc);
 })());
-ok('and each says on hover what the other supplies',
-   /'Nakshatra ' \+ nak\.name \+ ', ruled by ' \+ nak\.lord/.test(appSrc) &&
-   /'Pada ' \+ nak\.pada \+ ' of four, in ' \+ nak\.name/.test(appSrc));
-/*
- * Six of the twenty-seven nakshatras are two words, and one of them sets the
- * whole column's width. Stacked, a column is as wide as the longer word rather
- * than as the pair - "Uttara Bhadrapada" is seventeen characters and its longer
- * half is ten - and the break is put in rather than left to the layout, which
- * would move it as the table resized.
- */
-ok('a two-word nakshatra stacks, one word to a line', (function () {
-  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
-  var twoWord = Astro.NAKSHATRAS.filter(function (n) { return n.indexOf(' ') >= 0; });
-  return twoWord.length === 6 &&
-    /\{ text: nak\.name, stack: true,/.test(appSrc) &&
-    /String\(cell\.text\)\.split\(' '\)\.forEach\(function \(word\) \{/.test(appSrc) &&
-    /table\.graha-table \.stacked \{ display: block; \}/.test(css);
-})());
+ok('and its hover carries both the pada and the nakshatra lord',
+   /'Nakshatra ' \+ nak\.name \+ ', pada ' \+ nak\.pada/.test(appSrc) &&
+   /' of four, ruled by ' \+ nak\.lord/.test(appSrc));
 /*
  * And a row that has grown to two lines centres what is beside it, rather than
  * leaving the label at the top of a cell twice its height.
