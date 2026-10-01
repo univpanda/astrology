@@ -8093,19 +8093,23 @@ console.log('\nYogas follow the rotation the chart is drawn in');
   ok('the ascendant is not a rotation', Yogas.firstHouse({ reference: 'Ascendant' }) === 'the lagna');
 
   /*
-   * Every summary a rotated chart can produce, swept for the faults a frame
-   * introduces: a graha list standing bare where a subject belongs, a plural
-   * subject on a singular verb, and the clause joiner lowering a proper noun
-   * because it lowers the first letter of everything.
+   * A graha stands in the 1st from itself in every chart ever drawn, so the
+   * graha a rotated chart is read from cannot be evidence of a malefic in the
+   * first house. Read from a waning Moon the clause would hold in every
+   * nativity, and a condition true by construction is not a finding.
+   *
+   * This is a change to what the detector reports and not to how it words it,
+   * so it is tested as one: the clause names everyone else it should and
+   * never the frame.
    */
   (function () {
     var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
-    var bad = [];
-    for (var i = 0; i < 400; i++) {
-      var c = Astro.chart({ jdUT: Astro.julianDay(1950, 1, 1, 0) + i * 31.7,
+    var namedFrame = 0, sawClause = 0;
+    for (var i = 0; i < 300; i++) {
+      var c = Astro.chart({ jdUT: Astro.julianDay(1950, 1, 1, 0) + i * 41.3,
         latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 });
       var strengths = Shadbala.compute(c, place);
-      ['Moon', 'Sun', 'Saturn'].forEach(function (ref) {
+      ['Moon', 'Saturn', 'Mars'].forEach(function (ref) {
         var chart = {};
         for (var k in c) chart[k] = c[k];
         chart.reference = ref;
@@ -8120,20 +8124,75 @@ console.log('\nYogas follow the rotation the chart is drawn in');
           return q;
         });
         Yogas.detect(chart, strengths).forEach(function (f) {
-          var t = f.summary || '';
-          // A luminary left bare where the article belongs.
-          if (/(^|[^a-z])(?:with|and|while) (Sun|Moon)\b/.test(t)) bad.push('bare: ' + t);
-          // A proper noun lowered by the joiner.
-          if (/\bAnd (sun|moon|mars|mercury|jupiter|venus|saturn|rahu|ketu)\b/.test(t)) {
-            bad.push('lowered: ' + t);
-          }
-          // Two or more grahas on a singular verb.
-          if (/\band [A-Z][a-z]+ stands\b/.test(t)) bad.push('agreement: ' + t);
+          if (f.subject !== 'Daridra Yoga') return;
+          (f.reasons || []).forEach(function (r) {
+            var m = /^(.+?) stands? in the 1st from /.exec(r);
+            if (!m) return;
+            sawClause++;
+            if (new RegExp('\\b' + ref + '\\b').test(m[1])) namedFrame++;
+          });
         });
       });
     }
-    ok('a rotated reading produces no bare luminary, lowered name or bad agreement',
-       bad.length === 0, bad.slice(0, 3).join(' | '));
+    ok('the graha a chart is read from is not counted among the malefics in its own first house',
+       sawClause > 0 && namedFrame === 0,
+       sawClause + ' clauses seen, ' + namedFrame + ' naming the frame');
+  })();
+
+  /*
+   * Every line a rotated chart can produce, swept for the faults a frame
+   * introduces. The reasons as well as the summary: the first version of this
+   * read only the summary and passed while "Mars and Saturn stands in an
+   * angle" sat in a reason on 6,849 findings.
+   *
+   * Every reference, not a sample of three, and the verbs taken from a list
+   * rather than written into one regex, so a new one has to be added here to
+   * be missed.
+   */
+  (function () {
+    var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
+    var LUMINARY = /(^|[^a-z])(?:with|and|while|of|by|to|from|than|like) (Sun|Moon)\b/;
+    var SINGULAR = new RegExp('\\\\b(?:and|&) (?:the )?(?:Sun|Moon|Mars|Mercury|Jupiter|' +
+      'Venus|Saturn|Rahu|Ketu) (' +
+      ['stands', 'sits', 'holds', 'occupies', 'aspects', 'rules', 'is', 'has',
+       'keeps', 'reaches', 'gives', 'shares'].join('|') + ')\\\\b');
+    var LOWERED = /\b(?:And|and) (sun|moon|mars|mercury|jupiter|venus|saturn|rahu|ketu)\b/;
+    var HOUSE_AS_LORD = /lord of the sign the \d+(?:st|nd|rd|th) from/;
+    var bad = [];
+    var note = function (why, text) { if (bad.length < 40) bad.push(why + ': ' + text); };
+    for (var i = 0; i < 260; i++) {
+      var c = Astro.chart({ jdUT: Astro.julianDay(1950, 1, 1, 0) + i * 47.3,
+        latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 });
+      var strengths = Shadbala.compute(c, place);
+      ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu']
+        .forEach(function (ref) {
+          var chart = {};
+          for (var k in c) chart[k] = c[k];
+          chart.reference = ref;
+          var anchor = c.planets.filter(function (p) { return p.name === ref; })[0];
+          if (!anchor) return;
+          var lagna = Astro.signOf(anchor.longitude);
+          chart.ascendant = { longitude: anchor.longitude, sign: lagna };
+          chart.planets = c.planets.map(function (p) {
+            var q = {};
+            for (var j in p) q[j] = p[j];
+            q.house = ((p.sign - lagna) % 12 + 12) % 12 + 1;
+            return q;
+          });
+          Yogas.detect(chart, strengths).forEach(function (f) {
+            [f.summary].concat(f.reasons || []).forEach(function (line) {
+              var t = String(line || '');
+              if (LUMINARY.test(t)) note('bare luminary', t);
+              if (SINGULAR.test(t)) note('agreement', t);
+              if (LOWERED.test(t)) note('lowered name', t);
+              if (HOUSE_AS_LORD.test(t)) note('house read as the graha', t);
+            });
+          });
+        });
+    }
+    ok('a rotated reading produces no bare luminary, lowered name, bad agreement ' +
+       'or house standing in for the graha',
+       bad.length === 0, bad.slice(0, 3).join('  |  '));
   })();
 
   var strays = [];

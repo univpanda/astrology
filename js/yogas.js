@@ -54,16 +54,26 @@ var Yogas = (function () {
    * "The 1st from the Moon" is a house wherever it stands, and names the
    * frame while it is at it.
    */
+  /*
+   * The graha a rotated chart is read from, articled. A sentence that wants
+   * the graha wants this; one that wants the house wants firstHouse. Running
+   * the two together is what gave "lord of the sign the 1st from the Moon
+   * stands in".
+   */
+  function referenceGraha(chart) {
+    if (!rotated(chart)) return '';
+    return (FIRST_HOUSE_ARTICLE[chart.reference] ? 'the ' : '') + chart.reference;
+  }
+
   function firstHouse(chart, classical) {
     if (!rotated(chart)) return classical || 'the lagna';
-    return 'the 1st from ' +
-      (FIRST_HOUSE_ARTICLE[chart.reference] ? 'the ' : '') + chart.reference;
+    return 'the 1st from ' + referenceGraha(chart);
   }
 
   /* The same house when a sentence needs its lord rather than the house. */
   function firstLord(chart, classical) {
     return rotated(chart)
-      ? 'lord of the sign ' + firstHouse(chart) + ' stands in' : classical;
+      ? 'lord of the sign ' + referenceGraha(chart) + ' stands in' : classical;
   }
 
   function parivartana(chart) {
@@ -494,7 +504,7 @@ var Yogas = (function () {
     var reasons = [
       ninthLord + ' rules the 9th and stands in ' + Astro.SIGNS[placed.sign] + ', its ' +
         SEAT_PHRASE[dignity] + ', in the ' + house + ' - ' + seat,
-      lagnaLord + ', ' + firstLord(chart, 'the lagna lord') + ', carries ' +
+      Named(lagnaLord) + ', ' + firstLord(chart, 'the lagna lord') + ', carries ' +
         lord.rupas.toFixed(2) + ' rupas against the ' +
         lord.required + ' Parashara asks of it, so it is strong'
     ];
@@ -846,8 +856,8 @@ var Yogas = (function () {
         houses: [houseFrom(jupiter.sign, lagna)],
         reasons: [
           where,
-          'it is ' + (helpers.length === 1 ? 'helped by ' : 'helped by ') +
-            helpers.join(' and ') + ', benefic' + (helpers.length > 1 ? 's' : ''),
+          'it is helped by ' + listOf(helpers) +
+            ', benefic' + (helpers.length > 1 ? 's' : ''),
           'and it is neither debilitated, nor combust, nor in an enemy\u2019s sign, ' +
             'which is what separates this from the commoner Kesari yoga'
         ],
@@ -1017,6 +1027,15 @@ var Yogas = (function () {
     return said.slice(0, -1).join(', ') + ' and ' + said[said.length - 1];
   }
 
+  /*
+   * The verb a list of grahas takes. Several lines read "Mars and Saturn
+   * stands in an angle" because the singular was written into the sentence
+   * beside a list that can hold any number.
+   */
+  function verb(names, singular, plural) {
+    return (names || []).length > 1 ? plural : singular;
+  }
+
   /** The same, opening a sentence. */
   function Listed(names) {
     var one = listOf(names);
@@ -1086,7 +1105,7 @@ var Yogas = (function () {
         return KENDRAS.indexOf(fromLagna) >= 0 || KENDRAS.indexOf(fromMoon) >= 0;
       });
       var escapes = [];
-      if (withMoon.length) escapes.push(listOf(withMoon) + ' sits with the Moon');
+      if (withMoon.length) escapes.push(listOf(withMoon) + verb(withMoon, ' sits', ' sit') + ' with the Moon');
       if (inKendra.length) escapes.push(listOf(inKendra) +
         ' stands in an angle from ' + (chart.reference === 'Moon' ? 'the Moon'
           : firstHouse(chart) + ' or the Moon'));
@@ -1601,7 +1620,8 @@ var Yogas = (function () {
         named(lord) + ' rules ' + firstHouse(chart, 'the ascendant') + ' and sits in the ' +
           ordinal(house) + ', while ' + named(other) + ' rules the ' + ordinal(house) +
           ' and sits in ' + firstHouse(chart, 'the ascendant') + ': the two have exchanged',
-        listOf(hit) + ' is a maraka and reaches them, which the verse asks for; ' +
+        listOf(hit) + verb(hit, ' is a maraka and reaches', ' are marakas and reach') +
+          ' them, which the verse asks for; ' +
           'the marakas are the lords of the 2nd and the 7th, malefics standing ' +
           'in those houses, and malefics keeping their company'
       ], Named(lord) + ', lord of ' + firstHouse(chart, 'the ascendant') + ', and ' +
@@ -1644,7 +1664,7 @@ var Yogas = (function () {
             ', a malefic',
           named(second) + ' rules the 2nd, the house of what is held, and is ' +
             (seat === 'Debilitated' ? 'debilitated'
-              : 'in the sign of ' + signLord + ', a natural enemy'),
+              : 'in the sign of ' + named(signLord) + ', a natural enemy'),
           'the verse says this reduces even a royal scion to pennilessness'
         ], Named(lord) + ' is in the ' + ordinal(lordHouse) + ' with ' +
           listOf(beside) + ' while ' + named(second) + ', the 2nd lord, is ' +
@@ -1689,7 +1709,8 @@ var Yogas = (function () {
             named(ninthLord) + ' rules the 9th and is in the 12th',
           'the two trine lords are the wealth-givers of the chapter before this ' +
             'one, and here both are in houses of loss',
-          listOf(struck) + ' is a maraka and reaches them'
+          listOf(struck) + verb(struck, ' is a maraka and reaches', ' are marakas and reach') +
+            ' them'
         ], 'The lords of the 5th and the 9th are in the 6th and the 12th, and ' +
           listOf(struck) +
           (struck.length > 1 ? ' are marakas reaching them.' : ' is a maraka reaching them.'),
@@ -1719,7 +1740,8 @@ var Yogas = (function () {
       });
       if (reached.length) {
         say('malefic-lagna', [
-          listOf(inLagna) + ' stands in ' + firstHouse(chart, 'the ascendant') +
+          listOf(inLagna) + verb(inLagna, ' stands in ', ' stand in ') +
+            firstHouse(chart, 'the ascendant') +
             ', a malefic ruling neither the 9th nor the 10th, which the verse ' +
             'excepts',
           listOf(reached) + (reached.length > 1 ? ' are marakas and reach ' : ' is a maraka and reaches ') +
@@ -2052,7 +2074,7 @@ var Yogas = (function () {
     var seatSaid = seat === 'Exalted' ? 'exalted'
       : seat === 'Mooltrikona' ? 'in his moolatrikona'
       : seat === 'Own Sign' ? 'in his own sign'
-      : 'in the sign of ' + signLord + ', a natural friend';
+      : 'in the sign of ' + named(signLord) + ', a natural friend';
     var placed = SARASWATI_GRAHAS.map(function (g) {
       return g + ' in the ' + ordinal(where[g]);
     });
@@ -2120,8 +2142,8 @@ var Yogas = (function () {
     var exchanged = c.at[first] && c.at[fifth] &&
       c.houseOf(first) === 5 && c.houseOf(fifth) === 1;
     if (exchanged) {
-      reasons.push(first + ' rules ' + firstHouse(chart, 'the ascendant') +
-        ' and stands in the 5th, while ' + fifth + ' rules the 5th and stands ' +
+      reasons.push(Named(first) + ' rules ' + firstHouse(chart, 'the ascendant') +
+        ' and stands in the 5th, while ' + named(fifth) + ' rules the 5th and stands ' +
         'in ' + firstHouse(chart, 'the ascendant') + ': the two have exchanged signs');
       grahas.push(first, fifth);
       houses.push(1, 5);
@@ -2163,8 +2185,10 @@ var Yogas = (function () {
         reasons.push('the Atmakaraka is ' + named(atma) + ', ' + atmaSeat +
           ', and the Putrakaraka is ' + named(putra) + ', ' + putraSeat +
           ', which are two of the five placements the sloka names');
-        reasons.push(listOf(atmaSeen) + ' aspects ' + named(atma) + ' and ' +
-          listOf(putraSeen) + ' aspects ' + named(putra) + ', the clause ' +
+        reasons.push(listOf(atmaSeen) + verb(atmaSeen, ' aspects ', ' aspect ') +
+          named(atma) + ' and ' +
+          listOf(putraSeen) + verb(putraSeen, ' aspects ', ' aspect ') +
+          named(putra) + ', the clause ' +
           'asking that both be in aspect to a benefic');
         [atma, putra].forEach(function (g) {
           if (grahas.indexOf(g) < 0) grahas.push(g);
@@ -2867,9 +2891,9 @@ var Yogas = (function () {
     if (!isStrong(strengths, lagnaLord)) return [];
 
     return finding('Kahala Yoga', 'Kahala yoga', [
-      fourth + ' rules the 4th and ' + ninth + ' the 9th, and they stand in ' +
+      Named(fourth) + ' rules the 4th and ' + named(ninth) + ' the 9th, and they stand in ' +
         'angles from each other',
-      lagnaLord + ', ' + firstLord(chart, 'lord of the ascendant') +
+      Named(lagnaLord) + ', ' + firstLord(chart, 'lord of the ascendant') +
         ', is strong, which the rule asks ' +
         'for and which is what keeps this from being common',
       'Raman warns against reading the old results literally: "No yogas ' +
@@ -2919,20 +2943,22 @@ var Yogas = (function () {
     if (!tenants.length) return [];
 
     return finding('Pushkala Yoga', 'Pushkala yoga', [
-      dispositor + ' rules the sign the Moon occupies and ' +
+      Named(dispositor) + ' rules the sign the Moon occupies and ' +
         (dispositor === lagnaLord
           ? 'is himself ' + firstLord(chart, 'the ') + 'lord of ' + firstHouse(chart, 'the ascendant') + firstLord(chart, '')
-          : 'stands with ' + lagnaLord + ', ' + firstLord(chart, 'the ascendant lord')),
+          : 'stands with ' + named(lagnaLord) + ', ' + firstLord(chart, 'the ascendant lord')),
       inKendra
-        ? dispositor + ' holds the ' + ordinal(house) + ', an angle'
-        : dispositor + ' sits in the sign of ' + seatLord + ', an intimate ' +
+        ? Named(dispositor) + ' holds the ' + ordinal(house) + ', an angle'
+        : Named(dispositor) + ' sits in the sign of ' + named(seatLord) + ', an intimate ' +
           'friend, and aspects ' + firstHouse(chart, 'the ascendant'),
-      listOf(tenants) + ' occupies ' + firstHouse(chart, 'the ascendant') + ' and is strong, which is the ' +
+      listOf(tenants) + verb(tenants, ' occupies ', ' occupy ') +
+        firstHouse(chart, 'the ascendant') + verb(tenants, ' and is strong', ' and are strong') +
+        ', which is the ' +
         'last of the three things the rule asks at once',
       'Raman calls the combination "somewhat complicated" himself'
     ], (function () {
          var others = tenants.filter(function (g) { return g !== dispositor; });
-         return dispositor + ', who rules the sign the Moon occupies, ' +
+         return Named(dispositor) + ', who rules the sign the Moon occupies, ' +
            (dispositor === lagnaLord ? 'is himself ' + firstLord(chart, 'the ascendant lord') + ' and '
              : 'stands with ' + named(lagnaLord) + ' and ') +
            (inKendra && house === 1 && !others.length
@@ -2940,7 +2966,8 @@ var Yogas = (function () {
              : (inKendra ? 'holds the ' + ordinal(house)
                  : 'sits in ' + named(seatLord) + '\u2019s sign aspecting ' + firstHouse(chart, 'the ascendant')) +
                (others.length
-                 ? ', while ' + listOf(others) + ' holds ' + firstHouse(chart, 'the ascendant') + ' strongly'
+                 ? ', while ' + listOf(others) + verb(others, ' holds ', ' hold ') +
+                     firstHouse(chart, 'the ascendant') + ' strongly'
                  : ', and is strong in ' + firstHouse(chart, 'the ascendant') + ' himself')) +
            '. That is Pushkala yoga.';
        })(), [dispositor, lagnaLord].concat(tenants), [1],
@@ -3008,7 +3035,7 @@ var Yogas = (function () {
         ? amsaLord + ' is also ' + firstLord(chart, 'the ') + 'lord of ' +
           firstHouse(chart, 'the ascendant') + firstLord(chart, '') +
           ', which satisfies the last clause in one graha'
-        : 'and with ' + lagnaLord + ', ' + firstLord(chart, 'the ') + 'lord of ' +
+        : 'and with ' + named(lagnaLord) + ', ' + firstLord(chart, 'the ') + 'lord of ' +
           firstHouse(chart, 'the ascendant') + firstLord(chart, ''));
       holds.push('That is the definition Raman gives first, and the strictest of ' +
         'the three he states');
@@ -3064,11 +3091,11 @@ var Yogas = (function () {
 
     return finding('Bharathi Yoga', 'Bharathi yoga', [
       made.map(function (m) {
-        return m.amsaLord + ', lord of the navamsa ' + m.lord + ' occupies as ' +
-          'lord of the ' + ordinal(m.house) + ', exalted';
+        return Named(m.amsaLord) + ', lord of the navamsa ' + named(m.lord) +
+          ' occupies as lord of the ' + ordinal(m.house) + ', exalted';
       }).join('; and '),
       (made.length === 1 ? 'and standing with ' : 'each standing with ') +
-        ninth + ', the lord of the 9th',
+        named(ninth) + ', the lord of the 9th',
       'Raman counts this as three yogas rather than one, "inasmuch as the 9th ' +
         'lord cannot be in simultaneous conjunction with all the three ' +
         'Navamsa lords", so any one of the three forms it'
@@ -3132,14 +3159,14 @@ var Yogas = (function () {
     if (c.at[fourth].sign !== tenthSign || c.at[tenth].sign !== fourthSign) return [];
 
     return finding('Chapa Yoga', 'Chapa yoga', [
-      lagnaLord + ', ' + firstLord(chart, 'lord of the ascendant') + ', is exalted in ' +
+      Named(lagnaLord) + ', ' + firstLord(chart, 'lord of the ascendant') + ', is exalted in ' +
         Astro.SIGNS[c.at[lagnaLord].sign],
       fourth + ' and ' + tenth + ', the lords of the 4th and 10th, have ' +
         'exchanged signs',
       'Raman reports twenty years of observation against the literal reading: ' +
         '"Chapa Yoga makes one control the wealth of others rather than make ' +
         'him rich" - he found it in the charts of bank officers'
-    ], lagnaLord + ', ' + firstLord(chart, 'lord of the ascendant') + ', is exalted in ' +
+    ], Named(lagnaLord) + ', ' + firstLord(chart, 'lord of the ascendant') + ', is exalted in ' +
        Astro.SIGNS[c.at[lagnaLord].sign] + ', and ' + named(fourth) + ' and ' +
        named(tenth) + ' have exchanged the 4th and the 10th. That is Chapa yoga.',
        [lagnaLord, fourth, tenth], [1, 4, 10]);
@@ -3195,7 +3222,7 @@ var Yogas = (function () {
 
     return finding('Sreenatha Yoga', 'Sreenatha yoga', [
       seventh + ', lord of the 7th, stands exalted in the 10th',
-      tenth + ', lord of the 10th, stands with ' + ninth + ', lord of the 9th, ' +
+      Named(tenth) + ', lord of the 10th, stands with ' + named(ninth) + ', lord of the 9th, ' +
         'in ' + Astro.SIGNS[c.at[tenth].sign],
       'Raman counts it among the important raja yogas, "inasmuch as a point ' +
         'of contact is established between the 7th, the 9th and the 10th"',
@@ -3220,9 +3247,9 @@ var Yogas = (function () {
     if (!isStrong(strengths, lagnaLord)) return [];
 
     return finding('Sankha Yoga', 'Sankha yoga', [
-      fifth + ' rules the 5th and ' + sixth + ' the 6th, and they stand in ' +
+      Named(fifth) + ' rules the 5th and ' + named(sixth) + ' the 6th, and they stand in ' +
         'angles from each other',
-      lagnaLord + ', ' + firstLord(chart, 'lord of the ascendant') + ', is strong',
+      Named(lagnaLord) + ', ' + firstLord(chart, 'lord of the ascendant') + ', is strong',
       'an odd pairing to read as fortunate, the 6th being a house of harm; ' +
         'what the rule joins is the house of merit to the house of effort'
     ], Named(fifth) + ' and ' + named(sixth) + ', lords of the 5th and 6th, stand in angles ' +
@@ -3297,7 +3324,8 @@ var Yogas = (function () {
       'four clauses, every one about malefics, and the reading is favourable ' +
         'throughout - "a clever prophet, an ocean of kindness". It is one of ' +
         'the few places the book reads a chart full of malefics as a blessing'
-    ], listOf(first) + ' holds ' + firstHouse(chart, 'the ascendant') + ', ' + listOf(fourth) + ' the 4th, ' +
+    ], listOf(first) + verb(first, ' holds ', ' hold ') +
+      firstHouse(chart, 'the ascendant') + ', ' + listOf(fourth) + ' the 4th, ' +
        listOf(eighth) + ' the 8th and ' + listOf(ninth) + ' the 9th, all malefic, ' +
        'with ' + listOf(fifthGood) + ' and ' + listOf(fifthBad) + ' sharing the ' +
        '5th. That is Matsya yoga.',
@@ -3340,16 +3368,16 @@ var Yogas = (function () {
     if (!made) return [];
 
     return finding('Mridanga Yoga', 'Mridanga yoga', [
-      made.exalted + ' is exalted, and ' + made.amsaLord + ' rules the navamsa ' +
-        made.exalted + ' occupies',
-      made.amsaLord + ' stands in the ' + ordinal(made.house) + ', ' +
+      Named(made.exalted) + ' is exalted, and ' + named(made.amsaLord) +
+        ' rules the navamsa ' + named(made.exalted) + ' occupies',
+      Named(made.amsaLord) + ' stands in the ' + ordinal(made.house) + ', ' +
         (KENDRAS.indexOf(made.house) >= 0 ? 'an angle' : 'a trine') + ', in ' +
         (made.dignity === 'Exalted' ? 'exaltation'
           : made.relation === 'own' ? 'his own sign' : 'a friendly sign'),
-      lagnaLord + ', ' + firstLord(chart, 'lord of the ascendant') + ', is strong',
+      Named(lagnaLord) + ', ' + firstLord(chart, 'lord of the ascendant') + ', is strong',
       'Raman calls the wording "somewhat confusing" and begins reading it out ' +
         'before the page breaks; the reading he starts is the one taken here'
-    ], made.amsaLord + ' rules the navamsa ' +
+    ], Named(made.amsaLord) + ' rules the navamsa ' +
        (made.amsaLord === made.exalted ? 'he occupies himself, being the exalted graha'
          : 'the exalted ' + named(made.exalted) + ' occupies') +
        ', holds the ' + ordinal(made.house) + ' in ' +
