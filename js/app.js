@@ -5241,7 +5241,8 @@
     var forget = document.getElementById('preset-forget');
     var choice = document.getElementById('preset-choice');
     var mineOption = document.getElementById('preset-mine-option');
-    var dialog = document.getElementById('preset-dialog');
+    var page = document.getElementById('preset-page');
+    var main = document.getElementById('settings-main');
     var editor = document.getElementById('preset-editor');
     var nameBox = document.getElementById('preset-name');
 
@@ -5388,9 +5389,23 @@
       markChosen();
     };
 
-    var closeDialog = function () {
-      if (typeof dialog.close === 'function') dialog.close();
-      else dialog.removeAttribute('open');
+    /*
+     * Two views of the one tab rather than a modal over it. The comparison is
+     * six columns wide and a dialog is narrower than the panel it opens over,
+     * so the four readings it exists to show were pushed off the side.
+     */
+    var showPage = function () {
+      main.hidden = true;
+      page.hidden = false;
+      if (window.scrollTo) window.scrollTo(0, 0);
+      if (nameBox.focus) nameBox.focus();
+    };
+    var closePage = function () {
+      page.hidden = true;
+      main.hidden = false;
+      if (window.scrollTo) window.scrollTo(0, 0);
+      var create = document.getElementById('preset-create');
+      if (create.focus) create.focus();
     };
 
     var apply = function (name) {
@@ -5431,11 +5446,10 @@
       var mine = readMyDefault();
       nameBox.value = mine ? mine.name : '';
       fillEditor((mine && mine.values) || currentSettings());
-      if (typeof dialog.showModal === 'function') dialog.showModal();
-      else dialog.setAttribute('open', '');
+      showPage();
     });
 
-    document.getElementById('preset-cancel').addEventListener('click', closeDialog);
+    document.getElementById('preset-back').addEventListener('click', closePage);
 
     document.getElementById('preset-save').addEventListener('click', function () {
       buildEditor();
@@ -5454,7 +5468,7 @@
       }
       showMine();
       choice.value = 'mine';
-      closeDialog();
+      closePage();
       apply('mine');
     });
 
@@ -5462,7 +5476,7 @@
       try { window.localStorage.removeItem(MY_SETTINGS_KEY); } catch (e) { /* nothing to undo */ }
       try { window.localStorage.setItem(DEFAULT_SETTINGS_KEY, 'page'); } catch (e2) { /* session only */ }
       choice.value = 'page';
-      closeDialog();
+      closePage();
       showMine();
       apply('page');
       status.textContent = 'My default deleted. Standard default is in use.';

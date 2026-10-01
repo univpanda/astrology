@@ -744,7 +744,7 @@ input::placeholder { color: #a9bdb2; }
 /* Wide enough for the longest name it holds, and no wider: every other select
    on the page fills its field, and this one is sitting in a sentence. */
 .preset-picker select { width: auto; min-width: 12rem; }
-.preset-picker button, .preset-dialog button {
+.preset-picker button {
   font: inherit;
   font-size: 0.85rem;
   font-weight: 600;
@@ -756,7 +756,7 @@ input::placeholder { color: #a9bdb2; }
   cursor: pointer;
   transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
 }
-.preset-picker button:hover, .preset-dialog button:hover {
+.preset-picker button:hover {
   color: var(--green-deep);
   border-color: var(--green);
   background: var(--green-soft);
@@ -766,33 +766,59 @@ input::placeholder { color: #a9bdb2; }
 .preset-what { width: 100%; margin: 0.2rem 0 0; max-width: 46rem; }
 .preset-status { width: 100%; margin: 0; min-height: 1.2em; }
 
-.preset-dialog {
-  width: min(48rem, calc(100vw - 2rem));
-  max-height: min(80vh, 48rem);
-  overflow: auto;
-  padding: 1.25rem;
-  color: var(--ink);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-lift);
-}
-.preset-dialog::backdrop { background: rgba(14, 28, 20, 0.45); }
-.preset-dialog-head {
+/*
+ * The page for building a default of your own, in place of the settings
+ * rather than over them. It takes the panel's whole width, which is the point:
+ * the comparison is six columns and a modal is narrower than what it covers.
+ */
+.preset-page-head {
   display: flex;
   align-items: start;
-  justify-content: space-between;
   gap: 1rem;
-  position: sticky;
-  top: -1.25rem;
-  z-index: 2;
-  margin: -1.25rem -1.25rem 1rem;
-  padding: 1.25rem;
-  background: var(--surface);
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
   border-bottom: 1px solid var(--line-soft);
 }
-.preset-dialog-head h3 { margin: 0; }
-.preset-dialog-head p { margin: 0.2rem 0 0; }
+.preset-page-head h3 { margin: 0; }
+.preset-page-head p { margin: 0.2rem 0 0; }
+#preset-back {
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  flex: 0 0 auto;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+}
+#preset-back:hover {
+  color: var(--green-deep);
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+.preset-page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line-soft);
+}
+#preset-forget {
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+}
+#preset-forget:hover { color: var(--retro); border-color: var(--retro); }
+
 .preset-name-field { max-width: 22rem; margin-bottom: 1.25rem; }
 .preset-name-field label {
   display: block;
@@ -813,14 +839,29 @@ input::placeholder { color: #a9bdb2; }
  * the vertical scrolling.
  */
 .preset-editor { overflow-x: auto; overflow-y: hidden; }
+/*
+ * Fixed, and the columns share the width in a stated proportion. Left to size
+ * themselves the cells took the width of their longest sentence - "Zone time,
+ * from the place's timezone" and its like - and six of those put the four
+ * readings the table exists to compare off the side of the page.
+ *
+ * The words are not shortened to make them fit. They are the page's own words
+ * for those options, and an abbreviation invented here would be a second name
+ * for a reading, which is how two surfaces come to disagree. They wrap.
+ */
 .preset-table {
   width: 100%;
+  min-width: 46rem;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 0.82rem;
 }
+.preset-table th:first-child { width: 15%; }
+.preset-table th:nth-child(2) { width: 21%; }
+.preset-table th:nth-child(n + 3) { width: 16%; }
 .preset-table th,
 .preset-table td {
-  padding: 0.3rem 0.4rem;
+  padding: 0.35rem 0.4rem;
   text-align: left;
   vertical-align: middle;
   border-bottom: 1px solid var(--line-soft);
@@ -836,12 +877,21 @@ input::placeholder { color: #a9bdb2; }
   color: var(--ink-soft);
   background: var(--surface);
 }
+/*
+ * The row headings wrap too, and keep their sentence case: `th` on this page
+ * is set in small capitals for tables of figures, where a heading is a word or
+ * two. These are the names of settings and read as the labels they are copied
+ * from.
+ */
 .preset-table tbody th {
+  font-size: 0.8rem;
   font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--ink);
-  white-space: nowrap;
+  white-space: normal;
 }
-.preset-table select { width: auto; min-width: 11rem; height: 2rem; }
+.preset-table select { width: 100%; height: auto; padding: 0.2rem 0.4rem; }
 /*
  * Taking a whole column, which is the job a "Start with" select used to do
  * above the table. A heading that fills its own column says what it does
@@ -866,6 +916,8 @@ input::placeholder { color: #a9bdb2; }
   font: inherit;
   width: 100%;
   text-align: left;
+  white-space: normal;
+  line-height: 1.25;
   color: var(--ink-soft);
   background: none;
   border: 1px solid transparent;
@@ -887,20 +939,7 @@ input::placeholder { color: #a9bdb2; }
  */
 .preset-row-differs th[scope="row"] { font-weight: 700; }
 .preset-row-differs td { background: var(--paper-tint); }
-.preset-dialog-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  position: sticky;
-  bottom: -1.25rem;
-  margin: 1.25rem -1.25rem -1.25rem;
-  padding: 1rem 1.25rem;
-  background: var(--surface);
-  border-top: 1px solid var(--line-soft);
-}
-@media (max-width: 38rem) {
-  .preset-editor { grid-template-columns: 1fr; }
-}
+
 
 .settings-grid {
   position: relative;

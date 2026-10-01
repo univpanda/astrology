@@ -490,7 +490,13 @@
        so they belong to the app and not to the form that creates one. A change
        here recomputes whatever chart is open. One so far; more will follow. -->
   <section class="panel settings-panel" id="panel-settings" role="tabpanel" aria-labelledby="tab-settings" hidden>
-    <div class="card">
+      <!--
+        Two views of one tab. The settings themselves, and the page for
+        building a default of your own, which is wide enough to need the
+        whole panel rather than a modal cut out of the middle of it.
+      -->
+      <div id="settings-main">
+<div class="card">
       <!--
         Named starting points, not modes. Each one moves the controls below and
         in Testing to the values that reproduce a published reckoning, and then
@@ -520,38 +526,8 @@
         <p class="field-note preset-status" id="preset-status"></p>
       </div>
 
-      <dialog id="preset-dialog" class="preset-dialog" aria-labelledby="preset-dialog-title">
-        <div class="preset-dialog-head">
-          <div>
-            <h3 id="preset-dialog-title">My default settings</h3>
-            <p class="field-note">One personal default is kept in this browser.
-              Saving again replaces it.</p>
-          </div>
-          <button type="button" id="preset-cancel" aria-label="Close">Close</button>
-        </div>
-        <!-- Not a .field: the panel's own tests count those as settings, and
-             this names the set rather than being one of them. -->
-        <div class="preset-name-field">
-          <label for="preset-name">Name</label>
-          <input id="preset-name" type="text" maxlength="40" autocomplete="off"
-                 placeholder="My default">
-        </div>
-        <!--
-          A row per setting, and beside your own choice the four published
-          readings side by side. Most rows agree across all four, so the ones
-          that do not are what a reader is actually deciding between, and they
-          are marked.
-
-          The column headings take a whole column at once, which is what the
-          "Start with" select used to do. A heading that fills its own column
-          says what it does where the doing happens, and one control fewer.
-        -->
-        <div class="preset-editor" id="preset-editor"></div>
-        <div class="preset-dialog-actions">
-          <button type="button" class="primary" id="preset-save">Save my default</button>
-          <button type="button" id="preset-forget" hidden>Delete my default</button>
-        </div>
-      </dialog>
+      </div>
+      <div class="card">
       <div class="settings-grid">
       <div class="field">
         <label for="chart-style">Chart style</label>
@@ -821,7 +797,48 @@
       </div>
       <p class="field-note settings-status" id="settings-status"></p>
     </div>
-  </section>
+      </div>
+
+      <!--
+        A page rather than a dialog. The comparison is six columns wide and a
+        modal is narrower than the panel it opens over, so the four readings it
+        exists to show were pushed off the side of it. This takes the width the
+        settings themselves have, and Back and Save both return here.
+      -->
+      <div class="card preset-page" id="preset-page" hidden
+           aria-labelledby="preset-page-title">
+        <div class="preset-page-head">
+          <button type="button" id="preset-back">Back to settings</button>
+          <div>
+            <h3 id="preset-page-title">My default settings</h3>
+            <p class="field-note">One personal default is kept in this browser.
+              Saving again replaces it.</p>
+          </div>
+        </div>
+        <!-- Not a .field: the panel's own tests count those as settings, and
+             this names the set rather than being one of them. -->
+        <div class="preset-name-field">
+          <label for="preset-name">Name</label>
+          <input id="preset-name" type="text" maxlength="40" autocomplete="off"
+                 placeholder="My default">
+        </div>
+        <!--
+          A row per setting, and beside your own choice the four published
+          readings side by side. Most rows agree across all four, so the ones
+          that do not are what a reader is actually deciding between, and they
+          are marked.
+
+          The column headings take a whole column at once, which is what the
+          "Start with" select used to do. A heading that fills its own column
+          says what it does where the doing happens, and one control fewer.
+        -->
+        <div class="preset-editor" id="preset-editor"></div>
+        <div class="preset-page-actions">
+          <button type="button" class="primary" id="preset-save">Save my default</button>
+          <button type="button" id="preset-forget" hidden>Delete my default</button>
+        </div>
+      </div>
+    </section>
 
   <section class="panel settings-panel" id="panel-testing" role="tabpanel" aria-labelledby="tab-testing" hidden>
     <div class="card">

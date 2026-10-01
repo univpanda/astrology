@@ -10610,7 +10610,54 @@ console.log('\nEach preset reaches the figures it is named for');
       }) && out.byId('preset-choice').value === 'mine';
   })());
   /*
-   * The comparison, which is what the dialog is for: a row per setting, the
+   * A page, not a dialog. The comparison is six columns wide and a modal is
+   * narrower than the panel it opens over, so the four readings it exists to
+   * show were pushed off the side of it. The two views swap: opening it hides
+   * the settings, and Back and Save both bring them back.
+   */
+  ok('building a default opens a page in place of the settings', (function () {
+    var main = out.byId('settings-main'), page = out.byId('preset-page');
+    out.byId('preset-create').fire('click', {});
+    var opened = main.hidden === true && page.hidden === false;
+    out.byId('preset-back').fire('click', {});
+    return opened && main.hidden === false && page.hidden === true;
+  })());
+  ok('and saving returns to the settings without being asked', (function () {
+    out.byId('preset-create').fire('click', {});
+    out.byId('preset-name').value = 'Returned';
+    out.byId('preset-save').fire('click', {});
+    return out.byId('settings-main').hidden === false &&
+      out.byId('preset-page').hidden === true &&
+      out.readMyDefault().name === 'Returned';
+  })());
+  /* Nothing of the dialog is left: a modal that is still in the page is a
+     second way in, and the two would drift. */
+  ok('and no dialog is left behind', (function () {
+    var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+    var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+    return !/<dialog/.test(page) && !/showModal/.test(appSrc) &&
+      !/preset-dialog/.test(css + appSrc + page);
+  })());
+  /*
+   * And the table really does fit across. Left to size themselves the cells
+   * took the width of their longest sentence, and six of those put the four
+   * readings off the side. The columns are stated instead, and the words are
+   * the page's own: an abbreviation invented for this table would be a second
+   * name for a reading, which is how two surfaces come to disagree.
+   */
+  ok('the comparison states its columns rather than letting them sprawl',
+    (function () {
+      var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+      var flat = css.replace(/\n/g, ' ');
+      var block = /\.preset-table \{([^}]*)\}/.exec(flat);
+      return !!block && /table-layout: fixed/.test(block[1]) &&
+        /\.preset-table th:first-child \{ width: \d+%; \}/.test(flat) &&
+        /\.preset-table th:nth-child\(n \+ 3\) \{ width: \d+%; \}/.test(flat) &&
+        /\.preset-cell \{[^}]*white-space: normal/.test(flat);
+    })());
+
+  /*
+   * The comparison, which is what the page is for: a row per setting, the
    * reader's own choice, and beside it what each of the four published
    * readings chooses. Driven, because the four columns have to be the four
    * presets really compute with - a table of plausible-looking words would be
