@@ -116,7 +116,7 @@ var Charts = new Function('document', 'Astro',
   fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8') + '\nreturn Charts;')(document, Astro);
 var Shadbala = require('../js/shadbala.js');
 
-// Read the three visual lines independently, without treating SVG markup as text.
+// Read the name and its small scripts without treating SVG markup as text.
 function chartLabels(root) {
   var labels = {};
   function content(node) {
@@ -2877,9 +2877,9 @@ var renderIn = function (division) {
   return chartLabels(box);
 };
 
-ok('flags ride together below the name, retrograde first', /^\[R\]/.test(renderIn(1).Venus.features));
+ok('flags ride together at the upper-right, retrograde first', /^\[R\]/.test(renderIn(1).Venus.features));
 
-ok('all chart styles and divisions place degrees above names and existing marks below', (function () {
+ok('all styles and divisions place degrees lower-right and features upper-right', (function () {
   return ['north', 'south'].every(function (style) {
     return Astro.VARGAS.every(function (varga) {
       var box = makeNode('div');
@@ -2900,8 +2900,9 @@ ok('all chart styles and divisions place degrees above names and existing marks 
           var dignityMark = { Exalted: 'E', Debilitated: 'D', Mooltrikona: 'M' }[label.node.attrs['data-dignity']];
           if (dignityMark) expectedFlags += '[' + dignityMark + ']';
           return label.degree === expected && label.name === Astro.grahaAbbr(planet.name) &&
-            label.features === expectedFlags && Number(degree.attrs.y) < Number(name.attrs.y) &&
-            (!features || Number(features.attrs.y) > Number(name.attrs.y)) &&
+            label.features === expectedFlags && Number(degree.attrs.y) > Number(name.attrs.y) &&
+            Number(degree.attrs.x) > Number(name.attrs.x) &&
+            (!features || (Number(features.attrs.y) < Number(name.attrs.y) && features.attrs.x === degree.attrs.x)) &&
             label.node.attrs.tabindex === '0' && !!label.node.attrs['aria-label'];
         });
     });
@@ -5878,8 +5879,8 @@ console.log('\nThe North chart groups sign numbers at its four junctions');
     return (
       // One column: every label on the same x, so none can meet another.
       marks.every(function (a) { return a.x === marks[0].x; }) &&
-      // Whole three-line blocks, not just names, stay separated as they shrink.
-      ys.every(function (y, i) { return i === 0 || y - ys[i - 1] >= size * 35 / 15.5; }) &&
+      // Whole labels, including both scripts, stay separated as they shrink.
+      ys.every(function (y, i) { return i === 0 || y - ys[i - 1] >= size * 26 / 15.5; }) &&
       size < 15.5 && size >= 6
     );
   })());
