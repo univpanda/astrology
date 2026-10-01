@@ -1937,6 +1937,15 @@
     return name.replace(/karaka$/, '');
   }
 
+  /* The engine keeps the classical names; this table speaks English. */
+  var JAGRATADI_ENGLISH = {
+    Jagrat: 'Waking', Swapna: 'Dreaming', Sushupta: 'Sleeping'
+  };
+  var BALADI_ENGLISH = {
+    Bala: 'Infant', Kumara: 'Adolescent', Yuva: 'Youth',
+    Vriddha: 'Old', Mrita: 'Dead'
+  };
+
   /** "first", "second" ... for a karaka's place in the order of eight. */
   function karakaRank(name) {
     var at = Astro.CHARA_KARAKAS.indexOf(name);
@@ -2046,8 +2055,8 @@
      * measured inside a division.
      */
     { label: 'Karaka', says: 'The Jaimini chara karaka, assigned by how far into its sign the graha has travelled - furthest is Atmakaraka. Read in the rashi, and so the same in every chart here.' },
-    { label: 'Jagratadi', says: 'Waking, dreaming or sleeping according to whether the graha is in its own or exaltation sign, a friend’s or neutral’s sign, or an enemy’s or debilitation sign. Read in the rashi.' },
-    { label: 'Baladi', says: 'The graha’s age in its sign, six degrees to a stage and reversed in an even sign. Read in the rashi, and so the same in every chart here.' }
+    { label: 'Awareness', says: 'Waking, dreaming or sleeping according to whether the graha is in its own or exaltation sign, a friend’s or neutral’s sign, or an enemy’s or debilitation sign. Read in the rashi.' },
+    { label: 'Age', says: 'Infant, adolescent, youth, old or dead: six degrees to a stage and reversed in an even sign. Read in the rashi, and so the same in every chart here.' }
   ];
 
   /**
@@ -2109,6 +2118,8 @@
         : dispositorRelation(r.name, v.sign, positionsD1);
       var jagratadi = r.isAscendant ? ''
         : Astro.jagratadiAvastha(r.name, rashiSign(r));
+      var baladi = r.isAscendant ? ''
+        : Astro.baladiAvastha(rashiSign(r), rashiDegree(r));
       return {
         entity: r,
         cells: [
@@ -2161,21 +2172,22 @@
                   'Sun to Saturn with Rahu, whose degrees are counted back from ' +
                   'the end of its sign.' },
           { text: r.isAscendant ? '–'
-              : (jagratadi || '–'),
+              : (JAGRATADI_ENGLISH[jagratadi] || '–'),
             title: r.isAscendant
               ? 'The lagna is a point rather than a graha, so it takes no avastha.'
               : jagratadi
-                ? jagratadi + ': ' + r.name +
+                ? JAGRATADI_ENGLISH[jagratadi] + ': ' + r.name +
                   ' is judged from its rashi sign and that sign’s natural lord.'
-                : 'The classical friendship table does not assign Rahu or Ketu a Jagratadi avastha.' },
+                : 'The classical friendship table does not assign Rahu or Ketu an awareness state.' },
           { text: r.isAscendant ? '–'
-              : Astro.baladiAvastha(rashiSign(r), rashiDegree(r)),
+              : BALADI_ENGLISH[baladi],
             title: r.isAscendant
               ? 'The lagna is a point rather than a graha, so it takes no avastha.'
               : Astro.SIGNS[rashiSign(r)] + ' is an ' +
                 (rashiSign(r) % 2 === 0 ? 'odd' : 'even') + ' sign, and the graha ' +
-                'stands ' + rashiDegree(r).toFixed(1) + '° into it, so it gives ' +
-                Astro.BALADI_WORTH[Astro.baladiAvastha(rashiSign(r), rashiDegree(r))] +
+                'stands ' + rashiDegree(r).toFixed(1) + '° into it, making its age ' +
+                BALADI_ENGLISH[baladi].toLowerCase() + '; it gives ' +
+                Astro.BALADI_WORTH[baladi] +
                 '.' }
         ]
       };
