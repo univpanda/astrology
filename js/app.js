@@ -3915,7 +3915,7 @@
      * graha got", and the column answering it was third, behind two that
      * describe the finding rather than place it.
      */
-    ['Graha', 'Chart', 'From', 'Yoga', 'Family', 'Result',
+    ['Graha', 'Chart', 'From', 'Yoga', 'Result',
       'This manifestation', 'Yoga overall']
       .forEach(function (h) {
       var th = el('th', null, h);
@@ -3955,7 +3955,6 @@
       var yogaName = el('td', 'yoga-name', finding.title);
       yogaName.title = finding.manifestation;
       tr.appendChild(yogaName);
-      tr.appendChild(el('td', 'yoga-family', finding.family || '\u2013'));
       var passage = (lessonLibrary || []).filter(function (p) {
         return p.topic === 'yoga' && p.subject === finding.subject &&
           p.condition === finding.condition;

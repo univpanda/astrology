@@ -2045,7 +2045,6 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
   padding-right: 1rem;
 }
 .yoga-table td { vertical-align: top; }
-.yoga-table .yoga-family,
 .yoga-table .yoga-part { color: var(--ink-soft); font-size: 0.85rem; }
 .yoga-table .yoga-graha { font-weight: 600; white-space: nowrap; }
 .yoga-table .yoga-graha.is-shared { font-weight: 400; color: var(--ink-soft); }

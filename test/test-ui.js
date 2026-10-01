@@ -1601,9 +1601,11 @@ ok('it still says how each yoga forms',
  * finding rather than place it.
  */
 ok('the table names the graha a yoga resolves to, apart from its participants',
-   /'Graha', 'Chart', 'From', 'Yoga', 'Family', 'Result',[\s\S]{0,80}'This manifestation', 'Yoga overall'/.test(appSrc) &&
+   /'Graha', 'Chart', 'From', 'Yoga', 'Result',[\s\S]{0,80}'This manifestation', 'Yoga overall'/.test(appSrc) &&
    /finding\.graha \? 'yoga-graha' : 'yoga-graha is-shared'/.test(appSrc) &&
    /\(finding\.grahas \|\| \[\]\)\.join\(', '\)/.test(appSrc));
+ok('family remains detector metadata and is not rendered as a user-facing column',
+   !/'Family', 'Result'/.test(appSrc) && !/'yoga-family'/.test(appSrc));
 ok('the yoga result comes from the database’s constrained effect field', (function () {
   var migration = fs.readFileSync(path.join(root,
     'supabase/migrations/20261001000100_astro_readings_effect.sql'), 'utf8');
@@ -4196,7 +4198,7 @@ ok('every script the page loads parses', (function () {
         });
       })(host);
       return heads.join(',') ===
-        'Graha,Chart,From,Yoga,Family,Result,This manifestation,Yoga overall';
+        'Graha,Chart,From,Yoga,Result,This manifestation,Yoga overall';
     })());
   /*
    * And the table narrows to one graha.
