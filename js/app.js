@@ -1545,8 +1545,17 @@
        *   the lords of the finer frames
        *   what looks at it
        */
-      /* The name alone, with nothing hung off it. */
-      card.appendChild(el('h4', 'graha-card-name', at));
+      /*
+       * The name, and after it the role the graha holds in the chara scheme.
+       * That is the one thing on the card which is not a frame the graha sits
+       * in or a lord of one, so it has no column to stand in; it is said of
+       * the graha itself and reads with the name. Set lighter and lighter in
+       * weight, so it is in the heading without being taken for the name.
+       */
+      var head = el('h4', 'graha-card-name', at);
+      var karaka = t.getAttribute('data-karaka');
+      if (karaka) head.appendChild(el('span', 'graha-card-role', karaka));
+      card.appendChild(head);
 
       /*
        * Three rows of three in one grid, so the dots fall in the same place on
@@ -1555,11 +1564,12 @@
        * position used to trail the name, which left it the one line on the
        * card set to nothing in particular.
        *
-       * A frame to a row, each with its own lord beside it: the sign and the
-       * graha that rules it, then the nakshatra and the two lords that divide
-       * it, then where the graha stands in the chart, what it owns and what
-       * looks at it. The three lords stood together on one row before, which
-       * put each of them a line away from the frame it is the lord of.
+       * A frame to a row, each with its own lord beside it: the sign, how far
+       * into it the graha has come, and the graha that rules it; then the
+       * nakshatra and the two lords that divide it; then where the graha
+       * stands in the chart, what it owns and what looks at it. The three
+       * lords stood together on one row before, which put each of them a line
+       * away from the frame it is the lord of.
        */
       var grid = el('div', 'graha-card-grid');
       var sign = t.getAttribute('data-sign'), degree = t.getAttribute('data-degree');
@@ -1576,8 +1586,8 @@
         return Astro.grahaAbbr(who) + (mark ? ' (' + mark + ')' : '');
       };
       [
-        [['', t.getAttribute('data-karaka'), ''],
-         ['', sign && degree ? sign + ' ' + degree : '', ''],
+        [['', sign || '', ''],
+         ['', degree || '', ''],
          ['Dis', withRelation(dispositor, relation),
           saysRelation(dispositor, relation,
             'This graha owns the sign it occupies.')]],

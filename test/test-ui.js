@@ -8657,9 +8657,9 @@ console.log('\nThe card says how the graha stands in its sign');
     return card.children.map(function (n) { return n.className; }).join(' ') ===
       'graha-card-name graha-card-grid' &&
       /\.graha-card-fact-label \{/.test(css) &&
-      textOf(card.children[0]) === 'Venus' &&
+      textOf(card.children[0]) === 'Venus Matrukaraka' &&
       cellsOf(card).join(' | ') ===
-        'Matrukaraka | Cancer 20\u00b049\u203235\u2033 | Dis Mo (GE) | ' +
+        'Cancer | 20\u00b049\u203235\u2033 | Dis Mo (GE) | ' +
         'Ashlesha 2 | N Lord Me (GF) | N SLord Ve (Own) | ' +
         'House 10 | Rules 1st, 8th | Aspected by Mo (7th), Ke (7th)';
   })());
@@ -8690,11 +8690,9 @@ console.log('\nThe card says how the graha stands in its sign');
    */
   ok('a missing reading leaves its column standing', (function () {
     var cells = cellsOf(cardFor(labels().Ketu));
-    return cells.join(' | ') === ' | Capricorn 24\u00b019\u203226\u2033 | ' +
+    return cells.join(' | ') === 'Capricorn | 24\u00b019\u203226\u2033 | ' +
       'Dis Sa | Dhanishta 1 | N Lord Ma | N SLord Ra | House 4 |  | ' +
-      'Aspected by Ma (4th), Ve (7th), Ra (7th)' &&
-      // A node holds no chara karaka either, so its first column is empty too.
-      cells[0] === '' && cells[7] === '';
+      'Aspected by Ma (4th), Ve (7th), Ra (7th)' && cells[7] === '';
   })());
   /*
    * And a row with nothing in it at all is dropped rather than drawn blank.
@@ -8706,7 +8704,7 @@ console.log('\nThe card says how the graha stands in its sign');
    */
   ok('a row with nothing to say is left out', (function () {
     var card = cardFor(labels().Ascendant);
-    return cellsOf(card).join(' | ') === ' | Libra 4\u00b053\u203219\u2033 | ' +
+    return cellsOf(card).join(' | ') === 'Libra | 4\u00b053\u203219\u2033 | ' +
       'Dis Ve | Chitra 4 | N Lord Ma | N SLord Ve';
   })());
   /*
@@ -8764,19 +8762,23 @@ console.log('\nThe card says how the graha stands in its sign');
  * All of it trails the name without taking its weight or the graha's colour:
  * these are things true of the graha, not part of what it is called.
  */
-  ok('the karaka and the position are rows of the grid, not a tail on the name',
+  ok('the frames are rows of the grid and only the role stays by the name',
     (function () {
-      var card = cardFor(labels().Venus);
-      // The name alone in the heading, with nothing hung off it.
-      return textOf(card.children[0]) === 'Venus' &&
-        card.children[0].children.length === 0 &&
+      var by = labels(), card = cardFor(by.Venus);
+      return textOf(card.children[0]) === 'Venus Matrukaraka' &&
+        // The role is in the heading without being taken for the name.
+        card.children[0].children.length === 1 &&
+        card.children[0].children[0].className === 'graha-card-role' &&
+        /\.graha-card-role \{[^}]*font-weight: 400;/.test(css.replace(/\n/g, '')) &&
+        /\.graha-card-role \{[^}]*color: var\(--ink-soft\);/
+          .test(css.replace(/\n/g, '')) &&
         cellsOf(card).slice(0, 6).join(' | ') ===
-          'Matrukaraka | Cancer 20\u00b049\u203235\u2033 | Dis Mo (GE) | ' +
-          'Ashlesha 2 | N Lord Me (GF) | N SLord Ve (Own)';
+          'Cancer | 20\u00b049\u203235\u2033 | Dis Mo (GE) | ' +
+          'Ashlesha 2 | N Lord Me (GF) | N SLord Ve (Own)' &&
+        // A node is outside the chara scheme, so its heading is the name alone.
+        textOf(cardFor(by.Ketu).children[0]) === 'Ketu' &&
+        cardFor(by.Ketu).children[0].children.length === 0;
     })() &&
-    // Both or neither: a chart that carried one and not the other wrote the
-    // missing half out as the word "null".
-    /\['', sign && degree \? sign \+ ' ' \+ degree : '', ''\]/.test(src) &&
     !/graha-card-karaka/.test(src + css));
   /*
    * Two readings new to the card, both about grahas other than the one being
@@ -8790,13 +8792,13 @@ console.log('\nThe card says how the graha stands in its sign');
     /subLordRelation: relationBetween\(planet, nakshatra\.subLord, d1\)/.test(grahaViewSrc) &&
     /data-nak-lord-relation/.test(chartsSrc) && /data-sub-lord-relation/.test(chartsSrc));
   ok('the highlighted graha stays full while secondary grahas are abbreviated',
-    /card\.appendChild\(el\('h4', 'graha-card-name', at\)\);/.test(src) &&
+    /var head = el\('h4', 'graha-card-name', at\);/.test(src) &&
     /return Astro\.grahaAbbr\(who\) \+ \(mark \? ' \(' \+ mark \+ '\)' : ''\);/.test(src) &&
     /\['Aspected by', shortGrahas\(seenBy\),/.test(src) &&
     (function () {
       var by = labels(), card = cardFor(by.Venus);
       // Full name in the heading, two letters everywhere a second graha is named.
-      return textOf(card.children[0]) === 'Venus' &&
+      return textOf(card.children[0]) === 'Venus Matrukaraka' &&
         cellsOf(card).join(' | ').indexOf('Venus') < 0 &&
         cellsOf(card)[2] === 'Dis Mo (GE)' &&
         /Aspected by Mo \(7th\), Ke \(7th\)$/.test(cellsOf(card)[8]) &&

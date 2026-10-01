@@ -823,11 +823,22 @@ input::placeholder { color: #a9bdb2; }
   font-weight: 700;
 }
 /*
- * The chara karaka and the position were hung off the name, which made the
- * one line on the card set to nothing in particular: a flex container of its
- * own, its own dot, its own spacings to keep in step with the rest. They are
- * the grid's first row now and the heading carries the name alone.
+ * The position was hung off the name too, which made the heading the one line
+ * on the card set to nothing in particular: a flex container of its own, its
+ * own dot, its own spacings to keep in step with the rest. The frames are
+ * rows of the grid now, and what is left beside the name is the chara karaka,
+ * which is not a frame and has no column to stand in.
+ *
+ * Lighter and lighter in weight, because it is a role the graha holds and not
+ * part of what it is called: at the name's weight and colour it read as a
+ * second half of the name.
  */
+.graha-card-role {
+  margin-left: 0.55rem;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--ink-soft);
+}
 /*
  * The three frames a graha sits in at once, run together on one line with a
  * dot between them. Separate lines made each read as a finding of its own,
