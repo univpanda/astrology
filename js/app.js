@@ -1027,45 +1027,6 @@
   }
 
   /*
-   * Which grahas are hemmed in the division on screen, and by whom.
-   *
-   * The graha table has shown these as [P] and [S] since they existed; the
-   * hover card did not, so the same chart said a graha was hemmed in one place
-   * and stayed silent about it in the other. The card is where the reason
-   * fits, so it is the place the omission mattered most.
-   *
-   * Benefics are judged in the rashi, as everywhere else on this site, while
-   * the neighbours are read in the division being drawn - a graha's company
-   * changes with the recast, its nature does not.
-   */
-  function hemmingByGraha(state, division) {
-    var chart = division === 1 ? state.chart
-      : Astro.chartInDivision(state.chart, division);
-    var benefics = Astro.naturalBenefics(state.chart);
-    var marks = {};
-    chart.planets.forEach(function (p) {
-      var wants = Astro.hemmedByMalefics(p.name, p.sign, chart, benefics) ? false
-        : Astro.hemmedByBenefics(p.name, p.sign, chart, benefics) ? true : null;
-      if (wants === null) return;
-      var side = function (sign) {
-        return chart.planets.filter(function (q) {
-          return q.name !== p.name && q.sign === sign &&
-            (Astro.NODES.indexOf(q.name) < 0 && benefics[q.name] === true) === wants;
-        }).map(function (q) { return q.name; });
-      };
-      var before = side((p.sign + 11) % 12), after = side((p.sign + 1) % 12);
-      marks[p.name] = {
-        mark: wants ? 'S' : 'P',
-        why: listOfNames(before) + ' in ' + Astro.SIGNS[(p.sign + 11) % 12] +
-          ' before it and ' + listOfNames(after) + ' in ' +
-          Astro.SIGNS[(p.sign + 1) % 12] + ' after it, ' +
-          (wants ? 'both benefic' : 'both malefic') + '.'
-      };
-    });
-    return marks;
-  }
-
-  /*
    * What each graha rules and what looks at it, for the hover card.
    *
    * Both are facts about the chart being drawn rather than about the graha, so
@@ -1244,20 +1205,8 @@
    */
   var DIGNITY_MARKS = { Exalted: 'E', Debilitated: 'D', Mooltrikona: 'M' };
 
-  /*
-   * Hemming is not a condition the graha is in but a combination it is caught
-   * in: two other grahas, one on either side, which is a yoga by any reading
-   * and is named as one in the texts. So it leaves the conditions line for the
-   * list below, where a finding made of several grahas belongs.
-   *
-   * Both of them, though only the papa one was asked about: they are one rule
-   * read two ways, and splitting them would put the same fact in two places
-   * depending on which side of it a chart happened to fall.
-   */
-  var KARTARI = { P: 'Papa kartari yoga', S: 'Shubha kartari yoga' };
-
   var STATE_NAMES = { R: 'Retrograde', C: 'Combust', V: 'Vargottama',
-    Y: 'Yogakaraka', P: 'Papa kartari', S: 'Shubha kartari' };
+    Y: 'Yogakaraka' };
 
   /*
    * The library, fetched once and quietly, so a hover can explain a yoga
@@ -1646,7 +1595,6 @@
       */
       var conditions = el('p', 'graha-card-conditions');
       split(t.getAttribute('data-states')).forEach(function (item) {
-        if (KARTARI[item.term]) return;   // a combination, listed with the yogas
         var chance = chanceOf('state', at + '/' + item.term);
         /*
          * The word and its mark. For a state the mark is the one the chart
@@ -1683,20 +1631,6 @@
        */
       var list = el('ul', 'graha-card-list');
       var found = [];
-
-      split(t.getAttribute('data-states')).forEach(function (item) {
-        if (!KARTARI[item.term]) return;
-        var key = at + '/' + item.term;
-        found.push({ chance: chanceOf('state', key), build: function () {
-          var li = el('li', 'graha-card-yoga');
-          var head = el('p', 'graha-card-term');
-          head.appendChild(el('span', 'graha-card-label', KARTARI[item.term]));
-          rarity(head, 'state', key);
-          li.appendChild(head);
-          if (item.why) li.title = item.why;
-          return li;
-        } });
-      });
 
       split(t.getAttribute('data-yogas')).forEach(function (item) {
         /*
@@ -1798,7 +1732,6 @@
       yogas: yogasByGraha(state, set.division, set.reference),
       dignities: GrahaView.dignitiesByGraha(state, set.division, tatkalikaSetting(), horaSetting(),
         horaMercurySetting()),
-      hemming: hemmingByGraha(state, set.division),
       ruling: rulingAndAspects(state, set.division, set.reference),
       /*
        * Read in the rashi and so the same in every chart here, which is why it
@@ -1923,9 +1856,8 @@
    *
    * The flags spread out with the column that held them. There is no Chart
    * column any more and no need for one, so each flag now sits on the value it
-   * qualifies: [R] and [C] on the name, being facts about the graha; [V], [S]
-   * and [P] on the sign, being about the sign the division gives and the two
-   * beside it; [Y] on the lordship it is a fact about; [D] on the house; and
+   * qualifies: [R] and [C] on the name, being facts about the graha; [V] on
+   * the sign the division gives; [Y] on the lordship it is a fact about; [D] on the house; and
    * [N] stays on the dignity it cancels.
    */
   function renderGrahaTable(state) {
@@ -2043,7 +1975,7 @@
 
     /*
      * The benefics, the recast chart and a neecha bhanga pass used to be
-     * worked out here for [S], [P] and [N]. With those marks off this table
+     * worked out here for [N]. With that mark off this table
      * nothing reads them, so the table no longer runs a yoga detector on every
      * render for a letter it does not draw.
      */
@@ -2098,10 +2030,7 @@
             /*
              * [V] alone. It says this division put the graha back in the sign
              * it holds in the rashi, which is a fact about this cell and
-             * nothing else. [S] and [P] are about the two signs on either
-             * side, so they go the way of [N], [D] and [Y] below - onto the
-             * card, which has room to name who is doing the hemming. The varga
-             * grid still marks them per division.
+             * nothing else.
              */
             flags: [view.division !== 1 && v.sign === Astro.signOf(r.longitude)
               ? 'V' : null] },
@@ -2980,9 +2909,9 @@
        * of them, and each one now carries something new.
        */
       'A marked cell is one the score reads wrong and the mark says how, each being ' +
-      'something it cannot see, set against the value in that cell it bears on. A chip in ' +
-      'a corner means a hover with a yoga the cell has no mark for, the marked ones being ' +
-      'read off the cell already. The Yogas tab reads a division in full. ' +
+      'something it cannot see, set against the value in that cell it bears on. Hovering ' +
+      'a cell opens the same graha card as the charts above. The Yogas tab reads a ' +
+      'division in full. ' +
       /*
        * Both say what the grid does before why. A reader looking at seven rows
        * wants "they are left out" first and the reason after it, not a clause
@@ -2990,16 +2919,6 @@
        */
       'Rahu and Ketu are left out: they own no sign and keep no friendships. In D30 the Sun ' +
       'is judged as Mars and the Moon as Venus, no luminary ruling a trimsamsa.';
-  }
-
-  /*
-   * "A", "A and B", "A, B and C". Deleted with the abbreviation machinery and
-   * put back: the cell hover reads a graha's yogas through it, so every chart
-   * with a yoga in it - which is nearly all of them - threw on render.
-   */
-  function listOf(items) {
-    if (items.length < 2) return items[0] || '';
-    return items.slice(0, -1).join(', ') + ' and ' + items[items.length - 1];
   }
 
   /** Whichever scheme the select is on, falling back to the widest. */
@@ -3041,14 +2960,6 @@
     document.getElementById('shadbala-as-table').setAttribute('aria-pressed', String(!asChart));
   }
 
-  /*
-   * The yogas this grid already writes as a letter, so the hover does not say
-   * them a second time: Parivartana is [X], Neecha Bhanga is [N] where it is the
-   * raja form, and Kartari is [S] or [P]. A cell's hover carries what the cell
-   * itself cannot show.
-   */
-  var LETTERED = ['Parivartana', 'Neecha Bhanga', 'Kartari'];
-
   function renderVargas(state) {
     var scheme = currentScheme();
     var keys = Astro.keyDivisions(scheme);
@@ -3066,8 +2977,6 @@
     });
     renderVargasHead(table, scheme, planets, sun);
 
-    // Settled in the rashi and handed to every division: see hemmedByBenefics.
-    var benefics = Astro.naturalBenefics(state.chart);
     var strengths = strengthsFor(state);
 
     scheme.divisions.forEach(function (division) {
@@ -3079,17 +2988,25 @@
        * disagree about what D9 holds. The exchange is pulled out of the same
        * pass, being one of the marks.
        */
-      var yogasIn = {}, exchanging = {}, cancelled = {};
+      var exchanging = {}, cancelled = {};
       Yogas.detect(chart, strengths).forEach(function (yoga) {
         (yoga.grahas || []).forEach(function (name) {
-          if (LETTERED.indexOf(yoga.yoga) < 0) {
-            var list = yogasIn[name] || (yogasIn[name] = []);
-            if (list.indexOf(yoga.title) < 0) list.push(yoga.title);
-          }
           if (yoga.yoga === 'Parivartana') exchanging[name] = yoga.title;
           if (yoga.yoga === 'Neecha Bhanga' && yoga.kind === 'raja') cancelled[name] = true;
         });
       });
+      var cardOptions = {
+        planets: state.chart.planets,
+        ascendant: state.chart.ascendant.longitude,
+        division: division,
+        reference: 'Ascendant',
+        yogas: yogasByGraha(state, division, 'Ascendant'),
+        dignities: GrahaView.dignitiesByGraha(state, division, tatkalikaSetting(),
+          horaSetting(), horaMercurySetting()),
+        ruling: rulingAndAspects(state, division, 'Ascendant'),
+        karakas: Astro.charaKarakas(state.chart),
+        combustion: document.getElementById('combustion').value
+      };
 
       var tr = document.createElement('tr');
       if (keys.indexOf(division) >= 0) tr.className = 'varga-key';
@@ -3115,12 +3032,6 @@
         }
         if (exchanging[planet.name]) {
           signLine.appendChild(el('span', 'flag flag-x', ' [X]'));
-        }
-        if (Astro.hemmedByBenefics(planet.name, d.sign, chart, benefics)) {
-          signLine.appendChild(el('span', 'flag flag-s', ' [S]'));
-        }
-        if (Astro.hemmedByMalefics(planet.name, d.sign, chart, benefics)) {
-          signLine.appendChild(el('span', 'flag flag-p', ' [P]'));
         }
         var house = ((d.sign - lagna) % 12 + 12) % 12 + 1;
         if (Astro.hasDigBala(planet.name, house)) {
@@ -3153,20 +3064,7 @@
 
         td.appendChild(signLine);
         td.appendChild(dignityLine);
-        /*
-         * One chip for the cell, and only where the hover has something the cell
-         * has not already said. Each mark used to explain itself here as well as
-         * wear its letter, so a cell carrying [X] [D] was read twice: once in
-         * two letters, once in four sentences of the same. What is left is the
-         * yogas that have no letter, which is the only thing this panel holds
-         * and shows nowhere.
-         */
-        if (yogasIn[planet.name]) {
-          td.title = planet.name + ' takes part in ' +
-            listOf(yogasIn[planet.name].map(function (t) { return t.toLowerCase(); })) +
-            ' in D' + division + '.';
-          td.className += ' has-note';
-        }
+        Charts.decorateCardTarget(td, cardOptions, planet.name);
         tr.appendChild(td);
       });
       tbody.appendChild(tr);
@@ -3209,6 +3107,7 @@
 
     document.getElementById('vargas-note').textContent = vargaNote(scheme);
     renderVargaCharts(state, scheme);
+    wireGrahaCard(document.getElementById('panel-vargas'));
   }
 
   /*
@@ -3234,8 +3133,7 @@
         tatkalika, horaRule, horaMercury);
       if (!score) return null;                     // the nodes keep no friendships
       var rashi = Astro.signOf(planet.longitude);
-      var benefics = Astro.naturalBenefics(state.chart);
-      var good = 0, marks = { V: 0, X: 0, S: 0, P: 0, D: 0, N: 0 };
+      var good = 0, marks = { V: 0, X: 0, D: 0, N: 0 };
       scheme.divisions.forEach(function (division) {
         var d = Astro.vargaDignity(planet.name, planet.longitude, division, positionsD1,
           tatkalika, horaRule, horaMercury);
@@ -3247,8 +3145,6 @@
         if (Yogas.parivartana(chart).some(function (yoga) {
           return (yoga.grahas || []).indexOf(planet.name) >= 0;
         })) marks.X++;
-        if (Astro.hemmedByBenefics(planet.name, d.sign, chart, benefics)) marks.S++;
-        if (Astro.hemmedByMalefics(planet.name, d.sign, chart, benefics)) marks.P++;
         if (Astro.hasDigBala(planet.name, ((d.sign - lagna) % 12 + 12) % 12 + 1)) marks.D++;
         if (d.key === 'debilitated' && Yogas.neechaBhanga(chart).some(function (yoga) {
           return yoga.kind === 'raja' && (yoga.grahas || []).indexOf(planet.name) >= 0;
@@ -3372,7 +3268,7 @@
         /*
          * A bar's hover names what it is. In the per-graha facets the bar is a
          * mark, so row.name carries the word the bracketed letter stands for: a
-         * chart of [V] [X] [S] [P] [D] [N] wants that on hover rather than a
+         * chart of [V] [X] [D] [N] wants that on hover rather than a
          * legend repeating the flag key.
          */
         g.appendChild(svgEl('title', {}, (row.name || row.graha) + ', ' + s.label +
@@ -3435,10 +3331,8 @@
   var MARKS = [
     { key: 'V', label: '[V]', name: 'Vargottama' },
     { key: 'X', label: '[X]', name: 'Exchange of signs' },
-    { key: 'S', label: '[S]', name: 'Shubha kartari' },
     { key: 'D', label: '[Dr]', name: 'Directional strength' },
-    { key: 'N', label: '[N]', name: 'Neecha bhanga raja yoga' },
-    { key: 'P', label: '[P]', name: 'Papa kartari' }
+    { key: 'N', label: '[N]', name: 'Neecha bhanga raja yoga' }
   ];
 
   /**

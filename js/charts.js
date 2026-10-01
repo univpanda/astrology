@@ -152,7 +152,7 @@ var Charts = (function () {
    * pointing at.
    */
   var STATE_NAMES = { R: 'Retrograde', C: 'Combust', V: 'Vargottama',
-    Y: 'Yogakaraka', P: 'Papa kartari', S: 'Shubha kartari' };
+    Y: 'Yogakaraka' };
 
   /*
    * Records are separated by one control character and their two fields by
@@ -162,7 +162,7 @@ var Charts = (function () {
   var REC = '\u001e', FLD = '\u001f';
 
   function describeOccupant(p, sign, house, yogas, division, dignities,
-                            hemming, ruling, karakas) {
+                            ruling, karakas) {
     var states = [];
     /*
      * Each state says why it applies here, not merely that it does. The chart
@@ -193,16 +193,6 @@ var Charts = (function () {
     if (p.yogakaraka) {
       states.push('Y');
       why.Y = 'Owns both an angle and a trine, counted from house 1 of this chart.';
-    }
-    /*
-     * Hemmed between one kind on both sides. The graha table has carried these
-     * from the start and the card did not, so a chart could mark a graha [P] in
-     * one place and say nothing about it in the other.
-     */
-    var hemmed = hemming && hemming[p.name];
-    if (hemmed) {
-      states.push(hemmed.mark);
-      why[hemmed.mark] = hemmed.why;
     }
     var where = Astro.SIGNS[sign] + ' (' + Astro.SIGNS_SA[sign] + ')' +
       (p.name === 'Ascendant' ? '' : ', house ' + house);
@@ -292,6 +282,30 @@ var Charts = (function () {
     };
   }
 
+  function setCardData(target, d) {
+    target.setAttribute('data-graha', d.graha);
+    target.setAttribute('data-where', d.where);
+    target.setAttribute('data-degree', d.degree);
+    if (d.house) target.setAttribute('data-house', d.house);
+    target.setAttribute('data-sign', d.signName);
+    target.setAttribute('data-nakshatra', d.nakshatra);
+    target.setAttribute('data-nak-lord', d.nakLord);
+    target.setAttribute('data-sub-lord', d.subLord);
+    if (d.karaka) target.setAttribute('data-karaka', d.karaka);
+    if (d.nakLordRelation) target.setAttribute('data-nak-lord-relation', d.nakLordRelation);
+    if (d.subLordRelation) target.setAttribute('data-sub-lord-relation', d.subLordRelation);
+    if (d.dispositor) target.setAttribute('data-dispositor', d.dispositor);
+    if (d.dispositorRelation) target.setAttribute('data-dispositor-relation', d.dispositorRelation);
+    if (d.dignity) target.setAttribute('data-dignity', d.dignity);
+    if (d.rules) target.setAttribute('data-rules', d.rules);
+    if (d.seenBy) target.setAttribute('data-seen-by', d.seenBy);
+    if (d.directional) target.setAttribute('data-directional', 'true');
+    target.setAttribute('data-states', d.states);
+    target.setAttribute('data-yogas', d.yogas);
+    target.setAttribute('tabindex', '0');
+    target.setAttribute('aria-label', d.label);
+  }
+
   var LINE_HEIGHT = 17;
   /* Matches svg.kundli .planet in the stylesheet, which is what a stack of one
      is drawn at; a crowded house is drawn at a fraction of it. */
@@ -346,31 +360,8 @@ var Charts = (function () {
       drawPlanetText(t, p, dignity);
       if (ctx) {
         var d = describeOccupant(p, ctx.sign, ctx.house, ctx.yogas,
-          ctx.division, ctx.dignities, ctx.hemming, ctx.ruling, ctx.karakas);
-        t.setAttribute('data-graha', d.graha);
-        t.setAttribute('data-where', d.where);
-        t.setAttribute('data-degree', d.degree);
-        if (d.house) t.setAttribute('data-house', d.house);
-        t.setAttribute('data-sign', d.signName);
-        t.setAttribute('data-nakshatra', d.nakshatra);
-        t.setAttribute('data-nak-lord', d.nakLord);
-        t.setAttribute('data-sub-lord', d.subLord);
-        if (d.karaka) t.setAttribute('data-karaka', d.karaka);
-        if (d.nakLordRelation) t.setAttribute('data-nak-lord-relation', d.nakLordRelation);
-        if (d.subLordRelation) t.setAttribute('data-sub-lord-relation', d.subLordRelation);
-        if (d.dispositor) t.setAttribute('data-dispositor', d.dispositor);
-        if (d.dispositorRelation) {
-          t.setAttribute('data-dispositor-relation', d.dispositorRelation);
-        }
-        if (d.dignity) t.setAttribute('data-dignity', d.dignity);
-        if (d.rules) t.setAttribute('data-rules', d.rules);
-        if (d.seenBy) t.setAttribute('data-seen-by', d.seenBy);
-        if (d.directional) t.setAttribute('data-directional', 'true');
-        t.setAttribute('data-states', d.states);
-        t.setAttribute('data-yogas', d.yogas);
-        // Hoverable by mouse, reachable by keyboard, legible to a reader.
-        t.setAttribute('tabindex', '0');
-        t.setAttribute('aria-label', d.label);
+          ctx.division, ctx.dignities, ctx.ruling, ctx.karakas);
+        setCardData(t, d);
       }
       group.appendChild(t);
     });
@@ -482,7 +473,7 @@ var Charts = (function () {
   }
 
   function renderNorth(container, planets, ascLongitude, division, reference, yogas,
-                       dignities, hemming, ruling, combustion, karakas) {
+                       dignities, ruling, combustion, karakas) {
     var data = occupantsBySign(planets, ascLongitude, division, reference, combustion);
     var svg = svgRoot('north');
     var m = 4, s = SIZE - 2 * m;
@@ -521,7 +512,7 @@ var Charts = (function () {
         { sign: sign, house: h + 1, yogas: yogas,
           dignities: dignities,
           karakas: karakas,
-          hemming: hemming, ruling: ruling });
+          ruling: ruling });
       var numberAt = NORTH_SIGN_ANCHORS[h];
       g.appendChild(el('text', {
         x: (m + numberAt[0] * s).toFixed(1),
@@ -535,7 +526,7 @@ var Charts = (function () {
   }
 
   function renderSouth(container, planets, ascLongitude, division, reference, yogas,
-                       dignities, hemming, ruling, combustion, karakas) {
+                       dignities, ruling, combustion, karakas) {
     var data = occupantsBySign(planets, ascLongitude, division, reference, combustion);
     var svg = svgRoot('south');
     var m = 4, cell = (SIZE - 2 * m) / 4;
@@ -567,7 +558,7 @@ var Charts = (function () {
         { sign: i, house: house, yogas: yogas,
           dignities: dignities,
           karakas: karakas,
-          hemming: hemming, ruling: ruling });
+          ruling: ruling });
       svg.appendChild(g);
     }
     // The blank 2x2 middle, left open as convention has it.
@@ -579,9 +570,24 @@ var Charts = (function () {
   function render(container, opts) {
     var fn = opts.style === 'south' ? renderSouth : renderNorth;
     fn(container, opts.planets, opts.ascendant, opts.division || 1, opts.reference,
-       opts.yogas, opts.dignities, opts.hemming, opts.ruling, opts.combustion,
+       opts.yogas, opts.dignities, opts.ruling, opts.combustion,
        opts.karakas);
   }
 
-  return { render: render };
+  function decorateCardTarget(target, opts, name) {
+    var data = occupantsBySign(opts.planets, opts.ascendant, opts.division || 1,
+      opts.reference, opts.combustion);
+    for (var sign = 0; sign < data.bySign.length; sign++) {
+      for (var i = 0; i < data.bySign[sign].length; i++) {
+        var p = data.bySign[sign][i];
+        if (p.name !== name) continue;
+        var house = ((sign - data.firstSign) % 12 + 12) % 12 + 1;
+        setCardData(target, describeOccupant(p, sign, house, opts.yogas,
+          opts.division || 1, opts.dignities, opts.ruling, opts.karakas));
+        return;
+      }
+    }
+  }
+
+  return { render: render, decorateCardTarget: decorateCardTarget };
 })();

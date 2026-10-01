@@ -484,7 +484,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'This site used to ask that nothing else share those two signs, so a Saturn beside Jupiter in the 2nd cancelled the yoga outright. That was wrong, and two texts show it. Charak defines Parvata four lines after kartari as houses "occupied only by benefics" - he writes "only" when he means only, and does not write it here. Mantreswara defines Susubha in the very sloka that defines kartari as benefics "unaspected by malefics" - he knows the qualifier and does not attach it either. Correcting this took the yoga from 1.2 per cent of charts to 3.6.',
    'It remains the rarer of the two, there being fewer benefics to go round than malefics.'
  ],
- 'The [S] mark beside a graha reports the same shape around that graha rather than around the lagna.', 974),
+ 'The Shubha Kartari finding for a graha reports the same shape around that graha rather than around the lagna.', 974),
 
 ('yoga', 'Kartari Yoga', 'papa',
  'Papa kartari - malefics for blades',
@@ -495,7 +495,7 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
    'A consequence worth stating: both kartaris can hold at once, where each flanking sign carries one graha of each kind. That happens in about one chart in a hundred and fifty, and both are reported. The first house is flanked by protection and by harm together, which is a thing charts do.',
    'Commoner than the benefic form, there being more malefics to go round - a thin Moon and a badly kept Mercury each count as one, and the nodes always do.',
    'The yoga proper is counted from the lagna and nowhere else. Phaladeepika ch.6 sloka 8 says "the 12th and the 2nd Bhavas from the Lagna"; Charak says "houses 2 and 12 from the lagna". That is what the Yogas tab reports.',
-   'Reading the same shape around a graha is an extension, and it is a sourced one. Charak: "When malefics surround the lagna or the lagna lord, health suffers." Raman, working a chart in Hindu Predictive Astrology: "In the navamsa, Saturn has Shubhakarthari Yoga." So the [P] and [S] marks in the graha table are legitimate, and they appear beside the ascendant too, that being the case the texts define first.',
+   'Reading the same shape around a graha is an extension, and it is a sourced one. Charak: "When malefics surround the lagna or the lagna lord, health suffers." Raman, working a chart in Hindu Predictive Astrology: "In the navamsa, Saturn has Shubhakarthari Yoga." The findings apply beside a graha and beside the ascendant, that being the case the texts define first.',
    'Reading it around any house - papakartari on the 4th, on the 7th - is common in modern practice and is not in any of the texts this site follows. Sanjay Rath does it freely; Parashara, Mantreswara, Raman and Charak do not. So this site does not, and a reader who wants it should know that is a choice made against the sources rather than from them.'
  ],
  'What the yoga is defined on, and what it is extended to, are different questions - see the last point above.', 975)

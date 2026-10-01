@@ -46,7 +46,6 @@
   --chart-good: #a8710c;
   --chart-vargottama: #6d4aa8;
   --chart-exchange: #1d5fa8;
-  --chart-papa: #b8483a;
 
   --radius: 16px;
   --radius-sm: 10px;
@@ -1058,6 +1057,7 @@ input::placeholder { color: #a9bdb2; }
  * and appears on hover or focus.
  */
 #chart-a, #chart-b { position: relative; }
+#panel-vargas { position: relative; }
 
 .graha-card {
   position: absolute;
@@ -1695,21 +1695,10 @@ td .retro-flag, td.retro-flag, th .retro-flag { color: var(--retro); }
 .flag-e { color: var(--green-deep); }
 .flag-m { color: var(--green-deep); }
 .flag-d { color: var(--retro); }
-/* [S] and [Dr] share the page's green. Both say the graha's surroundings are
-   helping it - benefic company on either side, or the house it is strongest in -
-   and the bracketed letter is what tells them apart. [P] is the same figure with
-   malefics either side, so it takes the red the page uses for harm.
-
-   A sixth hue was tried and dropped. Nothing left in the wheel clears the
-   validator against the five already here: teal reads at ΔE 9.1 against the
-   green to normal vision, and every magenta and purple that passes that test
-   collapses against the blue under protanopia, 3.8 to 5.3. A colour that needs
-   the letter to be legible is a colour doing no work. */
-/* [N] joins them. All three say the graha's circumstances are helping it -
+/* [N] joins [Dr]. Both say the graha's circumstances are helping it -
    benefic company either side, the house it is strongest in, a fall that the
    chart breaks - and the bracketed letter is what tells them apart. */
-.flag-s, .flag-dr, .flag-n { color: var(--green-deep); }
-.flag-p { color: var(--retro); }
+.flag-dr, .flag-n { color: var(--green-deep); }
 
 /* Dignity words are read by scanning, not line by line, so the tiers carry
    weight and colour. Kept to the page's two hues rather than a red-to-green
@@ -1838,25 +1827,6 @@ td.vimsopaka-strong { color: var(--green-deep); }
 td.vimsopaka-mediocre { color: var(--ink); }
 td.vimsopaka-some { color: var(--ink-soft); }
 td.vimsopaka-poor { color: var(--retro); }
-
-/* A graha in a division has something to say on hover, marked by one chip in the
-   cell's top corner.
-
-   A tint was tried here first and taken out: two thirds of the cells carry a
-   yoga, so tinting them coloured most of the grid and made the dignities harder
-   to read for a signal that was nearly always on. A corner chip says the same
-   thing without touching the cell's own ground or its colour, and it is the
-   affordance a reader already knows from a commented cell in a spreadsheet. */
-#vargas-table td.has-note { position: relative; }
-#vargas-table td.has-note::after {
-  content: '';
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  border-top: 5px solid var(--ink-faint);
-  border-left: 5px solid transparent;
-  opacity: 0.55;
-}
 
 /* No hover band here. A row is a division across seven grahas, and lighting the
    whole of it says nothing about the cell under the pointer. The graha table
@@ -2008,14 +1978,12 @@ td.vimsopaka-poor { color: var(--retro); }
    lightness, and the text greens and reds sit above the band on a dark surface.
    The validator cannot separate the purple from the blue - 1.6 deutan, 10.5 to
    normal vision - so the colour here is redundant, not the encoding: every bar
-   is labelled with its own letter underneath and names itself on hover. [S], [D]
+   is labelled with its own letter underneath and names itself on hover. [D]
    and [N] share the green in both places; the letter is what separates them. */
 .chart-bar.mark-v rect { fill: var(--chart-vargottama); }
 .chart-bar.mark-x rect { fill: var(--chart-exchange); }
-.chart-bar.mark-s rect,
 .chart-bar.mark-d rect,
 .chart-bar.mark-n rect { fill: var(--chart-vimsopaka); }
-.chart-bar.mark-p rect { fill: var(--chart-papa); }
 /* Five small charts where two large ones sit, so they take a narrower track.
    min-width: 0 lets each shrink to its own rather than holding the row open. */
 .varga-facets {
@@ -2247,7 +2215,6 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
     --chart-good: #b8801f;
     --chart-vargottama: #8b72c8;
     --chart-exchange: #4a86d8;
-    --chart-papa: #cf6354;
 
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.32);
     --shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.35), 0 18px 40px rgba(0, 0, 0, 0.45);

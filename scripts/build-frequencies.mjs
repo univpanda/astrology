@@ -90,11 +90,6 @@ for (let y = 1930; y < 2030; y++) {
         }
         if (Astro.isYogakaraka(g, chart.ascendant.sign)) bump(g + '/Y');
         if (Astro.isVargottama(at[g].longitude)) bump(g + '/V');
-        // Hemmed between one kind on both sides - the [P] and [S] the card
-        // shows, which had no measured figure because nothing swept for them.
-        const ben = Astro.naturalBenefics(chart);
-        if (Astro.hemmedByMalefics(g, at[g].sign, chart, ben)) bump(g + '/P');
-        if (Astro.hemmedByBenefics(g, at[g].sign, chart, ben)) bump(g + '/S');
       });
 
       // Once per chart, not once per graha: the question is how often a chart

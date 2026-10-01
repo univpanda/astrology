@@ -1785,13 +1785,9 @@ ok('so hemming takes the rashi\u2019s benefics and the division\u2019s neighbour
  * Counted rather than listed: a caller added without the map is the drift worth
  * catching, and a fixed number would have to be edited every time one is.
  */
-ok('and every caller passes one, so no division recomputes it', (function () {
+ok('and the UI no longer computes hemming merely to draw a marker', (function () {
   var appSrc = require('fs').readFileSync(__dirname + '/../js/app.js', 'utf8');
-  var calls = appSrc.replace(/\s+/g, ' ')
-    .match(/hemmedBy(?:Benefics|Malefics)\([^;]*?\)\s*[?)]/g) || [];
-  return calls.length >= 4 && calls.every(function (call) {
-    return /, benefics\)/.test(call) || /naturalBenefics\(c\)\)/.test(call);
-  });
+  return !/hemmedBy(?:Benefics|Malefics)\(/.test(appSrc);
 })());
 /*
  * Left to itself the bug is quiet: it needs the Moon or Mercury to be one of the
@@ -5396,7 +5392,7 @@ console.log('\nKartari asks only that the two houses be occupied');
       else if (A.hemmedByBenefics('__none__', lag, c, ben) !== yogaS) disagreed++;
     }
   }
-  ok('the yoga and the graha marks read the ascendant the same way',
+  ok('the yoga detector and the underlying hemming rule read the ascendant the same way',
     disagreed === 0 && sampled > 200,
     disagreed + ' disagreements over ' + sampled + ' charts');
 })();
