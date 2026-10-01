@@ -1988,7 +1988,6 @@ td.vimsopaka-poor { color: var(--retro); }
 }
 .varga-facets .varga-figure { min-width: 0; }
 .varga-facets .chart-title { font-size: 0.86rem; }
-.varga-facet-note { grid-column: 1 / -1; }
 /* One size for every note on the page. A note under a table is the table's small
    print and was being set at body size, so it read as the main text of the panel
    and the table read as an illustration of it. The flag key's descriptions join

@@ -3344,13 +3344,6 @@
       }));
     });
     host.appendChild(facets);
-    host.appendChild(el('p', 'chart-note varga-facet-note',
-      'One chart a graha. The figure beside the name is its vimsopaka bala out of ' +
-      'twenty, which is one number and so is written rather than drawn. The bars are ' +
-      'how many of the ' + scheme.count + ' divisions carry each of its marks, on one ' +
-      'scale across all seven charts, so a tall bar is tall against the other grahas ' +
-      'and not only against the rest of its own chart. The grid above says which ' +
-      'divisions they are.'));
   }
 
   /* --------------------------------------------------------------- yogas */

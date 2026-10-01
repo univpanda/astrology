@@ -6417,7 +6417,7 @@ ok('each graha chart renders seven labelled counts including zeros', (function (
     latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 });
   renderCharts({ chart: chart }, Astro.VARGA_SCHEMES.shodasavarga);
   var figures = host.children[0].children;
-  return figures.length === 7 && figures.every(function (figure) {
+  return host.children.length === 1 && figures.length === 7 && figures.every(function (figure) {
     var svg = figure.children[1];
     var labels = svg.children.filter(function (n) { return n.getAttribute('class') === 'chart-name'; });
     var values = svg.children.filter(function (n) { return n.getAttribute('class') === 'chart-value'; });
@@ -6900,31 +6900,9 @@ ok('and every mark has a letter for the axis and a word for the hover',
    ['V', 'X'].every(function (k) {
      return new RegExp("\\{ key: '" + k + "', label: '\\[" + k + "\\]', name: '").test(appSrc);
    }) && /\{ key: 'Dr', label: '\[Dr\]', name: 'Directional strength' \}/.test(appSrc));
-/*
- * The chart note says what the series counts and stops. The strict reading - the
- * word is the D9 case, D1 excluded because every graha would qualify - is in the
- * flag key at the top of the tab, where all four flags are defined, so saying it
- * again here would be the third statement of it in one panel.
- */
-/*
- * The facets carry one note between them rather than one each: five repetitions
- * of "how many divisions carry this" is the same sentence five times.
- */
-/*
- * One note between the seven, and it says the thing a dual axis obliges a chart
- * to say: that the two sides are not comparable. A reader who takes the score
- * bar and a count bar as the same measure is exactly who the guidance is
- * protecting, so the note tells them not to.
- */
-ok('the facets share one note, and it says what is written and what is drawn',
-   (function () {
-     var flat = appSrc.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ');
-     return /The figure beside the name is its vimsopaka bala out of twenty, which is one number and so is written rather than drawn/
-       .test(flat) &&
-       /on one scale across all seven charts, so a tall bar is tall against the other grahas/
-         .test(flat) &&
-       !/strictly the word is the D9 case/.test(appSrc);
-   })());
+ok('the chart view omits the removed explanatory paragraph',
+   !/varga-facet-note/.test(appSrc + cssSrc) &&
+   !/One chart a graha\. The figure beside the name/.test(appSrc));
 ok('the titles are centred over their own plots',
    (function () {
      var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
