@@ -222,8 +222,15 @@ var Yogas = (function () {
       found.push({
         yoga: 'Neecha Bhanga',
         kind: royal ? 'raja' : 'plain',
-        subject: 'Neecha Bhanga Raja Yoga',
-        condition: royal ? 'raja' : 'general',
+        /*
+         * Two yogas, not one yoga read two ways. A cancelled debilitation and
+         * a cancelled debilitation that makes a raja yoga are different
+         * findings with different rules, different results and different
+         * passages behind them, and keeping them as conditions of one subject
+         * made the plain form answer to a name it does not deserve.
+         */
+        subject: royal ? 'Neecha Bhanga Raja Yoga' : 'Neecha Bhanga',
+        condition: 'general',
         title: royal ? 'Neecha bhanga raja yoga' : 'Neecha bhanga',
         /*
          * No family label here. Neecha bhanga is the base and the raja yoga is
@@ -3360,9 +3367,16 @@ var Yogas = (function () {
    * form.
    */
   var CATALOGUE = [
+    /*
+     * Plain neecha bhanga is not among these. A cancelled debilitation is a
+     * raja yoga only where the graha itself holds a kendra or a trikona;
+     * otherwise the debility is merely lifted, which is the distinction the
+     * detector draws in its two titles and the library in its two passages.
+     * Filed under the raja yogas it was claiming in the catalogue what the
+     * rest of the page is careful to deny.
+     */
     { group: 'Raja yogas', names: ['Angle-trine raja yoga',
-      'Dharma Karmadhipati yoga', 'Maha Raja yoga', 'Neecha bhanga raja yoga',
-      'Neecha bhanga'] },
+      'Dharma Karmadhipati yoga', 'Maha Raja yoga', 'Neecha bhanga raja yoga'] },
     { group: 'Vipareeta raja yogas', names: ['Harsha yoga', 'Sarala yoga',
       'Vimala yoga'] },
     { group: 'Pancha Mahapurusha', names: ['Ruchaka yoga', 'Bhadra yoga',
@@ -3387,6 +3401,7 @@ var Yogas = (function () {
       'Bharathi yoga', 'Kusuma yoga', 'Chapa yoga',
       'Sreenatha yoga', 'Sankha yoga', 'Bheri yoga', 'Matsya yoga',
       'Mridanga yoga', 'Vanchanachorabheethi yoga'] },
+    { group: 'Debilitation lifted', names: ['Neecha bhanga'] },
     { group: 'Wealth and want', names: ['Dhana yoga', 'Daridra yoga'] },
     { group: 'Nabhasa', names: ['Rajju yoga', 'Musala yoga', 'Nala yoga',
       'Mala yoga', 'Sarpa yoga', 'Gada yoga', 'Sakata yoga (Nabhasa)',

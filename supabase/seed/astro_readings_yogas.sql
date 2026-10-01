@@ -52,7 +52,7 @@ on conflict (topic, subject, condition) do update set
   updated_at = now();
 
 insert into astro_readings (topic, subject, condition, heading, points, note, sort_order) values
-('yoga', 'Neecha Bhanga Raja Yoga', 'general',
+('yoga', 'Neecha Bhanga', 'general',
  'Neecha bhanga - a debilitation cancelled',
  array[
    'A graha in its sign of debilitation is at its weakest, but the weakness can be lifted by the company it keeps. That lifting is neecha bhanga: nicha, the fall, and bhanga, its breaking.',
@@ -72,8 +72,8 @@ insert into astro_readings (topic, subject, condition, heading, points, note, so
  ],
  'Becomes a raja yoga under the condition below.', 920),
 
-('yoga', 'Neecha Bhanga Raja Yoga', 'raja',
- 'When the cancellation makes a raja yoga',
+('yoga', 'Neecha Bhanga Raja Yoga', 'general',
+ 'Neecha bhanga raja yoga - the cancellation that raises',
  array[
    'A cancelled debilitation is a raja yoga when the debilitated graha itself stands in a kendra or a trikona - the 1st, 4th, 5th, 7th, 9th or 10th, counted from the lagna. Otherwise the debility is merely removed, and it is reported as plain neecha bhanga.',
    'De Fouw and Svoboda are explicit on this at page 295 of Light on Life, and say it the same way round: the cancellation makes a raja yoga only where the graha occupies an angle or a trine. Occupying one, not owning one - a competing formulation asks instead that the debilitated graha rule a kendra or trikona, and this site does not use it.',
@@ -841,7 +841,7 @@ on conflict (topic, subject, condition) do update set
 update astro_readings set effect = case
   when subject = 'Parivartana' and condition = 'maha' then 'good'
   when subject = 'Parivartana' then 'mixed'
-  when subject = 'Neecha Bhanga Raja Yoga' and condition = 'general' then 'mixed'
+  when subject = 'Neecha Bhanga' then 'mixed'
   when subject in ('Kemadruma Yoga', 'Sakata Yoga', 'Daridra Yoga',
                    'Vanchanachorabheethi Yoga') then 'bad'
   when subject = 'Kartari Yoga' and condition = 'papa' then 'bad'

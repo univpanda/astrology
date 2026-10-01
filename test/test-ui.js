@@ -3621,9 +3621,32 @@ ok('the library gives the two conditions the site applies', (function () {
  * quoted, which is the house style for the library.
  */
 ok('the neecha bhanga passages quote nobody', (function () {
-  var block = seeds.slice(seeds.indexOf("'yoga', 'Neecha Bhanga Raja Yoga', 'general'"));
+  var block = seeds.slice(seeds.indexOf("'yoga', 'Neecha Bhanga', 'general'"));
   block = block.slice(0, block.indexOf("'yoga', 'Vipareeta"));
   return block.indexOf('"') < 0 && /De Fouw and Svoboda have been read/.test(block);
+})());
+/*
+ * And they are two subjects, not two conditions of one. A cancelled
+ * debilitation and a cancelled debilitation that raises are different
+ * findings with different rules and different results; as conditions of a
+ * subject named for the raja yoga, the plain form answered to a name the
+ * page is otherwise careful to deny it.
+ */
+ok('and the two are separate yogas rather than conditions of one', (function () {
+  var src = fs.readFileSync(path.join(root, 'js/yogas.js'), 'utf8');
+  return /subject: royal \? 'Neecha Bhanga Raja Yoga' : 'Neecha Bhanga',/.test(src) &&
+    seeds.indexOf("('yoga', 'Neecha Bhanga', 'general',") >= 0 &&
+    seeds.indexOf("('yoga', 'Neecha Bhanga Raja Yoga', 'general',") >= 0 &&
+    seeds.indexOf("'Neecha Bhanga Raja Yoga', 'raja'") < 0;
+})());
+/* The plain form is not filed among the raja yogas it is not one of. */
+ok('and the catalogue does not file the plain form under raja yogas', (function () {
+  var src = fs.readFileSync(path.join(root, 'js/yogas.js'), 'utf8');
+  var group = src.slice(src.indexOf("{ group: 'Raja yogas'"));
+  group = group.slice(0, group.indexOf('] }'));
+  return group.indexOf("'Neecha bhanga'") < 0 &&
+    group.indexOf("'Neecha bhanga raja yoga'") >= 0 &&
+    /\{ group: 'Debilitation lifted', names: \['Neecha bhanga'\] \}/.test(src);
 })());
 ok('and the detector applies those two and nothing else', (function () {
   var src = fs.readFileSync(path.join(root, 'js/yogas.js'), 'utf8');
