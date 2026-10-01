@@ -3075,7 +3075,7 @@ ok('the key names every mark the grid draws', (function () {
   if (!key) return false;
   // [Dr] rather than [D]: the letter now means debilitated on the chart and
   // on the card, and one letter cannot mean two things on one page.
-  return ['v', 'x', 'y', 'dr'].every(function (c) {
+  return ['v', 'x', 'y', 'dr', 'e', 'd', 'c'].every(function (c) {
     var letter = c === 'dr' ? 'Dr' : c.toUpperCase();
     return new RegExp('<span class="flag flag-' + c + '">\\[' +
       letter + '\\]</span>').test(key[0]);
@@ -3147,7 +3147,7 @@ ok('and nothing lists which surface carries which, the key defining them once',
  * They were on the name when the name was a row; the name is a column heading
  * now and they have come with it.
  */
-ok('the grid marks retrogression and combustion on the column heading',
+ok('the shared heading helper supports rashi retrogression and combustion',
    (function () {
      var at = appSrc.indexOf('function grahaColumnHead');
      var block = appSrc.slice(at, appSrc.indexOf('function renderVargasHead', at));
@@ -3161,10 +3161,11 @@ ok('the grid marks retrogression and combustion on the column heading',
  * and the two grids had the same heading with only one of them flagged - a
  * retrograde graha marked in Vimsopaka Bala and unmarked in Shadbala beside it.
  */
-ok('and the two grids head a graha the same way, from one place',
+ok('Vimsopaka uses the shared heading but leaves combustion to each cell',
    /function grahaColumnHead\(planet, sun\)/.test(appSrc) &&
    (appSrc.match(/row\.appendChild\(grahaColumnHead\(planet, sun\)\);/g) || [])
-     .length === 2 &&
+     .length === 1 &&
+   /row\.appendChild\(grahaColumnHead\(planet, null\)\);/.test(appSrc) &&
    (appSrc.match(/planet\.retrograde \? 'R' : null/g) || []).length === 1);
 /*
  * The graha table builds its flags through one helper now, since they land on
@@ -3175,19 +3176,19 @@ ok('and the two grids head a graha the same way, from one place',
  * All three grids head a graha with the same cell now, so [R] and [C] are
  * written in one place and cannot reach one table and miss another.
  */
-ok('and all three tables mark retrogression and combustion on the graha name',
+ok('the other tables retain their rashi heading flags',
    /function grahaColumnHead\(planet, sun\)/.test(appSrc) &&
-   (appSrc.match(/appendChild\(grahaColumnHead\(planet, sun\)\)/g) || []).length === 2 &&
+   (appSrc.match(/appendChild\(grahaColumnHead\(planet, sun\)\)/g) || []).length === 1 &&
    /flag\(th, \[col\.entity\.retrograde \? 'R' : null,/.test(appSrc) &&
    /th\.appendChild\(el\('span', 'flag flag-' \+ f\.toLowerCase\(\)/
      .test(appSrc.slice(appSrc.indexOf('function grahaColumnHead'),
                         appSrc.indexOf('function renderVargasHead'))));
 
-ok('and the grid carries the four remaining marks and no others', (function () {
+ok('the grid carries the seven requested cell marks', (function () {
   var at = appSrc.indexOf('function renderVargas(state)');
   var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
   var marks = (block.match(/'flag flag-[a-z]+'/g) || []);
-  return marks.length === 4 && ['v', 'x', 'y', 'dr'].every(function (k) {
+  return marks.length === 7 && ['v', 'x', 'y', 'dr', 'e', 'd', 'c'].every(function (k) {
     return block.indexOf("'flag flag-" + k + "'") >= 0;
   });
 })());
@@ -3243,7 +3244,7 @@ ok('and nothing excludes the ascendant from the hemming, defined on it first',
    !/isAscendant[^\n]*hemmedBy/.test(appSrc) &&
    !/hemmedBy[^\n]*isAscendant/.test(appSrc));
 ok('each mark in the key carries its own colour',
-   ['v', 'x', 'y', 'dr'].every(function (c) {
+   ['v', 'x', 'y', 'dr', 'e', 'd', 'c'].every(function (c) {
      var letter = c === 'dr' ? 'Dr' : c.toUpperCase();
      return new RegExp('<span class="flag flag-' + c + '">\\[' +
        letter + '\\]</span>').test(html.replace(/\s+/g, ' '));
@@ -3417,7 +3418,7 @@ ok('and no yoga becomes a seventh mark', (function () {
   var at = appSrc.indexOf('function renderVargas(state)');
   var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
   var marks = (block.match(/'flag flag-[a-z]+'/g) || []);
-  return marks.length === 4 && /Charts\.decorateCardTarget\(td, cardOptions, planet\.name\)/.test(block) &&
+  return marks.length === 7 && /Charts\.decorateCardTarget\(td, cardOptions, planet\.name\)/.test(block) &&
     !/function grahaFootnote/.test(appSrc);
 })());
 ok('which is measurably a third of the cells rather than three fifths', (function () {
@@ -3523,7 +3524,7 @@ ok('every mark is a bracketed letter', (function () {
   var flat = html.replace(/\s+/g, ' ');
   var key = (flat.match(/<p class="varga-key">.*?<\/p>/) || [''])[0];
   var marks = key.match(/<span class="flag flag-[a-z]+">[^<]*<\/span>/g) || [];
-  return marks.length === 4 && !/flag-dig/.test(flat) && !/flag-star/.test(flat) &&
+  return marks.length === 7 && !/flag-dig/.test(flat) && !/flag-star/.test(flat) &&
     marks.every(function (m) { return /\[(?:Dr|[RVYCXSPDNEM])\]/.test(m); });
 })());
 /*
@@ -5992,9 +5993,9 @@ ok('and holds the six the grid draws, the other three being the card\u2019s',
      var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
      var flat = page.replace(/\s+/g, ' ');
      var key = (flat.match(/<p class="varga-key">.*?<\/p>/) || [''])[0];
-     return ['flag-v', 'flag-x', 'flag-y', 'flag-dr']
+     return ['flag-v', 'flag-x', 'flag-y', 'flag-dr', 'flag-e', 'flag-d', 'flag-c']
          .every(function (f) { return key.indexOf(f) >= 0; }) &&
-       ['flag-r', 'flag-c', 'flag-s', 'flag-p', 'flag-n']
+       ['flag-r', 'flag-s', 'flag-p', 'flag-n']
          .every(function (f) { return key.indexOf(f) < 0; });
    })());
 /*

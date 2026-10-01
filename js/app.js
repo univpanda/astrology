@@ -2827,7 +2827,8 @@
     first.setAttribute('scope', 'col');
     row.appendChild(first);
     planets.forEach(function (planet) {
-      row.appendChild(grahaColumnHead(planet, sun));
+      // Combustion belongs to each divisional cell and follows its card.
+      row.appendChild(grahaColumnHead(planet, null));
     });
   }
 
@@ -3047,6 +3048,18 @@
         if (!d) { td.textContent = '\u2013'; tr.appendChild(td); return; }
 
         var signLine = el('span', 'varga-sign', Astro.SIGNS[d.sign]);
+        Charts.decorateCardTarget(td, cardOptions, planet.name);
+        var formalDignity = td.getAttribute('data-dignity');
+        if (formalDignity === 'Exalted') {
+          signLine.appendChild(el('span', 'flag flag-e', ' [E]'));
+        } else if (formalDignity === 'Debilitated') {
+          signLine.appendChild(el('span', 'flag flag-d', ' [D]'));
+        }
+        var combust = (td.getAttribute('data-states') || '').split('\u001e')
+          .some(function (item) { return item.split('\u001f')[0] === 'C'; });
+        if (combust) {
+          signLine.appendChild(el('span', 'flag flag-c', ' [C]'));
+        }
 
         /*
          * The division has landed the graha back in the sign it holds in the
@@ -3085,7 +3098,6 @@
 
         td.appendChild(signLine);
         td.appendChild(dignityLine);
-        Charts.decorateCardTarget(td, cardOptions, planet.name);
         tr.appendChild(td);
       });
       tbody.appendChild(tr);
