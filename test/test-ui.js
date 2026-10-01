@@ -1630,8 +1630,9 @@ ok('the filters carry no visible labels, only readable ones',
    /<label class="visually-hidden" for="yoga-reference">/.test(html) &&
    /'Every divisional chart'/.test(appSrc) && /'From every planet'/.test(appSrc) &&
    /'From the ascendant'/.test(appSrc));
-ok('it points at the Lesson tab for the meaning',
-   /The Lesson tab explains/.test(appSrc));
+ok('the findings note does not explain the folded catalogue or point elsewhere',
+   !/Everything this page checks for is listed under the findings/.test(appSrc) &&
+   !/The Lesson tab explains/.test(appSrc));
 ok('the library is still fetched for the lesson tab', /fetchPassages\(\{\}/.test(appSrc));
 ok('the three kinds are conditions of one subject, not four subjects', (function () {
   var seed = fs.readFileSync(path.join(root, 'supabase/seed/astro_readings_yogas.sql'), 'utf8');

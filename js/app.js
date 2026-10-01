@@ -3833,16 +3833,13 @@
 
     if (!found.length) {
       note.textContent = 'No yoga among those this page looks for is present in ' +
-        chosen.name + '. The list below is everything it checks; the Lesson tab ' +
-        'explains each. The Lesson tab explains what each one means.';
+        chosen.name + '.';
       return;
     }
     note.textContent = 'Yogas are read in the division chosen above, which is ' +
       'independent of what the two charts are showing. An angle-trine raja yoga ' +
       'is common, present in roughly three charts in four, so it is read ' +
-      'alongside the strength of the grahas forming it rather than on its own. ' +
-      'Everything this page checks for is listed under the findings, with what ' +
-      'this chart gave marked. The Lesson tab explains what each one means.';
+      'alongside the strength of the grahas forming it rather than on its own.';
 
     /*
      * A table now, not a stack of cards, and the column that matters is Graha.
