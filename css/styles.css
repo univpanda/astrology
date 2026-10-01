@@ -1980,6 +1980,16 @@ tr.current-dasha th:first-child { color: var(--green-deep); font-weight: 700; }
 .site-footer { color: var(--ink-faint); font-size: 0.85rem; text-align: center; padding-top: 2rem; }
 .site-footer a { color: var(--ink-soft); }
 
+/* ----------------------------------------------------------- legal page */
+
+.legal-header a { color: inherit; text-decoration: none; }
+.legal-page { padding-top: 1rem; }
+.legal-card { max-width: 48rem; margin: 0 auto; }
+.legal-card h2 { margin-bottom: 0; }
+.legal-card h3 { margin-top: 1.8rem; }
+.legal-card p { max-width: 68ch; }
+.legal-back { margin-top: 2rem; }
+
 /* ------------------------------------------------------- dark, if asked for */
 
 @media (prefers-color-scheme: dark) {

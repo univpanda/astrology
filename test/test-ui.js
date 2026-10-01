@@ -1544,17 +1544,19 @@ ok('a local copy is written first so the panel works offline',
 ok('the save status reserves no space when silent',
    /\.save-feedback:empty \{ display: none; \}/.test(fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8')));
 
-/*
- * The credit is a licence condition, not a footnote. data/cities.js is the
- * GeoNames table, used under CC BY 4.0, which requires attribution wherever
- * the data goes. The rest of what stood in the footer was discretionary and is
- * gone; this line cannot be.
- */
-ok('the GeoNames credit survives whatever else leaves the footer',
-   /Place data from <a href="https:\/\/www\.geonames\.org\/"[^>]*>GeoNames<\/a>, CC BY 4\.0\./
-     .test(html) &&
-   !/Whole-sign \(Parashari\) houses/.test(html) &&
-   !/clearing site data unlinks them/.test(html));
+/* The footer stays small; the linked terms carry the licence and privacy detail. */
+ok('the footer links to the terms rather than carrying the legal text',
+   /<a href="terms\.html">Terms &amp; Conditions<\/a>/.test(html) &&
+   !/Place data from/.test(html));
+ok('the terms retain the GeoNames attribution and explain saved-chart privacy',
+   (function () {
+     var terms = fs.readFileSync(path.join(root, 'terms.html'), 'utf8');
+     return /GeoNames<\/a>, licensed\s+under/.test(terms) &&
+       /creativecommons\.org\/licenses\/by\/4\.0/.test(terms) &&
+       /selected, compressed and formatted/.test(terms) &&
+       /random token stored in\s+your browser/.test(terms) &&
+       /Clearing browser data/.test(terms) && /shared link/.test(terms);
+   })());
 
 ok('the page claims nothing about data staying put',
    !/sent nowhere|No data leaves this page|never leave the machine/.test(html + appSrc));

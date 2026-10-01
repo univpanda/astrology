@@ -22,7 +22,7 @@ cd "$(dirname "$0")/.."
 # history stay out of the bundle.
 STAGE="$(mktemp -d)/site"
 mkdir -p "$STAGE"
-cp -R index.html css js data "$STAGE/"
+cp -R index.html terms.html css js data "$STAGE/"
 
 # Amplify serves these with cache-control: public, max-age=604800 - a week -
 # and nothing here revalidates, so a returning browser does not even ask
@@ -37,7 +37,6 @@ cp -R index.html css js data "$STAGE/"
 STAMP=$(cd "$STAGE" && python3 - <<'STAMPER'
 import hashlib, io, os, re
 
-page = io.open('index.html', encoding='utf-8').read()
 stamped = 0
 
 def version(path):
@@ -52,15 +51,17 @@ def rewrite(match):
     stamped += 1
     return '%s="%s?v=%s"' % (attr, path, version(path))
 
-page = re.sub(r'\b(src|href)="((?:js|css|data)/[^"?]+)"', rewrite, page)
-io.open('index.html', 'w', encoding='utf-8').write(page)
+for html in ('index.html', 'terms.html'):
+    page = io.open(html, encoding='utf-8').read()
+    page = re.sub(r'\b(src|href)="((?:js|css|data)/[^"?]+)"', rewrite, page)
+    io.open(html, 'w', encoding='utf-8').write(page)
 print(stamped)
 STAMPER
 )
 echo "cache-busted: $STAMP asset references"
 
 BUNDLE="$(mktemp -d)/site.zip"
-(cd "$STAGE" && zip -q -r "$BUNDLE" index.html css js data -x '*.DS_Store')
+(cd "$STAGE" && zip -q -r "$BUNDLE" index.html terms.html css js data -x '*.DS_Store')
 echo "bundle: $(du -h "$BUNDLE" | cut -f1)"
 
 read -r JOB_ID UPLOAD_URL < <(aws amplify create-deployment \
