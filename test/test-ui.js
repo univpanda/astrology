@@ -10168,12 +10168,16 @@ console.log('\nThe settings notes do not argue from what software does');
   ok('no settings note justifies an option by what other programs do',
     !/software/i.test(notes) && !/Drik Panchang/.test(notes) &&
     !/Star Jyotish/.test(notes));
-  /* And the presets are the one place a program may be named. */
+  /*
+   * And the presets are the one place a program may be named. Two of the four
+   * are books rather than programs, which is the better kind of preset: a
+   * text can be quoted where a program can only be reverse-engineered.
+   */
   ok('the presets name the reckonings they reproduce',
     /<option value="raman">B\. V\. Raman<\/option>/.test(panel) &&
-    /<option value="drik">Drik Panchang<\/option>/.test(panel) &&
+    /<option value="parashara">Parashara<\/option>/.test(panel) &&
     /<option value="star">Star Jyotish<\/option>/.test(panel) &&
-    /Drik Panchang/.test(panel) && /Star Jyotish/.test(panel));
+    /Star Jyotish/.test(panel));
   /*
    * But the warning itself stays. A reader is owed the fact that a reading has
    * no text behind it; that is the part of the sentence worth keeping.
@@ -10526,32 +10530,58 @@ console.log('\nEach preset reaches the figures it is named for');
   })());
 
   /*
-   * Drik Panchang: three figures, each a different part of the reckoning -
-   * Mercury read without the qualifier, the clock taken by the zone, and the
-   * saptavargaja counted in the rashi.
+   * Parashara: the settings he actually states, checked against what each
+   * passage asks for rather than against a figure somebody printed. The
+   * saptavargaja is counted on his own rungs and in the rashi; the hora is the
+   * whole sixty on the equal-hour scheme; and his ishta is half the sum of the
+   * two balas, where the default takes Sripati's square roots.
    */
-  ok('Drik Panchang reaches the three figures recorded for it', (function () {
-    out.applyPreset('drik');
+  ok('Parashara reaches what his own chapters ask for', (function () {
+    out.applyPreset('parashara');
     var r = out.strengthsFor(obama()).grahas;
-    var trump = stateFor({ jdUT: Astro.julianDay(1946, 6, 14, 10 + 54 / 60 + 4),
-      latitude: 40.6975, longitude: -73.8042, tzOffsetMinutes: -240 });
-    var t = out.strengthsFor(trump).grahas;
-    return near(r.Mercury.kala.paksha, 23.06, 0.05) &&
-      near(r.Moon.sthana.saptavargaja, 161.25, 0.02) &&
-      near(t.Sun.kala.nathonnatha, 54.50, 0.05);
+    var holdsHora = Object.keys(r).filter(function (g) {
+      return r[g] && r[g].kala && r[g].kala.hora > 0;
+    });
+    /*
+     * 144 on his rungs where Raman's give 161.25 for the same Moon: both pay
+     * 45 for a moolatrikona and they part below the second rung, which is the
+     * whole of that setting.
+     */
+    out.applyPreset('raman');
+    var ramanMoon = out.strengthsFor(obama()).grahas.Moon.sthana.saptavargaja;
+    out.applyPreset('parashara');
+    return near(r.Moon.sthana.saptavargaja, 144.00, 0.02) &&
+      near(ramanMoon, 161.25, 0.02) &&
+      near(r.Sun.phala.ishta, (r.Sun.sthana.uchcha + r.Sun.cheshta) / 2, 0.01) &&
+      out.currentSettings()['hora-length'] === 'equal' &&
+      holdsHora.length === 1;
   })());
   /*
-   * And it says the one thing it cannot do. Their ayana bala scales the true
-   * declination by Raman's constant, and this page gives each constant the
-   * obliquity it assumes, so no combination of settings lands on their
-   * figures. A preset that quietly came close would be the worst of both.
+   * And his own pairings are reported rather than quietly corrected. The
+   * constant from chapter 27 with the declination its note sends the reader to
+   * an ephemeris for runs the ayana bala outside the nought to sixty the
+   * measure declares; and the luminaries borrowing at 27.18 while 27.24-25
+   * counts cheshta among the six puts the Sun's ayana bala in three times.
    */
-  ok('and says so where its ayana bala cannot be reached', (function () {
-    out.applyPreset('drik');
-    var ayana = out.strengthsFor(obama()).grahas.Mercury.kala.ayana;
-    return !near(ayana, 55.87, 0.1) &&
-      /out of reach/.test(out.PRESETS.drik.says) &&
-      /ayana/.test(out.PRESETS.drik.says);
+  ok('and says where his own pairings run past their own scale', (function () {
+    out.applyPreset('parashara');
+    var lo = 99, hi = -99;
+    // Sixty charts: twelve were enough to pass sixty and not to go below
+    // nought, and a range that only shows one end of itself is half a finding.
+    for (var y = 1950; y < 2010; y += 1) {
+      var state = stateFor({ jdUT: Astro.julianDay(y, 3, 21, 6),
+        latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 });
+      var r = out.strengthsFor(state).grahas;
+      ['Moon', 'Mercury', 'Venus'].forEach(function (g) {
+        lo = Math.min(lo, r[g].kala.ayana);
+        hi = Math.max(hi, r[g].kala.ayana);
+      });
+    }
+    var sun = out.strengthsFor(obama()).grahas.Sun;
+    return lo < 0 && hi > 60 &&
+      near(sun.cheshta, sun.kala.ayana / 2, 0.01) && sun.cheshtaCounted === true &&
+      /three times/.test(out.PRESETS.parashara.says) &&
+      /nought to sixty/.test(out.PRESETS.parashara.says);
   })());
 
   /* Star Jyotish: all seven of its printed ayana integers on one chart. */
@@ -10584,13 +10614,13 @@ console.log('\nEach preset reaches the figures it is named for');
   })());
   ok('the main selector applies and remembers the chosen default', (function () {
     var choice = out.byId('preset-choice');
-    choice.value = 'drik';
+    choice.value = 'parashara';
     choice.fire('change', {});
-    return out.readDefaultChoice() === 'drik' &&
+    return out.readDefaultChoice() === 'parashara' &&
       out.RECKONING_IDS.every(function (id) {
         return out.currentSettings()[id] ===
-          (Object.prototype.hasOwnProperty.call(out.PRESETS.drik.of, id)
-            ? out.PRESETS.drik.of[id] : out.pageDefaults()[id]);
+          (Object.prototype.hasOwnProperty.call(out.PRESETS.parashara.of, id)
+            ? out.PRESETS.parashara.of[id] : out.pageDefaults()[id]);
       });
   })());
   /*

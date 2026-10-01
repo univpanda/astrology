@@ -5030,22 +5030,52 @@
         'his saptavargaja ladder counted in the rashi.'
     },
     /*
-     * Pinned by four figures the engine suite reconciles: Obama's Mercury at
-     * 23.06 paksha on the unqualified Mercury, his Moon at 161.25 saptavargaja,
-     * Trump's Sun at 54.50 nathonnatha on the zone clock, and the seasonal hora.
-     * Their ayana bala is the one thing that cannot be reached, and the preset
-     * says so rather than landing near it.
+     * The Brihat Parashara Hora Shastra's own readings, with the other
+     * classics where chapter 27 leaves a figure to them. Every value here is a
+     * passage, checked in the text rather than taken from a note about it:
+     *
+     *   ch.6   "The divisions of a combust planet ... be all ignored" - the
+     *          combustion belongs to the graha and is carried into a division
+     *   ch.7   the hora read by the grahas it favours, and "Mercury is
+     *          effective in both the Horas" taken as the weaker claim it is
+     *   ch.27  45, 30, 20, 15, 10, 4 and 2 for the saptavargaja rungs; the day
+     *          "divided into 24 equal parts"; (23d27' + Kranti) x 1.2793 with
+     *          the kranti from "standard modern ephemeris"; the Sun's ayana
+     *          doubled; the luminaries borrowing at 27.18 and cheshta listed
+     *          among the six at 27.24-25
+     *   ch.28  ishta half the sum of the two balas, kashta sixty less it
+     *   Santhanam's note to ch.27, compound relationships "be seen in the
+     *          Rashi chart only and not in the concerned divisional chart"
+     *   Brihat Jataka 21, Phaladeepika IV.1 and Uttara Kalamrita for the
+     *          fortnight, the Moon taking her turn in the two groups and her
+     *          figure doubled
+     *   Sripatipaddhati, the cheshta kendra "is identical with the
+     *          Seeghrakendra"
+     *
+     * What is not here is not an oversight. He gives no ayanamsa and no rule
+     * for the node, Budha-Aditya is not in the book at all, and the clock a
+     * birth time was read off is a question his century did not have. Those
+     * cells stay this page's own and say so.
      */
-    drik: {
-      label: 'Drik Panchang',
-      of: { 'mercury-nature': 'benefic', 'nat-clock': 'zone', tatkalika: 'rashi',
-        'hora-dignity': 'lord', 'saptavargaja-ladder': 'raman',
-        'hora-length': 'seasonal', 'ayana-constant': 'raman', kranti: 'true' },
-      says: 'Mercury read without the qualifier, the clock by the zone rather ' +
-        'than the sundial, and the saptavargaja counted in the rashi. Their ' +
-        'ayana bala is out of reach: they scale the true declination by ' +
-        'Raman\u2019s constant, and this page gives each constant the obliquity ' +
-        'it assumes, so the figures come close and do not land.'
+    parashara: {
+      label: 'Parashara',
+      of: { combustion: 'rashi', tatkalika: 'rashi', 'hora-dignity': 'effects',
+        'hora-mercury': 'friend', 'mercury-nature': 'qualified',
+        'saptavargaja-ladder': 'parashara', 'moon-paksha': 'group',
+        'paksha-doubled': 'doubled', 'hora-length': 'equal',
+        'ayana-constant': 'parashara', kranti: 'true', 'ayana-doubled': 'doubled',
+        'cheshta-method': 'kendra', 'kendra-method': 'seeghra',
+        'luminary-rule': 'borrowed', 'luminary-cheshta': 'counted',
+        'ishta-kashta': 'parashara' },
+      says: 'The Brihat Parashara Hora Shastra\u2019s own readings, with the ' +
+        'other classics where chapter 27 leaves a figure to them. Two of his ' +
+        'pairings are worth knowing before you read the figures. His constant ' +
+        'with the declination his note sends you to an ephemeris for runs the ' +
+        'ayana bala from about -4.5 to 66 on a scale that declares nought to ' +
+        'sixty. And the luminaries borrow their cheshta bala at 27.18 while ' +
+        '27.24-25 counts cheshta among the six, so the Sun\u2019s ayana bala ' +
+        'goes into his total three times: doubled inside kala bala, and once ' +
+        'more as the figure it lent.'
     },
     /*
      * Two settings, and only two, because only two are pinned. Its ladder is
@@ -5149,7 +5179,7 @@
     try {
       var name = window.localStorage.getItem(DEFAULT_SETTINGS_KEY) || 'page';
       if (name === 'mine' && !readMySettings()) return 'page';
-      return name === 'raman' || name === 'drik' || name === 'star' || name === 'mine'
+      return name === 'raman' || name === 'parashara' || name === 'star' || name === 'mine'
         ? name : 'page';
     } catch (e) {
       return 'page';
@@ -5268,7 +5298,7 @@
      * takes its whole column, which is the job the "Start with" select used to
      * do and says what it does where the doing happens.
      */
-    var COLUMNS = ['page', 'raman', 'drik', 'star'];
+    var COLUMNS = ['page', 'raman', 'parashara', 'star'];
     var editorSelects = {};
     var editorCells = [];
 
