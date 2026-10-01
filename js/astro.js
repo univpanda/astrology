@@ -1008,6 +1008,42 @@ var Astro = (function () {
   }
 
   /*
+   * Parashara's functional nature by rashi ascendant. This is an
+   * interpretive judgement about how a graha tends to act for the native, not
+   * its fixed natural nature and not a condition in a yoga detector. Keep it
+   * separate from isYogakaraka: [Y] answers the narrower structural question
+   * in the chart being shown, while this table records the ascendant-specific
+   * classification used when reading a graha's results.
+   *
+   * One label is returned because that is how the graha table is read. Where
+   * several descriptions apply, Yogakaraka and Maraka take precedence over
+   * the broader Benefic/Papa description. The nodes are included explicitly:
+   * the classical friendship table cannot derive their nature, and silently
+   * treating them as natural malefics would answer a different question.
+   */
+  var FUNCTIONAL_ROLES = [
+    // Sun       Moon       Mars          Mercury     Jupiter      Venus       Saturn      Rahu       Ketu
+    ['Benefic', 'Neutral',  'Benefic',    'Papa',     'Benefic',   'Maraka',   'Papa',     'Neutral', 'Neutral'], // Aries
+    ['Benefic', 'Maraka',   'Maraka',     'Benefic',  'Maraka',    'Maraka',   'Yogakaraka','Maraka', 'Neutral'], // Taurus
+    ['Papa',    'Maraka',   'Papa',       'Neutral',  'Papa',      'Benefic',  'Neutral',  'Neutral', 'Neutral'], // Gemini
+    ['Maraka',  'Neutral',  'Yogakaraka', 'Papa',     'Benefic',   'Papa',     'Maraka',   'Neutral', 'Neutral'], // Cancer
+    ['Benefic', 'Neutral',  'Benefic',    'Papa',     'Benefic',   'Papa',     'Maraka',   'Maraka',  'Neutral'], // Leo
+    ['Neutral', 'Papa',     'Papa',       'Benefic',  'Papa',      'Benefic',  'Neutral',  'Neutral', 'Maraka'],  // Virgo
+    ['Papa',    'Benefic',  'Maraka',     'Benefic',  'Papa',      'Neutral',  'Yogakaraka','Neutral','Neutral'], // Libra
+    ['Yogakaraka','Yogakaraka','Neutral', 'Papa',     'Benefic',   'Maraka',   'Papa',     'Neutral', 'Neutral'], // Scorpio
+    ['Benefic', 'Neutral',  'Benefic',    'Neutral',  'Neutral',   'Maraka',   'Maraka',   'Neutral', 'Neutral'], // Sagittarius
+    ['Neutral', 'Papa',     'Papa',       'Benefic',  'Papa',      'Yogakaraka','Neutral', 'Maraka',  'Neutral'], // Capricorn
+    ['Maraka',  'Papa',     'Maraka',     'Neutral',  'Maraka',    'Yogakaraka','Benefic','Neutral',  'Neutral'], // Aquarius
+    ['Papa',    'Benefic',  'Maraka',     'Maraka',   'Yogakaraka','Papa',     'Maraka',   'Neutral', 'Neutral']  // Pisces
+  ];
+
+  function functionalRole(planet, ascendantSign) {
+    var at = GRAHA_ORDER.indexOf(planet);
+    return at < 0 || !FUNCTIONAL_ROLES[ascendantSign] ? ''
+      : FUNCTIONAL_ROLES[ascendantSign][at] || '';
+  }
+
+  /*
    * Graha friendships.
    *
    * Three layers, and they compound: the natural relation never changes, the
@@ -2361,6 +2397,8 @@ var Astro = (function () {
     RELATION_LABELS: RELATION_LABELS,
     titleCase: titleCase,
     isYogakaraka: isYogakaraka,
+    functionalRole: functionalRole,
+    FUNCTIONAL_ROLES: FUNCTIONAL_ROLES,
     DIGNITY: DIGNITY,
     NODES: NODES,
     signOf: signOf,

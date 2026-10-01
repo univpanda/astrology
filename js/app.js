@@ -1645,6 +1645,14 @@
        * height, as the yogas do.
        */
       var conditions = el('p', 'graha-card-conditions');
+      var role = t.getAttribute('data-role');
+      if (role) {
+        var roleItem = el('span', 'graha-card-item', role);
+        roleItem.title = role + ' is this graha’s functional nature for the natal ' +
+          'ascendant. It is interpretive context, separate from natural nature, ' +
+          'yoga detection and bala.';
+        conditions.appendChild(roleItem);
+      }
       split(t.getAttribute('data-states')).forEach(function (item) {
         if (KARTARI[item.term]) return;   // a combination, listed with the yogas
         var chance = chanceOf('state', at + '/' + item.term);
@@ -1805,6 +1813,10 @@
        * is built from the state rather than from the division being drawn.
        */
       karakas: Astro.charaKarakas(state.chart),
+      roles: Astro.GRAHA_ORDER.reduce(function (out, name) {
+        out[name] = Astro.functionalRole(name, state.chart.ascendant.sign);
+        return out;
+      }, {}),
       combustion: document.getElementById('combustion').value
     });
     wireGrahaCard(document.getElementById('chart-' + slot));
@@ -2025,6 +2037,7 @@
      * measured inside a division.
      */
     { label: 'Karaka', says: 'The Jaimini chara karaka, assigned by how far into its sign the graha has travelled - furthest is Atmakaraka. Read in the rashi, and so the same in every chart here.' },
+    { label: 'Role', says: 'The graha’s ascendant-specific functional nature: benefic, neutral, papa, maraka or yogakaraka. Read from the rashi ascendant and kept separate from natural nature and yoga detection.' },
     { label: 'State', says: 'Waking, dreaming or sleeping according to whether the graha is in its own or exaltation sign, a friend’s or neutral’s sign, or an enemy’s or debilitation sign. Read in the rashi.' },
     { label: 'Age', says: 'Child, teen, youth, old or dead: six degrees to a stage and reversed in an even sign. Read in the rashi, and so the same in every chart here.' }
   ];
@@ -2143,6 +2156,13 @@
                 : 'Ketu takes no chara karaka. The eight are the seven from the ' +
                   'Sun to Saturn with Rahu, whose degrees are counted back from ' +
                   'the end of its sign.' },
+          { text: r.isAscendant ? '–' : Astro.functionalRole(r.name, c.ascendant.sign),
+            title: r.isAscendant
+              ? 'The lagna is the reference for functional nature, not a graha with one.'
+              : r.name + ' functions as ' +
+                Astro.functionalRole(r.name, c.ascendant.sign).toLowerCase() +
+                ' for a ' + Astro.SIGNS[c.ascendant.sign] + ' ascendant. This is ' +
+                'interpretive context; it does not create a yoga or alter a bala.' },
           { text: r.isAscendant ? '–'
               : (GrahaView.JAGRATADI_ENGLISH[jagratadi] || '–'),
             title: r.isAscendant

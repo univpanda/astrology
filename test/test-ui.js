@@ -6873,14 +6873,14 @@ ok('and the box is drawn to that half width, not the old full one',
  * graha like the states are, rather than a row of dashes with three words in
  * it: over nine grahas a chart carries two or three dignities at most.
  */
-ok('the table carries eleven property columns', (function () {
+ok('the table carries twelve property columns', (function () {
   var at = appSrc.indexOf('var GRAHA_ROWS = [');
   if (at < 0) return false;
   var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
   var found = (block.match(/label: '[^']+'/g) || [])
     .map(function (t) { return t.slice(8, -1); });
   return found.join('|') === ['Rashi', 'House', 'Lordship', 'Dispositor',
-    'Longitude', 'Name - Pada', 'Lord', 'Sub lord', 'Karaka',
+    'Longitude', 'Name - Pada', 'Lord', 'Sub lord', 'Karaka', 'Role',
     'State', 'Age'].join('|') &&
     !/<th scope="col">Chart<\/th>/.test(html);
 })());
@@ -8594,7 +8594,7 @@ console.log('\nThe card says how the graha stands in its sign');
     /function dignitiesByGraha\(state, division, tatkalika, horaRule, horaMercury\)/.test(grahaViewSrc) &&
     /dignities: GrahaView\.dignitiesByGraha\(state, set\.division, tatkalikaSetting\(\), horaSetting\(\),\s*\n?\s*horaMercurySetting\(\)\)/.test(src));
   ok('and the renderer carries it onto the graha',
-    /ctx\.division, ctx\.dignities, ctx\.hemming, ctx\.ruling, ctx\.karakas\)/.test(chartsSrc) &&
+    /ctx\.division, ctx\.dignities, ctx\.hemming, ctx\.ruling, ctx\.karakas,\s*\n?\s*ctx\.roles\)/.test(chartsSrc) &&
     /t\.setAttribute\('data-dignity', d\.dignity\)/.test(chartsSrc));
   /*
    * What a graha rules and what looks at it, both on the card. Lordship is a

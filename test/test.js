@@ -1405,6 +1405,39 @@ ok('and a graha the order has never heard of keeps its place at the end', (funct
 
 console.log('\nBenefic and malefic nature');
 /*
+ * Functional nature is ascendant-specific interpretive context. It is a
+ * different axis from natural benefic/malefic nature and from the structural
+ * [Y] marker, so pin the published reference rows without allowing them to
+ * alter either calculation.
+ */
+(function () {
+  var order = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn',
+    'Rahu', 'Ketu'];
+  var row = function (ascendantSign) {
+    return order.map(function (g) { return A.functionalRole(g, ascendantSign); });
+  };
+  ok('Leo functional roles reproduce the Trump and Nixon reference row',
+    row(4).join(',') ===
+      'Benefic,Neutral,Benefic,Papa,Benefic,Papa,Maraka,Maraka,Neutral');
+  ok('Capricorn functional roles reproduce the Obama reference row',
+    row(9).join(',') ===
+      'Neutral,Papa,Papa,Benefic,Papa,Yogakaraka,Neutral,Maraka,Neutral');
+  ok('Aquarius functional roles reproduce the Pope Benedict reference row',
+    row(10).join(',') ===
+      'Maraka,Papa,Maraka,Neutral,Maraka,Yogakaraka,Benefic,Neutral,Neutral');
+  ok('Taurus functional roles reproduce the Tony Blair reference row',
+    row(1).join(',') ===
+      'Benefic,Maraka,Maraka,Benefic,Maraka,Maraka,Yogakaraka,Maraka,Neutral');
+  ok('Virgo functional roles reproduce the P V Narasimha Rao reference row',
+    row(5).join(',') ===
+      'Neutral,Papa,Papa,Benefic,Papa,Benefic,Neutral,Neutral,Maraka');
+  ok('functional role does not replace structural yogakaraka',
+    A.functionalRole('Mars', 4) === 'Benefic' && A.isYogakaraka('Mars', 4));
+  ok('unknown bodies and references take no invented functional role',
+    A.functionalRole('Ascendant', 4) === '' &&
+      A.functionalRole('Sun', -1) === '');
+})();
+/*
  * Chapter 2 verse 11 names "decreasing Moon" among the malefics and leaves
  * decreasing undefined. The two glosses put the boundary in different places,
  * and the difference is half of all charts.

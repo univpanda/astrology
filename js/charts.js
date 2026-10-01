@@ -162,7 +162,7 @@ var Charts = (function () {
   var REC = '\u001e', FLD = '\u001f';
 
   function describeOccupant(p, sign, house, yogas, division, dignities,
-                            hemming, ruling, karakas) {
+                            hemming, ruling, karakas, roles) {
     var states = [];
     /*
      * Each state says why it applies here, not merely that it does. The chart
@@ -252,6 +252,7 @@ var Charts = (function () {
       subLord: nak.subLord,
       dispositor: dispositor || '',
       karaka: (karakas && karakas[p.name]) || '',
+      role: (roles && roles[p.name]) || '',
       nakLordRelation: standing.nakLordRelation || '',
       subLordRelation: standing.subLordRelation || '',
       dispositorRelation: standing.relation || '',
@@ -346,7 +347,8 @@ var Charts = (function () {
       drawPlanetText(t, p, dignity);
       if (ctx) {
         var d = describeOccupant(p, ctx.sign, ctx.house, ctx.yogas,
-          ctx.division, ctx.dignities, ctx.hemming, ctx.ruling, ctx.karakas);
+          ctx.division, ctx.dignities, ctx.hemming, ctx.ruling, ctx.karakas,
+          ctx.roles);
         t.setAttribute('data-graha', d.graha);
         t.setAttribute('data-where', d.where);
         t.setAttribute('data-degree', d.degree);
@@ -356,6 +358,7 @@ var Charts = (function () {
         t.setAttribute('data-nak-lord', d.nakLord);
         t.setAttribute('data-sub-lord', d.subLord);
         if (d.karaka) t.setAttribute('data-karaka', d.karaka);
+        if (d.role) t.setAttribute('data-role', d.role);
         if (d.nakLordRelation) t.setAttribute('data-nak-lord-relation', d.nakLordRelation);
         if (d.subLordRelation) t.setAttribute('data-sub-lord-relation', d.subLordRelation);
         if (d.dispositor) t.setAttribute('data-dispositor', d.dispositor);
@@ -482,7 +485,7 @@ var Charts = (function () {
   }
 
   function renderNorth(container, planets, ascLongitude, division, reference, yogas,
-                       dignities, hemming, ruling, combustion, karakas) {
+                       dignities, hemming, ruling, combustion, karakas, roles) {
     var data = occupantsBySign(planets, ascLongitude, division, reference, combustion);
     var svg = svgRoot('north');
     var m = 4, s = SIZE - 2 * m;
@@ -521,6 +524,7 @@ var Charts = (function () {
         { sign: sign, house: h + 1, yogas: yogas,
           dignities: dignities,
           karakas: karakas,
+          roles: roles,
           hemming: hemming, ruling: ruling });
       var numberAt = NORTH_SIGN_ANCHORS[h];
       g.appendChild(el('text', {
@@ -535,7 +539,7 @@ var Charts = (function () {
   }
 
   function renderSouth(container, planets, ascLongitude, division, reference, yogas,
-                       dignities, hemming, ruling, combustion, karakas) {
+                       dignities, hemming, ruling, combustion, karakas, roles) {
     var data = occupantsBySign(planets, ascLongitude, division, reference, combustion);
     var svg = svgRoot('south');
     var m = 4, cell = (SIZE - 2 * m) / 4;
@@ -567,6 +571,7 @@ var Charts = (function () {
         { sign: i, house: house, yogas: yogas,
           dignities: dignities,
           karakas: karakas,
+          roles: roles,
           hemming: hemming, ruling: ruling });
       svg.appendChild(g);
     }
@@ -580,7 +585,7 @@ var Charts = (function () {
     var fn = opts.style === 'south' ? renderSouth : renderNorth;
     fn(container, opts.planets, opts.ascendant, opts.division || 1, opts.reference,
        opts.yogas, opts.dignities, opts.hemming, opts.ruling, opts.combustion,
-       opts.karakas);
+       opts.karakas, opts.roles);
   }
 
   return { render: render };
