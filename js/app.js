@@ -1760,8 +1760,17 @@
       placeCard(card, t, container);
     };
 
+    /*
+     * A mark is a tspan inside the label, so pointing at the [E] in "Ju [E]"
+     * put the event on the tspan, which carries no readings of its own and so
+     * opened nothing. The card went dead over exactly the part of a label a
+     * reader is most likely to be asking about.
+     */
     var show = function (e) {
       var t = e.target;
+      while (t && t.getAttribute && !t.getAttribute('data-graha')) {
+        t = t.parentNode;
+      }
       if (!t || !t.getAttribute || !t.getAttribute('data-graha')) return;
       fill(t);
     };

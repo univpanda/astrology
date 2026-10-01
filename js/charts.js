@@ -29,11 +29,46 @@ var Charts = (function () {
    */
   var CURVE_PULL = 0.42;
 
-  // Label anchors for the twelve North Indian houses, as fractions of the box.
+  /*
+   * Label anchors for the twelve North Indian houses, as fractions of the box.
+   *
+   * Each is the middle of its house: the centroid's row, and the middle of the
+   * span that row has inside the house. Measured off the same arcs the chart
+   * draws rather than chosen by eye, because the two differ by enough to
+   * matter - the four inner houses were anchored a fiftieth of the box towards
+   * their outer tip, which is where they are narrowest.
+   *
+   * They sat there to dodge the sign numbers, which used to stand in the
+   * middle of each house. The numbers moved to the rim and the anchors did
+   * not, so the grahas went on avoiding something that was no longer there.
+   */
   var NORTH_ANCHORS = [
-    [0.50, 0.23], [0.25, 0.10], [0.10, 0.25], [0.23, 0.50],
-    [0.10, 0.75], [0.25, 0.90], [0.50, 0.77], [0.75, 0.90],
-    [0.90, 0.75], [0.77, 0.50], [0.90, 0.25], [0.75, 0.10]
+    [0.500, 0.278], [0.277, 0.104], [0.138, 0.275], [0.251, 0.500],
+    [0.138, 0.725], [0.277, 0.896], [0.500, 0.722], [0.723, 0.896],
+    [0.862, 0.725], [0.749, 0.500], [0.862, 0.275], [0.723, 0.104]
+  ];
+  /*
+   * How far a stack may run up and down inside each house, as fractions of the
+   * box: the reach at full size, and how much further it reaches for each
+   * whole step the type is shrunk by.
+   *
+   * There are two numbers because the band is not fixed. It is the span over
+   * which every row is still at least as wide as the longest label the chart
+   * draws - "Ve [R][V][E]", about a fifth of the box - and a smaller label
+   * needs less width, so it fits further towards the tip. The houses differ in
+   * both: the eight against a corner start tightest and open up fastest, the
+   * four from a side midpoint to a corner start widest and open up slowest.
+   *
+   * Measured off the arcs the chart draws, at a label width padded by a
+   * twelfth, since the label width is itself an estimate and a row that clears
+   * by a fraction of a pixel is clearing by luck. Against the unpadded width
+   * every row of every house then clears by at least five pixels, from two
+   * grahas in a house up to all nine.
+   */
+  var NORTH_FIT = [
+    [0.167, 0.315], [0.162, 0.241], [0.120, 0.417], [0.199, 0.185],
+    [0.120, 0.417], [0.162, 0.241], [0.167, 0.315], [0.162, 0.241],
+    [0.120, 0.417], [0.199, 0.185], [0.120, 0.417], [0.162, 0.241]
   ];
   /*
    * Sign numbers gather at the four places where three houses meet. At each
@@ -256,58 +291,86 @@ var Charts = (function () {
   }
 
   var LINE_HEIGHT = 17;
+  /* Matches svg.kundli .planet in the stylesheet, which is what a stack of one
+     is drawn at; a crowded house is drawn at a fraction of it. */
+  var PLANET_FONT = 15.5;
 
   /**
+   * Stack a house's occupants on one anchor, one to a line.
+   *
+   * Two to a line was the old arrangement once a house held more than three,
+   * with the columns put half a label apart - the width passed in was about
+   * what one label takes, and the offsets were a quarter of it either way.
+   * They overlapped whenever a label carried a bracket, which every graha in a
+   * dignity or a state now does: "Me [D]" was drawn through "Ve [R][E]".
+   *
+   * One to a line cannot overlap sideways whatever a label grows to carry. The
+   * cost is height, and a house has only so much of it before it narrows past
+   * a label's width, so a crowd is set smaller: `fit` is how far the stack may
+   * run and how much further each step of shrinking buys, and the type shrinks
+   * until the rows fit. Line height and font shrink together, so the lines
+   * cannot close up on each other either.
+   *
    * Returns the y of the first row, so a caller can keep something clear of it.
    */
-  function drawOccupants(group, occupants, cx, cy, maxWidth, ctx) {
-    var lineHeight = LINE_HEIGHT;
-    var perRow = occupants.length > 3 ? 2 : 1;
-    var rows = [];
-    for (var i = 0; i < occupants.length; i += perRow) rows.push(occupants.slice(i, i + perRow));
-    var top = cy - ((rows.length - 1) * lineHeight) / 2;
-    rows.forEach(function (row, r) {
-      var y = top + r * lineHeight;
-      row.forEach(function (p, c) {
-        var offset = perRow === 1 ? 0 : (c === 0 ? -maxWidth / 4 : maxWidth / 4);
-        var t = el('text', {
-          x: (cx + offset).toFixed(1), y: y.toFixed(1),
-          class: 'planet graha-' + (SLUG[p.name] || 'other'),
-          'text-anchor': 'middle'
-        });
-        var dignity = ctx && ctx.dignities && ctx.dignities[p.name]
-          ? ctx.dignities[p.name].formal : '';
-        drawPlanetText(t, p, dignity);
-        if (ctx) {
-          var d = describeOccupant(p, ctx.sign, ctx.house, ctx.yogas,
-            ctx.division, ctx.dignities, ctx.hemming, ctx.ruling, ctx.karakas);
-          t.setAttribute('data-graha', d.graha);
-          t.setAttribute('data-where', d.where);
-          t.setAttribute('data-degree', d.degree);
-          if (d.house) t.setAttribute('data-house', d.house);
-          t.setAttribute('data-sign', d.signName);
-          t.setAttribute('data-nakshatra', d.nakshatra);
-          t.setAttribute('data-nak-lord', d.nakLord);
-          t.setAttribute('data-sub-lord', d.subLord);
-          if (d.karaka) t.setAttribute('data-karaka', d.karaka);
-          if (d.nakLordRelation) t.setAttribute('data-nak-lord-relation', d.nakLordRelation);
-          if (d.subLordRelation) t.setAttribute('data-sub-lord-relation', d.subLordRelation);
-          if (d.dispositor) t.setAttribute('data-dispositor', d.dispositor);
-          if (d.dispositorRelation) {
-            t.setAttribute('data-dispositor-relation', d.dispositorRelation);
-          }
-          if (d.dignity) t.setAttribute('data-dignity', d.dignity);
-          if (d.rules) t.setAttribute('data-rules', d.rules);
-          if (d.seenBy) t.setAttribute('data-seen-by', d.seenBy);
-          if (d.directional) t.setAttribute('data-directional', 'true');
-          t.setAttribute('data-states', d.states);
-          t.setAttribute('data-yogas', d.yogas);
-          // Hoverable by mouse, reachable by keyboard, legible to a reader.
-          t.setAttribute('tabindex', '0');
-          t.setAttribute('aria-label', d.label);
-        }
-        group.appendChild(t);
+  function drawOccupants(group, occupants, cx, cy, fit, ctx) {
+    /*
+     * Solved rather than searched: the rows take (n-1) line heights at the
+     * scale chosen, and the room for them is the reach plus what the shrinking
+     * itself opens up, which is the same unknown on both sides.
+     */
+    var scale = occupants.length > 1
+      ? Math.min(1, (fit[0] + fit[1]) /
+          ((occupants.length - 1) * LINE_HEIGHT + fit[1])) : 1;
+    var lineHeight = LINE_HEIGHT * scale;
+    // SVG puts text on its baseline, so the block sits low by about a third of
+    // its own size unless it is lifted; the lift shrinks with the type.
+    var top = cy + PLANET_FONT * scale * 0.26 -
+      ((occupants.length - 1) * lineHeight) / 2;
+    occupants.forEach(function (p, r) {
+      var t = el('text', {
+        x: cx.toFixed(1), y: (top + r * lineHeight).toFixed(1),
+        class: 'planet graha-' + (SLUG[p.name] || 'other'),
+        'text-anchor': 'middle'
       });
+      if (scale < 1) {
+        // Inline, because the class rule in the stylesheet outranks both an
+        // inherited size and a presentation attribute.
+        t.setAttribute('style',
+          'font-size:' + (PLANET_FONT * scale).toFixed(1) + 'px');
+      }
+      var dignity = ctx && ctx.dignities && ctx.dignities[p.name]
+        ? ctx.dignities[p.name].formal : '';
+      drawPlanetText(t, p, dignity);
+      if (ctx) {
+        var d = describeOccupant(p, ctx.sign, ctx.house, ctx.yogas,
+          ctx.division, ctx.dignities, ctx.hemming, ctx.ruling, ctx.karakas);
+        t.setAttribute('data-graha', d.graha);
+        t.setAttribute('data-where', d.where);
+        t.setAttribute('data-degree', d.degree);
+        if (d.house) t.setAttribute('data-house', d.house);
+        t.setAttribute('data-sign', d.signName);
+        t.setAttribute('data-nakshatra', d.nakshatra);
+        t.setAttribute('data-nak-lord', d.nakLord);
+        t.setAttribute('data-sub-lord', d.subLord);
+        if (d.karaka) t.setAttribute('data-karaka', d.karaka);
+        if (d.nakLordRelation) t.setAttribute('data-nak-lord-relation', d.nakLordRelation);
+        if (d.subLordRelation) t.setAttribute('data-sub-lord-relation', d.subLordRelation);
+        if (d.dispositor) t.setAttribute('data-dispositor', d.dispositor);
+        if (d.dispositorRelation) {
+          t.setAttribute('data-dispositor-relation', d.dispositorRelation);
+        }
+        if (d.dignity) t.setAttribute('data-dignity', d.dignity);
+        if (d.rules) t.setAttribute('data-rules', d.rules);
+        if (d.seenBy) t.setAttribute('data-seen-by', d.seenBy);
+        if (d.directional) t.setAttribute('data-directional', 'true');
+        t.setAttribute('data-states', d.states);
+        t.setAttribute('data-yogas', d.yogas);
+        // Hoverable by mouse, reachable by keyboard, legible to a reader.
+        t.setAttribute('tabindex', '0');
+        t.setAttribute('aria-label', d.label);
+      }
+      group.appendChild(t);
     });
     return top;
   }
@@ -452,7 +515,7 @@ var Charts = (function () {
       var cx = m + a[0] * s, cy = m + a[1] * s;
       var g = el('g', { class: 'house' + (h === 0 ? ' first-house' : '') });
       var occ = data.bySign[sign];
-      drawOccupants(g, occ, cx, cy + 4, 0.20 * s,
+      drawOccupants(g, occ, cx, cy, [NORTH_FIT[h][0] * s, NORTH_FIT[h][1] * s],
         { sign: sign, house: h + 1, yogas: yogas,
           dignities: dignities,
           karakas: karakas,
@@ -493,7 +556,12 @@ var Charts = (function () {
       }
       g.appendChild(el('text', { x: x + cell - 6, y: y + 14, class: 'sign-num', 'text-anchor': 'end' },
         Astro.SIGN_ABBR[i] + ' · ' + house));
-      drawOccupants(g, data.bySign[i], x + cell / 2, y + cell / 2 + 6, cell * 0.82,
+      /*
+       * The reach is the cell less the strip the sign number holds at the top
+       * and a margin at the foot. Nothing is gained by shrinking here: a cell
+       * is square, so it is no wider in the middle than at the ends.
+       */
+      drawOccupants(g, data.bySign[i], x + cell / 2, y + cell / 2 + 2, [cell - 32, 0],
         { sign: i, house: house, yogas: yogas,
           dignities: dignities,
           karakas: karakas,

@@ -5748,10 +5748,87 @@ console.log('\nThe North chart groups sign numbers at its four junctions');
     anchors[6][0] === 0.5 && anchors[9][1] === 0.5 &&
     anchors[1][0] + anchors[11][0] === 1 &&
     anchors[2][1] + anchors[4][1] === 1);
-  ok('crowding no longer moves either the sign number or the graha stack',
+  /*
+   * Two to a line was the old arrangement once a house held more than three,
+   * and the columns were put half a label apart: the width handed in was
+   * about what one label takes and the offsets were a quarter of it either
+   * way. They overlapped as soon as a label carried a bracket, which every
+   * graha in a dignity or a state now does - "Me [D]" was drawn through
+   * "Ve [R][E]" in a house holding the Sun, Moon, Mercury and Venus.
+   *
+   * Driven on a chart with every graha crowded into one sign, which is the
+   * worst a house can be asked to hold.
+   */
+  ok('a crowded house stacks one to a line and never side by side', (function () {
+    var chart = Astro.chart({ jdUT: Astro.julianDay(1980, 9, 21, 3),
+      latitude: 19.0728, longitude: 72.8826, tzOffsetMinutes: 330 });
+    var crowded = chart.planets.map(function (p, i) {
+      // All nine into Aries, a degree apart, keeping everything else real.
+      var copy = {};
+      Object.keys(p).forEach(function (k) { copy[k] = p[k]; });
+      copy.longitude = 2 + i;
+      copy.sign = 0;
+      return copy;
+    });
+    var box = makeNode('div');
+    Charts.render(box, { style: 'north', planets: crowded,
+      ascendant: chart.ascendant.longitude, division: 1, reference: 'Ascendant',
+      yogas: {}, dignities: {}, ruling: {}, karakas: {} });
+    var marks = [];
+    (function walk(n) {
+      if (n.tag === 'text' && n.attrs['data-graha']) marks.push(n.attrs);
+      n.children.forEach(walk);
+    })(box);
+    // The ascendant stands in a house of its own; the nine are the crowd.
+    marks = marks.filter(function (a) { return a['data-graha'] !== 'Ascendant'; });
+    if (marks.length !== 9) return false;
+    var size = Number((/font-size:([\d.]+)px/.exec(marks[0].style) || [0, 15.5])[1]);
+    var ys = marks.map(function (a) { return Number(a.y); }).sort(function (a, b) {
+      return a - b;
+    });
+    return (
+      // One column: every label on the same x, so none can meet another.
+      marks.every(function (a) { return a.x === marks[0].x; }) &&
+      // And the lines are at least the type's own size apart, so the stack
+      // cannot close up on itself as it shrinks.
+      ys.every(function (y, i) { return i === 0 || y - ys[i - 1] >= size; }) &&
+      // Shrunk, but not past reading: nine in one house is the worst case.
+      size < 15.5 && size >= 11
+    );
+  })());
+  ok('crowding no longer moves the sign number',
     /var numberAt = NORTH_SIGN_ANCHORS\[h\];/.test(src) &&
-    /drawOccupants\(g, occ, cx, cy \+ 4,/.test(src) &&
+    /drawOccupants\(g, occ, cx, cy, \[NORTH_FIT\[h\]\[0\] \* s, NORTH_FIT\[h\]\[1\] \* s\],/
+      .test(src) &&
     !/shortfall|idealTop|numY/.test(src));
+  /*
+   * And the grahas sit in the middle of their house rather than a step
+   * towards its tip. The anchors dodged the sign numbers when those stood in
+   * the middle of each house; the numbers went to the rim and the anchors did
+   * not follow, which left the four angular houses anchored where they are
+   * narrowest.
+   */
+  ok('each house anchors its stack at its own middle', (function () {
+    var literal = src.match(/var NORTH_ANCHORS = (\[[\s\S]*?\n  \]);/);
+    var a = literal ? new Function('return ' + literal[1])() : [];
+    if (a.length !== 12) return false;
+    // Measured off the arcs: the centroid's row, and the middle of the span
+    // that row has inside the house.
+    var want = [
+      [0.500, 0.278], [0.277, 0.104], [0.138, 0.275], [0.251, 0.500],
+      [0.138, 0.725], [0.277, 0.896], [0.500, 0.722], [0.723, 0.896],
+      [0.862, 0.725], [0.749, 0.500], [0.862, 0.275], [0.723, 0.104]
+    ];
+    return want.every(function (p, i) {
+      return Math.abs(a[i][0] - p[0]) < 0.002 && Math.abs(a[i][1] - p[1]) < 0.002;
+    }) &&
+      // And the twelve are a figure turned four times, as the chart is.
+      a.every(function (p, i) {
+        var opposite = a[(i + 6) % 12];
+        return Math.abs(p[0] + opposite[0] - 1) < 0.002 &&
+          Math.abs(p[1] + opposite[1] - 1) < 0.002;
+      });
+  })());
 })();
 
 console.log('\nSettings show the choice and fold the argument');
@@ -8762,6 +8839,27 @@ console.log('\nThe card says how the graha stands in its sign');
  * All of it trails the name without taking its weight or the graha's colour:
  * these are things true of the graha, not part of what it is called.
  */
+  /*
+   * A mark is a tspan inside the label, so pointing at the [E] in "Ju [E]"
+   * put the event on the tspan, which carries no readings of its own. The
+   * card went dead over exactly the part of a label a reader is most likely
+   * to be asking about.
+   */
+  ok('a card opens from a mark inside a label as well as from the name',
+    (function () {
+      var by = labels(), label = makeNode('text');
+      Object.keys(by.Venus).forEach(function (k) {
+        label.setAttribute(k, by.Venus[k]);
+      });
+      var mark = makeNode('tspan');
+      label.appendChild(mark);
+      var container = makeNode('div');
+      out.wireGrahaCard(container);
+      container.fire('mouseover', { target: mark });
+      var card = container.grahaCard;
+      return !card.hidden && textOf(card.children[0]) === 'Venus Matrukaraka';
+    })());
+
   ok('the frames are rows of the grid and only the role stays by the name',
     (function () {
       var by = labels(), card = cardFor(by.Venus);
