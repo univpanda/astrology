@@ -10121,19 +10121,23 @@ console.log('\nThe default-settings row is one line');
       ' \\{([^}]*)\\}').exec(flat);
     return m ? m[1] : '';
   };
-  ok('the heading and the controls share one flex row',
+  ok('the default controls form a right-aligned wrapping row',
     /display: flex/.test(rule('.presets')) &&
     /flex-wrap: wrap/.test(rule('.presets')) &&
-    /align-items: center/.test(rule('.presets')));
+    /align-items: center/.test(rule('.presets')) &&
+    /justify-content: flex-end/.test(rule('.presets')) &&
+    /justify-content: flex-end/.test(rule('.preset-picker')));
   /*
    * And the heading does not push a line under itself. `.card h3` sets a rem
    * of bottom margin and outranks a single class, so this one has to carry
    * the extra class to beat it - which is also why the font, size and colour
    * it used to declare were never in force.
    */
-  ok('the heading claims no line of its own',
-    /margin: 0;/.test(rule('.card .presets-head')) &&
-    !/\.presets-head \{/.test(flat.replace('.card .presets-head {', '')));
+  ok('the default controls have no separate card or heading', (function () {
+    var section = html.slice(html.indexOf('id="settings-main"'), html.indexOf('class="settings-grid"'));
+    return !/presets-head/.test(section) &&
+      section.indexOf('class="presets"') < section.indexOf('class="card"');
+  })());
   /* The label used to take the full width, which put the select below it. */
   ok('the label sits beside the select rather than above it',
     !/width: 100%/.test(rule('.preset-picker label')) &&
@@ -10148,9 +10152,13 @@ console.log('\nThe default-settings row is one line');
     /min-width: 12rem/.test(rule('.preset-picker select')));
   /* Only the two notes take a line of their own, and they do it from inside
      the row so they stay under the controls they are about. */
-  ok('only the notes below it claim a line',
-    /width: 100%/.test(rule('.preset-what')) &&
-    /width: 100%/.test(rule('.preset-status')));
+  ok('Why keeps the explanation collapsed until requested',
+    /<details class="preset-why">\s*<summary>Why\?<\/summary>\s*<p class="field-note preset-what" id="preset-what"><\/p>\s*<\/details>/.test(html) &&
+    /position: absolute/.test(rule('.preset-what')) &&
+    /right: 0/.test(rule('.preset-what')));
+  ok('status is right-aligned and does not reserve an empty row',
+    /text-align: right/.test(rule('.preset-status')) &&
+    /display: none/.test(rule('.preset-status:empty')));
 })();
 
 console.log('\nThe settings notes do not argue from what software does');

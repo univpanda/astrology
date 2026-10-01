@@ -699,44 +699,20 @@ input::placeholder { color: #a9bdb2; }
  * a reader changes one select the lit button would be a lie about what the
  * page is reading.
  */
-/*
- * One line: the heading, what is in force, and the way to make your own. It
- * was four stacked rows for three words and two controls, which gave the one
- * thing on the page that is not a setting more height than any setting has.
- *
- * The two notes below it are the only children that take a line of their own,
- * which they do by claiming the full width rather than by being outside the
- * row - so they sit under the controls they are about.
- */
+/* Unboxed, right-aligned controls. Wrap on narrow screens; help opens on demand. */
 .presets {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.5rem 0.9rem;
-  margin: 0 0 1.5rem;
-  padding: 0 0 1.3rem;
-  border-bottom: 1px solid var(--line-soft);
-}
-/*
- * The card's own heading, and it takes the card heading's face and colour
- * from `.card h3`. That selector outranks a single class, so the family, the
- * size, the weight and the colour this rule used to declare were never the
- * ones in force: only the uppercasing was, which is why it looked like a
- * title in small capitals rather than the label it was written as.
- *
- * So the rule now says only what is really different about this heading. The
- * margin needs the extra class to beat the same selector, which was pushing a
- * rem of space under a heading that now sits on a row.
- */
-.card .presets-head {
-  margin: 0;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  margin: 0 0 1rem;
 }
 .preset-picker {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.5rem;
 }
 .preset-picker label { font-size: 0.82rem; color: var(--ink-soft); }
@@ -762,8 +738,22 @@ input::placeholder { color: #a9bdb2; }
 }
 /* What the preset is, and where it cannot reach. Kept at the note's size and
    colour, since it is the same kind of thing the notes are. */
-.preset-what { width: 100%; margin: 0.2rem 0 0; max-width: 46rem; }
-.preset-status { width: 100%; margin: 0; min-height: 1.2em; }
+.preset-why { position: relative; }
+.preset-why summary { cursor: pointer; font-size: 0.82rem; color: var(--ink-soft); }
+.preset-what {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 10;
+  width: min(28rem, calc(100vw - 4rem));
+  margin: 0.5rem 0 0;
+  padding: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.preset-status { width: 100%; margin: 0; text-align: right; }
+.preset-status:empty { display: none; }
 
 /*
  * The page for building a default of your own, in place of the settings

@@ -484,7 +484,6 @@
         whole panel rather than a modal cut out of the middle of it.
       -->
       <div id="settings-main">
-<div class="card">
       <!--
         Named starting points, not modes. Each one moves the controls below and
         in Testing to the values that reproduce a published reckoning, and then
@@ -498,7 +497,6 @@
         at elsewhere" - and naming the elsewhere is the whole of it.
       -->
       <div class="presets">
-        <h3 class="presets-head">Default settings</h3>
         <div class="preset-picker">
           <label for="preset-choice">Use</label>
           <select id="preset-choice">
@@ -509,12 +507,14 @@
             <option value="mine" id="preset-mine-option" hidden disabled>My default</option>
           </select>
           <button type="button" id="preset-create">Create my default settings</button>
+          <details class="preset-why">
+            <summary>Why?</summary>
+            <p class="field-note preset-what" id="preset-what"></p>
+          </details>
         </div>
-        <p class="field-note preset-what" id="preset-what" hidden></p>
-        <p class="field-note preset-status" id="preset-status"></p>
+        <p class="field-note preset-status" id="preset-status" role="status"></p>
       </div>
 
-      </div>
       <div class="card">
       <div class="settings-grid">
       <div class="field">

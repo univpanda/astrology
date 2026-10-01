@@ -5349,15 +5349,20 @@
       if (create.focus) create.focus();
     };
 
+    var explain = function (name) {
+      var preset = PRESETS[name];
+      what.textContent = preset ? preset.says
+        : 'Your one saved combination. Edit it to replace it; this browser keeps no second copy.';
+      what.hidden = false;
+    };
+
     var apply = function (name) {
       var wanted = settingsForPreset(name);
       if (!wanted) return;
       var preset = PRESETS[name];
       var label = preset ? preset.label : 'My default';
       applySettings(wanted);
-      what.textContent = preset ? preset.says
-        : 'Your one saved combination. Edit it to replace it; this browser keeps no second copy.';
-      what.hidden = false;
+      explain(name);
       status.textContent = 'Recomputing\u2026';
       /*
        * A preset is the one caller that really does move all three, having
@@ -5424,6 +5429,7 @@
     });
     showMine();
     choice.value = readDefaultChoice();
+    explain(choice.value);
   }
 
   function statusFor(select) {
