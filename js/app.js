@@ -1994,7 +1994,7 @@
     { label: 'Role', says: 'The graha’s ascendant-specific functional nature: benefic, neutral, papa, maraka or yogakaraka. Read from the rashi ascendant and kept separate from natural nature and yoga detection.' },
     { label: 'State', says: 'Waking, dreaming or sleeping according to whether the graha is in its own or exaltation sign, a friend’s or neutral’s sign, or an enemy’s or debilitation sign. Read in the rashi.' },
     { label: 'Age', says: 'Child, teen, youth, old or dead: six degrees to a stage and reversed in an even sign. Read in the rashi, and so the same in every chart here.' },
-    { label: 'Vimsopaka Bala', says: 'Weighted strength across the 10 Dashavarga divisions, out of 20. Uses the selected scoring settings and stays the same across these chart tabs.' }
+    { label: 'Vim.', says: 'Vimsopaka Bala: weighted strength across the 10 Dashavarga divisions, out of 20. Uses the selected scoring settings and stays the same across these chart tabs.' }
   ];
 
   /**

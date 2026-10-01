@@ -6963,7 +6963,7 @@ ok('the table carries thirteen property columns', (function () {
     .map(function (t) { return t.slice(8, -1); });
   return found.join('|') === ['Rashi', 'House', 'Lordship', 'Dispositor',
     'Longitude', 'Name - Pada', 'Lord', 'Sub lord', 'Karaka', 'Role',
-    'State', 'Age', 'Vimsopaka Bala'].join('|') &&
+    'State', 'Age', 'Vim.'].join('|') &&
     !/<th scope="col">Chart<\/th>/.test(html);
 })());
 ok('Graha Vimsopaka uses Dashavarga in every chart tab and follows scoring settings', (function () {
@@ -7006,7 +7006,7 @@ ok('Graha Vimsopaka uses Dashavarga in every chart tab and follows scoring setti
       var division = view.division;
       var table = renderTable({ chart: chart }, view);
       var heading = table.children[0].children[0].children.slice(-1)[0];
-      if (heading.textContent !== 'Vimsopaka Bala' || !/10 Dashavarga/.test(heading.title)) return false;
+      if (heading.textContent !== 'Vim.' || !/Vimsopaka Bala:.*10 Dashavarga/.test(heading.title)) return false;
       var rows = table.children[1].children;
       if (rows.length !== 10) return false;
       return rows.every(function (row) {
