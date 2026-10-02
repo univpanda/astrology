@@ -756,13 +756,23 @@ input::placeholder { color: #a9bdb2; }
 }
 .preset-what:empty { display: none; }
 /* Automatic-save feedback stays left-aligned and occupies space only when needed. */
+/*
+ * On the row with the controls, not under them. It took the full width, which
+ * is what put one short sentence on a line of its own with the picker and the
+ * button stranded at the far end of the line above it.
+ *
+ * order pulls it in front of them in the row rather than after, and the auto
+ * margin takes the space between: the controls stay at the right edge where
+ * they were, and the sentence reads from the left. It still drops to its own
+ * line when the two cannot share one, which is what flex-wrap is for.
+ */
 .preset-notice {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem 0.7rem;
-  width: 100%;
-  margin-top: 0.2rem;
+  order: -1;
+  margin-right: auto;
 }
 .preset-notice[hidden] { display: none; }
 .preset-status { margin: 0; text-align: left; }

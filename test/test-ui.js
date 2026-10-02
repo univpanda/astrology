@@ -10444,6 +10444,24 @@ console.log('\nThe default-settings row is one line');
     /text-align: left/.test(rule('.preset-status')) &&
     /display: flex/.test(rule('.preset-notice')) &&
     !/preset-save-now|Click Save/.test(html + appSrc));
+  /*
+   * And it shares the controls' row rather than taking one of its own. The
+   * full width was what broke it: one short sentence held a whole line while
+   * the picker and the button sat stranded at the end of the line above.
+   *
+   * The declarations are checked rather than the pixels. A width in a wrapping
+   * flex row is the thing that decides whether a line is shared, and the two
+   * that place it are what a break would have to come back through; the row
+   * still wraps when the two genuinely cannot fit.
+   */
+  ok('and shares the row with the controls rather than taking its own',
+    !/width:\s*100%/.test(rule('.preset-notice')) &&
+    /order: -1/.test(rule('.preset-notice')) &&
+    /margin-right: auto/.test(rule('.preset-notice')) &&
+    /flex-wrap: wrap/.test(rule('.presets')) &&
+    /justify-content: flex-end/.test(rule('.presets')) &&
+    // The long explanation is the one that still earns a line to itself.
+    /width: 100%/.test(rule('.preset-what')));
 })();
 
 console.log('\nThe settings notes do not argue from what software does');
