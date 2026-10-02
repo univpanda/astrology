@@ -3311,19 +3311,18 @@
   }
 
   /*
-   * Match the table key's order and names, which is by the letter: a reader
-   * arrives holding one they have just seen on a chart and wants to find it.
-   * Dr and D are distinct conditions, and D sorts before Dr.
+   * Match the table key's order and names, with Combust and Debilitated last.
+   * Dr (directional strength) and D (debilitated) remain distinct conditions.
    */
   var MARKS = [
-    { key: 'C', label: '[C]', name: 'Combust' },
-    { key: 'D', label: '[D]', name: 'Debilitated' },
     { key: 'Dr', label: '[Dr]', name: 'Directional strength' },
     { key: 'E', label: '[E]', name: 'Exalted' },
     { key: 'M', label: '[M]', name: 'Mooltrikona' },
     { key: 'V', label: '[V]', name: 'Vargottama' },
     { key: 'X', label: '[X]', name: 'Exchange of signs' },
-    { key: 'Y', label: '[Y]', name: 'Yogakaraka' }
+    { key: 'Y', label: '[Y]', name: 'Yogakaraka' },
+    { key: 'C', label: '[C]', name: 'Combust' },
+    { key: 'D', label: '[D]', name: 'Debilitated' }
   ];
 
   /**

@@ -3104,8 +3104,8 @@ ok('the compact key sits at the bottom of the Vimsopaka panel', (function () {
 ok('the key uses compact labels like the Graha relationship key', (function () {
   var key = html.replace(/\s+/g, ' ').match(/<p class="varga-key">(.*?)<\/p>/);
   return key && key[1].replace(/<[^>]+>/g, '').trim() ===
-    'Marks: [C] Combust, [D] Debilitated, [Dr] Directional strength, ' +
-    '[E] Exalted, [M] Mooltrikona, [V] Vargottama, [X] Exchange of signs, [Y] Yogakaraka. ' +
+    'Marks: [Dr] Directional strength, [E] Exalted, [M] Mooltrikona, ' +
+    '[V] Vargottama, [X] Exchange of signs, [Y] Yogakaraka, [C] Combust, [D] Debilitated. ' +
     'Additional conditions, separate from the score.';
 })());
 ok('the bottom key inherits its text colour',
@@ -6459,7 +6459,7 @@ ok('each graha chart renders eight labelled counts including zeros', (function (
     var labels = svg.children.filter(function (n) { return n.getAttribute('class') === 'chart-name'; });
     var values = svg.children.filter(function (n) { return n.getAttribute('class') === 'chart-value'; });
     return labels.map(function (n) { return n.textContent; }).join(',') ===
-      '[C],[D],[Dr],[E],[M],[V],[X],[Y]' &&
+      '[Dr],[E],[M],[V],[X],[Y],[C],[D]' &&
       values.length === 8 && values.every(function (n) { return /^\d+$/.test(n.textContent); });
   });
 })());
@@ -6899,16 +6899,12 @@ ok('the removed kartari markers do not enter the row', (function () {
   var keys = (block.match(/key: '([A-Za-z]+)'/g) || []).map(function (m) {
     return m.match(/'([^']+)'/)[1];
   });
-  return keys.join(',') === 'C,D,Dr,E,M,V,X,Y';
+  return keys.join(',') === 'Dr,E,M,V,X,Y,C,D';
 })());
 /*
- * And the marks are filed by their letter rather than by what they mean. A
- * reader comes to a key holding a letter they have just seen on a chart and
- * wants to find it; nothing about a chart says whether Combust is filed before
- * or after Vargottama. Checked by sorting rather than against a written-out
- * list, so adding a mark cannot quietly land it in the wrong place.
+ * The Vimsopaka legend and charts share one order, with C and D at the end.
  */
-ok('every key reads in one order, by the letter', (function () {
+ok('the Vimsopaka legend and charts both put C and D last', (function () {
   var lettersOf = function (text) {
     return (text.match(/\[([A-Za-z]+)\]/g) || []).map(function (m) {
       return m.slice(1, -1);
@@ -6926,7 +6922,7 @@ ok('every key reads in one order, by the letter', (function () {
     .match(/<p class="varga-key">(.*?)<\/p>/) || ['', ''])[1]);
   var tableKey = lettersOf((appSrc.match(/'Marks: \[C\][\s\S]*?'\)\);/) || [''])[0]);
   return marks.length === 8 && vargaKey.length === 8 && tableKey.length === 6 &&
-    sorted(marks) && sorted(vargaKey) && sorted(tableKey) &&
+    marks.join(',') === 'Dr,E,M,V,X,Y,C,D' && sorted(tableKey) &&
     // And the two that share a vocabulary really do agree.
     marks.join(',') === vargaKey.join(',');
 })());
