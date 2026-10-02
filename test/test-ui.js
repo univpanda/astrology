@@ -10451,10 +10451,25 @@ console.log('\nThe default-settings row is one line');
   ok('the standard default has no explanatory sentence',
     /var PRESETS = \{\s*page: \{[\s\S]*?says: ''\s*\}/.test(appSrc) &&
     !/Back to what this page reads by default/.test(appSrc));
-  ok('Back to settings follows the heading and aligns to the right',
-    html.indexOf('id="preset-back"') > html.indexOf('id="preset-page-title"') &&
-    /margin-left: auto/.test(rule('#preset-back')) &&
-    /flex-wrap: wrap/.test(rule('.preset-page-head')));
+  /*
+   * Both buttons follow the heading, the reset before the way out: it belongs
+   * with the heading it undoes rather than at the foot of a table it is not
+   * about, and leaving is the last thing on a row. The auto margin is on the
+   * first of them, Back having carried it before: with it there the reset
+   * would have stayed against the heading while only Back moved right.
+   */
+  ok('reset then Back follow the heading, both to the right',
+    html.indexOf('id="preset-forget"') > html.indexOf('id="preset-page-title"') &&
+    html.indexOf('id="preset-back"') > html.indexOf('id="preset-forget"') &&
+    // Both above the table, not in a strip under it. Measured against the
+    // editor rather than the head's own close, there being a div inside the
+    // head that closes first and would have been mistaken for it.
+    html.indexOf('id="preset-back"') < html.indexOf('id="preset-editor"') &&
+    /margin-left: auto/.test(rule('#preset-forget')) &&
+    !/margin-left: auto/.test(rule('#preset-back')) &&
+    /flex-wrap: wrap/.test(rule('.preset-page-head')) &&
+    // And nothing is left of the strip they used to sit in.
+    !/preset-page-actions/.test(html + cssSrc + appSrc));
   /*
    * And the select is named for a screen reader without being labelled on
    * screen. Its own words say what it is, and "Use" above them said it twice.

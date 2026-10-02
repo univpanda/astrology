@@ -811,6 +811,10 @@
             <p class="field-note">Changes apply immediately and are kept as your
               custom settings in this browser.</p>
           </div>
+          <!-- Reset before Back: it belongs with the heading it undoes rather
+               than at the foot of a table it is not about, and the way out is
+               the last thing on the row. -->
+          <button type="button" id="preset-forget" hidden>Reset to Parashara</button>
           <button type="button" id="preset-back">Back to settings</button>
         </div>
         <!--
@@ -824,9 +828,6 @@
           says what it does where the doing happens, and one control fewer.
         -->
         <div class="preset-editor" id="preset-editor"></div>
-        <div class="preset-page-actions">
-          <button type="button" id="preset-forget" hidden>Reset to Parashara</button>
-        </div>
         <p class="field-note" id="preset-editor-status" role="status" hidden></p>
       </div>
     </section>

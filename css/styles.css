@@ -794,7 +794,6 @@ input::placeholder { color: #a9bdb2; }
 .preset-page-head h3 { margin: 0; }
 .preset-page-head p { margin: 0.2rem 0 0; }
 #preset-back {
-  margin-left: auto;
   font: inherit;
   font-size: 0.85rem;
   font-weight: 600;
@@ -811,15 +810,14 @@ input::placeholder { color: #a9bdb2; }
   border-color: var(--green);
   background: var(--green-soft);
 }
-.preset-page-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  margin-top: 1.5rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid var(--line-soft);
-}
+/*
+ * The two buttons sit together at the end of the heading's row, the reset
+ * before the way out. The auto margin is on the first of them rather than on
+ * Back, which is what used to carry it: with it there, the reset would have
+ * been left stranded against the heading while only Back moved right.
+ */
 #preset-forget {
+  margin-left: auto;
   font: inherit;
   font-size: 0.85rem;
   font-weight: 600;
