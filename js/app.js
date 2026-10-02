@@ -5394,9 +5394,18 @@
         : 'Your one saved combination. Edit it to replace it; this browser keeps no second copy.';
     };
 
+    var applied = 0;
     var apply = function (name) {
       var wanted = settingsForPreset(name);
       if (!wanted) return;
+      /*
+       * Which application this is. The line a recompute writes when it lands
+       * already asks whether the page has drifted, which catches a setting
+       * moved while one was in flight; it cannot catch a second reading
+       * applied in that time, both being undrifted and only the later one
+       * true.
+       */
+      var mine = ++applied;
       var preset = PRESETS[name];
       var label = preset ? preset.label : 'My custom settings';
       applySettings(wanted);
@@ -5421,6 +5430,7 @@
         standard: document.getElementById('time-standard').value === 'lmt'
           ? 'lmt' : 'zone'
       }, function (recast, warning) {
+        if (mine !== applied) return;
         sayStatus((recast
           ? 'The chart on screen now uses ' + label + '.'
           : 'Set to ' + label + '. The next chart will use it.') +

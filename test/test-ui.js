@@ -11419,6 +11419,25 @@ console.log('\nEach preset reaches the figures it is named for');
     return shown && out.byId('preset-notice').hidden === true;
   })());
 
+  /*
+   * Nor by a reading applied after it. The line already asks whether the page
+   * has drifted, which catches a setting moved while a recompute was out; two
+   * readings applied in quick succession both leave the page undrifted, so
+   * only the later one is true and the earlier one has to fall silent.
+   */
+  /*
+   * Read rather than driven, and said plainly: this harness computes a chart
+   * before the next line of the test runs, so two applications cannot overlap
+   * here and the case cannot be reached. What the check is worth is that the
+   * guard cannot be taken out without a failure, which is the whole of what a
+   * reading of the source can be worth.
+   */
+  ok('and the earlier of two readings is guarded from the last word',
+    /var mine = \+\+applied;/.test(appSrc) &&
+    /if \(mine !== applied\) return;/.test(appSrc) &&
+    // On the recompute's callback, which is the only place it means anything.
+    /recomputeEverything\([\s\S]{0,400}?if \(mine !== applied\) return;/.test(appSrc));
+
   /* And it takes the mark off again when the settings match once more. */
   ok('and takes it back when the reading is chosen again', (function () {
     out.applyPreset('page');
