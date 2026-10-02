@@ -125,6 +125,40 @@ In rough order of size:
 - **The time actually used.** Zone time vs local mean time for pre-1900 births
   moves the ascendant by up to a degree per four minutes of difference.
 
+## Settings catalogue archive
+
+`public.astro_settings_archive` in the linked Supabase project keeps immutable,
+content-addressed snapshots of all settings and options, their labels and
+explanations, page fallback defaults, and the Raman, Parashara and Star Jyotish
+readings. Each choice explicitly records whether it is documented or a fallback.
+The application's startup reading is stored separately from the fallback defaults.
+Source-definition notes are preserved alongside the catalogue.
+
+Reported comparison figures live in `data/settings-observations.json` and are
+included in each snapshot. A reported result is evidence, not automatically a
+documented rule. Personal browser settings are **not** uploaded by this archive;
+the application still reads its checked-in catalogue and works without this table.
+
+```sh
+node scripts/archive-settings.mjs --print  # inspect the complete catalogue offline
+npm run archive:settings                  # append to Supabase and read back to verify
+node test/test-settings-archive.mjs       # offline catalogue/option/evidence checks
+```
+
+Archiving uses `DATABASE_URL` or a temporary connection from the logged-in,
+linked Supabase CLI, with credentials kept out of command arguments and output.
+It applies only its own additive schema, never the project's other migrations.
+The Amplify deployment script archives before uploading and stops if verification
+fails. Identical content is deduplicated; changed options create a new snapshot,
+leaving all previous revisions recoverable. Anonymous and authenticated clients
+can read reference snapshots but cannot write them. Updates, deletes and truncation
+are blocked by an immutability trigger.
+
+To recover a revision, select its `catalogue` from `astro_settings_archive` by
+`content_hash`; settings include every option and its default, and readings include
+every effective value and its provenance. Review and restore those definitions in
+the application source rather than blindly applying an old catalogue to new code.
+
 ## The stored ephemeris
 
 Graha positions come from a table in Supabase rather than being computed in the

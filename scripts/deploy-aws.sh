@@ -18,6 +18,10 @@ REGION="${AWS_REGION:-us-east-1}"
 
 cd "$(dirname "$0")/.."
 
+# Preserve every option and source choice before releasing this revision.
+# A failed backup stops deployment; identical catalogues reuse their snapshot.
+node scripts/archive-settings.mjs --save
+
 # Only what the site actually serves. Tests, generator scripts and the git
 # history stay out of the bundle.
 STAGE="$(mktemp -d)/site"

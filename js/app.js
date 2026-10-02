@@ -5230,13 +5230,13 @@
       return found || value || '';
     };
 
-    var markDifferences = function () {
+    var markChosen = function () {
       editorCells.forEach(function (cell) {
         var chosen = editorSelects[cell.setting] &&
           editorSelects[cell.setting].value === cell.value;
-        // Highlight differences, but keep the button's pressed state tied to
-        // the actual choice. Unrecorded cells never enter this comparison.
-        cell.node.className = 'preset-cell' + (chosen ? '' : ' preset-cell-differs');
+        // Only recorded cells are in this list, so a mark here can only ever
+        // mean that the reading's own position is the one in force.
+        cell.node.className = 'preset-cell' + (chosen ? ' preset-cell-chosen' : '');
         cell.node.setAttribute('aria-pressed', chosen ? 'true' : 'false');
       });
     };
@@ -5267,7 +5267,7 @@
           Object.keys(editorSelects).forEach(function (id) {
             if (wanted && wanted[id] !== undefined) editorSelects[id].value = wanted[id];
           });
-          markDifferences();
+          markChosen();
           updateFromEditor();
         });
         th.appendChild(take);
@@ -5312,11 +5312,10 @@
           });
           var spoken = values.filter(function (v) { return v.own; });
           var agree = spoken.every(function (v) { return v.value === spoken[0].value; });
-          var row = el('tr');
+          var row = el('tr', agree ? '' : 'preset-row-differs');
 
           var name = el('th', null, labelFor(id));
           name.setAttribute('scope', 'row');
-          if (!agree) name.appendChild(el('span', 'preset-sources-differ', 'Sources differ'));
           row.appendChild(name);
 
           var cell = el('td');
@@ -5329,7 +5328,7 @@
             select.appendChild(copy);
           });
           select.addEventListener('change', function () {
-            markDifferences();
+            markChosen();
             updateFromEditor();
           });
           cell.appendChild(select);
@@ -5352,10 +5351,10 @@
              */
             if (!entry.own) {
               var blank = el('span', 'preset-cell preset-cell-unrecorded',
-                'Not recorded');
-              blank.setAttribute('title', 'No documented choice for ' +
-                PRESETS[COLUMNS[column]].label + '. Selecting this reading uses ' +
-                wordsFor(id, entry.value) + '.');
+                'not recorded');
+              blank.setAttribute('title', PRESETS[COLUMNS[column]].label +
+                ' says nothing about this. Choosing it leaves ' +
+                wordsFor(id, entry.value) + ', which is this page\u2019s own.');
               td.appendChild(blank);
               row.appendChild(td);
               return;
@@ -5364,7 +5363,7 @@
             button.setAttribute('type', 'button');
             button.addEventListener('click', function () {
               select.value = entry.value;
-              markDifferences();
+              markChosen();
               updateFromEditor();
             });
             td.appendChild(button);
@@ -5383,9 +5382,10 @@
        * about how much of itself is recorded.
        */
       editor.appendChild(el('p', 'field-note preset-key',
-        'Green values differ from yours. "Sources differ" marks disagreement ' +
-        'between documented choices. "Not recorded" means no documented ' +
-        'choice is available; hover it to see the fallback.'));
+        'A cell reading "not recorded" is a setting that book says nothing ' +
+        'about; hover it for what choosing that column would leave in force. ' +
+        'A cell in green is the one your own column is set to. A row in bold ' +
+        'is one the books that do speak disagree on.'));
     };
 
     var fillEditor = function (values) {
@@ -5393,7 +5393,7 @@
       Object.keys(editorSelects).forEach(function (id) {
         if (values && values[id] !== undefined) editorSelects[id].value = values[id];
       });
-      markDifferences();
+      markChosen();
     };
 
     /*

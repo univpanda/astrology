@@ -1,0 +1,26 @@
+[
+  {
+    "id": "star-tony-blair-mercury-2026-10-02",
+    "source": "Star Jyotish",
+    "status": "user_reported",
+    "reportedOn": "2026-10-02",
+    "subject": "Tony Blair",
+    "graha": "Mercury",
+    "referenceValues": { "saptavargaja": 72, "paksha": 29 },
+    "pageValuesReported": { "saptavargaja": 67, "paksha": 31.3 },
+    "reproductionBirthDetails": {
+      "date": "1953-05-06", "time": "06:10:00", "zone": "Europe/London",
+      "tzOffsetMinutes": 60, "latitude": 55.9521, "longitude": -3.1965,
+      "ayanamsa": "lahiri"
+    },
+    "referenceBirthDetailsVerified": false,
+    "findings": [
+      "The page reproduces 67 for Saptavargaja. Raising Mercury's D2 score from 15 to 20 gives 72 with the other six divisions unchanged.",
+      "Several existing hora options produce 72 for this chart; it does not uniquely identify Star Jyotish's general rule.",
+      "The page classifies Mercury as benefic and gives Paksha 31.294226276489024. The malefic complement is 28.705773723510976, rounding to 29.",
+      "Mercury and Sun share Aries about 18.987 degrees apart. A same-sign solar association rule could explain the classification, but this is an inference, not a verified Star Jyotish rule."
+    ],
+    "changesToDocumentedPreset": [],
+    "note": "Preserve the reported figures as evidence; do not promote inferred rules to documented preset choices. The original Star Jyotish screenshot and full configuration have not been supplied."
+  }
+]
