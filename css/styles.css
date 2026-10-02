@@ -755,11 +755,7 @@ input::placeholder { color: #a9bdb2; }
   text-align: left;
 }
 .preset-what:empty { display: none; }
-/*
- * The notice and the button it names, on one line and read from the left. It
- * sat under the controls and right-aligned, which put a sentence ending in
- * "Click Save" directly beneath the two buttons that are not Save.
- */
+/* Automatic-save feedback stays left-aligned and occupies space only when needed. */
 .preset-notice {
   display: flex;
   flex-wrap: wrap;
@@ -770,18 +766,6 @@ input::placeholder { color: #a9bdb2; }
 }
 .preset-notice[hidden] { display: none; }
 .preset-status { margin: 0; text-align: left; }
-#preset-save-now {
-  font: inherit;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--green-deep);
-  background: var(--green-soft);
-  border: 1px solid var(--green);
-  border-radius: var(--radius-sm);
-  padding: 0.3rem 0.8rem;
-  cursor: pointer;
-}
-#preset-save-now:hover { filter: brightness(0.97); }
 
 /*
  * The page for building a default of your own, in place of the settings

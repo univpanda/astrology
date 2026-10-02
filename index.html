@@ -517,13 +517,9 @@
              line of its own instead, and is not drawn until a reading has been
              chosen to describe. -->
         <p class="field-note preset-what" id="preset-what"></p>
-        <!-- The notice and the button it names, together. It read "Click Save
-             to update default settings" beside no Save at all: the only one is
-             on the page the other button opens, so the sentence named a
-             control that was not there to click. -->
+        <!-- Automatic-save feedback; hidden until there is a message. -->
         <div class="preset-notice" id="preset-notice" hidden>
           <p class="field-note preset-status" id="preset-status" role="status"></p>
-          <button type="button" id="preset-save-now" hidden>Save</button>
         </div>
       </div>
 
@@ -803,16 +799,15 @@
         A page rather than a dialog. The comparison is six columns wide and a
         modal is narrower than the panel it opens over, so the four readings it
         exists to show were pushed off the side of it. This takes the width the
-        settings themselves have, and Back and Save both return here.
+        settings themselves have; changes apply immediately and Back returns here.
       -->
       <div class="card preset-page" id="preset-page" hidden
            aria-labelledby="preset-page-title">
         <div class="preset-page-head">
           <div>
             <h3 id="preset-page-title" tabindex="-1">Default settings</h3>
-            <p class="field-note">One set is kept in this browser, and becomes
-              your default the moment it is saved.
-              Saving again replaces it.</p>
+            <p class="field-note">Changes apply immediately and automatically update
+              your default in this browser.</p>
           </div>
           <button type="button" id="preset-back">Back to settings</button>
         </div>
@@ -828,9 +823,9 @@
         -->
         <div class="preset-editor" id="preset-editor"></div>
         <div class="preset-page-actions">
-          <button type="button" class="primary" id="preset-save">Save</button>
           <button type="button" id="preset-forget" hidden>Reset to the standard default</button>
         </div>
+        <p class="field-note" id="preset-editor-status" role="status" hidden></p>
       </div>
     </section>
 

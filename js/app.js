@@ -5167,6 +5167,9 @@
     var page = document.getElementById('preset-page');
     var main = document.getElementById('settings-main');
     var editor = document.getElementById('preset-editor');
+    var editorStatus = document.getElementById('preset-editor-status');
+    var persistenceStatus = '';
+    var settingsRevision = 0;
 
     var showMine = function () {
       var mine = readMyDefault();
@@ -5175,12 +5178,7 @@
       mineOption.disabled = !exists;
       mineOption.textContent = exists ? mine.name : 'My custom settings';
       forget.hidden = !exists;
-      /*
-       * One label either way. The button opens the same page and saves to the
-       * same single set whether one has been kept before or not, so naming
-       * the two cases apart told a reader about the store rather than about
-       * what pressing it does.
-       */
+      // The same editor is used before and after a personal default exists.
       document.getElementById('preset-create').textContent =
         'Update Default Settings';
     };
@@ -5263,6 +5261,7 @@
             if (wanted && wanted[id] !== undefined) editorSelects[id].value = wanted[id];
           });
           markChosen();
+          updateFromEditor();
         });
         th.appendChild(take);
         head.appendChild(th);
@@ -5321,7 +5320,10 @@
             copy.value = option.value;
             select.appendChild(copy);
           });
-          select.addEventListener('change', markChosen);
+          select.addEventListener('change', function () {
+            markChosen();
+            updateFromEditor();
+          });
           cell.appendChild(select);
           row.appendChild(cell);
           editorSelects[id] = select;
@@ -5338,6 +5340,7 @@
             button.addEventListener('click', function () {
               select.value = entry.value;
               markChosen();
+              updateFromEditor();
             });
             td.appendChild(button);
             row.appendChild(td);
@@ -5394,7 +5397,6 @@
         : 'Your one saved combination. Edit it to replace it; this browser keeps no second copy.';
     };
 
-    var applied = 0;
     var apply = function (name) {
       var wanted = settingsForPreset(name);
       if (!wanted) return;
@@ -5405,7 +5407,8 @@
        * applied in that time, both being undrifted and only the later one
        * true.
        */
-      var mine = ++applied;
+      var revision = ++settingsRevision;
+      persistenceStatus = '';
       var preset = PRESETS[name];
       var label = preset ? preset.label : 'My custom settings';
       applySettings(wanted);
@@ -5419,18 +5422,15 @@
       if (optionLabels[name] !== undefined) choice.value = name;
       markDrift();
       explain(name);
-      status.textContent = 'Recomputing\u2026';
-      /*
-       * A preset is the one caller that really does move all three, having
-       * just set every select itself.
-       */
+      sayStatus('Recomputing\u2026');
+      // Applying a complete preset may move all three chart-wide settings.
       recomputeEverything({
         ayanamsa: document.getElementById('ayanamsa').value,
         trueNode: document.getElementById('node-type').value === 'true',
         standard: document.getElementById('time-standard').value === 'lmt'
           ? 'lmt' : 'zone'
       }, function (recast, warning) {
-        if (mine !== applied) return;
+        if (revision !== settingsRevision) return;
         sayStatus((recast
           ? 'The chart on screen now uses ' + label + '.'
           : 'Set to ' + label + '. The next chart will use it.') +
@@ -5484,28 +5484,28 @@
      * Raman" written over the notice that it no longer did. The claim is made
      * when the writing happens rather than when it was asked for.
      */
-    var CHANGED_NOTICE = 'Default has been updated. Click Save to update ' +
-      'default settings.';
+    var CHANGED_NOTICE = 'These settings differ from your saved default.';
     var notice = document.getElementById('preset-notice');
-    var saveNow = document.getElementById('preset-save-now');
     var sayStatus = function (text) {
       var off = markDrift();
-      status.textContent = off ? CHANGED_NOTICE : text;
-      /*
-       * The Save the notice names is here, beside the notice. It used to name
-       * the one on the page the other button opens, which is a control a
-       * reader cannot click from where they are told to click it.
-       */
-      saveNow.hidden = !off;
+      status.textContent = persistenceStatus || (off ? CHANGED_NOTICE : text);
       if (off) what.textContent = '';
       notice.hidden = !status.textContent;
+      editorStatus.textContent = status.textContent;
+      editorStatus.hidden = !status.textContent;
     };
     presetSayStatus = sayStatus;
 
     choice.addEventListener('change', function () {
       var name = this.value;
-      try { window.localStorage.setItem(DEFAULT_SETTINGS_KEY, name); } catch (e) { /* session only */ }
       apply(name);
+      try {
+        window.localStorage.setItem(DEFAULT_SETTINGS_KEY, name);
+        persistenceStatus = 'Default settings updated.';
+      } catch (e) {
+        persistenceStatus = SAVE_FAILED;
+      }
+      sayStatus('');
     });
 
     /*
@@ -5518,64 +5518,77 @@
     RECKONING_IDS.forEach(function (id) {
       var select = document.getElementById(id);
       if (!select) return;
-      select.addEventListener('change', function () { sayStatus(''); });
+      select.addEventListener('change', function () { storeAsDefault(currentSettings()); });
     });
 
     document.getElementById('preset-create').addEventListener('click', function () {
-      /*
-       * What the page is reading now, not what was stored last time. The line
-       * beside the picker says a change has been made and to press Save, and
-       * it filled from the saved set instead: pressing Save then wrote back
-       * the old values and threw away the change the line was pointing at,
-       * reporting success.
-       */
+      // Opening the editor must neither restore old values nor save a shared link.
       fillEditor(currentSettings());
       showPage();
     });
 
     document.getElementById('preset-back').addEventListener('click', closePage);
 
-    /*
-     * One personal set, saved without asking for a name, from either button:
-     * the page's Save, which keeps what the editor is showing, and the
-     * notice's, which keeps what the page is reading.
-     */
+    var SAVE_FAILED = 'Applied for this session, but couldn’t save your default.';
+    // Only explicit user edits reach this writer; restoration never does.
     var storeAsDefault = function (values) {
+      ++settingsRevision;
+      var previous, wroteValues = false;
       try {
+        previous = window.localStorage.getItem(MY_SETTINGS_KEY);
         window.localStorage.setItem(MY_SETTINGS_KEY,
           JSON.stringify({ name: 'My custom settings', values: values }));
+        wroteValues = true;
         window.localStorage.setItem(DEFAULT_SETTINGS_KEY, 'mine');
       } catch (e) {
-        status.textContent = 'This browser would not store the setting.';
-        notice.hidden = false;
-        saveNow.hidden = true;
+        // Best-effort rollback if selecting the newly written default failed.
+        if (wroteValues) {
+          try {
+            if (previous === null) window.localStorage.removeItem(MY_SETTINGS_KEY);
+            else window.localStorage.setItem(MY_SETTINGS_KEY, previous);
+          } catch (ignored) { /* Storage may have become unavailable entirely. */ }
+        }
+        persistenceStatus = SAVE_FAILED;
+        what.textContent = '';
+        sayStatus('');
         return false;
       }
       showMine();
       choice.value = 'mine';
-      apply('mine');
+      persistenceStatus = 'Default settings updated.';
+      what.textContent = '';
+      sayStatus('');
       return true;
     };
 
-    document.getElementById('preset-save').addEventListener('click', function () {
-      buildEditor();
+    var updateFromEditor = function () {
       var values = {};
       Object.keys(editorSelects).forEach(function (id) { values[id] = editorSelects[id].value; });
-      if (storeAsDefault(values)) closePage();
-    });
-
-    saveNow.addEventListener('click', function () {
+      applySettings(values);
       storeAsDefault(currentSettings());
-    });
+      var revision = settingsRevision;
+      // One recalculation for a whole column, even if many settings changed.
+      recomputeEverything({
+        ayanamsa: values.ayanamsa,
+        trueNode: values['node-type'] === 'true',
+        standard: values['time-standard'] === 'lmt' ? 'lmt' : 'zone'
+      }, function () {
+        if (revision === settingsRevision) sayStatus('');
+      });
+    };
 
     forget.addEventListener('click', function () {
-      try { window.localStorage.removeItem(MY_SETTINGS_KEY); } catch (e) { /* nothing to undo */ }
-      try { window.localStorage.setItem(DEFAULT_SETTINGS_KEY, 'page'); } catch (e2) { /* session only */ }
+      var failed = false;
+      try {
+        window.localStorage.setItem(DEFAULT_SETTINGS_KEY, 'page');
+        window.localStorage.removeItem(MY_SETTINGS_KEY);
+      } catch (e) { failed = true; }
       choice.value = 'page';
       closePage();
       showMine();
       apply('page');
-      status.textContent = 'Deleted. The standard default is in use again.';
+      persistenceStatus = failed ? SAVE_FAILED : 'Reset to the standard default.';
+      sayStatus('');
     });
     showMine();
     choice.value = readDefaultChoice();

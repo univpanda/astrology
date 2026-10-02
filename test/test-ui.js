@@ -3973,6 +3973,7 @@ ok('every script the page loads parses', (function () {
     '  __out.readMySettings = readMySettings; __out.readDefaultChoice = readDefaultChoice;\n' +
     '  __out.readMyDefault = readMyDefault;\n' +
     '  __out.markDrift = function () { return presetMarkDrift(); };\n' +
+    '  __out.storage = window.localStorage;\n' +
     '  __out.sayStatus = function (t) { return presetSayStatus(t); };\n' +
     '  __out.storeRaw = function (v) { window.localStorage.setItem(MY_SETTINGS_KEY, v); };\n' +
     '  __out.strengthsFor = strengthsFor;\n' +
@@ -10435,15 +10436,14 @@ console.log('\nThe default-settings row is one line');
     // Saved and in force in one step, which is what the page already did.
     /window\.localStorage\.setItem\(DEFAULT_SETTINGS_KEY, 'mine'\)/.test(appSrc));
   /*
-   * Read from the left, beside the Save it names. It sat under the controls
-   * and right-aligned, which put a sentence ending in "Click Save" directly
-   * beneath the two buttons that are not Save.
+   * Read from the left, where it used to sit right-aligned under the controls.
+   * There is no Save beside it to name any more: a change is kept as it is
+   * made, so the line reports rather than instructs.
    */
-  ok('the notice reads from the left and carries the Save it names',
+  ok('the notice reads from the left and names no button',
     /text-align: left/.test(rule('.preset-status')) &&
     /display: flex/.test(rule('.preset-notice')) &&
-    html.indexOf('id="preset-save-now"') > html.indexOf('id="preset-status"') &&
-    html.indexOf('id="preset-save-now"') < html.indexOf('</div>', html.indexOf('preset-notice')));
+    !/preset-save-now|Click Save/.test(html + appSrc));
 })();
 
 console.log('\nThe settings notes do not argue from what software does');
@@ -10933,17 +10933,6 @@ console.log('\nEach preset reaches the figures it is named for');
    * A reader's own default, which is the other half of the ask: the presets
    * are starting points somebody else chose, and this is the one they choose.
    */
-  ok('a saved default is read back whole, chart style and all', (function () {
-    out.applyPreset('raman');
-    out.byId('preset-create').fire('click', {});
-    editorFields()['chart-style'].value = 'south';
-    out.byId('preset-save').fire('click', {});
-    var saved = out.readMySettings();
-    return saved && saved.ayanamsa === 'raman' && saved['chart-style'] === 'south' &&
-      out.RECKONING_IDS.every(function (id) {
-        return saved[id] === out.currentSettings()[id];
-      }) && out.byId('preset-choice').value === 'mine';
-  })());
   /*
    * A page, not a dialog. The comparison is six columns wide and a modal is
    * narrower than the panel it opens over, so the four readings it exists to
@@ -10957,13 +10946,39 @@ console.log('\nEach preset reaches the figures it is named for');
     out.byId('preset-back').fire('click', {});
     return opened && main.hidden === false && page.hidden === true;
   })());
-  ok('and saving returns to the settings without being asked', (function () {
+  /*
+   * One personal set, replaced rather than added to, and read back whole
+   * including the settings that only change how a chart is drawn.
+   */
+  ok('one personal set, replaced in place and read back whole', (function () {
+    out.applyPreset('raman');
     out.byId('preset-create').fire('click', {});
-    out.byId('preset-save').fire('click', {});
-    return out.byId('settings-main').hidden === false &&
-      out.byId('preset-page').hidden === true &&
-      out.readMyDefault().name === 'My custom settings';
+    var fields = editorFields();
+    fields['chart-style'].value = 'south';
+    fields['chart-style'].fire('change', { target: fields['chart-style'] });
+    var first = out.readMySettings();
+    fields['chart-style'].value = 'north';
+    fields['chart-style'].fire('change', { target: fields['chart-style'] });
+    var second = out.readMySettings();
+    out.byId('preset-back').fire('click', {});
+    var same = out.RECKONING_IDS.every(function (id) {
+      return second[id] === out.currentSettings()[id];
+    });
+    out.byId('preset-forget').fire('click', {});
+    return first['chart-style'] === 'south' && second['chart-style'] === 'north' &&
+      first.ayanamsa === 'raman' && same &&
+      // One set, not two: the store holds the latest and nothing beside it.
+      out.readMyDefault() === null;
   })());
+  /* And Back returns to the settings, there being nothing to confirm. */
+  ok('and Back returns to the settings', (function () {
+    out.byId('preset-create').fire('click', {});
+    var opened = out.byId('settings-main').hidden === true;
+    out.byId('preset-back').fire('click', {});
+    return opened && out.byId('settings-main').hidden === false &&
+      out.byId('preset-page').hidden === true;
+  })());
+
   /* Nothing of the dialog is left: a modal that is still in the page is a
      second way in, and the two would drift. */
   ok('and no dialog is left behind', (function () {
@@ -11195,15 +11210,6 @@ console.log('\nEach preset reaches the figures it is named for');
       mine.values.ayanamsa === 'kp';
   })());
 
-  ok('saving again replaces the one personal default instead of adding another',
-    (function () {
-      out.byId('preset-create').fire('click', {});
-      editorFields()['chart-style'].value = 'north';
-      out.byId('preset-save').fire('click', {});
-      var saved = out.readMySettings();
-      return saved && saved['chart-style'] === 'north' &&
-        out.byId('preset-choice').value === 'mine';
-    })());
   ok('and forgetting it leaves nothing behind', (function () {
     out.byId('preset-forget').fire('click', {});
     return out.readMySettings() === null;
@@ -11259,214 +11265,109 @@ console.log('\nEach preset reaches the figures it is named for');
     /var request = \+\+settingsRecast;/.test(appSrc) &&
     /if \(request !== settingsRecast \|\| lastChart !== target\) return;/.test(appSrc));
 
-  /*
-   * The whole of it, driven in the order a reader does it: change one setting
-   * where it stands, press the button the line tells you to, and press Save.
-   *
-   * The editor opens on what the page is reading now and not on what was
-   * stored last time. It filled from the stored set, so once a set had been
-   * kept, a later change by hand was shown back as the old value and Save
-   * wrote that old value again, reporting success and discarding the change
-   * the line beside the picker was pointing at.
-   */
-  ok('a change made by hand is what Save keeps', (function () {
-    out.applyPreset('page');
-    // A set exists already, which is the case that went wrong.
-    out.byId('preset-create').fire('click', {});
-    out.byId('preset-save').fire('click', {});
-    var ayanamsa = out.byId('ayanamsa');
-    var other = ayanamsa.value === 'kp' ? 'raman' : 'kp';
-    ayanamsa.value = other;
-    ayanamsa.fire('change', { target: ayanamsa });
-    var told = out.byId('preset-status').textContent;
-    out.byId('preset-create').fire('click', {});
-    var shown = null;
-    (function walk(n) {
-      if (n.id === 'my-ayanamsa') shown = n;
-      n.children.forEach(walk);
-    })(out.byId('preset-editor'));
-    out.byId('preset-save').fire('click', {});
-    var kept = out.readMySettings().ayanamsa, chosen = out.readDefaultChoice();
-    // Put the page back where this found it, a saved set being state the
-    // tests below this one are written without.
-    out.byId('preset-forget').fire('click', {});
-    return /Click Save/.test(told) && shown && shown.value === other &&
-      kept === other && chosen === 'mine' && out.readMySettings() === null;
-  })());
 
-  /*
-   * The picker stops claiming a reading the page has stopped following.
-   *
-   * Changing one setting by hand left it naming the reading chosen before,
-   * and the line beside it still reading "The chart on screen now uses the
-   * standard default" after two of them had moved. A control that states
-   * something false is worse than one that states nothing, a reader having no
-   * reason to doubt it.
-   */
   var labelFor = function () {
     var choice = out.byId('preset-choice');
     return Array.prototype.filter.call(choice.options, function (o) {
       return o.value === choice.value;
     }).map(function (o) { return o.textContent; })[0];
   };
-  ok('changing a setting by hand withdraws the picker\u2019s claim', (function () {
-    out.applyPreset('page');
-    var choice = out.byId('preset-choice');
-    var labelNow = labelFor;
-    var before = labelNow();
-    var node = out.byId('node-type');
-    node.value = node.value === 'true' ? 'mean' : 'true';
-    node.fire('change', { target: node });
-    var after = labelNow();
-    return before === 'Standard default' && after === 'Standard default, changed' &&
-      out.byId('preset-status').textContent ===
-        'Default has been updated. Click Save to update default settings.' &&
-      // Only the chosen one is marked; the others still name themselves.
-      Array.prototype.every.call(choice.options, function (o) {
-        return o.value === choice.value || !/, changed/.test(o.textContent);
-      });
-  })());
   /*
-   * A claim arriving late cannot outlive the thing it claims. Recomputing a
-   * chart is a round trip, so a setting changed while one was still out came
-   * back to "The chart on screen now uses B. V. Raman" written over the notice
-   * that it no longer did.
-   *
-   * Driven through the writer rather than by holding a request open, which
-   * this harness computes charts too quickly to do: the fault is that the
-   * claim was decided when the recompute was asked for instead of when the
-   * line was written, and that is what this calls.
+   * A change made where the setting stands is kept as it is made. There is no
+   * Save: the page keeps one personal default and a change to it is the whole
+   * of the act, so a button to confirm it would only be a second way of
+   * saying what has already happened.
    */
-  ok('a claim written late is withdrawn if the page has moved on', (function () {
-    out.applyPreset('raman');
-    var style = out.byId('chart-style');
-    style.value = style.value === 'south' ? 'north' : 'south';
-    style.fire('change', { target: style });
-    // What the finished recompute would have said.
-    out.sayStatus('The chart on screen now uses B. V. Raman.');
-    return out.byId('preset-status').textContent ===
-      'Default has been updated. Click Save to update default settings.';
-  })());
-  /* And it still says what it was asked to when nothing has moved. */
-  ok('and is written as asked when the page still matches', (function () {
-    out.applyPreset('raman');
-    out.sayStatus('The chart on screen now uses B. V. Raman.');
-    return out.byId('preset-status').textContent ===
-      'The chart on screen now uses B. V. Raman.';
-  })());
-  /*
-   * A shared link carries the settings its chart was cast with and wins over
-   * the stored choice, so the page can open reading one thing while the picker
-   * names another: a link made on KP left it saying "Standard default" with
-   * the zodiac moved by a degree and a half. The link sets the selects
-   * directly rather than through the preset machinery, which is why marking
-   * has to happen after it rather than inside it.
-   */
-  ok('a link that moves the settings is noticed too', (function () {
-    out.applyPreset('page');
-    var ayanamsa = out.byId('ayanamsa');
-    // Exactly what readHash does: the value, with no change event.
-    ayanamsa.value = 'kp';
-    var before = labelFor();
-    out.markDrift();
-    var after = labelFor();
-    out.applyPreset('page');
-    return before === 'Standard default' && after === 'Standard default, changed';
-  })());
-  ok('and the page really marks it after reading the link',
-    (function () {
-      var at = appSrc.indexOf('\n  readHash();');
-      return at > 0 && /^\s*readHash\(\);[\s\S]{0,600}?presetMarkDrift\(\);/
-        .test(appSrc.slice(at));
-    })());
-
-  /*
-   * And the Save it names is there to press. The sentence said "Click Save to
-   * update default settings" beside no Save at all: the only one is on the
-   * page the other button opens, so it named a control a reader cannot reach
-   * from where they are told to reach it.
-   *
-   * One press keeps what the page is reading, which is the whole of what the
-   * sentence promises.
-   */
-  ok('the Save the notice names is beside it and keeps what is on screen',
+  ok('a setting changed by hand becomes the default as it is changed',
     (function () {
       out.applyPreset('page');
-      var hiddenWhenNothingChanged = out.byId('preset-save-now').hidden;
       var ayanamsa = out.byId('ayanamsa');
       var other = ayanamsa.value === 'kp' ? 'raman' : 'kp';
       ayanamsa.value = other;
       ayanamsa.fire('change', { target: ayanamsa });
-      var offered = out.byId('preset-save-now').hidden === false;
-      out.byId('preset-save-now').fire('click', {});
       var kept = out.readMySettings() && out.readMySettings().ayanamsa;
       var chosen = out.readDefaultChoice();
-      var done = out.byId('preset-save-now').hidden === true &&
-        labelFor() === 'My custom settings';
+      var said = out.byId('preset-status').textContent;
       out.byId('preset-forget').fire('click', {});
-      return hiddenWhenNothingChanged === true && offered && kept === other &&
-        chosen === 'mine' && done;
+      return kept === other && chosen === 'mine' &&
+        said === 'Default settings updated.';
     })());
-  /* And the notice is drawn only when it has something to say. */
-  ok('and the notice keeps no empty band above the settings', (function () {
+  /* And a change made in the editor is kept the same way. */
+  ok('and a change made in the editor is kept as it is made', (function () {
     out.applyPreset('page');
-    var node = out.byId('node-type');
-    node.value = node.value === 'true' ? 'mean' : 'true';
-    node.fire('change', { target: node });
-    var shown = out.byId('preset-notice').hidden === false;
-    node.value = node.value === 'true' ? 'mean' : 'true';
-    node.fire('change', { target: node });
-    return shown && out.byId('preset-notice').hidden === true;
-  })());
-
-  /*
-   * Nor by a reading applied after it. The line already asks whether the page
-   * has drifted, which catches a setting moved while a recompute was out; two
-   * readings applied in quick succession both leave the page undrifted, so
-   * only the later one is true and the earlier one has to fall silent.
-   */
-  /*
-   * Read rather than driven, and said plainly: this harness computes a chart
-   * before the next line of the test runs, so two applications cannot overlap
-   * here and the case cannot be reached. What the check is worth is that the
-   * guard cannot be taken out without a failure, which is the whole of what a
-   * reading of the source can be worth.
-   */
-  ok('and the earlier of two readings is guarded from the last word',
-    /var mine = \+\+applied;/.test(appSrc) &&
-    /if \(mine !== applied\) return;/.test(appSrc) &&
-    // On the recompute's callback, which is the only place it means anything.
-    /recomputeEverything\([\s\S]{0,400}?if \(mine !== applied\) return;/.test(appSrc));
-
-  /* And it takes the mark off again when the settings match once more. */
-  ok('and takes it back when the reading is chosen again', (function () {
-    out.applyPreset('page');
-    var choice = out.byId('preset-choice');
-    var marked = Array.prototype.some.call(choice.options, function (o) {
-      return /, changed/.test(o.textContent);
-    });
-    return !marked;
+    out.byId('preset-create').fire('click', {});
+    var fields = editorFields();
+    var was = fields['node-type'].value;
+    var other = was === 'true' ? 'mean' : 'true';
+    fields['node-type'].value = other;
+    fields['node-type'].fire('change', { target: fields['node-type'] });
+    var kept = out.readMySettings() && out.readMySettings()['node-type'];
+    var onPage = out.byId('node-type').value;
+    out.byId('preset-back').fire('click', {});
+    out.byId('preset-forget').fire('click', {});
+    return kept === other && onPage === other;
   })());
   /*
-   * And changing a setting back by hand clears it too, rather than leaving a
-   * chart that reads exactly as the standard default labelled as something
-   * else. The mark is a comparison, not a memory that anything was touched.
+   * A write that fails says so, and says it where the reader is looking. The
+   * editor is a separate view, so a line written only beside the picker is a
+   * line in a hidden panel: a reader changing a setting in the editor would
+   * have been told nothing at all.
    */
-  ok('and a setting put back by hand clears it, being a comparison', (function () {
+  ok('a write that fails is reported in whichever view is open', (function () {
+    var realSet = out.storage.setItem;
     out.applyPreset('page');
-    var choice = out.byId('preset-choice');
-    var node = out.byId('node-type');
-    var was = node.value;
-    node.value = was === 'true' ? 'mean' : 'true';
-    node.fire('change', { target: node });
-    node.value = was;
-    node.fire('change', { target: node });
-    return Array.prototype.every.call(choice.options, function (o) {
-      return !/, changed/.test(o.textContent);
-    }) && out.byId('preset-status').textContent === '';
+    out.byId('preset-create').fire('click', {});
+    out.storage.setItem = function () { throw new Error('quota'); };
+    var fields = editorFields();
+    fields['node-type'].value = fields['node-type'].value === 'true' ? 'mean' : 'true';
+    fields['node-type'].fire('change', { target: fields['node-type'] });
+    var inEditor = out.byId('preset-editor-status');
+    var toldThere = inEditor.hidden === false &&
+      /couldn\u2019t save your default/.test(inEditor.textContent);
+    out.storage.setItem = realSet;
+    out.byId('preset-back').fire('click', {});
+    return toldThere &&
+      // And the setting still took effect for the session.
+      /Applied for this session/.test(inEditor.textContent);
   })());
-
   /*
+   * And the next write that succeeds clears it. A failure that stays on screen
+   * after the thing it reports has stopped being true is its own fault.
+   */
+  ok('and the warning clears on the next write that works', (function () {
+    var realSet = out.storage.setItem;
+    out.applyPreset('page');
+    out.storage.setItem = function () { throw new Error('quota'); };
+    var ayanamsa = out.byId('ayanamsa');
+    ayanamsa.value = ayanamsa.value === 'kp' ? 'raman' : 'kp';
+    ayanamsa.fire('change', { target: ayanamsa });
+    var warned = /couldn\u2019t save/.test(out.byId('preset-status').textContent);
+    out.storage.setItem = realSet;
+    ayanamsa.value = ayanamsa.value === 'kp' ? 'raman' : 'kp';
+    ayanamsa.fire('change', { target: ayanamsa });
+    var cleared = out.byId('preset-status').textContent === 'Default settings updated.';
+    out.byId('preset-forget').fire('click', {});
+    return warned && cleared;
+  })());
+  /*
+   * A shared link carries the settings its chart was cast with and must not
+   * become the reader's default: following somebody else's link would
+   * otherwise rewrite their own. The link moves the selects directly, which
+   * is exactly why nothing on that path writes.
+   */
+  ok('a shared link moves the settings without keeping them', (function () {
+    out.applyPreset('page');
+    var before = out.readMySettings();
+    // What readHash does: the value, with no change event.
+    out.byId('ayanamsa').value = 'kp';
+    out.markDrift();
+    var after = out.readMySettings();
+    var marked = labelFor() === 'Standard default, changed';
+    out.applyPreset('page');
+    return before === null && after === null && marked;
+  })());
+  /*
+   * The picker stops claiming a reading the page has stopped following.  /*
    * Two selects had no listener at all, so they were read when a chart was
    * cast and never again: picking a style did nothing until something else
    * happened to redraw, and the time standard left the select saying one thing
