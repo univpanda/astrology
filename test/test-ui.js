@@ -3972,6 +3972,8 @@ ok('every script the page loads parses', (function () {
     '  __out.currentSettings = currentSettings; __out.pageDefaults = pageDefaults;\n' +
     '  __out.readMySettings = readMySettings; __out.readDefaultChoice = readDefaultChoice;\n' +
     '  __out.readMyDefault = readMyDefault;\n' +
+    '  __out.markDrift = function () { return presetMarkDrift(); };\n' +
+    '  __out.sayStatus = function (t) { return presetSayStatus(t); };\n' +
     '  __out.storeRaw = function (v) { window.localStorage.setItem(MY_SETTINGS_KEY, v); };\n' +
     '  __out.strengthsFor = strengthsFor;\n' +
     '  __out.applySettings = applySettings;\n' +
@@ -11291,14 +11293,16 @@ console.log('\nEach preset reaches the figures it is named for');
    * something false is worse than one that states nothing, a reader having no
    * reason to doubt it.
    */
+  var labelFor = function () {
+    var choice = out.byId('preset-choice');
+    return Array.prototype.filter.call(choice.options, function (o) {
+      return o.value === choice.value;
+    }).map(function (o) { return o.textContent; })[0];
+  };
   ok('changing a setting by hand withdraws the picker\u2019s claim', (function () {
     out.applyPreset('page');
     var choice = out.byId('preset-choice');
-    var labelNow = function () {
-      return Array.prototype.filter.call(choice.options, function (o) {
-        return o.value === choice.value;
-      }).map(function (o) { return o.textContent; })[0];
-    };
+    var labelNow = labelFor;
     var before = labelNow();
     var node = out.byId('node-type');
     node.value = node.value === 'true' ? 'mean' : 'true';
@@ -11312,6 +11316,60 @@ console.log('\nEach preset reaches the figures it is named for');
         return o.value === choice.value || !/, changed/.test(o.textContent);
       });
   })());
+  /*
+   * A claim arriving late cannot outlive the thing it claims. Recomputing a
+   * chart is a round trip, so a setting changed while one was still out came
+   * back to "The chart on screen now uses B. V. Raman" written over the notice
+   * that it no longer did.
+   *
+   * Driven through the writer rather than by holding a request open, which
+   * this harness computes charts too quickly to do: the fault is that the
+   * claim was decided when the recompute was asked for instead of when the
+   * line was written, and that is what this calls.
+   */
+  ok('a claim written late is withdrawn if the page has moved on', (function () {
+    out.applyPreset('raman');
+    var style = out.byId('chart-style');
+    style.value = style.value === 'south' ? 'north' : 'south';
+    style.fire('change', { target: style });
+    // What the finished recompute would have said.
+    out.sayStatus('The chart on screen now uses B. V. Raman.');
+    return out.byId('preset-status').textContent ===
+      'Default has been updated. Click Save to update default settings.';
+  })());
+  /* And it still says what it was asked to when nothing has moved. */
+  ok('and is written as asked when the page still matches', (function () {
+    out.applyPreset('raman');
+    out.sayStatus('The chart on screen now uses B. V. Raman.');
+    return out.byId('preset-status').textContent ===
+      'The chart on screen now uses B. V. Raman.';
+  })());
+  /*
+   * A shared link carries the settings its chart was cast with and wins over
+   * the stored choice, so the page can open reading one thing while the picker
+   * names another: a link made on KP left it saying "Standard default" with
+   * the zodiac moved by a degree and a half. The link sets the selects
+   * directly rather than through the preset machinery, which is why marking
+   * has to happen after it rather than inside it.
+   */
+  ok('a link that moves the settings is noticed too', (function () {
+    out.applyPreset('page');
+    var ayanamsa = out.byId('ayanamsa');
+    // Exactly what readHash does: the value, with no change event.
+    ayanamsa.value = 'kp';
+    var before = labelFor();
+    out.markDrift();
+    var after = labelFor();
+    out.applyPreset('page');
+    return before === 'Standard default' && after === 'Standard default, changed';
+  })());
+  ok('and the page really marks it after reading the link',
+    (function () {
+      var at = appSrc.indexOf('\n  readHash();');
+      return at > 0 && /^\s*readHash\(\);[\s\S]{0,600}?presetMarkDrift\(\);/
+        .test(appSrc.slice(at));
+    })());
+
   /* And it takes the mark off again when the settings match once more. */
   ok('and takes it back when the reading is chosen again', (function () {
     out.applyPreset('page');
@@ -11440,6 +11498,7 @@ console.log('\nEach preset reaches the figures it is named for');
     return out.RECKONING_IDS.every(function (id) { return now[id] === ship[id]; });
   })());
 })();
+
 
 
 

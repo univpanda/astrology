@@ -4998,6 +4998,7 @@
   /* Held so the suites can drive a preset the way a click does. */
   var presetApply = null;
   var presetMarkDrift = null;
+  var presetSayStatus = null;
 
   /*
    * The reader's own set, named. A set saved before names existed is a bare
@@ -5399,6 +5400,14 @@
       var preset = PRESETS[name];
       var label = preset ? preset.label : 'My custom settings';
       applySettings(wanted);
+      /*
+       * The picker names what was applied. It is set by the reader in the one
+       * path that goes through the control, and not in the others - saving a
+       * set, or the suites driving this directly - so the two could name
+       * different readings, and whether the page has drifted is read by
+       * comparing them.
+       */
+      if (optionLabels[name] !== undefined) choice.value = name;
       markDrift();
       explain(name);
       status.textContent = 'Recomputing\u2026';
@@ -5412,10 +5421,10 @@
         standard: document.getElementById('time-standard').value === 'lmt'
           ? 'lmt' : 'zone'
       }, function (recast, warning) {
-        status.textContent = (recast
+        sayStatus((recast
           ? 'The chart on screen now uses ' + label + '.'
           : 'Set to ' + label + '. The next chart will use it.') +
-          (warning || '');
+          (warning || ''));
       });
     };
     presetApply = apply;
@@ -5457,6 +5466,26 @@
     };
     presetMarkDrift = markDrift;
 
+    /*
+     * Everything that writes beside the picker goes through here, so a line
+     * claiming a reading is in force cannot outlive the reading being in
+     * force. Recomputing a chart is a round trip, and a setting changed while
+     * one was still out came back to "The chart on screen now uses B. V.
+     * Raman" written over the notice that it no longer did. The claim is made
+     * when the writing happens rather than when it was asked for.
+     */
+    var CHANGED_NOTICE = 'Default has been updated. Click Save to update ' +
+      'default settings.';
+    var sayStatus = function (text) {
+      if (markDrift()) {
+        status.textContent = CHANGED_NOTICE;
+        what.textContent = '';
+        return;
+      }
+      status.textContent = text;
+    };
+    presetSayStatus = sayStatus;
+
     choice.addEventListener('change', function () {
       var name = this.value;
       try { window.localStorage.setItem(DEFAULT_SETTINGS_KEY, name); } catch (e) { /* session only */ }
@@ -5473,15 +5502,7 @@
     RECKONING_IDS.forEach(function (id) {
       var select = document.getElementById(id);
       if (!select) return;
-      select.addEventListener('change', function () {
-      if (markDrift()) {
-        status.textContent = 'Default has been updated. Click Save to update ' +
-          'default settings.';
-        what.textContent = '';
-      } else {
-        status.textContent = '';
-      }
-      });
+      select.addEventListener('change', function () { sayStatus(''); });
     });
 
     document.getElementById('preset-create').addEventListener('click', function () {
@@ -6157,4 +6178,12 @@
   applySettings(settingsForPreset(readDefaultChoice()) || {});
 
   readHash();
+
+  /*
+   * And the picker is told what the link did. A shared link carries the
+   * settings its chart was cast with and wins over the stored choice, so the
+   * page can open reading one thing while the picker names another: a link
+   * made on KP left it saying "Standard default" with the zodiac moved.
+   */
+  if (presetMarkDrift) presetMarkDrift();
 })();
