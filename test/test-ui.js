@@ -7142,6 +7142,8 @@ ok('the Graha key explains Age initials and the current column labels', (functio
     'Nakshatras: P Purva, U Uttara; the number is the pada.',
     'VimBala: Vimsopaka Bala across 10 Dashavarga divisions, out of 20.'
   ].every(function (text) { return block.indexOf(text) >= 0; }) &&
+    block.indexOf('Relationship: GF great friend') >= 0 &&
+    block.indexOf('Relationship: GF great friend') < block.indexOf('Nakshatras: P Purva') &&
     block.indexOf('Lords: Lord sign lord, NLord nakshatra lord, SLord sub lord.') < 0;
 })());
 /*

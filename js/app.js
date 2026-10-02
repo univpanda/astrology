@@ -1936,10 +1936,10 @@
       var key = el('p', 'table-key');
       key.hidden = !selected;
       key.appendChild(el('span', 'table-key-item',
-        'Nakshatras: P Purva, U Uttara; the number is the pada.'));
-      key.appendChild(el('span', 'table-key-item',
         'Relationship: GF great friend, Fr friend, Neu neutral, ' +
         'En enemy, GE great enemy, Own itself as lord.'));
+      key.appendChild(el('span', 'table-key-item',
+        'Nakshatras: P Purva, U Uttara; the number is the pada.'));
       key.appendChild(el('span', 'table-key-item',
         'State: S sleeping, D dreaming, W waking.'));
       key.appendChild(el('span', 'table-key-item',
