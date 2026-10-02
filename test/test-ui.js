@@ -2726,8 +2726,9 @@ ok('and the war row appears only in a chart that has one',
 // fact put where the eye already is. Neither is typed into the markup.
 // Twice: the table's column and the card's own line, which is the same fact
 // put where the eye already is. Neither is typed into the markup.
-ok('the tables carry one dispositor column each, built once',
-   (appSrc.match(/'Dispositor'/g) || []).length === 2 &&
+ok('the Graha table calls its dispositor Lord while the other reading retains Dispositor',
+   /label: 'Lord', groupEnd: true/.test(appSrc) &&
+   (appSrc.match(/'Dispositor'/g) || []).length === 1 &&
    /\['Dispositor', withRelation\(dispositor, relation\)/.test(appSrc) &&
    !/<th scope="col">Dispositor<\/th>/.test(html));
 ok('the dispositor is the lord of the sign shown in that column',
@@ -2810,17 +2811,15 @@ ok('and the prose still reads as prose, the article taking the lower-case form',
    /withArticle\(Astro\.RELATION_LABELS\[out\]\)/.test(grahaViewSrc) &&
    Astro.titleCase(Astro.RELATION_LABELS.adhimitra) === 'Great Friend');
 /*
- * Name and pada share a column; both lords remain named in full rather than
- * abbreviated, and all three columns sit under the nakshatra heading.
+ * Name and pada share a column; both lords use the chart's planet codes.
  */
 ok('the nakshatra lord and sub lord use the standard two-letter codes', (function () {
   var at = appSrc.indexOf('var GRAHA_ROWS = [');
   var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
   var rows = (block.match(/label: '[^']+'/g) || [])
     .map(function (t) { return t.slice(8, -1); });
-  return rows.indexOf('SLord') === rows.indexOf('Lord') + 1 &&
-    rows.indexOf('Name - Pada') === rows.indexOf('Lord') - 1 &&
-    (block.match(/group: 'Nakshatra'/g) || []).length === 3 &&
+  return rows.indexOf('SLord') === rows.indexOf('NLord') + 1 &&
+    rows.indexOf('Nakshtra') === rows.indexOf('NLord') - 1 &&
     /\{ text: Astro\.grahaAbbr\(nak\.lord\) \+ \(nakLordRelationship/.test(appSrc) &&
     /\{ text: Astro\.grahaAbbr\(nak\.subLord\) \+ \(subLordRelationship/.test(appSrc);
 })());
@@ -6793,7 +6792,7 @@ ok('a graha is one row, the tables being one chart each', (function () {
   var at = appSrc.indexOf('function grahaTableFor');
   var block = appSrc.slice(at, appSrc.indexOf('function renderShadbala', at));
   return /columns\.forEach\(function \(col\) \{/.test(block) &&
-    /col\.cells\.forEach\(function \(cell\) \{/.test(block) &&
+    /col\.cells\.forEach\(function \(cell, index\) \{/.test(block) &&
     /views\.forEach\(function \(view\) \{/.test(appSrc) &&
     /scroll\.appendChild\(grahaTableFor\(state, view\)\);/.test(appSrc);
 })());
@@ -6808,7 +6807,7 @@ ok('and longitude is one column rather than three separate dimensions', (functio
 })());
 ok('and every graha row emits its cells directly without a transposition index',
    /columns\.forEach\(function \(col\) \{/.test(appSrc) &&
-   /col\.cells\.forEach\(function \(cell\) \{/.test(appSrc) &&
+   /col\.cells\.forEach\(function \(cell, index\) \{/.test(appSrc) &&
    !/var cellIndex = 0/.test(appSrc));
 /*
  * And the strip disappears where it would have one tab. Both charts on D1 gives
@@ -6974,9 +6973,9 @@ ok('the table carries thirteen property columns', (function () {
   var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
   var found = (block.match(/label: '[^']+'/g) || [])
     .map(function (t) { return t.slice(8, -1); });
-  return found.join('|') === ['Rashi', 'House', 'Lordship', 'Dispositor',
-    'Longitude', 'Name - Pada', 'Lord', 'SLord', 'Karaka', 'Role',
-    'State', 'Age', 'Vim Bala'].join('|') &&
+  return found.join('|') === ['Karaka', 'Role', 'Rashi', 'Longitude', 'Lord',
+    'House', 'Rules', 'Nakshtra', 'NLord', 'SLord',
+    'State', 'Age', 'VimBala'].join('|') &&
     !/<th scope="col">Chart<\/th>/.test(html);
 })());
 ok('Graha Vimsopaka uses Dashavarga in every chart tab and follows scoring settings', (function () {
@@ -7019,7 +7018,21 @@ ok('Graha Vimsopaka uses Dashavarga in every chart tab and follows scoring setti
       var division = view.division;
       var table = renderTable({ chart: chart }, view);
       var heading = table.children[0].children[0].children.slice(-1)[0];
-      if (heading.textContent !== 'Vim Bala' || !/Vimsopaka Bala:.*10 Dashavarga/.test(heading.title)) return false;
+      if (heading.textContent !== 'VimBala' || !/Vimsopaka Bala:.*10 Dashavarga/.test(heading.title)) return false;
+      var headers = table.children[0].children[0].children;
+      var labels = ['Graha', 'Karaka', 'Role', 'Rashi', 'Longitude', 'Lord',
+        'House', 'Rules', 'Nakshtra', 'NLord', 'SLord', 'State', 'Age', 'VimBala'];
+      var groupEndsMatch = function (cells) {
+        return cells.every(function (cell, index) {
+          return /\bgraha-group-end\b/.test(cell.getAttribute('class') || '') ===
+            ([2, 5, 7, 10, 13].indexOf(index) >= 0);
+        });
+      };
+      if (table.children[0].children.length !== 1 || !groupEndsMatch(headers) ||
+          headers.map(function (cell) { return cell.textContent; }).join('|') !== labels.join('|') ||
+          !headers.every(function (cell) {
+            return cell.getAttribute('scope') === 'col' && !cell.getAttribute('rowspan') && !cell.getAttribute('colspan');
+          })) return false;
       var rows = table.children[1].children;
       if (rows.length !== 10) return false;
       return rows.every(function (row) {
@@ -7027,7 +7040,7 @@ ok('Graha Vimsopaka uses Dashavarga in every chart tab and follows scoring setti
         var cell = row.children.slice(-1)[0];
         var planet = positions[name];
         var karaka = Astro.charaKarakas(chart)[name];
-        var karakaCell = row.children[9];
+        var karakaCell = row.children[1];
         var stateCell = row.children[11];
         var stateName = planet && GrahaView.JAGRATADI_ENGLISH[
           Astro.jagratadiAvastha(name, Astro.signOf(planet.longitude))];
@@ -7040,7 +7053,7 @@ ok('Graha Vimsopaka uses Dashavarga in every chart tab and follows scoring setti
             var compound = Astro.compoundRelation(name, lord, apart);
             relation = lord === name ? 'Own' : GrahaView.RELATION_SHORT[Astro.RELATION_LABELS[compound]] || '';
           }
-          var lordCell = row.children[7 + index];
+          var lordCell = row.children[9 + index];
           return lordCell.textContent === Astro.grahaAbbr(lord) + (relation ? ' (' + relation + ')' : '') &&
             lordCell.title.indexOf(lord) >= 0 &&
             (!relation || lordCell.title.indexOf(relation === 'Own' ? '(Own)' : GrahaView.RELATION_WORD[relation]) >= 0);
@@ -7065,8 +7078,28 @@ ok('Graha Vimsopaka uses Dashavarga in every chart tab and follows scoring setti
           expectedMarks.forEach(function (mark) { seenMarks[mark]++; });
         }
         var actualMarks = row.children[0].children.map(function (node) { return node.textContent.trim(); });
+        var longitude = planet ? planet.longitude : chart.ascendant.longitude;
+        var displayed = Astro.vargaPosition(longitude, division);
+        var firstSign = Astro.vargaPosition(view.reference === 'Moon'
+          ? positions.Moon.longitude : chart.ascendant.longitude, division).sign;
+        var owned = planet ? Astro.housesOwned(name, firstSign) : [];
+        var relation = planet ? GrahaView.dispositorRelation(name, displayed.sign, positions) : '';
+        var expectedLord = Astro.grahaAbbr(Astro.SIGN_LORDS[displayed.sign]) +
+          (relation && relation !== '–' ? ' (' + relation + ')' : '');
+        var expectedAge = planet ? GrahaView.BALADI_ENGLISH[
+          Astro.baladiAvastha(Astro.signOf(longitude), Astro.norm360(longitude) % 30)] : '–';
+        var signMarks = row.children[3].children.map(function (node) { return node.textContent.trim(); });
         if (division === 1 && view.reference === 'Ascendant') values.push(cell.textContent);
-        return row.children.length === 14 &&
+        return row.children.length === 14 && groupEndsMatch(row.children) &&
+          row.children[2].textContent === (planet ? Astro.functionalRole(name, chart.ascendant.sign) : '–') &&
+          row.children[3].textContent === Astro.SIGNS[displayed.sign] &&
+          signMarks.join('') === (division !== 1 && displayed.sign === Astro.signOf(longitude) ? '[V]' : '') &&
+          row.children[4].textContent === String(displayed.degreeInSign) &&
+          row.children[5].textContent === expectedLord &&
+          row.children[6].textContent === String(((displayed.sign - firstSign) % 12 + 12) % 12 + 1) &&
+          row.children[7].textContent === (owned.length ? owned.join(', ') : '–') &&
+          row.children[8].textContent === GrahaView.shortNakshatra(nakshatra.name) + ' - ' + nakshatra.pada &&
+          row.children[12].textContent === expectedAge &&
           lordCellsMatch &&
           karakaCell.textContent === (karaka ? GrahaView.karakaShort(karaka) : '–') &&
           (!karaka || karakaCell.title.indexOf(karaka + ':') === 0) &&
@@ -7108,7 +7141,7 @@ ok('and every column says what it measures', (function () {
   var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
   return (block.match(/label: '/g) || []).length ===
     (block.match(/says: '/g) || []).length &&
-    /th\.title = column\.says;/.test(appSrc) && /sub\.title = column\.says;/.test(appSrc);
+    /th\.title = column\.says;/.test(appSrc);
 })());
 /*
  * Lordship was removed as a "Rules" column and has come back as this one. It is
@@ -7116,12 +7149,12 @@ ok('and every column says what it measures', (function () {
  * detector use, rather than from a bespoke function of its own.
  */
 /* Name and pada share one reading; both lords complete the Nakshatra group. */
-ok('name and pada share a column under Nakshatra with its two lords', (function () {
+ok('Nakshtra, NLord and SLord have individual single-row headings', (function () {
   var at = appSrc.indexOf('var GRAHA_ROWS = [');
   var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
-  return ["label: 'Name - Pada'", "label: 'Lord'", "label: 'SLord'"]
+  return ["label: 'Nakshtra'", "label: 'NLord'", "label: 'SLord'"]
     .every(function (label) {
-      return block.indexOf(label + ", group: 'Nakshatra'") >= 0;
+      return block.indexOf(label) >= 0;
     }) && /\{ text: GrahaView\.shortNakshatra\(nak\.name\) \+ ' - ' \+ nak\.pada,/
       .test(appSrc);
 })());
@@ -7140,8 +7173,13 @@ ok('and every cell centres against the tallest in its row', (function () {
   var block = css.match(/table\.graha-table th, table\.graha-table td \{[^}]*\}/);
   return block && /vertical-align: middle/.test(block[0]);
 })());
+ok('Graha group separators match the thin horizontal body rules', (function () {
+  var css = fs.readFileSync(path.join(root, 'css/styles.css'), 'utf8');
+  var block = css.match(/table\.graha-table \.graha-group-end \{[^}]*\}/);
+  return block && /border-right: 1px solid var\(--line-soft\)/.test(block[0]);
+})());
 ok('lordship comes from the shared helper, not a column-specific one',
-   /'Lordship'/.test(appSrc) && !/function rulership/.test(appSrc) &&
+   /label: 'Rules'/.test(appSrc) && !/function rulership/.test(appSrc) &&
    typeof Astro.housesOwned === 'function');
 /*
  * The chart is named once, on its tab, rather than once per row. What the tab
@@ -7178,8 +7216,9 @@ ok('a yogakaraka owns an angle and a trine, which the column now shows', (functi
 ok('what a graha is comes before where it is', (function () {
   var at = appSrc.indexOf('var GRAHA_ROWS = [');
   var head = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
-  return head.indexOf("'Rashi'") < head.indexOf("'House'") &&
-         head.indexOf("'Lordship'") < head.indexOf("'Longitude'");
+  return head.indexOf("'Karaka'") < head.indexOf("'Role'") &&
+         head.indexOf("'Role'") < head.indexOf("'Rashi'") &&
+         head.indexOf("'Longitude'") < head.indexOf("'House'");
 })());
 ok('longitude keeps all three units and names the whole position on hover',
    /function dmsParts\(deg\)/.test(appSrc) &&

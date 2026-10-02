@@ -1977,14 +1977,6 @@
 
   /* The columns read left to right for each graha. */
   var GRAHA_ROWS = [
-    { label: 'Rashi', says: 'The sign this chart puts the graha in.' },
-    { label: 'House', says: 'Counted from this chart’s own house 1, which the tab above says what is counted from.' },
-    { label: 'Lordship', says: 'Which houses the graha rules, counted from the same house 1 as the House column.' },
-    { label: 'Dispositor', says: 'The lord of the sign the graha stands in, followed in brackets by the graha’s compound relationship to that lord.' },
-    { label: 'Longitude', says: 'Where the graha stands within its sign, in degrees, minutes and seconds.' },
-    { label: 'Name - Pada', group: 'Nakshatra', says: 'Which of the 27 nakshatras the graha falls in and which of its four quarters.' },
-    { label: 'Lord', group: 'Nakshatra', says: 'The nakshatra lord, followed by the planet’s compound relationship to it, read in the rashi as for the Dispositor column.' },
-    { label: 'SLord', group: 'Nakshatra', says: 'The KP sub lord, followed by the planet’s compound relationship to it, read in the rashi as for the Dispositor column.' },
     /*
      * Two facts about the graha rather than about the chart it is read in, so
      * they repeat across the tabs as [R] and [C] do. Both are taken from the
@@ -1993,10 +1985,18 @@
      * measured inside a division.
      */
     { label: 'Karaka', says: 'The Jaimini chara karaka, assigned by how far into its sign the graha has travelled - furthest is Atmakaraka. Read in the rashi, and so the same in every chart here.' },
-    { label: 'Role', says: 'The graha’s ascendant-specific functional nature: benefic, neutral, papa, maraka or yogakaraka. Read from the rashi ascendant and kept separate from natural nature and yoga detection.' },
+    { label: 'Role', groupEnd: true, says: 'The graha’s ascendant-specific functional nature: benefic, neutral, papa, maraka or yogakaraka. Read from the rashi ascendant and kept separate from natural nature and yoga detection.' },
+    { label: 'Rashi', says: 'The sign this chart puts the graha in.' },
+    { label: 'Longitude', says: 'Where the graha stands within its sign, in degrees, minutes and seconds.' },
+    { label: 'Lord', groupEnd: true, says: 'The lord of the sign the graha stands in, followed in brackets by the graha’s compound relationship to that lord.' },
+    { label: 'House', says: 'Counted from this chart’s own house 1, which the tab above says what is counted from.' },
+    { label: 'Rules', groupEnd: true, says: 'Which houses the graha rules, counted from the same house 1 as the House column.' },
+    { label: 'Nakshtra', says: 'Which of the 27 nakshatras the graha falls in and which of its four quarters.' },
+    { label: 'NLord', says: 'The nakshatra lord, followed by the planet’s compound relationship to it, read in the rashi as for the Lord column.' },
+    { label: 'SLord', groupEnd: true, says: 'The KP sub lord, followed by the planet’s compound relationship to it, read in the rashi as for the Lord column.' },
     { label: 'State', says: 'Waking, dreaming or sleeping according to whether the graha is in its own or exaltation sign, a friend’s or neutral’s sign, or an enemy’s or debilitation sign. Read in the rashi.' },
     { label: 'Age', says: 'Child, teen, youth, old or dead: six degrees to a stage and reversed in an even sign. Read in the rashi, and so the same in every chart here.' },
-    { label: 'Vim Bala', says: 'Vimsopaka Bala: weighted strength across the 10 Dashavarga divisions, out of 20. Uses the selected scoring settings and stays the same across these chart tabs.' }
+    { label: 'VimBala', groupEnd: true, says: 'Vimsopaka Bala: weighted strength across the 10 Dashavarga divisions, out of 20. Uses the selected scoring settings and stays the same across these chart tabs.' }
   ];
 
   /**
@@ -2091,44 +2091,6 @@
           dignity === 'Exalted' ? 'E' : null
         ],
         cells: [
-          { text: Astro.SIGNS[v.sign],
-            /*
-             * [V] alone. It says this division put the graha back in the sign
-             * it holds in the rashi, which is a fact about this cell and
-             * nothing else.
-             */
-            flags: [view.division !== 1 && v.sign === Astro.signOf(r.longitude)
-              ? 'V' : null] },
-          /* Directional strength belongs to the rotated chart, not this table. */
-          { text: String(house), cls: 'numeric' },
-          owned.length
-            ? { text: owned.join(', '), cls: 'numeric',
-                title: r.name + ' rules ' + owned.map(function (h) {
-                  return Astro.SIGNS[(firstSign + h - 1) % 12] + ', the ' + Yogas.ordinal(h);
-                }).join(' and ') + '.' }
-            : { text: '–', cls: 'numeric' },
-          /* The mark as written: GF is not gf, and Own is not own. */
-          { text: dispositor + (relationship && relationship !== '\u2013'
-              ? ' (' + relationship + ')' : ''),
-            cls: 'dispositor',
-            title: r.isAscendant
-              ? Astro.SIGN_LORDS[v.sign] + ' rules ' + Astro.SIGNS[v.sign] +
-                '. The lagna is a point rather than a graha, so it keeps no friendships.'
-              : GrahaView.dispositorDetail(r.name, v.sign, positionsD1) },
-          { text: dms(v.degreeInSign), cls: 'longitude',
-            title: Astro.SIGNS[v.sign] + ' ' + dms(v.degreeInSign) +
-              '. Longitude ' + v.longitude.toFixed(4) + '°.' },
-          { text: GrahaView.shortNakshatra(nak.name) + ' - ' + nak.pada,
-            cls: 'nakshatra-name',
-            title: 'Nakshatra ' + nak.name + ', pada ' + nak.pada +
-              ' of four, ruled by ' + nak.lord + '.' },
-          /* Planet references inside the table use the chart's two-letter code. */
-          { text: Astro.grahaAbbr(nak.lord) + (nakLordRelationship ? ' (' + nakLordRelationship + ')' : ''),
-            title: nak.name + ' is ruled by ' + nak.lord + '.' +
-              lordRelationshipDetail(r, nak.lord, nakLordRelationship) },
-          { text: Astro.grahaAbbr(nak.subLord) + (subLordRelationship ? ' (' + subLordRelationship + ')' : ''),
-            title: 'The sub lord of this point in ' + nak.name + ' is ' +
-              nak.subLord + '.' + lordRelationshipDetail(r, nak.subLord, subLordRelationship) },
           { text: r.isAscendant || !karakas[r.name] ? '–'
               : GrahaView.karakaShort(karakas[r.name]),
             title: r.isAscendant
@@ -2146,6 +2108,44 @@
                 Astro.functionalRole(r.name, c.ascendant.sign).toLowerCase() +
                 ' for a ' + Astro.SIGNS[c.ascendant.sign] + ' ascendant. This is ' +
                 'interpretive context; it does not create a yoga or alter a bala.' },
+          { text: Astro.SIGNS[v.sign],
+            /*
+             * [V] alone. It says this division put the graha back in the sign
+             * it holds in the rashi, which is a fact about this cell and
+             * nothing else.
+             */
+            flags: [view.division !== 1 && v.sign === Astro.signOf(r.longitude)
+              ? 'V' : null] },
+          { text: dms(v.degreeInSign), cls: 'longitude',
+            title: Astro.SIGNS[v.sign] + ' ' + dms(v.degreeInSign) +
+              '. Longitude ' + v.longitude.toFixed(4) + '°.' },
+          /* The mark as written: GF is not gf, and Own is not own. */
+          { text: dispositor + (relationship && relationship !== '\u2013'
+              ? ' (' + relationship + ')' : ''),
+            cls: 'dispositor',
+            title: r.isAscendant
+              ? Astro.SIGN_LORDS[v.sign] + ' rules ' + Astro.SIGNS[v.sign] +
+                '. The lagna is a point rather than a graha, so it keeps no friendships.'
+              : GrahaView.dispositorDetail(r.name, v.sign, positionsD1) },
+          /* Directional strength belongs to the rotated chart, not this table. */
+          { text: String(house), cls: 'numeric' },
+          owned.length
+            ? { text: owned.join(', '), cls: 'numeric',
+                title: r.name + ' rules ' + owned.map(function (h) {
+                  return Astro.SIGNS[(firstSign + h - 1) % 12] + ', the ' + Yogas.ordinal(h);
+                }).join(' and ') + '.' }
+            : { text: '–', cls: 'numeric' },
+          { text: GrahaView.shortNakshatra(nak.name) + ' - ' + nak.pada,
+            cls: 'nakshatra-name',
+            title: 'Nakshatra ' + nak.name + ', pada ' + nak.pada +
+              ' of four, ruled by ' + nak.lord + '.' },
+          /* Planet references inside the table use the chart's two-letter code. */
+          { text: Astro.grahaAbbr(nak.lord) + (nakLordRelationship ? ' (' + nakLordRelationship + ')' : ''),
+            title: nak.name + ' is ruled by ' + nak.lord + '.' +
+              lordRelationshipDetail(r, nak.lord, nakLordRelationship) },
+          { text: Astro.grahaAbbr(nak.subLord) + (subLordRelationship ? ' (' + subLordRelationship + ')' : ''),
+            title: 'The sub lord of this point in ' + nak.name + ' is ' +
+              nak.subLord + '.' + lordRelationshipDetail(r, nak.subLord, subLordRelationship) },
           { text: r.isAscendant ? '–'
               : (GrahaView.JAGRATADI_ENGLISH[jagratadi] || '–').charAt(0),
             title: r.isAscendant
@@ -2180,35 +2180,16 @@
 
     var thead = el('thead');
     var headRow = el('tr');
-    var subHeadRow = el('tr');
     var corner = el('th', null, 'Graha');
     corner.setAttribute('scope', 'col');
-    corner.setAttribute('rowspan', '2');
     headRow.appendChild(corner);
-    GRAHA_ROWS.forEach(function (column, index) {
-      if (column.group) {
-        if (!index || GRAHA_ROWS[index - 1].group !== column.group) {
-          var grouped = el('th', null, column.group);
-          grouped.setAttribute('scope', 'colgroup');
-          grouped.setAttribute('colspan', String(GRAHA_ROWS.filter(function (candidate) {
-            return candidate.group === column.group;
-          }).length));
-          headRow.appendChild(grouped);
-        }
-        var sub = el('th', null, column.label);
-        sub.setAttribute('scope', 'col');
-        sub.title = column.says;
-        subHeadRow.appendChild(sub);
-        return;
-      }
-      var th = el('th', null, column.label);
+    GRAHA_ROWS.forEach(function (column) {
+      var th = el('th', column.groupEnd ? 'graha-group-end' : null, column.label);
       th.setAttribute('scope', 'col');
-      th.setAttribute('rowspan', '2');
       th.title = column.says;
       headRow.appendChild(th);
     });
     thead.appendChild(headRow);
-    thead.appendChild(subHeadRow);
     table.appendChild(thead);
 
     var tbody = el('tbody');
@@ -2218,8 +2199,10 @@
       th.setAttribute('scope', 'row');
       flag(th, col.flags);
       tr.appendChild(th);
-      col.cells.forEach(function (cell) {
-        var td = el('td', cell.cls, cell.text);
+      col.cells.forEach(function (cell, index) {
+        var cls = [cell.cls, GRAHA_ROWS[index].groupEnd ? 'graha-group-end' : null]
+          .filter(Boolean).join(' ');
+        var td = el('td', cls, cell.text);
         if (cell.title) td.title = cell.title;
         if (cell.flags) flag(td, cell.flags);
         tr.appendChild(td);

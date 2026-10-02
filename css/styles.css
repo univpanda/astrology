@@ -2084,6 +2084,7 @@ table.graha-table th[scope="row"] {
 }
 table.graha-table thead th, table.graha-table td { text-align: center; }
 table.graha-table thead tr:first-child th:first-child { text-align: left; }
+table.graha-table .graha-group-end { border-right: 1px solid var(--line-soft); }
 /* The facts still need horizontal room, but one graha remains a single line
    and the sticky name keeps that line identified while it scrolls. */
 table.graha-table th, table.graha-table td {
