@@ -15,6 +15,7 @@ check('all 24 settings and every reading are preserved', () => {
   assert.equal(c.startupReading, 'parashara');
 });
 check('dynamic ayanamsas and all four Mercury hora options survive', () => {
+  assert.equal(c.settings.find(s => s.id === 'hora-mercury').group, 'Chart settings');
   assert.equal(c.settings.find(s => s.id === 'ayanamsa').options.length, 5);
   assert.deepEqual(c.settings.find(s => s.id === 'hora-mercury').options.map(o => o.value),
     ['friend', 'solar', 'ordinary', 'both']);

@@ -934,7 +934,8 @@ input::placeholder { color: #a9bdb2; }
 }
 button.preset-cell:hover { border-color: var(--ink-soft); }
 /* Missing documentation is neither a choice nor a disagreement. */
-.preset-cell-unrecorded { display: block; color: var(--ink-soft); cursor: default; }
+.preset-cell-unrecorded { display: block; cursor: default; }
+.preset-unrecorded-mark { color: var(--ink-soft); text-decoration: none; cursor: help; }
 .preset-key { margin: 0.9rem 0 0; max-width: 46rem; }
 .preset-cell-differs {
   color: var(--green-deep);

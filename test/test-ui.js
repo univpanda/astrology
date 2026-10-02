@@ -10721,11 +10721,11 @@ console.log('\nThe settings run from the chart outward');
   ok('Chart settings holds the readings that change the chart',
     idsIn(chartPanel).join(',') ===
       'chart-style,time-standard,ayanamsa,node-type,combustion,tatkalika,' +
-      'hora-dignity,budha-floor,mercury-nature',
+      'hora-dignity,hora-mercury,budha-floor,mercury-nature',
     idsIn(chartPanel).join(', '));
   ok('and Test settings holds the shadbala variants, the clock with them',
     idsIn(testPanel).join(',') ===
-      'nat-clock,saptavargaja-ladder,hora-mercury,moon-paksha,paksha-doubled,' +
+      'nat-clock,saptavargaja-ladder,moon-paksha,paksha-doubled,' +
       'hora-length,ayana-constant,' +
       'kranti,ayana-doubled,cheshta-method,kendra-method,mean-source,luminary-rule,' +
       'luminary-cheshta,ishta-kashta',
@@ -11149,15 +11149,11 @@ console.log('\nEach preset reaches the figures it is named for');
       n.children.forEach(walk);
     })(out.byId('preset-editor'));
     var words = row.slice(1).map(textOf);
-    /*
-     * Raman has his own and the other two are silent, and a silent one says
-     * so rather than showing the value it would leave. Showing it was what
-     * let a column look like it was endorsing a reading it has never stated.
-     */
+    // The fallback stays visible, but ! distinguishes it from a source choice.
     return cells.length === out.RECKONING_IDS.length * 3 &&
       words.length === 3 &&
       /Raman/.test(words[0]) &&
-      words[1] === 'Not recorded' && words[2] === 'Not recorded' &&
+      /Lahiri.*!$/.test(words[1]) && /Lahiri.*!$/.test(words[2]) &&
       // And what it would leave is still said, where it cannot be taken for
       // the reading's own position.
       // Set with setAttribute, which this stub keeps in attrs rather than
@@ -11208,7 +11204,8 @@ console.log('\nEach preset reaches the figures it is named for');
       n.children.forEach(walk);
     })(out.byId('preset-editor'));
     var said = key ? textOf(key) : '';
-    return /Not recorded/.test(said) && /Green values differ from yours/.test(said) &&
+    return /! means not recorded/.test(said) && /page fallback/.test(said) &&
+      /Green values differ from yours/.test(said) &&
       /Sources differ/.test(said) && /documented choices/.test(said) &&
       !/in bold/.test(said);
   })());
@@ -11288,11 +11285,8 @@ console.log('\nEach preset reaches the figures it is named for');
         // A silent cell is not a button either: there is nothing to choose.
         silent.every(function (n) { return n.tag !== 'button'; });
     })());
-  /*
-   * And a row no book speaks to says so in all three, rather than showing the
-   * page's own choice three times over as if it had been agreed.
-   */
-  ok('a row nobody speaks to says so in every column', (function () {
+  /* Every unrecorded cell keeps its effective fallback and its marker. */
+  ok('a row nobody speaks to marks the fallback in every column', (function () {
     out.byId('preset-create').fire('click', {});
     var fields = editorFields(), row = [];
     (function walk(n) {
@@ -11306,7 +11300,7 @@ console.log('\nEach preset reaches the figures it is named for');
     var words = row.slice(1).map(textOf);
     out.byId('preset-back').fire('click', {});
     // None of the three gives a rule for the node.
-    return words.join('|') === 'Not recorded|Not recorded|Not recorded';
+    return words.length === 3 && words.every(function (word) { return /True node.*!$/.test(word); });
   })());
 
   ok('green follows yours while source disagreement only follows documented choices',
@@ -11334,8 +11328,18 @@ console.log('\nEach preset reaches the figures it is named for');
                   recorded.push(own[setting]);
                   var matches = own[setting] === fields[setting].value;
                   if (marked !== !matches || cell.attrs['aria-pressed'] !== String(matches)) valid = false;
-                } else if (marked || textOf(cell) !== 'Not recorded' || cell.tag === 'button') {
-                  valid = false;
+                } else {
+                  var fallback = out.byId(setting).options.filter(function (o) {
+                    return o.value === out.pageDefaults()[setting];
+                  })[0];
+                  var marker = cell.children.filter(function (c) {
+                    return c.className === 'preset-unrecorded-mark';
+                  });
+                  if (marked || cell.tag === 'button' || !fallback ||
+                    textOf(cell).replace(/\s+/g, ' ').trim() !== fallback.textContent.replace(/\s+/g, ' ').trim() + ' !' ||
+                    marker.length !== 1 || textOf(marker[0]) !== '!' ||
+                    marker[0].attrs['aria-label'] !== 'Not recorded; page fallback' ||
+                    !/no documented choice/.test(cell.attrs.title || '')) valid = false;
                 }
               });
               var differs = recorded.some(function (v) { return v !== recorded[0]; });

@@ -4857,10 +4857,10 @@
   var SETTING_GROUPS = [
     { title: 'Chart settings',
       ids: ['chart-style', 'time-standard', 'ayanamsa', 'node-type',
-        'combustion', 'tatkalika', 'hora-dignity', 'budha-floor',
+        'combustion', 'tatkalika', 'hora-dignity', 'hora-mercury', 'budha-floor',
         'mercury-nature'] },
     { title: 'Test settings',
-      ids: ['nat-clock', 'saptavargaja-ladder', 'hora-mercury', 'moon-paksha',
+      ids: ['nat-clock', 'saptavargaja-ladder', 'moon-paksha',
         'paksha-doubled', 'hora-length', 'ayana-constant', 'kranti',
         'ayana-doubled', 'cheshta-method', 'kendra-method', 'mean-source',
         'luminary-rule', 'luminary-cheshta', 'ishta-kashta'] }
@@ -5230,13 +5230,13 @@
       return found || value || '';
     };
 
-    var markChosen = function () {
+    var markDifferences = function () {
       editorCells.forEach(function (cell) {
         var chosen = editorSelects[cell.setting] &&
           editorSelects[cell.setting].value === cell.value;
-        // Only recorded cells are in this list, so a mark here can only ever
-        // mean that the reading's own position is the one in force.
-        cell.node.className = 'preset-cell' + (chosen ? ' preset-cell-chosen' : '');
+        // Highlight differences, but keep the button's pressed state tied to
+        // the actual choice. Unrecorded cells never enter this comparison.
+        cell.node.className = 'preset-cell' + (chosen ? '' : ' preset-cell-differs');
         cell.node.setAttribute('aria-pressed', chosen ? 'true' : 'false');
       });
     };
@@ -5267,7 +5267,7 @@
           Object.keys(editorSelects).forEach(function (id) {
             if (wanted && wanted[id] !== undefined) editorSelects[id].value = wanted[id];
           });
-          markChosen();
+          markDifferences();
           updateFromEditor();
         });
         th.appendChild(take);
@@ -5312,10 +5312,11 @@
           });
           var spoken = values.filter(function (v) { return v.own; });
           var agree = spoken.every(function (v) { return v.value === spoken[0].value; });
-          var row = el('tr', agree ? '' : 'preset-row-differs');
+          var row = el('tr');
 
           var name = el('th', null, labelFor(id));
           name.setAttribute('scope', 'row');
+          if (!agree) name.appendChild(el('span', 'preset-sources-differ', 'Sources differ'));
           row.appendChild(name);
 
           var cell = el('td');
@@ -5328,7 +5329,7 @@
             select.appendChild(copy);
           });
           select.addEventListener('change', function () {
-            markChosen();
+            markDifferences();
             updateFromEditor();
           });
           cell.appendChild(select);
@@ -5338,23 +5339,21 @@
           values.forEach(function (entry, column) {
             var td = el('td');
             /*
-             * A reading with nothing on record says so in words rather than
-             * showing the value it would leave in force. The value was faint,
-             * which is a signal the cell lost the moment it also matched what
-             * the reader had set: marking that match takes colour and weight,
-             * and the two were fighting over one channel with the match
-             * winning. A row where none of the three says anything then came
-             * out as three bold endorsements of the page's own choice.
-             *
-             * What it would leave is still said, on the hover, where it cannot
-             * be read as the reading's own position.
+             * Keep the effective fallback visible, but mark it as unrecorded.
+             * It is not a documented source choice, so it is neither a button
+             * nor part of the green comparison or source-disagreement test.
              */
             if (!entry.own) {
               var blank = el('span', 'preset-cell preset-cell-unrecorded',
-                'not recorded');
-              blank.setAttribute('title', PRESETS[COLUMNS[column]].label +
-                ' says nothing about this. Choosing it leaves ' +
-                wordsFor(id, entry.value) + ', which is this page\u2019s own.');
+                wordsFor(id, entry.value) + '\u00a0');
+              var explanation = 'Not recorded: no documented choice for ' +
+                PRESETS[COLUMNS[column]].label + '. Selecting this reading uses ' +
+                wordsFor(id, entry.value) + ', the page fallback.';
+              blank.setAttribute('title', explanation);
+              var mark = el('abbr', 'preset-unrecorded-mark', '!');
+              mark.setAttribute('title', explanation);
+              mark.setAttribute('aria-label', 'Not recorded; page fallback');
+              blank.appendChild(mark);
               td.appendChild(blank);
               row.appendChild(td);
               return;
@@ -5363,7 +5362,7 @@
             button.setAttribute('type', 'button');
             button.addEventListener('click', function () {
               select.value = entry.value;
-              markChosen();
+              markDifferences();
               updateFromEditor();
             });
             td.appendChild(button);
@@ -5382,10 +5381,9 @@
        * about how much of itself is recorded.
        */
       editor.appendChild(el('p', 'field-note preset-key',
-        'A cell reading "not recorded" is a setting that book says nothing ' +
-        'about; hover it for what choosing that column would leave in force. ' +
-        'A cell in green is the one your own column is set to. A row in bold ' +
-        'is one the books that do speak disagree on.'));
+        'Green values differ from yours. "Sources differ" marks disagreement ' +
+        'between documented choices. ! means not recorded: the value shown ' +
+        'is the page fallback, not a documented choice from that source.'));
     };
 
     var fillEditor = function (values) {
@@ -5393,7 +5391,7 @@
       Object.keys(editorSelects).forEach(function (id) {
         if (values && values[id] !== undefined) editorSelects[id].value = values[id];
       });
-      markChosen();
+      markDifferences();
     };
 
     /*
