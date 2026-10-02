@@ -10721,11 +10721,11 @@ console.log('\nThe settings run from the chart outward');
   ok('Chart settings holds the readings that change the chart',
     idsIn(chartPanel).join(',') ===
       'chart-style,time-standard,ayanamsa,node-type,combustion,tatkalika,' +
-      'hora-dignity,hora-mercury,budha-floor,mercury-nature',
+      'hora-dignity,hora-mercury,mercury-nature',
     idsIn(chartPanel).join(', '));
-  ok('and Test settings holds the shadbala variants, the clock with them',
+  ok('Test settings opens with Budha-Aditya, followed by the strength variants',
     idsIn(testPanel).join(',') ===
-      'nat-clock,saptavargaja-ladder,moon-paksha,paksha-doubled,' +
+      'budha-floor,nat-clock,saptavargaja-ladder,moon-paksha,paksha-doubled,' +
       'hora-length,ayana-constant,' +
       'kranti,ayana-doubled,cheshta-method,kendra-method,mean-source,luminary-rule,' +
       'luminary-cheshta,ishta-kashta',
@@ -10734,16 +10734,11 @@ console.log('\nThe settings run from the chart outward');
     idsIn(chartPanel).length + idsIn(testPanel).length === order.length &&
     order.length === 24, order.length + ' settings');
 
-  /*
-   * The two that are not shadbala at all sit in the other tab now. One settles
-   * a yoga rather than a strength, and Mercury's nature is read by the yoga
-   * detectors as well as by paksha and drik bala, so neither belongs among the
-   * shadbala variants. They used to break that run in two from the middle.
-   */
-  ok('the settings that are not shadbala are not in the shadbala tab',
-    ['budha-floor', 'mercury-nature'].every(function (k) {
-      return idsIn(testPanel).indexOf(k) < 0 && idsIn(chartPanel).indexOf(k) >= 0;
-    }));
+  ok('Budha-Aditya is only in Test settings; Mercury nature stays in Chart settings',
+    idsIn(testPanel).indexOf('budha-floor') >= 0 &&
+    idsIn(chartPanel).indexOf('budha-floor') < 0 &&
+    idsIn(testPanel).indexOf('mercury-nature') < 0 &&
+    idsIn(chartPanel).indexOf('mercury-nature') >= 0);
   ok('so the shadbala run is unbroken from the Moon’s paksha to the luminaries',
     order.slice(order.indexOf('moon-paksha'), order.indexOf('luminary-cheshta') + 1)
       .every(function (k) {
