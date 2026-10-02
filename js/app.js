@@ -1926,7 +1926,7 @@
       host.appendChild(scroll);
 
       /*
-       * The key for the two rows that are written short, under every table
+       * The key for abbreviated columns and marks, under every table
        * rather than once on the page: there is a table per chart and a reader
        * looking at the second should not have to find the first.
        *
@@ -1936,14 +1936,18 @@
       var key = el('p', 'table-key');
       key.hidden = !selected;
       key.appendChild(el('span', 'table-key-item',
-        'Nakshatras: P and U are Purva and Uttara.'));
+        'Lords: Lord sign lord, NLord nakshatra lord, SLord sub lord.'));
+      key.appendChild(el('span', 'table-key-item',
+        'Nakshatras: P Purva, U Uttara; the number is the pada.'));
       key.appendChild(el('span', 'table-key-item',
         'Relationship: GF great friend, Fr friend, Neu neutral, ' +
         'En enemy, GE great enemy, Own itself as lord.'));
       key.appendChild(el('span', 'table-key-item',
         'State: S sleeping, D dreaming, W waking.'));
       key.appendChild(el('span', 'table-key-item',
-        'Vimsopaka Bala: Dashavarga (10 divisions), out of 20.'));
+        'Age: C child, T teen, Y youth, O old, D dead.'));
+      key.appendChild(el('span', 'table-key-item',
+        'VimBala: Vimsopaka Bala across 10 Dashavarga divisions, out of 20.'));
       key.appendChild(el('span', 'table-key-item',
         'Marks: [R] Retrograde, [C] Combust, ' +
         '[X] Exchange of signs, [D] Debilitated, [E] Exalted, [V] Vargottama.'));
@@ -1995,7 +1999,7 @@
     { label: 'NLord', says: 'The nakshatra lord, followed by the planet’s compound relationship to it, read in the rashi as for the Lord column.' },
     { label: 'SLord', groupEnd: true, says: 'The KP sub lord, followed by the planet’s compound relationship to it, read in the rashi as for the Lord column.' },
     { label: 'State', says: 'Waking, dreaming or sleeping according to whether the graha is in its own or exaltation sign, a friend’s or neutral’s sign, or an enemy’s or debilitation sign. Read in the rashi.' },
-    { label: 'Age', says: 'Child, teen, youth, old or dead: six degrees to a stage and reversed in an even sign. Read in the rashi, and so the same in every chart here.' },
+    { label: 'Age', says: 'C child, T teen, Y youth, O old, D dead: six degrees to a stage and reversed in an even sign. Read in the rashi, and so the same in every chart here.' },
     { label: 'VimBala', groupEnd: true, says: 'Vimsopaka Bala: weighted strength across the 10 Dashavarga divisions, out of 20. Uses the selected scoring settings and stays the same across these chart tabs.' }
   ];
 
@@ -2155,7 +2159,7 @@
                   ' is judged from its rashi sign and that sign’s natural lord.'
                 : 'No awareness state is available.' },
           { text: r.isAscendant ? '–'
-              : GrahaView.BALADI_ENGLISH[baladi],
+              : (GrahaView.BALADI_ENGLISH[baladi] || '–').charAt(0),
             title: r.isAscendant
               ? 'The lagna is a point rather than a graha, so it takes no avastha.'
               : Astro.SIGNS[rashiSign(r)] + ' is an ' +

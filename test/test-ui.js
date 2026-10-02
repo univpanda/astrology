@@ -7099,7 +7099,8 @@ ok('Graha Vimsopaka uses Dashavarga in every chart tab and follows scoring setti
           row.children[6].textContent === String(((displayed.sign - firstSign) % 12 + 12) % 12 + 1) &&
           row.children[7].textContent === (owned.length ? owned.join(', ') : '–') &&
           row.children[8].textContent === GrahaView.shortNakshatra(nakshatra.name) + ' ' + nakshatra.pada &&
-          row.children[12].textContent === expectedAge &&
+          row.children[12].textContent === expectedAge.charAt(0) &&
+          (!planet || row.children[12].title.indexOf('making its age ' + expectedAge.toLowerCase()) >= 0) &&
           lordCellsMatch &&
           karakaCell.textContent === (karaka ? GrahaView.karakaShort(karaka) : '–') &&
           (!karaka || karakaCell.title.indexOf(karaka + ':') === 0) &&
@@ -7125,14 +7126,24 @@ ok('functional role stays in the table and out of the highlight card',
    /Astro\.functionalRole\(r\.name, c\.ascendant\.sign\)/.test(appSrc) &&
    !/data-role/.test(appSrc +
      fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8')));
-ok('State uses English initials and Age retains English words',
+ok('State and Age use English initials while retaining full words for hover details',
    /Jagrat: 'Waking', Swapna: 'Dreaming', Sushupta: 'Sleeping'/.test(grahaViewSrc) &&
    /Bala: 'Child', Kumara: 'Teen', Yuva: 'Youth'/.test(grahaViewSrc) &&
    /Vriddha: 'Old', Mrita: 'Dead'/.test(grahaViewSrc) &&
    /GrahaView\.JAGRATADI_ENGLISH\[jagratadi\]/.test(appSrc) &&
-   /GrahaView\.BALADI_ENGLISH\[baladi\]/.test(appSrc));
+   /\(GrahaView\.BALADI_ENGLISH\[baladi\] \|\| '–'\)\.charAt\(0\)/.test(appSrc));
 ok('the State key spells out S, D and W without introducing bracketed markers',
    /State: S sleeping, D dreaming, W waking\./.test(appSrc));
+ok('the Graha key explains Age initials and the current column labels', (function () {
+  var block = appSrc.slice(appSrc.indexOf('  function renderGrahaTable'),
+    appSrc.indexOf('  var GRAHA_ROWS = ['));
+  return [
+    'Age: C child, T teen, Y youth, O old, D dead.',
+    'Lords: Lord sign lord, NLord nakshatra lord, SLord sub lord.',
+    'Nakshatras: P Purva, U Uttara; the number is the pada.',
+    'VimBala: Vimsopaka Bala across 10 Dashavarga divisions, out of 20.'
+  ].every(function (text) { return block.indexOf(text) >= 0; });
+})());
 /*
  * Every column says what it is on hover.
  */
