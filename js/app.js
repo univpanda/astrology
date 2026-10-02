@@ -1984,7 +1984,7 @@
     { label: 'Longitude', says: 'Where the graha stands within its sign, in degrees, minutes and seconds.' },
     { label: 'Name - Pada', group: 'Nakshatra', says: 'Which of the 27 nakshatras the graha falls in and which of its four quarters.' },
     { label: 'Lord', group: 'Nakshatra', says: 'The graha that rules that nakshatra, which is what runs the Vimshottari dasha.' },
-    { label: 'Sub lord', group: 'Nakshatra', says: 'The KP sub lord: the nakshatra divided again in the Vimshottari proportions, and whichever graha owns the part the position falls in.' },
+    { label: 'SLord', group: 'Nakshatra', says: 'The KP sub lord: the nakshatra divided again in the Vimshottari proportions, and whichever graha owns the part the position falls in.' },
     /*
      * Two facts about the graha rather than about the chart it is read in, so
      * they repeat across the tabs as [R] and [C] do. Both are taken from the

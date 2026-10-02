@@ -2818,7 +2818,7 @@ ok('the nakshatra lord and sub lord use the standard two-letter codes', (functio
   var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
   var rows = (block.match(/label: '[^']+'/g) || [])
     .map(function (t) { return t.slice(8, -1); });
-  return rows.indexOf('Sub lord') === rows.indexOf('Lord') + 1 &&
+  return rows.indexOf('SLord') === rows.indexOf('Lord') + 1 &&
     rows.indexOf('Name - Pada') === rows.indexOf('Lord') - 1 &&
     (block.match(/group: 'Nakshatra'/g) || []).length === 3 &&
     /\{ text: Astro\.grahaAbbr\(nak\.lord\),/.test(appSrc) &&
@@ -6962,7 +6962,7 @@ ok('the table carries thirteen property columns', (function () {
   var found = (block.match(/label: '[^']+'/g) || [])
     .map(function (t) { return t.slice(8, -1); });
   return found.join('|') === ['Rashi', 'House', 'Lordship', 'Dispositor',
-    'Longitude', 'Name - Pada', 'Lord', 'Sub lord', 'Karaka', 'Role',
+    'Longitude', 'Name - Pada', 'Lord', 'SLord', 'Karaka', 'Role',
     'State', 'Age', 'Vim Bala'].join('|') &&
     !/<th scope="col">Chart<\/th>/.test(html);
 })());
@@ -7091,7 +7091,7 @@ ok('and every column says what it measures', (function () {
 ok('name and pada share a column under Nakshatra with its two lords', (function () {
   var at = appSrc.indexOf('var GRAHA_ROWS = [');
   var block = appSrc.slice(at, appSrc.indexOf('\n  ];', at));
-  return ["label: 'Name - Pada'", "label: 'Lord'", "label: 'Sub lord'"]
+  return ["label: 'Name - Pada'", "label: 'Lord'", "label: 'SLord'"]
     .every(function (label) {
       return block.indexOf(label + ", group: 'Nakshatra'") >= 0;
     }) && /\{ text: GrahaView\.shortNakshatra\(nak\.name\) \+ ' - ' \+ nak\.pada,/
