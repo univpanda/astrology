@@ -10451,27 +10451,6 @@ console.log('\nThe default-settings row is one line');
   ok('the standard default has no explanatory sentence',
     /var PRESETS = \{\s*page: \{[\s\S]*?says: ''\s*\}/.test(appSrc) &&
     !/Back to what this page reads by default/.test(appSrc));
-  /*
-   * What the page does, said as three things rather than one. It ran together
-   * as "changes apply immediately and are kept as your custom settings in this
-   * browser", where applying and keeping read as the same act and being kept
-   * as your custom settings restated the heading directly above it.
-   *
-   * Each clause is a fact a reader cannot get from anywhere else on the page:
-   * that nothing need be pressed, that it outlives the visit, and that it
-   * belongs to this browser and not to them.
-   */
-  ok('the page says what it does, in the three parts it has', (function () {
-    var note = (html.replace(/\s+/g, ' ')
-      .match(/<h3 id="preset-page-title"[\s\S]*?<p class="field-note">(.*?)<\/p>/) ||
-      ['', ''])[1];
-    return /takes effect at once/.test(note) &&
-      /no Save to press/.test(note) &&
-      /next visit/.test(note) &&
-      /this browser rather than in an account/.test(note) &&
-      // And it cannot promise a Save, there being none to press.
-      !/Click Save|press Save|Saving again/.test(html);
-  })());
 
   /*
    * Both buttons follow the heading, the reset before the way out: it belongs
@@ -11454,6 +11433,49 @@ console.log('\nEach preset reaches the figures it is named for');
     choice.fire('change', { target: choice });
     return kept === 'raman';
   })());
+
+  /*
+   * What a change becomes, which is the one thing a reader cannot see: moving
+   * any setting, on this page or on the Settings tab, is itself the act of
+   * making a custom set. Driven alongside, because a sentence saying so is
+   * worth nothing if the page does something else.
+   *
+   * An earlier wording said only that a change was "remembered", which left it
+   * open whether the custom set had been touched at all, and a reader asked.
+   */
+  ok('the page says what a change becomes, and that is what it does',
+    (function () {
+      var note = (html.replace(/\s+/g, ' ')
+        .match(/<h3 id="preset-page-title"[\s\S]*?<p class="field-note">(.*?)<\/p>/) ||
+        ['', ''])[1];
+      var says = /becomes your custom settings at once/.test(note) &&
+        /here or on the Settings tab/.test(note) &&
+        /no Save to press/.test(note) &&
+        /next visit/.test(note) &&
+        /kept in this browser rather than in an account/.test(note) &&
+        // And it cannot promise a Save, there being none to press.
+        !/Click Save|press Save|Saving again/.test(html);
+      // Both paths the sentence names, each making the set it claims to make.
+      out.byId('preset-forget').fire('click', {});
+      var fresh = out.readMySettings();
+      var ayanamsa = out.byId('ayanamsa');
+      var other = ayanamsa.value === 'kp' ? 'raman' : 'kp';
+      ayanamsa.value = other;
+      ayanamsa.fire('change', { target: ayanamsa });
+      var fromPanel = out.readMySettings();
+      out.byId('preset-create').fire('click', {});
+      var field = editorFields()['node-type'];
+      var node = field.value === 'true' ? 'mean' : 'true';
+      field.value = node;
+      field.fire('change', { target: field });
+      var fromPage = out.readMySettings();
+      out.byId('preset-back').fire('click', {});
+      out.byId('preset-forget').fire('click', {});
+      return says && fresh === null &&
+        fromPanel.ayanamsa === other && fromPage['node-type'] === node &&
+        // One set, carried forward, not two.
+        fromPage.ayanamsa === other;
+    })());
 
   var labelFor = function () {
     var choice = out.byId('preset-choice');
