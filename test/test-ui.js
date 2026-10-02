@@ -3105,7 +3105,8 @@ ok('the key uses compact labels like the Graha relationship key', (function () {
   var key = html.replace(/\s+/g, ' ').match(/<p class="varga-key">(.*?)<\/p>/);
   return key && key[1].replace(/<[^>]+>/g, '').trim() ===
     'Marks: [C] Combust, [D] Debilitated, [Dr] Directional strength, ' +
-    '[E] Exalted, [M] Mooltrikona, [V] Vargottama, [X] Exchange of signs, [Y] Yogakaraka.';
+    '[E] Exalted, [M] Mooltrikona, [V] Vargottama, [X] Exchange of signs, [Y] Yogakaraka. ' +
+    'Additional conditions, separate from the score.';
 })());
 ok('the bottom key inherits its text colour',
    /p\.varga-key \.flag\s*\{\s*color:\s*inherit;\s*\}/.test(cssSrc));
@@ -3376,12 +3377,12 @@ ok('and no mark explains itself in a hover, the letter being the whole of it',
        !/is cancelled and the graha stands in an angle or a trine/
          .test(block.replace(/'\s*\+\s*'/g, ''));
    })());
-// Additional conditions do not mean the score is calculated incorrectly.
-ok('the note distinguishes marks from the score', (function () {
+ok('Marks appears only in the symbol legend, not repeated in the reading note', (function () {
   var at = appSrc.indexOf('function vargaNote');
   var note = appSrc.slice(at, appSrc.indexOf('function currentScheme', at));
-  return note.includes('Marks: Additional conditions, separate from the score.') &&
-    !note.includes('score reads wrong');
+  var legend = html.match(/<p class="varga-key">([\s\S]*?)<\/p>/);
+  return !note.includes('Marks:') && legend &&
+    (legend[1].match(/Marks:/g) || []).length === 1;
 })());
 ok('and names none of them, the key doing that', (function () {
   var at = appSrc.indexOf('function vargaNote');
@@ -6712,7 +6713,6 @@ ok('the note uses four short label-and-explanation sentences', (function () {
   var note = new Function('scheme', source[1]);
   var expected = 'Cells: Sign and relationship to its lord in each division. ' +
     'Vimsopaka: Weighted total out of 20. ' +
-    'Marks: Additional conditions, separate from the score. ' +
     'Hover: The same graha card used in the charts.';
   return Object.keys(Astro.VARGA_SCHEMES).every(function (key) {
     return note(Astro.VARGA_SCHEMES[key]) === expected;

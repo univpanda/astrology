@@ -2893,7 +2893,6 @@
   function vargaNote(scheme) {
     return 'Cells: Sign and relationship to its lord in each division. ' +
       'Vimsopaka: Weighted total out of 20. ' +
-      'Marks: Additional conditions, separate from the score. ' +
       'Hover: The same graha card used in the charts.';
   }
 
