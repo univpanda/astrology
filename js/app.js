@@ -1946,9 +1946,15 @@
         'Age: C child, T teen, Y youth, O old, D dead.'));
       key.appendChild(el('span', 'table-key-item',
         'VimBala: Vimsopaka Bala across 10 Dashavarga divisions, out of 20.'));
+      /*
+       * By the letter, not by what the marks mean. A reader comes to a key
+       * holding a letter they have just seen and wants to find it, which is
+       * the one thing an order by meaning makes slow: nothing about a chart
+       * says whether Combust is filed before or after Vargottama.
+       */
       key.appendChild(el('span', 'table-key-item',
-        'Marks: [R] Retrograde, [C] Combust, ' +
-        '[X] Exchange of signs, [D] Debilitated, [E] Exalted, [V] Vargottama.'));
+        'Marks: [C] Combust, [D] Debilitated, [E] Exalted, ' +
+        '[R] Retrograde, [V] Vargottama, [X] Exchange of signs.'));
       host.appendChild(key);
     });
 
@@ -3302,15 +3308,19 @@
     return figure;
   }
 
-  // Match the table key's order and names. Dr and D are distinct conditions.
+  /*
+   * Match the table key's order and names, which is by the letter: a reader
+   * arrives holding one they have just seen on a chart and wants to find it.
+   * Dr and D are distinct conditions, and D sorts before Dr.
+   */
   var MARKS = [
-    { key: 'V', label: '[V]', name: 'Vargottama' },
-    { key: 'X', label: '[X]', name: 'Exchange of signs' },
-    { key: 'Y', label: '[Y]', name: 'Yogakaraka' },
+    { key: 'C', label: '[C]', name: 'Combust' },
+    { key: 'D', label: '[D]', name: 'Debilitated' },
     { key: 'Dr', label: '[Dr]', name: 'Directional strength' },
     { key: 'E', label: '[E]', name: 'Exalted' },
-    { key: 'D', label: '[D]', name: 'Debilitated' },
-    { key: 'C', label: '[C]', name: 'Combust' }
+    { key: 'V', label: '[V]', name: 'Vargottama' },
+    { key: 'X', label: '[X]', name: 'Exchange of signs' },
+    { key: 'Y', label: '[Y]', name: 'Yogakaraka' }
   ];
 
   /**

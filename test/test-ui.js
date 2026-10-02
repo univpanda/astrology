@@ -3104,8 +3104,8 @@ ok('the compact key sits at the bottom of the Vimsopaka panel', (function () {
 ok('the key uses compact labels like the Graha relationship key', (function () {
   var key = html.replace(/\s+/g, ' ').match(/<p class="varga-key">(.*?)<\/p>/);
   return key && key[1].replace(/<[^>]+>/g, '').trim() ===
-    'Marks: [V] Vargottama, [X] Exchange of signs, [Y] Yogakaraka, ' +
-    '[Dr] Directional strength, [E] Exalted, [D] Debilitated, [C] Combust.';
+    'Marks: [C] Combust, [D] Debilitated, [Dr] Directional strength, ' +
+    '[E] Exalted, [V] Vargottama, [X] Exchange of signs, [Y] Yogakaraka.';
 })());
 ok('the bottom key inherits its text colour',
    /p\.varga-key \.flag\s*\{\s*color:\s*inherit;\s*\}/.test(cssSrc));
@@ -6435,7 +6435,8 @@ ok('each graha chart renders seven labelled counts including zeros', (function (
     var svg = figure.children[1];
     var labels = svg.children.filter(function (n) { return n.getAttribute('class') === 'chart-name'; });
     var values = svg.children.filter(function (n) { return n.getAttribute('class') === 'chart-value'; });
-    return labels.map(function (n) { return n.textContent; }).join(',') === '[V],[X],[Y],[Dr],[E],[D],[C]' &&
+    return labels.map(function (n) { return n.textContent; }).join(',') ===
+      '[C],[D],[Dr],[E],[V],[X],[Y]' &&
       values.length === 7 && values.every(function (n) { return /^\d+$/.test(n.textContent); });
   });
 })());
@@ -6876,7 +6877,36 @@ ok('the removed kartari markers do not enter the row', (function () {
   var keys = (block.match(/key: '([A-Za-z]+)'/g) || []).map(function (m) {
     return m.match(/'([^']+)'/)[1];
   });
-  return keys.join(',') === 'V,X,Y,Dr,E,D,C';
+  return keys.join(',') === 'C,D,Dr,E,V,X,Y';
+})());
+/*
+ * And the marks are filed by their letter rather than by what they mean. A
+ * reader comes to a key holding a letter they have just seen on a chart and
+ * wants to find it; nothing about a chart says whether Combust is filed before
+ * or after Vargottama. Checked by sorting rather than against a written-out
+ * list, so adding a mark cannot quietly land it in the wrong place.
+ */
+ok('every key reads in one order, by the letter', (function () {
+  var lettersOf = function (text) {
+    return (text.match(/\[([A-Za-z]+)\]/g) || []).map(function (m) {
+      return m.slice(1, -1);
+    });
+  };
+  var sorted = function (letters) {
+    return letters.join(',') === letters.slice().sort(function (a, b) {
+      return a < b ? -1 : a > b ? 1 : 0;
+    }).join(',');
+  };
+  var at = appSrc.indexOf('var MARKS = [');
+  var marks = (appSrc.slice(at, appSrc.indexOf('];', at)).match(/label: '(\[[A-Za-z]+\])'/g) || [])
+    .map(function (m) { return m.match(/'([^']+)'/)[1].slice(1, -1); });
+  var vargaKey = lettersOf((html.replace(/\s+/g, ' ')
+    .match(/<p class="varga-key">(.*?)<\/p>/) || ['', ''])[1]);
+  var tableKey = lettersOf((appSrc.match(/'Marks: \[C\][\s\S]*?'\)\);/) || [''])[0]);
+  return marks.length === 7 && vargaKey.length === 7 && tableKey.length === 6 &&
+    sorted(marks) && sorted(vargaKey) && sorted(tableKey) &&
+    // And the two that share a vocabulary really do agree.
+    marks.join(',') === vargaKey.join(',');
 })());
 /*
  * A bar takes the colour of its own mark - the same colour that mark's letter
