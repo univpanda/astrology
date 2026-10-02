@@ -10452,6 +10452,28 @@ console.log('\nThe default-settings row is one line');
     /var PRESETS = \{\s*page: \{[\s\S]*?says: ''\s*\}/.test(appSrc) &&
     !/Back to what this page reads by default/.test(appSrc));
   /*
+   * What the page does, said as three things rather than one. It ran together
+   * as "changes apply immediately and are kept as your custom settings in this
+   * browser", where applying and keeping read as the same act and being kept
+   * as your custom settings restated the heading directly above it.
+   *
+   * Each clause is a fact a reader cannot get from anywhere else on the page:
+   * that nothing need be pressed, that it outlives the visit, and that it
+   * belongs to this browser and not to them.
+   */
+  ok('the page says what it does, in the three parts it has', (function () {
+    var note = (html.replace(/\s+/g, ' ')
+      .match(/<h3 id="preset-page-title"[\s\S]*?<p class="field-note">(.*?)<\/p>/) ||
+      ['', ''])[1];
+    return /takes effect at once/.test(note) &&
+      /no Save to press/.test(note) &&
+      /next visit/.test(note) &&
+      /this browser rather than in an account/.test(note) &&
+      // And it cannot promise a Save, there being none to press.
+      !/Click Save|press Save|Saving again/.test(html);
+  })());
+
+  /*
    * Both buttons follow the heading, the reset before the way out: it belongs
    * with the heading it undoes rather than at the foot of a table it is not
    * about, and leaving is the last thing on a row. The auto margin is on the
