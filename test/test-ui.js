@@ -2821,8 +2821,21 @@ ok('the nakshatra lord and sub lord use the standard two-letter codes', (functio
   return rows.indexOf('SLord') === rows.indexOf('Lord') + 1 &&
     rows.indexOf('Name - Pada') === rows.indexOf('Lord') - 1 &&
     (block.match(/group: 'Nakshatra'/g) || []).length === 3 &&
-    /\{ text: Astro\.grahaAbbr\(nak\.lord\),/.test(appSrc) &&
-    /\{ text: Astro\.grahaAbbr\(nak\.subLord\),/.test(appSrc);
+    /\{ text: Astro\.grahaAbbr\(nak\.lord\) \+ \(nakLordRelationship/.test(appSrc) &&
+    /\{ text: Astro\.grahaAbbr\(nak\.subLord\) \+ \(subLordRelationship/.test(appSrc);
+})());
+ok('lord relationships read from the planet toward its lord and preserve undefined pairs', (function () {
+  var positions = {
+    Moon: { name: 'Moon', longitude: 155 },
+    Mercury: { name: 'Mercury', longitude: 150 },
+    Rahu: { name: 'Rahu', longitude: 45 }
+  };
+  return GrahaView.relationBetween(positions.Moon, 'Mercury', positions) === 'Neu' &&
+    GrahaView.relationBetween(positions.Mercury, 'Moon', positions) === 'GE' &&
+    GrahaView.relationBetween(positions.Mercury, 'Mercury', positions) === 'Own' &&
+    GrahaView.relationBetween(positions.Rahu, 'Mercury', positions) === '' &&
+    GrahaView.relationBetween(positions.Mercury, 'Rahu', positions) === '' &&
+    GrahaView.relationBetween(positions.Mercury, 'Sun', positions) === '';
 })());
 /*
   * No note says so. Two letters beside a relation in words is not a puzzle, the
@@ -7018,6 +7031,20 @@ ok('Graha Vimsopaka uses Dashavarga in every chart tab and follows scoring setti
         var stateCell = row.children[11];
         var stateName = planet && GrahaView.JAGRATADI_ENGLISH[
           Astro.jagratadiAvastha(name, Astro.signOf(planet.longitude))];
+        var nakshatra = Astro.nakshatraOf(Astro.vargaPosition(
+          planet ? planet.longitude : chart.ascendant.longitude, division).longitude);
+        var lordCellsMatch = [nakshatra.lord, nakshatra.subLord].every(function (lord, index) {
+          var relation = '';
+          if (planet) {
+            var apart = ((Astro.signOf(positions[lord].longitude) - Astro.signOf(planet.longitude)) % 12 + 12) % 12 + 1;
+            var compound = Astro.compoundRelation(name, lord, apart);
+            relation = lord === name ? 'Own' : GrahaView.RELATION_SHORT[Astro.RELATION_LABELS[compound]] || '';
+          }
+          var lordCell = row.children[7 + index];
+          return lordCell.textContent === Astro.grahaAbbr(lord) + (relation ? ' (' + relation + ')' : '') &&
+            lordCell.title.indexOf(lord) >= 0 &&
+            (!relation || lordCell.title.indexOf(relation === 'Own' ? '(Own)' : GrahaView.RELATION_WORD[relation]) >= 0);
+        });
         var score = planet && Astro.vimsopaka(name, planet.longitude,
           Astro.VARGA_SCHEMES.dasavarga, positions, settings.tatkalika, settings.hora, settings.mercury);
         var expectedMarks = [];
@@ -7040,6 +7067,7 @@ ok('Graha Vimsopaka uses Dashavarga in every chart tab and follows scoring setti
         var actualMarks = row.children[0].children.map(function (node) { return node.textContent.trim(); });
         if (division === 1 && view.reference === 'Ascendant') values.push(cell.textContent);
         return row.children.length === 14 &&
+          lordCellsMatch &&
           karakaCell.textContent === (karaka ? GrahaView.karakaShort(karaka) : '–') &&
           (!karaka || karakaCell.title.indexOf(karaka + ':') === 0) &&
           stateCell.textContent === (stateName ? stateName.charAt(0) : '–') &&

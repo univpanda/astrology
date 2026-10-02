@@ -144,6 +144,7 @@ var GrahaView = (function () {
     NAKSHATRA_SHORT: NAKSHATRA_SHORT,
     JAGRATADI_ENGLISH: JAGRATADI_ENGLISH,
     BALADI_ENGLISH: BALADI_ENGLISH,
+    relationBetween: relationBetween,
     dignitiesByGraha: dignitiesByGraha,
     dispositorOf: dispositorOf,
     dispositorRelation: dispositorRelation,

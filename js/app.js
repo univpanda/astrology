@@ -1939,7 +1939,7 @@
         'Nakshatras: P and U are Purva and Uttara.'));
       key.appendChild(el('span', 'table-key-item',
         'Relationship: GF great friend, Fr friend, Neu neutral, ' +
-        'En enemy, GE great enemy, Own its own sign.'));
+        'En enemy, GE great enemy, Own itself as lord.'));
       key.appendChild(el('span', 'table-key-item',
         'State: S sleeping, D dreaming, W waking.'));
       key.appendChild(el('span', 'table-key-item',
@@ -1983,8 +1983,8 @@
     { label: 'Dispositor', says: 'The lord of the sign the graha stands in, followed in brackets by the graha’s compound relationship to that lord.' },
     { label: 'Longitude', says: 'Where the graha stands within its sign, in degrees, minutes and seconds.' },
     { label: 'Name - Pada', group: 'Nakshatra', says: 'Which of the 27 nakshatras the graha falls in and which of its four quarters.' },
-    { label: 'Lord', group: 'Nakshatra', says: 'The graha that rules that nakshatra, which is what runs the Vimshottari dasha.' },
-    { label: 'SLord', group: 'Nakshatra', says: 'The KP sub lord: the nakshatra divided again in the Vimshottari proportions, and whichever graha owns the part the position falls in.' },
+    { label: 'Lord', group: 'Nakshatra', says: 'The nakshatra lord, followed by the planet’s compound relationship to it, read in the rashi as for the Dispositor column.' },
+    { label: 'SLord', group: 'Nakshatra', says: 'The KP sub lord, followed by the planet’s compound relationship to it, read in the rashi as for the Dispositor column.' },
     /*
      * Two facts about the graha rather than about the chart it is read in, so
      * they repeat across the tabs as [R] and [C] do. Both are taken from the
@@ -2050,6 +2050,15 @@
       });
     };
 
+    var lordRelationshipDetail = function (planet, lord, relationship) {
+      if (planet.isAscendant) return ' The ascendant is a point, so no relationship is assigned.';
+      if (relationship === 'Own') return ' ' + planet.name + ' is itself the lord (Own).';
+      if (!relationship) return ' No compound relationship is assigned for this pair.';
+      return ' ' + planet.name + ' regards ' + lord + ' as ' +
+        GrahaView.withArticle(GrahaView.RELATION_WORD[relationship]) +
+        ', using their rashi positions.';
+    };
+
     /* Everything one graha row needs, worked out once. */
     var columns = entities.map(function (r) {
       var v = Astro.vargaPosition(r.longitude, view.division);
@@ -2060,6 +2069,10 @@
         : GrahaView.dispositorOf(v.sign);
       var relationship = r.isAscendant ? ''
         : GrahaView.dispositorRelation(r.name, v.sign, positionsD1);
+      var nakLordRelationship = r.isAscendant ? ''
+        : GrahaView.relationBetween(r, nak.lord, positionsD1);
+      var subLordRelationship = r.isAscendant ? ''
+        : GrahaView.relationBetween(r, nak.subLord, positionsD1);
       var jagratadi = r.isAscendant ? ''
         : Astro.jagratadiAvastha(r.name, rashiSign(r));
       var baladi = r.isAscendant ? ''
@@ -2110,11 +2123,12 @@
             title: 'Nakshatra ' + nak.name + ', pada ' + nak.pada +
               ' of four, ruled by ' + nak.lord + '.' },
           /* Planet references inside the table use the chart's two-letter code. */
-          { text: Astro.grahaAbbr(nak.lord),
-            title: nak.name + ' is ruled by ' + nak.lord + '.' },
-          { text: Astro.grahaAbbr(nak.subLord),
+          { text: Astro.grahaAbbr(nak.lord) + (nakLordRelationship ? ' (' + nakLordRelationship + ')' : ''),
+            title: nak.name + ' is ruled by ' + nak.lord + '.' +
+              lordRelationshipDetail(r, nak.lord, nakLordRelationship) },
+          { text: Astro.grahaAbbr(nak.subLord) + (subLordRelationship ? ' (' + subLordRelationship + ')' : ''),
             title: 'The sub lord of this point in ' + nak.name + ' is ' +
-              nak.subLord + '.' },
+              nak.subLord + '.' + lordRelationshipDetail(r, nak.subLord, subLordRelationship) },
           { text: r.isAscendant || !karakas[r.name] ? '–'
               : GrahaView.karakaShort(karakas[r.name]),
             title: r.isAscendant
