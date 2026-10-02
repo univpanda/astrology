@@ -5174,8 +5174,14 @@
       mineOption.disabled = !exists;
       mineOption.textContent = exists ? mine.name : 'My custom settings';
       forget.hidden = !exists;
-      document.getElementById('preset-create').textContent = exists
-        ? 'Edit my custom settings' : 'Create my custom settings';
+      /*
+       * One label either way. The button opens the same page and saves to the
+       * same single set whether one has been kept before or not, so naming
+       * the two cases apart told a reader about the store rather than about
+       * what pressing it does.
+       */
+      document.getElementById('preset-create').textContent =
+        'Update Default Settings';
     };
 
     /*
@@ -5469,9 +5475,8 @@
       if (!select) return;
       select.addEventListener('change', function () {
       if (markDrift()) {
-        status.textContent = 'Changed by hand, so this is no longer ' +
-          (PRESETS[choice.value] ? PRESETS[choice.value].label : 'your own set') +
-          '. Choose it again to go back, or keep these as your own.';
+        status.textContent = 'Default has been updated. Click Save to update ' +
+          'default settings.';
         what.textContent = '';
       } else {
         status.textContent = '';
@@ -5480,8 +5485,14 @@
     });
 
     document.getElementById('preset-create').addEventListener('click', function () {
-      var mine = readMyDefault();
-      fillEditor((mine && mine.values) || currentSettings());
+      /*
+       * What the page is reading now, not what was stored last time. The line
+       * beside the picker says a change has been made and to press Save, and
+       * it filled from the saved set instead: pressing Save then wrote back
+       * the old values and threw away the change the line was pointing at,
+       * reporting success.
+       */
+      fillEditor(currentSettings());
       showPage();
     });
 

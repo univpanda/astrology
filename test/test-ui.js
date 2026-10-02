@@ -10415,11 +10415,18 @@ console.log('\nThe default-settings row is one line');
    * the page does with it, not what it is: it is the custom one, and saying
    * both words in one phrase said neither.
    */
-  ok('a reader\u2019s own set is called custom, and saving it makes it the default',
-    />Create my custom settings</.test(html) &&
-    /'Edit my custom settings' : 'Create my custom settings'/.test(appSrc) &&
-    />My custom settings</.test(html) &&
-    !/my default settings/i.test(html) &&
+  /*
+   * The button is named for what pressing it does, and says the same thing
+   * whether a set has been kept before or not: it opens the same page and
+   * saves to the same single set either way, so two labels described the
+   * store rather than the action.
+   */
+  ok('one button, named for what it does, and saving makes it the default',
+    />Update Default Settings</.test(html) &&
+    /textContent =\s*'Update Default Settings';/.test(appSrc) &&
+    !/Create my custom|Edit my custom/.test(html + appSrc) &&
+    // The page it opens is named for the same thing the button is.
+    />Default settings</.test(html) &&
     // Saved and in force in one step, which is what the page already did.
     /window\.localStorage\.setItem\(DEFAULT_SETTINGS_KEY, 'mine'\)/.test(appSrc));
   ok('status is right-aligned and does not reserve an empty row',
@@ -11241,6 +11248,41 @@ console.log('\nEach preset reaches the figures it is named for');
     /if \(request !== settingsRecast \|\| lastChart !== target\) return;/.test(appSrc));
 
   /*
+   * The whole of it, driven in the order a reader does it: change one setting
+   * where it stands, press the button the line tells you to, and press Save.
+   *
+   * The editor opens on what the page is reading now and not on what was
+   * stored last time. It filled from the stored set, so once a set had been
+   * kept, a later change by hand was shown back as the old value and Save
+   * wrote that old value again, reporting success and discarding the change
+   * the line beside the picker was pointing at.
+   */
+  ok('a change made by hand is what Save keeps', (function () {
+    out.applyPreset('page');
+    // A set exists already, which is the case that went wrong.
+    out.byId('preset-create').fire('click', {});
+    out.byId('preset-save').fire('click', {});
+    var ayanamsa = out.byId('ayanamsa');
+    var other = ayanamsa.value === 'kp' ? 'raman' : 'kp';
+    ayanamsa.value = other;
+    ayanamsa.fire('change', { target: ayanamsa });
+    var told = out.byId('preset-status').textContent;
+    out.byId('preset-create').fire('click', {});
+    var shown = null;
+    (function walk(n) {
+      if (n.id === 'my-ayanamsa') shown = n;
+      n.children.forEach(walk);
+    })(out.byId('preset-editor'));
+    out.byId('preset-save').fire('click', {});
+    var kept = out.readMySettings().ayanamsa, chosen = out.readDefaultChoice();
+    // Put the page back where this found it, a saved set being state the
+    // tests below this one are written without.
+    out.byId('preset-forget').fire('click', {});
+    return /Click Save/.test(told) && shown && shown.value === other &&
+      kept === other && chosen === 'mine' && out.readMySettings() === null;
+  })());
+
+  /*
    * The picker stops claiming a reading the page has stopped following.
    *
    * Changing one setting by hand left it naming the reading chosen before,
@@ -11263,7 +11305,8 @@ console.log('\nEach preset reaches the figures it is named for');
     node.fire('change', { target: node });
     var after = labelNow();
     return before === 'Standard default' && after === 'Standard default, changed' &&
-      /no longer the standard default/.test(out.byId('preset-status').textContent) &&
+      out.byId('preset-status').textContent ===
+        'Default has been updated. Click Save to update default settings.' &&
       // Only the chosen one is marked; the others still name themselves.
       Array.prototype.every.call(choice.options, function (o) {
         return o.value === choice.value || !/, changed/.test(o.textContent);
@@ -11397,6 +11440,7 @@ console.log('\nEach preset reaches the figures it is named for');
     return out.RECKONING_IDS.every(function (id) { return now[id] === ship[id]; });
   })());
 })();
+
 
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
