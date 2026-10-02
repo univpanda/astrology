@@ -1251,8 +1251,54 @@ function stripHtml(label) {
   var chartsSrc = fs.readFileSync(path.join(root, 'js/charts.js'), 'utf8');
   ok('houses in the chart run from the first sign, not the ascendant',
      /data\.firstSign/.test(chartsSrc) && !/\(data\.ascSign \+ h\)/.test(chartsSrc));
-  ok('the lagna mark stays on the ascendant when rotated',
-     /if \(i === data\.ascSign\) \{/.test(chartsSrc));
+  /*
+   * The ascendant is marked once. The traditional diagonal across its corner
+   * earns its place on a chart that says nothing else about where the lagna
+   * fell; this one writes the ascendant into its cell as an occupant, "As"
+   * among the grahas, so the diagonal was a second mark for the same fact.
+   *
+   * Driven rather than read, and over every division and frame, because what
+   * was wanted is that nothing is said twice and that the one saying of it
+   * survives rotation: house 1 moves to the chosen graha's sign while the
+   * ascendant does not move at all.
+   */
+  ok('the ascendant is marked once, and the mark survives rotation',
+    (function () {
+      var chart = Astro.chart({ jdUT: Astro.julianDay(1980, 9, 21, 3),
+        latitude: 19.07, longitude: 72.88, tzOffsetMinutes: 330 });
+      var ascSign = Astro.signOf(chart.ascendant.longitude);
+      var moonSign = chart.planets.filter(function (p) {
+        return p.name === 'Moon';
+      })[0].sign;
+      var cellOf = function (reference) {
+        var box = makeNode('div');
+        Charts.render(box, { style: 'south', planets: chart.planets,
+          ascendant: chart.ascendant.longitude, division: 1,
+          reference: reference, yogas: {}, dignities: {}, ruling: {},
+          karakas: {} });
+        var marks = 0, where = null, first = null;
+        (function walk(n) {
+          if (n.attrs && n.attrs.class === 'lagna-mark') marks++;
+          if (n.tag === 'text' && n.attrs && n.attrs['data-graha'] === 'Ascendant') {
+            where = n.attrs['data-sign'];
+          }
+          if (n.attrs && /first-house/.test(n.attrs.class || '')) first = n;
+          (n.children || []).forEach(walk);
+        })(box);
+        return { diagonals: marks, ascendantIn: where, hasFirstHouse: !!first };
+      };
+      var lagna = cellOf('Ascendant'), moon = cellOf('Moon');
+      return ascSign !== moonSign &&
+        // No diagonal anywhere, under either frame.
+        lagna.diagonals === 0 && moon.diagonals === 0 &&
+        // And the ascendant is still named, in its own sign, however the
+        // chart is rotated.
+        lagna.ascendantIn === Astro.SIGNS[ascSign] &&
+        moon.ascendantIn === Astro.SIGNS[ascSign] &&
+        // House 1 is a different fact and is still marked.
+        lagna.hasFirstHouse && moon.hasFirstHouse &&
+        !/lagna-mark/.test(chartsSrc + cssSrc);
+    })());
   ok('the rotation anchor is read in the chosen division',
      /signOfBody\(anchor\.longitude\)/.test(chartsSrc));
   /*

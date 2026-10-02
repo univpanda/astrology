@@ -546,13 +546,17 @@ var Charts = (function () {
         x: x, y: y, width: cell, height: cell,
         rx: i === data.firstSign ? 8 : 0, class: 'cell'
       }));
-      if (i === data.ascSign) {
-        // The lagna mark stays on the ascendant even when the chart is rotated.
-        // Traditional lagna mark: a short diagonal across the cell's corner.
-        g.appendChild(el('line', {
-          x1: x, y1: y, x2: x + cell * 0.3, y2: y + cell * 0.3, class: 'lagna-mark'
-        }));
-      }
+      /*
+       * No diagonal across the ascendant's corner. It is the traditional mark
+       * and it earns its place on a traditional chart, where nothing else says
+       * where the lagna fell. This one writes the ascendant into its cell as
+       * an occupant, "As" among the grahas, so the diagonal was a second mark
+       * for a fact already stated: across 480 South charts, sixteen divisions
+       * and three reference frames, the two never once sat in different cells.
+       *
+       * The rounded cell stays. That marks house 1, which is a different fact
+       * and parts from the ascendant the moment a chart is read from a graha.
+       */
       g.appendChild(el('text', { x: x + cell - 6, y: y + 14, class: 'sign-num', 'text-anchor': 'end' },
         Astro.SIGN_ABBR[i] + ' · ' + house));
       /*

@@ -1502,7 +1502,6 @@ svg.kundli .frame-outer { stroke: var(--green); stroke-width: 2; }
 svg.kundli .middle { fill: none; stroke: none; }
 
 svg.kundli .first-house .cell { fill: rgba(47, 143, 95, 0.10); }
-svg.kundli .lagna-mark { stroke: var(--green-deep); stroke-width: 2.6; stroke-linecap: round; }
 
 svg.kundli text {
   font-family: var(--font);
