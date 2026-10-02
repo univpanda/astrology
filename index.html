@@ -503,10 +503,12 @@
                say what it is, and "Use" above them said it twice. -->
           <label for="preset-choice" class="visually-hidden">Use</label>
           <select id="preset-choice">
-            <option value="page">Standard default</option>
-            <option value="raman">B. V. Raman</option>
+            <!-- Parashara first, being where a reader starts and where
+                 resetting returns them. -->
             <option value="parashara">Parashara</option>
+            <option value="raman">B. V. Raman</option>
             <option value="star">Star Jyotish</option>
+            <option value="page">Standard default</option>
             <option value="mine" id="preset-mine-option" hidden disabled>My custom settings</option>
           </select>
           <button type="button" id="preset-create">Update Custom Settings</button>
@@ -823,7 +825,7 @@
         -->
         <div class="preset-editor" id="preset-editor"></div>
         <div class="preset-page-actions">
-          <button type="button" id="preset-forget" hidden>Reset to the standard default</button>
+          <button type="button" id="preset-forget" hidden>Reset to Parashara</button>
         </div>
         <p class="field-note" id="preset-editor-status" role="status" hidden></p>
       </div>

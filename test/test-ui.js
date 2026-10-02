@@ -11367,6 +11367,57 @@ console.log('\nEach preset reaches the figures it is named for');
         !/one saved combination|Edit it to replace/.test(appSrc);
     })());
 
+  /*
+   * Where a reader starts and where resetting returns them: the Brihat
+   * Parashara Hora Shastra's own readings, first in the list and the choice a
+   * page with nothing stored opens on.
+   *
+   * It is one name in the source, so the opening choice and the reset cannot
+   * come to name different readings, and this drives both ends of it rather
+   * than reading that name twice.
+   */
+  ok('a page with nothing stored opens on Parashara, first in the list',
+    (function () {
+      var choice = out.byId('preset-choice');
+      var order = Array.prototype.map.call(choice.options, function (o) {
+        return o.value;
+      });
+      return out.readDefaultChoice() === 'parashara' &&
+        order[0] === 'parashara' &&
+        // The page's own reading is still offered, just not first.
+        order.indexOf('page') > 0;
+    })());
+  ok('and resetting returns there, saying so and keeping nothing', (function () {
+    var ayanamsa = out.byId('ayanamsa');
+    ayanamsa.value = ayanamsa.value === 'kp' ? 'raman' : 'kp';
+    ayanamsa.fire('change', { target: ayanamsa });
+    var mine = out.readDefaultChoice();
+    out.byId('preset-forget').fire('click', {});
+    var wanted = out.PRESETS.parashara.of;
+    var off = Object.keys(wanted).filter(function (id) {
+      return out.currentSettings()[id] !== wanted[id];
+    });
+    return mine === 'mine' && out.readDefaultChoice() === 'parashara' &&
+      out.readMySettings() === null && off.length === 0 &&
+      out.byId('preset-status').textContent === 'Reset to Parashara.' &&
+      // The button says where it goes, and says it once.
+      /<button type="button" id="preset-forget" hidden>Reset to Parashara<\/button>/
+        .test(html);
+  })());
+  /*
+   * And a stored choice still wins, the baseline being where a reader starts
+   * rather than where they are held.
+   */
+  ok('and a reading already chosen is not overruled by it', (function () {
+    var choice = out.byId('preset-choice');
+    choice.value = 'raman';
+    choice.fire('change', { target: choice });
+    var kept = out.readDefaultChoice();
+    choice.value = 'parashara';
+    choice.fire('change', { target: choice });
+    return kept === 'raman';
+  })());
+
   var labelFor = function () {
     var choice = out.byId('preset-choice');
     return Array.prototype.filter.call(choice.options, function (o) {
@@ -11601,6 +11652,7 @@ console.log('\nEach preset reaches the figures it is named for');
     '  default=' + out.readDefaultChoice());
   out.byId('preset-forget').fire('click', {});
 })();
+
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

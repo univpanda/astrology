@@ -5068,14 +5068,21 @@
     return wanted;
   }
 
+  /*
+   * Where a reader starts, and where resetting returns them: the Brihat
+   * Parashara Hora Shastra's own readings. Named once, so the opening choice
+   * and the reset cannot name different readings.
+   */
+  var BASE_CHOICE = 'parashara';
+
   function readDefaultChoice() {
     try {
-      var name = window.localStorage.getItem(DEFAULT_SETTINGS_KEY) || 'page';
-      if (name === 'mine' && !readMySettings()) return 'page';
-      return name === 'raman' || name === 'parashara' || name === 'star' || name === 'mine'
-        ? name : 'page';
+      var name = window.localStorage.getItem(DEFAULT_SETTINGS_KEY) || BASE_CHOICE;
+      if (name === 'mine' && !readMySettings()) return BASE_CHOICE;
+      return name === 'page' || name === 'raman' || name === 'parashara' ||
+        name === 'star' || name === 'mine' ? name : BASE_CHOICE;
     } catch (e) {
-      return 'page';
+      return BASE_CHOICE;
     }
   }
 
@@ -5586,14 +5593,15 @@
     forget.addEventListener('click', function () {
       var failed = false;
       try {
-        window.localStorage.setItem(DEFAULT_SETTINGS_KEY, 'page');
+        window.localStorage.setItem(DEFAULT_SETTINGS_KEY, BASE_CHOICE);
         window.localStorage.removeItem(MY_SETTINGS_KEY);
       } catch (e) { failed = true; }
-      choice.value = 'page';
+      choice.value = BASE_CHOICE;
       closePage();
       showMine();
-      apply('page');
-      persistenceStatus = failed ? SAVE_FAILED : 'Reset to the standard default.';
+      apply(BASE_CHOICE);
+      persistenceStatus = failed ? SAVE_FAILED
+        : 'Reset to ' + PRESETS[BASE_CHOICE].label + '.';
       sayStatus('');
     });
     showMine();
