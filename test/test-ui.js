@@ -3088,7 +3088,7 @@ ok('the key names every mark the grid draws', (function () {
   if (!key) return false;
   // [Dr] rather than [D]: the letter now means debilitated on the chart and
   // on the card, and one letter cannot mean two things on one page.
-  return ['v', 'x', 'y', 'dr', 'e', 'd', 'c'].every(function (c) {
+  return ['v', 'x', 'y', 'dr', 'e', 'd', 'm', 'c'].every(function (c) {
     var letter = c === 'dr' ? 'Dr' : c.toUpperCase();
     return new RegExp('<span class="flag flag-' + c + '">\\[' +
       letter + '\\]</span>').test(key[0]);
@@ -3105,7 +3105,7 @@ ok('the key uses compact labels like the Graha relationship key', (function () {
   var key = html.replace(/\s+/g, ' ').match(/<p class="varga-key">(.*?)<\/p>/);
   return key && key[1].replace(/<[^>]+>/g, '').trim() ===
     'Marks: [C] Combust, [D] Debilitated, [Dr] Directional strength, ' +
-    '[E] Exalted, [V] Vargottama, [X] Exchange of signs, [Y] Yogakaraka.';
+    '[E] Exalted, [M] Mooltrikona, [V] Vargottama, [X] Exchange of signs, [Y] Yogakaraka.';
 })());
 ok('the bottom key inherits its text colour',
    /p\.varga-key \.flag\s*\{\s*color:\s*inherit;\s*\}/.test(cssSrc));
@@ -3208,12 +3208,33 @@ ok('Shadbala retains rashi heading flags and Graha names render their own condit
      .test(appSrc.slice(appSrc.indexOf('function grahaColumnHead'),
                         appSrc.indexOf('function renderVargasHead'))));
 
-ok('the grid carries the seven requested cell marks', (function () {
+ok('the grid carries the eight requested cell marks', (function () {
   var at = appSrc.indexOf('function renderVargas(state)');
   var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
   var marks = (block.match(/'flag flag-[a-z]+'/g) || []);
-  return marks.length === 7 && ['v', 'x', 'y', 'dr', 'e', 'd', 'c'].every(function (k) {
+  return marks.length === 8 && ['v', 'x', 'y', 'dr', 'e', 'd', 'm', 'c'].every(function (k) {
     return block.indexOf("'flag flag-" + k + "'") >= 0;
+  });
+})());
+ok('the Vimsopaka grid uses the card dignity for M, E and D without marking own signs', (function () {
+  var start = appSrc.indexOf("        var formalDignity = td.getAttribute('data-dignity');");
+  var source = appSrc.slice(start, appSrc.indexOf('        var combust =', start));
+  var draw = new Function('td', 'signLine', 'el', source);
+  var makeElement = function (tag, cls, text) {
+    var node = makeNode(tag);
+    node.setAttribute('class', cls);
+    node.textContent = text;
+    return node;
+  };
+  return [ ['Mooltrikona', 'M'], ['Exalted', 'E'], ['Debilitated', 'D'],
+    ['Own Sign', ''], ['', ''] ].every(function (pair) {
+    var target = makeNode('td'), sign = makeNode('span');
+    target.setAttribute('data-dignity', pair[0]);
+    draw(target, sign, makeElement);
+    return pair[1] ? sign.children.length === 1 &&
+      sign.children[0].textContent === ' [' + pair[1] + ']' &&
+      sign.children[0].getAttribute('class') === 'flag flag-' + pair[1].toLowerCase()
+      : sign.children.length === 0;
   });
 })());
 /*
@@ -3419,11 +3440,11 @@ ok('every one is computed per division, not once for the chart',
  * alone would put one on a third of the grid, and a mark that common says
  * nothing about the cell it is on.
  */
-ok('and no yoga becomes a seventh mark', (function () {
+ok('and yogas do not introduce extra grid marks', (function () {
   var at = appSrc.indexOf('function renderVargas(state)');
   var block = appSrc.slice(at, appSrc.indexOf('function vargaSummary', at));
   var marks = (block.match(/'flag flag-[a-z]+'/g) || []);
-  return marks.length === 7 && /Charts\.decorateCardTarget\(td, cardOptions, planet\.name\)/.test(block) &&
+  return marks.length === 8 && /Charts\.decorateCardTarget\(td, cardOptions, planet\.name\)/.test(block) &&
     !/function grahaFootnote/.test(appSrc);
 })());
 ok('which is measurably a third of the cells rather than three fifths', (function () {
@@ -3529,7 +3550,7 @@ ok('every mark is a bracketed letter', (function () {
   var flat = html.replace(/\s+/g, ' ');
   var key = (flat.match(/<p class="varga-key">.*?<\/p>/) || [''])[0];
   var marks = key.match(/<span class="flag flag-[a-z]+">[^<]*<\/span>/g) || [];
-  return marks.length === 7 && !/flag-dig/.test(flat) && !/flag-star/.test(flat) &&
+  return marks.length === 8 && !/flag-dig/.test(flat) && !/flag-star/.test(flat) &&
     marks.every(function (m) { return /\[(?:Dr|[RVYCXSPDNEM])\]/.test(m); });
 })());
 /*
@@ -6324,7 +6345,7 @@ ok('and the margins shrink with the labels that needed them',
 ok('every mark in the grid is counted in a facet', (function () {
   var at = appSrc.indexOf('var MARKS = [');
   var block = appSrc.slice(at, appSrc.indexOf('var ceiling', at));
-  return ['V', 'X', 'Y', 'Dr', 'E', 'D', 'C'].every(function (k) {
+  return ['V', 'X', 'Y', 'Dr', 'E', 'D', 'M', 'C'].every(function (k) {
     return block.indexOf("key: '" + k + "'") >= 0;
   });
 })());
@@ -6349,18 +6370,18 @@ ok('vargaSummary runs and counts every mark', (function () {
   var rows = summary({ chart: c }, Astro.VARGA_SCHEMES.shodasavarga);
   return rows.length === 7 && rows.every(function (r) {
     return typeof r.vimsopaka === 'number' && r.good >= 0 &&
-      ['V', 'X', 'Y', 'Dr', 'E', 'D', 'C'].every(function (k) { return r.marks[k] >= 0; });
+      ['V', 'X', 'Y', 'Dr', 'E', 'D', 'M', 'C'].every(function (k) { return r.marks[k] >= 0; });
   });
 })());
 
-ok('all seven counts match divisional cards across schemes and combustion settings', (function () {
+ok('all eight counts match divisional cards across schemes and combustion settings', (function () {
   var src = appSrc.slice(appSrc.indexOf('  var GOOD_KEYS'), appSrc.indexOf('  function svgEl'));
   var summary = new Function('Astro', 'Yogas', src + '; return vargaSummary;')(Astro, Yogas);
   var chart = Astro.chart({ jdUT: Astro.julianDay(1977, 8, 20, 3),
     latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 });
   var state = { chart: chart };
-  var keys = ['V', 'X', 'Y', 'Dr', 'E', 'D', 'C'];
-  var totals = { V: 0, X: 0, Y: 0, Dr: 0, E: 0, D: 0, C: 0 };
+  var keys = ['V', 'X', 'Y', 'Dr', 'E', 'D', 'M', 'C'];
+  var totals = { V: 0, X: 0, Y: 0, Dr: 0, E: 0, D: 0, M: 0, C: 0 };
   var modesDiffer = false, priorCombust;
   var valid = ['division', 'rashi'].every(function (combustion) {
     var modeCombust = 0;
@@ -6368,7 +6389,7 @@ ok('all seven counts match divisional cards across schemes and combustion settin
       var scheme = Astro.VARGA_SCHEMES[schemeKey];
       var rows = summary(state, scheme, 'varga', 'effects', 'friend', combustion);
       return rows.length === 7 && rows.every(function (row) {
-        var expected = { V: 0, X: 0, Y: 0, Dr: 0, E: 0, D: 0, C: 0 };
+        var expected = { V: 0, X: 0, Y: 0, Dr: 0, E: 0, D: 0, M: 0, C: 0 };
         scheme.divisions.forEach(function (division) {
           var recast = Astro.chartInDivision(chart, division);
           var yogas = {};
@@ -6391,6 +6412,7 @@ ok('all seven counts match divisional cards across schemes and combustion settin
           var formal = target.getAttribute('data-dignity');
           if (formal === 'Exalted') expected.E++;
           if (formal === 'Debilitated') expected.D++;
+          if (formal === 'Mooltrikona') expected.M++;
           var planet = recast.planets.filter(function (p) { return p.name === row.graha; })[0];
           var house = ((planet.sign - recast.ascendant.sign) % 12 + 12) % 12 + 1;
           if (Astro.hasDigBala(row.graha, house)) expected.Dr++;
@@ -6409,7 +6431,7 @@ ok('all seven counts match divisional cards across schemes and combustion settin
   return valid && modesDiffer && keys.every(function (key) { return totals[key] > 0; });
 })());
 
-ok('each graha chart renders seven labelled counts including zeros', (function () {
+ok('each graha chart renders eight labelled counts including zeros', (function () {
   var host = makeNode('div');
   var chartDocument = {
     createElementNS: document.createElementNS,
@@ -6436,8 +6458,8 @@ ok('each graha chart renders seven labelled counts including zeros', (function (
     var labels = svg.children.filter(function (n) { return n.getAttribute('class') === 'chart-name'; });
     var values = svg.children.filter(function (n) { return n.getAttribute('class') === 'chart-value'; });
     return labels.map(function (n) { return n.textContent; }).join(',') ===
-      '[C],[D],[Dr],[E],[V],[X],[Y]' &&
-      values.length === 7 && values.every(function (n) { return /^\d+$/.test(n.textContent); });
+      '[C],[D],[Dr],[E],[M],[V],[X],[Y]' &&
+      values.length === 8 && values.every(function (n) { return /^\d+$/.test(n.textContent); });
   });
 })());
 
@@ -6877,7 +6899,7 @@ ok('the removed kartari markers do not enter the row', (function () {
   var keys = (block.match(/key: '([A-Za-z]+)'/g) || []).map(function (m) {
     return m.match(/'([^']+)'/)[1];
   });
-  return keys.join(',') === 'C,D,Dr,E,V,X,Y';
+  return keys.join(',') === 'C,D,Dr,E,M,V,X,Y';
 })());
 /*
  * And the marks are filed by their letter rather than by what they mean. A
@@ -6903,7 +6925,7 @@ ok('every key reads in one order, by the letter', (function () {
   var vargaKey = lettersOf((html.replace(/\s+/g, ' ')
     .match(/<p class="varga-key">(.*?)<\/p>/) || ['', ''])[1]);
   var tableKey = lettersOf((appSrc.match(/'Marks: \[C\][\s\S]*?'\)\);/) || [''])[0]);
-  return marks.length === 7 && vargaKey.length === 7 && tableKey.length === 6 &&
+  return marks.length === 8 && vargaKey.length === 8 && tableKey.length === 6 &&
     sorted(marks) && sorted(vargaKey) && sorted(tableKey) &&
     // And the two that share a vocabulary really do agree.
     marks.join(',') === vargaKey.join(',');
@@ -6919,6 +6941,7 @@ ok('and each bar wears the colour of its own mark',
    /'chart-bar ' \+ s\.cls \+ \(row\.cls \? ' ' \+ row\.cls : ''\)/.test(appSrc) &&
    /\.chart-bar\.mark-v rect \{ fill: var\(--chart-vargottama\); \}/.test(cssSrc) &&
    /\.chart-bar\.mark-x rect \{ fill: var\(--chart-exchange\); \}/.test(cssSrc) &&
+   /\.chart-bar\.mark-m rect \{ fill: var\(--chart-vimsopaka\); \}/.test(cssSrc) &&
    !/\.chart-bar\.mark-[sp] rect/.test(cssSrc) &&
    /\.chart-bar\.mark-dr rect \{ fill: var\(--chart-vimsopaka\); \}/
      .test(cssSrc));

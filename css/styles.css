@@ -1967,14 +1967,14 @@ td.vimsopaka-poor { color: var(--retro); }
 .chart-bar.mark-y rect { fill: var(--chart-good); }
 .chart-bar.mark-dr rect { fill: var(--chart-vimsopaka); }
 .chart-bar.mark-e rect { fill: var(--chart-vimsopaka); }
+.chart-bar.mark-m rect { fill: var(--chart-vimsopaka); }
 .chart-bar.mark-d rect { fill: var(--retro); }
 .chart-bar.mark-c rect { fill: var(--flag-combust); }
 /* Five small charts where two large ones sit, so they take a narrower track.
    min-width: 0 lets each shrink to its own rather than holding the row open. */
 .varga-facets {
   display: grid;
-  /* Seven bars and two axes where there were six bars and one, so each facet
-     wants a little more room before the grid wraps it. */
+  /* Give the eight mark counts room before the grid wraps each facet. */
   grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
   gap: 0.9rem 1.2rem;
   grid-column: 1 / -1;

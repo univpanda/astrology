@@ -3000,6 +3000,8 @@
           signLine.appendChild(el('span', 'flag flag-e', ' [E]'));
         } else if (formalDignity === 'Debilitated') {
           signLine.appendChild(el('span', 'flag flag-d', ' [D]'));
+        } else if (formalDignity === 'Mooltrikona') {
+          signLine.appendChild(el('span', 'flag flag-m', ' [M]'));
         }
         var combust = (td.getAttribute('data-states') || '').split('\u001e')
           .some(function (item) { return item.split('\u001f')[0] === 'C'; });
@@ -3112,7 +3114,7 @@
         tatkalika, horaRule, horaMercury);
       if (!score) return null;                     // the nodes keep no friendships
       var rashi = Astro.signOf(planet.longitude);
-      var good = 0, marks = { V: 0, X: 0, Y: 0, Dr: 0, E: 0, D: 0, C: 0 };
+      var good = 0, marks = { V: 0, X: 0, Y: 0, Dr: 0, E: 0, D: 0, M: 0, C: 0 };
       scheme.divisions.forEach(function (division) {
         var d = Astro.vargaDignity(planet.name, planet.longitude, division, positionsD1,
           tatkalika, horaRule, horaMercury);
@@ -3130,6 +3132,7 @@
         var dignity = Astro.dignityOf(planet.name, position.sign, position.degreeInSign);
         if (dignity === 'Exalted') marks.E++;
         if (dignity === 'Debilitated') marks.D++;
+        if (dignity === 'Mooltrikona') marks.M++;
         var sun = positionsD1.Sun;
         var inDivision = combustion !== 'rashi' && division !== 1;
         if (sun && Astro.isCombust(planet.name,
@@ -3318,6 +3321,7 @@
     { key: 'D', label: '[D]', name: 'Debilitated' },
     { key: 'Dr', label: '[Dr]', name: 'Directional strength' },
     { key: 'E', label: '[E]', name: 'Exalted' },
+    { key: 'M', label: '[M]', name: 'Mooltrikona' },
     { key: 'V', label: '[V]', name: 'Vargottama' },
     { key: 'X', label: '[X]', name: 'Exchange of signs' },
     { key: 'Y', label: '[Y]', name: 'Yogakaraka' }
@@ -3326,21 +3330,8 @@
   /**
    * One chart a graha: its vimsopaka score and its marks together.
    *
-   * The score and the counts are different measures - twenty points against
-   * however many divisions the scheme has - so the chart carries two scales,
-   * the score on the left and the counts on the right.
-   *
-   * That is the thing the dataviz guidance calls the worst mistake a chart can
-   * make, and the objection is real: with two scales the height of a bar means
-   * one thing on the left of the rule and another on the right, and the ratio
-   * between them is whichever the author chose. It was three charts before -
-   * the score, the well-placed count, and a facet of marks each - which put
-   * everything about one graha in three places.
-   *
-   * What is done about it: the score is one bar and the marks are six, a rule
-   * divides them, each axis carries its own name and its own numbers, and the
-   * score keeps the colour it wears in every other chart on the page. Nothing
-   * makes a dual axis safe; this makes it legible.
+   * The score is written beside the name, out of twenty. The eight bars count
+   * divisions carrying each mark, independently of the score, on a shared scale.
    */
   function renderVargaCharts(state, scheme) {
     var host = document.getElementById('vargas-charts');
@@ -3350,9 +3341,9 @@
     if (!rows.length) return;
 
     /*
-     * One scale across all seven charts on each side, so a tall bar is tall
+     * One scale across all seven charts, so a tall bar is tall
      * against the other grahas and not only against the rest of its own chart.
-     * The right one is taken from the largest count any graha reaches on any
+     * The ceiling is taken from the largest count any graha reaches on any
      * mark rather than from the scheme's division count, which would flatten
      * every mark into the baseline.
      */
