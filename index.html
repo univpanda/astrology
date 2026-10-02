@@ -517,7 +517,14 @@
              line of its own instead, and is not drawn until a reading has been
              chosen to describe. -->
         <p class="field-note preset-what" id="preset-what"></p>
-        <p class="field-note preset-status" id="preset-status" role="status"></p>
+        <!-- The notice and the button it names, together. It read "Click Save
+             to update default settings" beside no Save at all: the only one is
+             on the page the other button opens, so the sentence named a
+             control that was not there to click. -->
+        <div class="preset-notice" id="preset-notice" hidden>
+          <p class="field-note preset-status" id="preset-status" role="status"></p>
+          <button type="button" id="preset-save-now" hidden>Save</button>
+        </div>
       </div>
 
       <div class="card">

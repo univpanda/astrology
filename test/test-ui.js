@@ -10397,7 +10397,10 @@ console.log('\nThe default-settings row is one line');
     !/preset-why|<summary>Why/.test(html + css) &&
     /<p class="field-note preset-what" id="preset-what"><\/p>/.test(html) &&
     /display: none/.test(rule('.preset-what:empty')) &&
-    /display: none/.test(rule('.preset-status:empty')));
+    // The notice is drawn only when it has something to say, and it is the
+    // notice that is hidden now rather than the line inside it, there being a
+    // button beside the line.
+    /display: none/.test(rule('.preset-notice[hidden]')));
   ok('the standard default has no explanatory sentence',
     /var PRESETS = \{\s*page: \{[\s\S]*?says: ''\s*\}/.test(appSrc) &&
     !/Back to what this page reads by default/.test(appSrc));
@@ -10431,9 +10434,16 @@ console.log('\nThe default-settings row is one line');
     />Default settings</.test(html) &&
     // Saved and in force in one step, which is what the page already did.
     /window\.localStorage\.setItem\(DEFAULT_SETTINGS_KEY, 'mine'\)/.test(appSrc));
-  ok('status is right-aligned and does not reserve an empty row',
-    /text-align: right/.test(rule('.preset-status')) &&
-    /display: none/.test(rule('.preset-status:empty')));
+  /*
+   * Read from the left, beside the Save it names. It sat under the controls
+   * and right-aligned, which put a sentence ending in "Click Save" directly
+   * beneath the two buttons that are not Save.
+   */
+  ok('the notice reads from the left and carries the Save it names',
+    /text-align: left/.test(rule('.preset-status')) &&
+    /display: flex/.test(rule('.preset-notice')) &&
+    html.indexOf('id="preset-save-now"') > html.indexOf('id="preset-status"') &&
+    html.indexOf('id="preset-save-now"') < html.indexOf('</div>', html.indexOf('preset-notice')));
 })();
 
 console.log('\nThe settings notes do not argue from what software does');
@@ -11370,6 +11380,45 @@ console.log('\nEach preset reaches the figures it is named for');
         .test(appSrc.slice(at));
     })());
 
+  /*
+   * And the Save it names is there to press. The sentence said "Click Save to
+   * update default settings" beside no Save at all: the only one is on the
+   * page the other button opens, so it named a control a reader cannot reach
+   * from where they are told to reach it.
+   *
+   * One press keeps what the page is reading, which is the whole of what the
+   * sentence promises.
+   */
+  ok('the Save the notice names is beside it and keeps what is on screen',
+    (function () {
+      out.applyPreset('page');
+      var hiddenWhenNothingChanged = out.byId('preset-save-now').hidden;
+      var ayanamsa = out.byId('ayanamsa');
+      var other = ayanamsa.value === 'kp' ? 'raman' : 'kp';
+      ayanamsa.value = other;
+      ayanamsa.fire('change', { target: ayanamsa });
+      var offered = out.byId('preset-save-now').hidden === false;
+      out.byId('preset-save-now').fire('click', {});
+      var kept = out.readMySettings() && out.readMySettings().ayanamsa;
+      var chosen = out.readDefaultChoice();
+      var done = out.byId('preset-save-now').hidden === true &&
+        labelFor() === 'My custom settings';
+      out.byId('preset-forget').fire('click', {});
+      return hiddenWhenNothingChanged === true && offered && kept === other &&
+        chosen === 'mine' && done;
+    })());
+  /* And the notice is drawn only when it has something to say. */
+  ok('and the notice keeps no empty band above the settings', (function () {
+    out.applyPreset('page');
+    var node = out.byId('node-type');
+    node.value = node.value === 'true' ? 'mean' : 'true';
+    node.fire('change', { target: node });
+    var shown = out.byId('preset-notice').hidden === false;
+    node.value = node.value === 'true' ? 'mean' : 'true';
+    node.fire('change', { target: node });
+    return shown && out.byId('preset-notice').hidden === true;
+  })());
+
   /* And it takes the mark off again when the settings match once more. */
   ok('and takes it back when the reading is chosen again', (function () {
     out.applyPreset('page');
@@ -11501,6 +11550,36 @@ console.log('\nEach preset reaches the figures it is named for');
 
 
 
+
+
+
+
+
+(function () {
+  var out = global.appExports || {};
+  var choice = out.byId('preset-choice');
+  var label = function () {
+    return Array.prototype.filter.call(choice.options, function (o) {
+      return o.value === choice.value; })
+      .map(function (o) { return o.textContent; })[0];
+  };
+  var say = function (step) {
+    console.log('SAVE ' + step +
+      '\n     notice hidden=' + out.byId('preset-notice').hidden +
+      '  save hidden=' + out.byId('preset-save-now').hidden +
+      '\n     picker=' + JSON.stringify(label()) +
+      '\n     text=' + JSON.stringify(out.byId('preset-status').textContent));
+  };
+  out.applyPreset('page'); say('1 nothing changed');
+  var ayan = out.byId('ayanamsa');
+  ayan.value = 'kp'; ayan.fire('change', { target: ayan });
+  say('2 one setting changed');
+  out.byId('preset-save-now').fire('click', {});
+  say('3 after pressing Save in the notice');
+  console.log('     stored ayanamsa=' + JSON.stringify(out.readMySettings().ayanamsa) +
+    '  default=' + out.readDefaultChoice());
+  out.byId('preset-forget').fire('click', {});
+})();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

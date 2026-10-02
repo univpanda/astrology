@@ -5476,13 +5476,19 @@
      */
     var CHANGED_NOTICE = 'Default has been updated. Click Save to update ' +
       'default settings.';
+    var notice = document.getElementById('preset-notice');
+    var saveNow = document.getElementById('preset-save-now');
     var sayStatus = function (text) {
-      if (markDrift()) {
-        status.textContent = CHANGED_NOTICE;
-        what.textContent = '';
-        return;
-      }
-      status.textContent = text;
+      var off = markDrift();
+      status.textContent = off ? CHANGED_NOTICE : text;
+      /*
+       * The Save the notice names is here, beside the notice. It used to name
+       * the one on the page the other button opens, which is a control a
+       * reader cannot click from where they are told to click it.
+       */
+      saveNow.hidden = !off;
+      if (off) what.textContent = '';
+      notice.hidden = !status.textContent;
     };
     presetSayStatus = sayStatus;
 
@@ -5519,24 +5525,37 @@
 
     document.getElementById('preset-back').addEventListener('click', closePage);
 
-    document.getElementById('preset-save').addEventListener('click', function () {
-      buildEditor();
-      var values = {};
-      Object.keys(editorSelects).forEach(function (id) { values[id] = editorSelects[id].value; });
-      // One personal set, saved without asking for a name.
+    /*
+     * One personal set, saved without asking for a name, from either button:
+     * the page's Save, which keeps what the editor is showing, and the
+     * notice's, which keeps what the page is reading.
+     */
+    var storeAsDefault = function (values) {
       try {
         window.localStorage.setItem(MY_SETTINGS_KEY,
           JSON.stringify({ name: 'My custom settings', values: values }));
         window.localStorage.setItem(DEFAULT_SETTINGS_KEY, 'mine');
-        status.textContent = 'Saved, and now in use. Saving again replaces it.';
       } catch (e) {
         status.textContent = 'This browser would not store the setting.';
-        return;
+        notice.hidden = false;
+        saveNow.hidden = true;
+        return false;
       }
       showMine();
       choice.value = 'mine';
-      closePage();
       apply('mine');
+      return true;
+    };
+
+    document.getElementById('preset-save').addEventListener('click', function () {
+      buildEditor();
+      var values = {};
+      Object.keys(editorSelects).forEach(function (id) { values[id] = editorSelects[id].value; });
+      if (storeAsDefault(values)) closePage();
+    });
+
+    saveNow.addEventListener('click', function () {
+      storeAsDefault(currentSettings());
     });
 
     forget.addEventListener('click', function () {
