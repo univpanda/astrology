@@ -4020,6 +4020,10 @@ ok('every script the page loads parses', (function () {
     '  __out.readMyDefault = readMyDefault;\n' +
     '  __out.markDrift = function () { return presetMarkDrift(); };\n' +
     '  __out.storage = window.localStorage;\n' +
+    '  __out.startUp = function () {\n' +
+    '    applySettings(settingsForPreset(readDefaultChoice()) || {});\n' +
+    '    if (presetMarkDrift) presetMarkDrift();\n' +
+    '  };\n' +
     '  __out.sayStatus = function (t) { return presetSayStatus(t); };\n' +
     '  __out.storeRaw = function (v) { window.localStorage.setItem(MY_SETTINGS_KEY, v); };\n' +
     '  __out.strengthsFor = strengthsFor;\n' +
@@ -11477,6 +11481,71 @@ console.log('\nEach preset reaches the figures it is named for');
         // One set, carried forward, not two.
         fromPage.ayanamsa === other;
     })());
+
+  /*
+   * Closing the browser and coming back. The store the page writes to outlives
+   * the window: it is the browser's own, kept on disk for this site, and not
+   * the kind that is emptied when a tab closes. So the test seeds it, moves
+   * every setting away from what it holds, and runs the line the page runs on
+   * load, which is as close to a reload as one process gets.
+   *
+   * Nothing covered this, and it is the first thing a reader asks of a page
+   * that says it has no Save.
+   */
+  ok('settings kept in one visit are there in the next', (function () {
+    out.byId('preset-forget').fire('click', {});
+    // A reader sets two things, in the two places they can be set.
+    var ayanamsa = out.byId('ayanamsa');
+    var wantedAyanamsa = ayanamsa.value === 'kp' ? 'raman' : 'kp';
+    ayanamsa.value = wantedAyanamsa;
+    ayanamsa.fire('change', { target: ayanamsa });
+    var style = out.byId('chart-style');
+    var wantedStyle = style.value === 'south' ? 'north' : 'south';
+    style.value = wantedStyle;
+    style.fire('change', { target: style });
+
+    /*
+     * The window closes. Everything in the page is forgotten; the store is
+     * not, so the selects are put back to what the markup ships rather than
+     * cleared, which is what a fresh document would hold.
+     */
+    var shipped = out.pageDefaults();
+    out.RECKONING_IDS.forEach(function (id) {
+      var select = out.byId(id);
+      if (select) select.value = shipped[id];
+    });
+    var forgotten = out.byId('ayanamsa').value !== wantedAyanamsa;
+
+    out.startUp();
+    var back = out.byId('ayanamsa').value === wantedAyanamsa &&
+      out.byId('chart-style').value === wantedStyle;
+    var named = out.readDefaultChoice() === 'mine';
+    out.byId('preset-forget').fire('click', {});
+    /*
+     * startUp is this suite's copy of the line, so driving it shows the store
+     * is read and applied and not that the page does it on load. The page's
+     * own line is read for as well, which is the half a drive cannot reach.
+     */
+    var onLoad = /applySettings\(settingsForPreset\(readDefaultChoice\(\)\) \|\| \{\}\);/
+      .test(appSrc);
+    return forgotten && back && named && onLoad;
+  })());
+  /*
+   * And a browser that has never been here opens on the baseline rather than
+   * on whatever the markup happens to ship, which is the other half of the
+   * same question: nothing of somebody else's visit reaches this one.
+   */
+  ok('and a browser that has kept nothing opens on Parashara', (function () {
+    out.byId('preset-forget').fire('click', {});
+    try { out.storage.removeItem('jyotisha.default-settings.v1'); } catch (e) { /* none */ }
+    out.startUp();
+    var wanted = out.PRESETS.parashara.of;
+    var off = Object.keys(wanted).filter(function (id) {
+      return out.currentSettings()[id] !== wanted[id];
+    });
+    return out.readDefaultChoice() === 'parashara' && off.length === 0 &&
+      out.readMySettings() === null;
+  })());
 
   var labelFor = function () {
     var choice = out.byId('preset-choice');
