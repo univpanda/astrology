@@ -11452,7 +11452,8 @@ console.log('\nEach preset reaches the figures it is named for');
         /here or on the Settings tab/.test(note) &&
         /no Save to press/.test(note) &&
         /next visit/.test(note) &&
-        /kept in this browser rather than in an account/.test(note) &&
+        /live in this browser only/.test(note) &&
+        /starts from Parashara again/.test(note) &&
         // And it cannot promise a Save, there being none to press.
         !/Click Save|press Save|Saving again/.test(html);
       // Both paths the sentence names, each making the set it claims to make.
