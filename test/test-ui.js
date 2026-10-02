@@ -7025,7 +7025,7 @@ ok('Graha Vimsopaka uses Dashavarga in every chart tab and follows scoring setti
       var groupEndsMatch = function (cells) {
         return cells.every(function (cell, index) {
           return /\bgraha-group-end\b/.test(cell.getAttribute('class') || '') ===
-            ([2, 5, 7, 10, 13].indexOf(index) >= 0);
+            ([2, 5, 7, 10].indexOf(index) >= 0);
         });
       };
       if (table.children[0].children.length !== 1 || !groupEndsMatch(headers) ||
@@ -7139,10 +7139,10 @@ ok('the Graha key explains Age initials and the current column labels', (functio
     appSrc.indexOf('  var GRAHA_ROWS = ['));
   return [
     'Age: C child, T teen, Y youth, O old, D dead.',
-    'Lords: Lord sign lord, NLord nakshatra lord, SLord sub lord.',
     'Nakshatras: P Purva, U Uttara; the number is the pada.',
     'VimBala: Vimsopaka Bala across 10 Dashavarga divisions, out of 20.'
-  ].every(function (text) { return block.indexOf(text) >= 0; });
+  ].every(function (text) { return block.indexOf(text) >= 0; }) &&
+    block.indexOf('Lords: Lord sign lord, NLord nakshatra lord, SLord sub lord.') < 0;
 })());
 /*
  * Every column says what it is on hover.

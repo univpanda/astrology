@@ -1936,8 +1936,6 @@
       var key = el('p', 'table-key');
       key.hidden = !selected;
       key.appendChild(el('span', 'table-key-item',
-        'Lords: Lord sign lord, NLord nakshatra lord, SLord sub lord.'));
-      key.appendChild(el('span', 'table-key-item',
         'Nakshatras: P Purva, U Uttara; the number is the pada.'));
       key.appendChild(el('span', 'table-key-item',
         'Relationship: GF great friend, Fr friend, Neu neutral, ' +
@@ -2000,7 +1998,7 @@
     { label: 'SLord', groupEnd: true, says: 'The KP sub lord, followed by the planet’s compound relationship to it, read in the rashi as for the Lord column.' },
     { label: 'State', says: 'Waking, dreaming or sleeping according to whether the graha is in its own or exaltation sign, a friend’s or neutral’s sign, or an enemy’s or debilitation sign. Read in the rashi.' },
     { label: 'Age', says: 'C child, T teen, Y youth, O old, D dead: six degrees to a stage and reversed in an even sign. Read in the rashi, and so the same in every chart here.' },
-    { label: 'VimBala', groupEnd: true, says: 'Vimsopaka Bala: weighted strength across the 10 Dashavarga divisions, out of 20. Uses the selected scoring settings and stays the same across these chart tabs.' }
+    { label: 'VimBala', says: 'Vimsopaka Bala: weighted strength across the 10 Dashavarga divisions, out of 20. Uses the selected scoring settings and stays the same across these chart tabs.' }
   ];
 
   /**
