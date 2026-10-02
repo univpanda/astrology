@@ -5391,10 +5391,16 @@
       if (create.focus) create.focus();
     };
 
+    /*
+     * Which published reckoning is in force, and where it cannot reach. The
+     * reader's own set has no such account to give: it is whatever they have
+     * set, the picker already names it, and the line it used to carry said to
+     * edit it to replace it, which was a description of a Save step that no
+     * longer exists. Nothing, then, as for the standard default.
+     */
     var explain = function (name) {
       var preset = PRESETS[name];
-      what.textContent = preset ? preset.says
-        : 'Your one saved combination. Edit it to replace it; this browser keeps no second copy.';
+      what.textContent = preset ? preset.says : '';
     };
 
     var apply = function (name) {

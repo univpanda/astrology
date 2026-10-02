@@ -11297,6 +11297,30 @@ console.log('\nEach preset reaches the figures it is named for');
     /if \(request !== settingsRecast \|\| lastChart !== target\) return;/.test(appSrc));
 
 
+  /*
+   * The explanation names a published reckoning and says where it cannot
+   * reach. A reader's own set has no such account to give: it is whatever they
+   * have set, and the picker beside it already says so. The line it used to
+   * carry told them to edit it to replace it, which described a Save step that
+   * no longer exists.
+   */
+  ok('a reader\u2019s own set carries no explanation, having none to give',
+    (function () {
+      out.applyPreset('page');
+      var ayanamsa = out.byId('ayanamsa');
+      ayanamsa.value = ayanamsa.value === 'kp' ? 'raman' : 'kp';
+      ayanamsa.fire('change', { target: ayanamsa });
+      var mine = out.byId('preset-what').textContent;
+      out.applyPreset('raman');
+      var published = out.byId('preset-what').textContent;
+      out.applyPreset('page');
+      var standard = out.byId('preset-what').textContent;
+      out.byId('preset-forget').fire('click', {});
+      return mine === '' && standard === '' &&
+        /Graha and Bhava Balas/.test(published) &&
+        !/one saved combination|Edit it to replace/.test(appSrc);
+    })());
+
   var labelFor = function () {
     var choice = out.byId('preset-choice');
     return Array.prototype.filter.call(choice.options, function (o) {
