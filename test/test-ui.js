@@ -3874,13 +3874,18 @@ ok('every script the page loads parses', (function () {
     var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
     var found = {};
     page.replace(/<select id="([a-z-]+)"[\s\S]*?<\/select>/g, function (whole, id) {
-      var values = [], selected = null;
-      whole.replace(/<option value="([^"]*)"([^>]*)>/g, function (_, value, rest) {
-        values.push(value);
-        if (/\bselected\b/.test(rest)) selected = value;
-        return '';
-      });
-      found[id] = { values: values, selected: selected === null ? values[0] : selected };
+      var values = [], selected = null, text = {};
+      whole.replace(/<option value="([^"]*)"([^>]*)>([^<]*)</g,
+        function (_, value, rest, words) {
+          values.push(value);
+          // Carried, because a label is a thing the page changes: the picker
+          // withdraws its claim by renaming the option that made it.
+          text[value] = words.replace(/&[a-z]+;/g, ' ').trim();
+          if (/\bselected\b/.test(rest)) selected = value;
+          return '';
+        });
+      found[id] = { values: values, text: text,
+        selected: selected === null ? values[0] : selected };
       return '';
     });
     return found;
@@ -3909,7 +3914,10 @@ ok('every script the page loads parses', (function () {
             get: function () {
               var appended = node.children.filter(function (c) { return c.tag === 'option'; });
               return appended.length ? appended
-                : SELECTS[id].values.map(function (v) { return { value: v }; });
+                : (node.ownOptions || (node.ownOptions = SELECTS[id].values.map(
+                    function (v) {
+                      return { value: v, textContent: SELECTS[id].text[v] || v };
+                    })));
             }
           });
           node.value = SELECTS[id].selected;
@@ -10388,6 +10396,13 @@ console.log('\nThe default-settings row is one line');
     /<p class="field-note preset-what" id="preset-what"><\/p>/.test(html) &&
     /display: none/.test(rule('.preset-what:empty')) &&
     /display: none/.test(rule('.preset-status:empty')));
+  ok('the standard default has no explanatory sentence',
+    /var PRESETS = \{\s*page: \{[\s\S]*?says: ''\s*\}/.test(appSrc) &&
+    !/Back to what this page reads by default/.test(appSrc));
+  ok('Back to settings follows the heading and aligns to the right',
+    html.indexOf('id="preset-back"') > html.indexOf('id="preset-page-title"') &&
+    /margin-left: auto/.test(rule('#preset-back')) &&
+    /flex-wrap: wrap/.test(rule('.preset-page-head')));
   /*
    * And the select is named for a screen reader without being labelled on
    * screen. Its own words say what it is, and "Use" above them said it twice.
@@ -10902,7 +10917,6 @@ console.log('\nEach preset reaches the figures it is named for');
   ok('a saved default is read back whole, chart style and all', (function () {
     out.applyPreset('raman');
     out.byId('preset-create').fire('click', {});
-    out.byId('preset-name').value = 'Mine, as I read it';
     editorFields()['chart-style'].value = 'south';
     out.byId('preset-save').fire('click', {});
     var saved = out.readMySettings();
@@ -10926,11 +10940,10 @@ console.log('\nEach preset reaches the figures it is named for');
   })());
   ok('and saving returns to the settings without being asked', (function () {
     out.byId('preset-create').fire('click', {});
-    out.byId('preset-name').value = 'Returned';
     out.byId('preset-save').fire('click', {});
     return out.byId('settings-main').hidden === false &&
       out.byId('preset-page').hidden === true &&
-      out.readMyDefault().name === 'Returned';
+      out.readMyDefault().name === 'My custom settings';
   })());
   /* Nothing of the dialog is left: a modal that is still in the page is a
      second way in, and the two would drift. */
@@ -11143,14 +11156,14 @@ console.log('\nEach preset reaches the figures it is named for');
         return fields[id] && fields[id].value === wanted[id];
       });
   })());
-  /* The set is named, and the picker says the name rather than "mine". */
-  ok('a saved default carries the name it was given', (function () {
+  /* A single personal set needs no name field. */
+  ok('custom settings save without a name field and use the standard label', (function () {
     out.byId('preset-create').fire('click', {});
-    out.byId('preset-name').value = 'As I read it';
     out.byId('preset-save').fire('click', {});
     var mine = out.readMyDefault();
-    return mine && mine.name === 'As I read it' &&
-      out.byId('preset-mine-option').textContent === 'As I read it' &&
+    return !/preset-name|nameBox/.test(html + appSrc + cssSrc) &&
+      mine && mine.name === 'My custom settings' &&
+      out.byId('preset-mine-option').textContent === 'My custom settings' &&
       // And the values are still read back by everything that wants them.
       // Compared by content: each read parses the store afresh.
       JSON.stringify(out.readMySettings()) === JSON.stringify(mine.values);
@@ -11226,6 +11239,63 @@ console.log('\nEach preset reaches the figures it is named for');
   ok('stale setting responses are forbidden from replacing the newer chart',
     /var request = \+\+settingsRecast;/.test(appSrc) &&
     /if \(request !== settingsRecast \|\| lastChart !== target\) return;/.test(appSrc));
+
+  /*
+   * The picker stops claiming a reading the page has stopped following.
+   *
+   * Changing one setting by hand left it naming the reading chosen before,
+   * and the line beside it still reading "The chart on screen now uses the
+   * standard default" after two of them had moved. A control that states
+   * something false is worse than one that states nothing, a reader having no
+   * reason to doubt it.
+   */
+  ok('changing a setting by hand withdraws the picker\u2019s claim', (function () {
+    out.applyPreset('page');
+    var choice = out.byId('preset-choice');
+    var labelNow = function () {
+      return Array.prototype.filter.call(choice.options, function (o) {
+        return o.value === choice.value;
+      }).map(function (o) { return o.textContent; })[0];
+    };
+    var before = labelNow();
+    var node = out.byId('node-type');
+    node.value = node.value === 'true' ? 'mean' : 'true';
+    node.fire('change', { target: node });
+    var after = labelNow();
+    return before === 'Standard default' && after === 'Standard default, changed' &&
+      /no longer the standard default/.test(out.byId('preset-status').textContent) &&
+      // Only the chosen one is marked; the others still name themselves.
+      Array.prototype.every.call(choice.options, function (o) {
+        return o.value === choice.value || !/, changed/.test(o.textContent);
+      });
+  })());
+  /* And it takes the mark off again when the settings match once more. */
+  ok('and takes it back when the reading is chosen again', (function () {
+    out.applyPreset('page');
+    var choice = out.byId('preset-choice');
+    var marked = Array.prototype.some.call(choice.options, function (o) {
+      return /, changed/.test(o.textContent);
+    });
+    return !marked;
+  })());
+  /*
+   * And changing a setting back by hand clears it too, rather than leaving a
+   * chart that reads exactly as the standard default labelled as something
+   * else. The mark is a comparison, not a memory that anything was touched.
+   */
+  ok('and a setting put back by hand clears it, being a comparison', (function () {
+    out.applyPreset('page');
+    var choice = out.byId('preset-choice');
+    var node = out.byId('node-type');
+    var was = node.value;
+    node.value = was === 'true' ? 'mean' : 'true';
+    node.fire('change', { target: node });
+    node.value = was;
+    node.fire('change', { target: node });
+    return Array.prototype.every.call(choice.options, function (o) {
+      return !/, changed/.test(o.textContent);
+    }) && out.byId('preset-status').textContent === '';
+  })());
 
   /*
    * Two selects had no listener at all, so they were read when a chart was
@@ -11327,6 +11397,7 @@ console.log('\nEach preset reaches the figures it is named for');
     return out.RECKONING_IDS.every(function (id) { return now[id] === ship[id]; });
   })());
 })();
+
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

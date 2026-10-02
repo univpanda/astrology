@@ -765,6 +765,7 @@ input::placeholder { color: #a9bdb2; }
  */
 .preset-page-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: start;
   gap: 1rem;
   margin-bottom: 1.25rem;
@@ -774,6 +775,7 @@ input::placeholder { color: #a9bdb2; }
 .preset-page-head h3 { margin: 0; }
 .preset-page-head p { margin: 0.2rem 0 0; }
 #preset-back {
+  margin-left: auto;
   font: inherit;
   font-size: 0.85rem;
   font-weight: 600;
@@ -811,13 +813,6 @@ input::placeholder { color: #a9bdb2; }
 }
 #preset-forget:hover { color: var(--retro); border-color: var(--retro); }
 
-.preset-name-field { max-width: 22rem; margin-bottom: 1.25rem; }
-.preset-name-field label {
-  display: block;
-  margin-bottom: 0.3rem;
-  font-size: 0.82rem;
-  color: var(--ink-soft);
-}
 /*
  * Six columns and a row per setting: the name of the setting, the reader's own
  * choice, and the four published readings side by side. It scrolls sideways

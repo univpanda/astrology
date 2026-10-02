@@ -4898,9 +4898,7 @@
       // line then read out as a sentence about a page rather than a reading.
       label: 'the standard default',
       of: {},
-      says: 'Back to what this page reads by default: the sourced option ' +
-        'wherever the texts settle it, and the commoner convention where they ' +
-        'do not.'
+      says: ''
     },
     /*
      * Graha and Bhava Balas, worked end to end on his Standard Horoscope.
@@ -4999,6 +4997,7 @@
   var DEFAULT_SETTINGS_KEY = 'jyotisha.default-settings.v1';
   /* Held so the suites can drive a preset the way a click does. */
   var presetApply = null;
+  var presetMarkDrift = null;
 
   /*
    * The reader's own set, named. A set saved before names existed is a bare
@@ -5167,7 +5166,6 @@
     var page = document.getElementById('preset-page');
     var main = document.getElementById('settings-main');
     var editor = document.getElementById('preset-editor');
-    var nameBox = document.getElementById('preset-name');
 
     var showMine = function () {
       var mine = readMyDefault();
@@ -5372,7 +5370,8 @@
       main.hidden = true;
       page.hidden = false;
       if (window.scrollTo) window.scrollTo(0, 0);
-      if (nameBox.focus) nameBox.focus();
+      var heading = document.getElementById('preset-page-title');
+      if (heading.focus) heading.focus();
     };
     var closePage = function () {
       page.hidden = true;
@@ -5394,6 +5393,7 @@
       var preset = PRESETS[name];
       var label = preset ? preset.label : 'My custom settings';
       applySettings(wanted);
+      markDrift();
       explain(name);
       status.textContent = 'Recomputing\u2026';
       /*
@@ -5414,15 +5414,73 @@
     };
     presetApply = apply;
 
+    /*
+     * Whether the page still reads the way the picker says it does.
+     *
+     * Changing one setting by hand left the picker naming a reading the page
+     * had stopped following, and the line beside it still saying "The chart on
+     * screen now uses the standard default" after two of them had moved. A
+     * control that states something false is worse than one that states
+     * nothing, because a reader has no reason to doubt it.
+     *
+     * The option withdraws the claim itself rather than a note beside it doing
+     * so. The picker is what makes the claim, so the picker is where it has to
+     * be taken back: a note reads as a remark about something that happened,
+     * where a label reads as a description of now.
+     */
+    var optionLabels = {};
+    Array.prototype.forEach.call(choice.options, function (option) {
+      optionLabels[option.value] = option.textContent;
+    });
+    var drifted = function () {
+      var wanted = settingsForPreset(choice.value);
+      if (!wanted) return false;
+      var now = currentSettings();
+      return RECKONING_IDS.some(function (id) {
+        return wanted[id] !== undefined && now[id] !== wanted[id];
+      });
+    };
+    var markDrift = function () {
+      var off = drifted();
+      Array.prototype.forEach.call(choice.options, function (option) {
+        var base = optionLabels[option.value] || option.textContent;
+        var wanted = off && option.value === choice.value ? base + ', changed' : base;
+        if (option.textContent !== wanted) option.textContent = wanted;
+      });
+      return off;
+    };
+    presetMarkDrift = markDrift;
+
     choice.addEventListener('change', function () {
       var name = this.value;
       try { window.localStorage.setItem(DEFAULT_SETTINGS_KEY, name); } catch (e) { /* session only */ }
       apply(name);
     });
 
+    /*
+     * One listener per setting rather than a line added to each of their own
+     * handlers, which is two dozen places to forget. Bound to the selects
+     * themselves and not delegated from the document: the two panels are
+     * separate sections, so delegation would have to sit on the document, and
+     * a listener there is one nothing can reach to test.
+     */
+    RECKONING_IDS.forEach(function (id) {
+      var select = document.getElementById(id);
+      if (!select) return;
+      select.addEventListener('change', function () {
+      if (markDrift()) {
+        status.textContent = 'Changed by hand, so this is no longer ' +
+          (PRESETS[choice.value] ? PRESETS[choice.value].label : 'your own set') +
+          '. Choose it again to go back, or keep these as your own.';
+        what.textContent = '';
+      } else {
+        status.textContent = '';
+      }
+      });
+    });
+
     document.getElementById('preset-create').addEventListener('click', function () {
       var mine = readMyDefault();
-      nameBox.value = mine ? mine.name : '';
       fillEditor((mine && mine.values) || currentSettings());
       showPage();
     });
@@ -5433,11 +5491,10 @@
       buildEditor();
       var values = {};
       Object.keys(editorSelects).forEach(function (id) { values[id] = editorSelects[id].value; });
-      // Named, so the picker can say which one is in force rather than "mine".
-      var named = (nameBox.value || '').trim().slice(0, 40) || 'My custom settings';
+      // One personal set, saved without asking for a name.
       try {
         window.localStorage.setItem(MY_SETTINGS_KEY,
-          JSON.stringify({ name: named, values: values }));
+          JSON.stringify({ name: 'My custom settings', values: values }));
         window.localStorage.setItem(DEFAULT_SETTINGS_KEY, 'mine');
         status.textContent = 'Saved, and now in use. Saving again replaces it.';
       } catch (e) {

@@ -801,20 +801,13 @@
       <div class="card preset-page" id="preset-page" hidden
            aria-labelledby="preset-page-title">
         <div class="preset-page-head">
-          <button type="button" id="preset-back">Back to settings</button>
           <div>
-            <h3 id="preset-page-title">My custom settings</h3>
+            <h3 id="preset-page-title" tabindex="-1">My custom settings</h3>
             <p class="field-note">One set is kept in this browser, and becomes
               your default the moment it is saved.
               Saving again replaces it.</p>
           </div>
-        </div>
-        <!-- Not a .field: the panel's own tests count those as settings, and
-             this names the set rather than being one of them. -->
-        <div class="preset-name-field">
-          <label for="preset-name">Name</label>
-          <input id="preset-name" type="text" maxlength="40" autocomplete="off"
-                 placeholder="My custom settings">
+          <button type="button" id="preset-back">Back to settings</button>
         </div>
         <!--
           A row per setting, and beside your own choice the four published
