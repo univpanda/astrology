@@ -11150,13 +11150,19 @@ console.log('\nEach preset reaches the figures it is named for');
     })(out.byId('preset-editor'));
     var words = row.slice(1).map(textOf);
     /*
-     * Raman has his own and the other two are silent, so they show this
-     * page's, faint. This page is no longer a column of its own: its values
-     * are already the whole of "Yours" until a reader moves something.
+     * Raman has his own and the other two are silent, and a silent one says
+     * so rather than showing the value it would leave. Showing it was what
+     * let a column look like it was endorsing a reading it has never stated.
      */
     return cells.length === out.RECKONING_IDS.length * 3 &&
       words.length === 3 &&
-      /Raman/.test(words[0]) && /Lahiri/.test(words[1]) && /Lahiri/.test(words[2]);
+      /Raman/.test(words[0]) &&
+      words[1] === 'Not recorded' && words[2] === 'Not recorded' &&
+      // And what it would leave is still said, where it cannot be taken for
+      // the reading's own position.
+      // Set with setAttribute, which this stub keeps in attrs rather than
+      // on the property, as a browser keeps both.
+      /Lahiri/.test(row[2].children[0].attrs.title || '');
   })());
   /*
    * And a cell says whether it is that reading's own position or this page
@@ -11195,13 +11201,16 @@ console.log('\nEach preset reaches the figures it is named for');
       ayan.join(',') === 'false,true,true';
   })());
   /* And the table says what the faintness means, or it is only decoration. */
-  ok('and the table says what a faint cell means', (function () {
+  ok('and the table says what each of its marks means', (function () {
     var key = null;
     (function walk(n) {
       if (!key && /preset-key/.test(n.className || '')) key = n;
       n.children.forEach(walk);
     })(out.byId('preset-editor'));
-    return key && /not recorded on/.test(textOf(key));
+    var said = key ? textOf(key) : '';
+    return /Not recorded/.test(said) && /Green values differ from yours/.test(said) &&
+      /Sources differ/.test(said) && /documented choices/.test(said) &&
+      !/in bold/.test(said);
   })());
 
   /*
@@ -11258,6 +11267,103 @@ console.log('\nEach preset reaches the figures it is named for');
       out.RECKONING_IDS.join(',') === want[0].concat(want[1]).join(',');
   })());
 
+  /* Missing documentation never participates in value comparisons. */
+  ok('only recorded differences can be green',
+    (function () {
+      out.applyPreset('page');
+      out.byId('preset-create').fire('click', {});
+      var marked = [], silent = [];
+      (function walk(n) {
+        if (/preset-cell-differs/.test(n.className || '')) marked.push(n);
+        if (/preset-cell-unrecorded/.test(n.className || '')) silent.push(n);
+        n.children.forEach(walk);
+      })(out.byId('preset-editor'));
+      var out2 = out.byId('preset-back');
+      out2.fire('click', {});
+      return marked.length > 0 && silent.length > 0 &&
+        // No cell is both, so neither signal can overwrite the other.
+        marked.every(function (n) {
+          return !/preset-cell-unrecorded/.test(n.className);
+        }) &&
+        // A silent cell is not a button either: there is nothing to choose.
+        silent.every(function (n) { return n.tag !== 'button'; });
+    })());
+  /*
+   * And a row no book speaks to says so in all three, rather than showing the
+   * page's own choice three times over as if it had been agreed.
+   */
+  ok('a row nobody speaks to says so in every column', (function () {
+    out.byId('preset-create').fire('click', {});
+    var fields = editorFields(), row = [];
+    (function walk(n) {
+      if (n.tag === 'tr' && n.children.some(function (c) {
+        return c.children.indexOf(fields['node-type']) >= 0;
+      })) {
+        row = n.children.filter(function (c) { return c.tag === 'td'; });
+      }
+      n.children.forEach(walk);
+    })(out.byId('preset-editor'));
+    var words = row.slice(1).map(textOf);
+    out.byId('preset-back').fire('click', {});
+    // None of the three gives a rule for the node.
+    return words.join('|') === 'Not recorded|Not recorded|Not recorded';
+  })());
+
+  ok('green follows yours while source disagreement only follows documented choices',
+    (function () {
+      var columns = ['raman', 'parashara', 'star'];
+      var correct = columns.every(function (preset) {
+        out.applyPreset(preset);
+        out.byId('preset-create').fire('click', {});
+        var fields = editorFields(), checked = 0, disagreements = 0, valid = true;
+        (function walk(n) {
+          if (n.tag === 'tr') {
+            var cells = n.children.filter(function (c) { return c.tag === 'td'; });
+            if (cells.length === 4) {
+              var setting = Object.keys(fields).filter(function (id) {
+                return cells[0].children.indexOf(fields[id]) >= 0;
+              })[0];
+              if (!setting) { valid = false; return; }
+              checked++;
+              var recorded = [];
+              columns.forEach(function (column, i) {
+                var own = out.PRESETS[column].of;
+                var cell = cells[i + 1].children[0];
+                var marked = /preset-cell-differs/.test(cell.className);
+                if (Object.prototype.hasOwnProperty.call(own, setting)) {
+                  recorded.push(own[setting]);
+                  var matches = own[setting] === fields[setting].value;
+                  if (marked !== !matches || cell.attrs['aria-pressed'] !== String(matches)) valid = false;
+                } else if (marked || textOf(cell) !== 'Not recorded' || cell.tag === 'button') {
+                  valid = false;
+                }
+              });
+              var differs = recorded.some(function (v) { return v !== recorded[0]; });
+              var label = n.children[0].children.filter(function (c) {
+                return c.className === 'preset-sources-differ';
+              });
+              if (differs) disagreements++;
+              if (label.length !== (differs ? 1 : 0) ||
+                (label.length && textOf(label[0]) !== 'Sources differ')) valid = false;
+            }
+          }
+          n.children.forEach(walk);
+        })(out.byId('preset-editor'));
+        return valid && checked === out.RECKONING_IDS.length && disagreements === 5;
+      });
+      out.applyPreset('page');
+      out.byId('preset-create').fire('click', {});
+      return correct;
+    })());
+
+  ok('source disagreement has a neutral label, without bold or green rows', (function () {
+    var flat = cssSrc.replace(/\s+/g, ' ');
+    return !/preset-row-differs|preset-cell-chosen/.test(cssSrc) &&
+      /\.preset-sources-differ \{[^}]*display: block;[^}]*font-weight: 400;[^}]*color: var\(--ink-soft\)/.test(flat) &&
+      /\.preset-cell \{[^}]*color: var\(--ink\)/.test(flat) &&
+      /\.preset-cell-differs \{[^}]*background: var\(--green-soft\)/.test(flat);
+  })());
+
   /* Pressing a cell takes that reading for that setting, and nothing else. */
   ok('pressing one reading takes it for that setting alone', (function () {
     var fields = editorFields();
@@ -11271,7 +11377,8 @@ console.log('\nEach preset reaches the figures it is named for');
     cell.fire('click', {});
     return fields.ayanamsa.value === 'raman' &&
       fields['node-type'].value === before &&
-      /preset-cell-chosen/.test(cell.className);
+      !/preset-cell-differs/.test(cell.className) &&
+      cell.attrs['aria-pressed'] === 'true';
   })());
   /* And a column heading takes the whole of its reading. */
   ok('and a column heading takes every setting from that reading', (function () {

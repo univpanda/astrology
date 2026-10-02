@@ -896,6 +896,9 @@ input::placeholder { color: #a9bdb2; }
   white-space: normal;
 }
 .preset-table select { width: 100%; height: auto; padding: 0.2rem 0.4rem; }
+/* Do not borrow the other tables' green hover band for this comparison. */
+.preset-table tbody tr:hover,
+.preset-table tbody tr:hover th[scope]:not([rowspan]) { background: var(--surface); }
 /*
  * Taking a whole column, which is the job a "Start with" select used to do
  * above the table. A heading that fills its own column says what it does
@@ -915,32 +918,26 @@ input::placeholder { color: #a9bdb2; }
   text-underline-offset: 3px;
 }
 .preset-column-take:hover { color: var(--green-deep); }
-/* One reading, pressable, and marked when it is the one chosen. */
+/* Recorded values are pressable; only differences from yours are green. */
 .preset-cell {
   font: inherit;
   width: 100%;
   text-align: left;
   white-space: normal;
   line-height: 1.25;
-  color: var(--ink-soft);
+  color: var(--ink);
   background: none;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   padding: 0.25rem 0.4rem;
   cursor: pointer;
 }
-.preset-cell:hover { border-color: var(--line); background: var(--paper-tint); }
-/*
- * A setting that reading is not recorded on. The value shown is this page's
- * own, which is what choosing that reading would leave in force - so the cell
- * is not wrong about what happens, only about whose opinion it is. Faint, so
- * the eye reads the table as four opinions only where there are four.
- */
-.preset-cell-unrecorded { color: var(--ink-faint); }
+button.preset-cell:hover { border-color: var(--ink-soft); }
+/* Missing documentation is neither a choice nor a disagreement. */
+.preset-cell-unrecorded { display: block; color: var(--ink-soft); cursor: default; }
 .preset-key { margin: 0.9rem 0 0; max-width: 46rem; }
-.preset-cell-chosen {
+.preset-cell-differs {
   color: var(--green-deep);
-  font-weight: 600;
   border-color: var(--green);
   background: var(--green-soft);
 }
@@ -962,13 +959,15 @@ input::placeholder { color: #a9bdb2; }
 /* The first group opens the table, where the column headings are already the
    rule above it. */
 .preset-group:first-of-type .preset-group-head th { padding-top: 0.35rem; }
-/*
- * Most rows read the same across all four: the readings part in a handful of
- * places and nowhere else. Marking the ones that differ puts the eye on what
- * is actually being decided between.
- */
-.preset-row-differs th[scope="row"] { font-weight: 700; }
-.preset-row-differs td { background: var(--paper-tint); }
+/* Source disagreement is independent of the reader's choice: say it in
+   words, without borrowing the green reserved for individual differences. */
+.preset-sources-differ {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--ink-soft);
+}
 
 
 .settings-grid {

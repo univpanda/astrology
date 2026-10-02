@@ -5230,13 +5230,13 @@
       return found || value || '';
     };
 
-    var markChosen = function () {
+    var markDifferences = function () {
       editorCells.forEach(function (cell) {
         var chosen = editorSelects[cell.setting] &&
           editorSelects[cell.setting].value === cell.value;
-        cell.node.className = 'preset-cell' +
-          (cell.own ? '' : ' preset-cell-unrecorded') +
-          (chosen ? ' preset-cell-chosen' : '');
+        // Highlight differences, but keep the button's pressed state tied to
+        // the actual choice. Unrecorded cells never enter this comparison.
+        cell.node.className = 'preset-cell' + (chosen ? '' : ' preset-cell-differs');
         cell.node.setAttribute('aria-pressed', chosen ? 'true' : 'false');
       });
     };
@@ -5267,7 +5267,7 @@
           Object.keys(editorSelects).forEach(function (id) {
             if (wanted && wanted[id] !== undefined) editorSelects[id].value = wanted[id];
           });
-          markChosen();
+          markDifferences();
           updateFromEditor();
         });
         th.appendChild(take);
@@ -5312,10 +5312,11 @@
           });
           var spoken = values.filter(function (v) { return v.own; });
           var agree = spoken.every(function (v) { return v.value === spoken[0].value; });
-          var row = el('tr', agree ? '' : 'preset-row-differs');
+          var row = el('tr');
 
           var name = el('th', null, labelFor(id));
           name.setAttribute('scope', 'row');
+          if (!agree) name.appendChild(el('span', 'preset-sources-differ', 'Sources differ'));
           row.appendChild(name);
 
           var cell = el('td');
@@ -5328,7 +5329,7 @@
             select.appendChild(copy);
           });
           select.addEventListener('change', function () {
-            markChosen();
+            markDifferences();
             updateFromEditor();
           });
           cell.appendChild(select);
@@ -5337,16 +5338,33 @@
 
           values.forEach(function (entry, column) {
             var td = el('td');
+            /*
+             * A reading with nothing on record says so in words rather than
+             * showing the value it would leave in force. The value was faint,
+             * which is a signal the cell lost the moment it also matched what
+             * the reader had set: marking that match takes colour and weight,
+             * and the two were fighting over one channel with the match
+             * winning. A row where none of the three says anything then came
+             * out as three bold endorsements of the page's own choice.
+             *
+             * What it would leave is still said, on the hover, where it cannot
+             * be read as the reading's own position.
+             */
+            if (!entry.own) {
+              var blank = el('span', 'preset-cell preset-cell-unrecorded',
+                'Not recorded');
+              blank.setAttribute('title', 'No documented choice for ' +
+                PRESETS[COLUMNS[column]].label + '. Selecting this reading uses ' +
+                wordsFor(id, entry.value) + '.');
+              td.appendChild(blank);
+              row.appendChild(td);
+              return;
+            }
             var button = el('button', 'preset-cell', wordsFor(id, entry.value));
             button.setAttribute('type', 'button');
-            if (!entry.own) {
-              button.setAttribute('title', PRESETS[COLUMNS[column]].label +
-                ' is not recorded on this. Choosing it leaves this page\u2019s own' +
-                ' reading, which is what the cell shows.');
-            }
             button.addEventListener('click', function () {
               select.value = entry.value;
-              markChosen();
+              markDifferences();
               updateFromEditor();
             });
             td.appendChild(button);
@@ -5365,9 +5383,9 @@
        * about how much of itself is recorded.
        */
       editor.appendChild(el('p', 'field-note preset-key',
-        'Faint cells are settings that reading is not recorded on. Choosing ' +
-        'it leaves this page\u2019s own, which is what the cell shows. A row ' +
-        'in bold is one the recorded readings disagree on.'));
+        'Green values differ from yours. "Sources differ" marks disagreement ' +
+        'between documented choices. "Not recorded" means no documented ' +
+        'choice is available; hover it to see the fallback.'));
     };
 
     var fillEditor = function (values) {
@@ -5375,7 +5393,7 @@
       Object.keys(editorSelects).forEach(function (id) {
         if (values && values[id] !== undefined) editorSelects[id].value = values[id];
       });
-      markChosen();
+      markDifferences();
     };
 
     /*
