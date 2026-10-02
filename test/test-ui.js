@@ -10427,12 +10427,25 @@ console.log('\nThe default-settings row is one line');
    * saves to the same single set either way, so two labels described the
    * store rather than the action.
    */
-  ok('one button, named for what it does, and saving makes it the default',
-    />Update Default Settings</.test(html) &&
-    /textContent =\s*'Update Default Settings';/.test(appSrc) &&
+  /*
+   * One word for the reader's own set, everywhere it is named. Default is what
+   * the page does with it; custom is what it is, and the picker has called it
+   * that from the start, so the button, the page and all three lines say it
+   * too. "Standard default" keeps its name, being the page's own reading
+   * rather than the reader's.
+   */
+  ok('one button, named for what it does, and one word for the reader\u2019s set',
+    />Update Custom Settings</.test(html) &&
+    /textContent =\s*'Update Custom Settings';/.test(appSrc) &&
     !/Create my custom|Edit my custom/.test(html + appSrc) &&
     // The page it opens is named for the same thing the button is.
-    />Default settings</.test(html) &&
+    />Custom settings</.test(html) &&
+    // And the three lines that report on it.
+    /'Custom settings updated\.'/.test(appSrc) &&
+    /differ from your saved custom settings/.test(appSrc) &&
+    /couldn\u2019t save your custom settings/.test(appSrc) &&
+    // Nothing left calling the reader's own set a default.
+    !/your saved default|save your default|Default settings updated/.test(appSrc) &&
     // Saved and in force in one step, which is what the page already did.
     /window\.localStorage\.setItem\(DEFAULT_SETTINGS_KEY, 'mine'\)/.test(appSrc));
   /*
@@ -11308,7 +11321,7 @@ console.log('\nEach preset reaches the figures it is named for');
       var said = out.byId('preset-status').textContent;
       out.byId('preset-forget').fire('click', {});
       return kept === other && chosen === 'mine' &&
-        said === 'Default settings updated.';
+        said === 'Custom settings updated.';
     })());
   /* And a change made in the editor is kept the same way. */
   ok('and a change made in the editor is kept as it is made', (function () {
@@ -11341,7 +11354,7 @@ console.log('\nEach preset reaches the figures it is named for');
     fields['node-type'].fire('change', { target: fields['node-type'] });
     var inEditor = out.byId('preset-editor-status');
     var toldThere = inEditor.hidden === false &&
-      /couldn\u2019t save your default/.test(inEditor.textContent);
+      /couldn\u2019t save your custom settings/.test(inEditor.textContent);
     out.storage.setItem = realSet;
     out.byId('preset-back').fire('click', {});
     return toldThere &&
@@ -11363,7 +11376,7 @@ console.log('\nEach preset reaches the figures it is named for');
     out.storage.setItem = realSet;
     ayanamsa.value = ayanamsa.value === 'kp' ? 'raman' : 'kp';
     ayanamsa.fire('change', { target: ayanamsa });
-    var cleared = out.byId('preset-status').textContent === 'Default settings updated.';
+    var cleared = out.byId('preset-status').textContent === 'Custom settings updated.';
     out.byId('preset-forget').fire('click', {});
     return warned && cleared;
   })());

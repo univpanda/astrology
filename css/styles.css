@@ -778,7 +778,7 @@ input::placeholder { color: #a9bdb2; }
 .preset-status { margin: 0; text-align: left; }
 
 /*
- * The page for building a default of your own, in place of the settings
+ * The page for building custom settings of your own, in place of the settings
  * rather than over them. It takes the panel's whole width, which is the point:
  * the comparison is six columns and a modal is narrower than what it covers.
  */

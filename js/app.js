@@ -5180,7 +5180,7 @@
       forget.hidden = !exists;
       // The same editor is used before and after a personal default exists.
       document.getElementById('preset-create').textContent =
-        'Update Default Settings';
+        'Update Custom Settings';
     };
 
     /*
@@ -5484,7 +5484,7 @@
      * Raman" written over the notice that it no longer did. The claim is made
      * when the writing happens rather than when it was asked for.
      */
-    var CHANGED_NOTICE = 'These settings differ from your saved default.';
+    var CHANGED_NOTICE = 'These settings differ from your saved custom settings.';
     var notice = document.getElementById('preset-notice');
     var sayStatus = function (text) {
       var off = markDrift();
@@ -5501,7 +5501,7 @@
       apply(name);
       try {
         window.localStorage.setItem(DEFAULT_SETTINGS_KEY, name);
-        persistenceStatus = 'Default settings updated.';
+        persistenceStatus = 'Custom settings updated.';
       } catch (e) {
         persistenceStatus = SAVE_FAILED;
       }
@@ -5529,7 +5529,7 @@
 
     document.getElementById('preset-back').addEventListener('click', closePage);
 
-    var SAVE_FAILED = 'Applied for this session, but couldn’t save your default.';
+    var SAVE_FAILED = 'Applied for this session, but couldn’t save your custom settings.';
     // Only explicit user edits reach this writer; restoration never does.
     var storeAsDefault = function (values) {
       ++settingsRevision;
@@ -5555,7 +5555,7 @@
       }
       showMine();
       choice.value = 'mine';
-      persistenceStatus = 'Default settings updated.';
+      persistenceStatus = 'Custom settings updated.';
       what.textContent = '';
       sayStatus('');
       return true;
