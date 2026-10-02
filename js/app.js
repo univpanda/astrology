@@ -2135,7 +2135,7 @@
                   return Astro.SIGNS[(firstSign + h - 1) % 12] + ', the ' + Yogas.ordinal(h);
                 }).join(' and ') + '.' }
             : { text: '–', cls: 'numeric' },
-          { text: GrahaView.shortNakshatra(nak.name) + ' - ' + nak.pada,
+          { text: GrahaView.shortNakshatra(nak.name) + ' ' + nak.pada,
             cls: 'nakshatra-name',
             title: 'Nakshatra ' + nak.name + ', pada ' + nak.pada +
               ' of four, ruled by ' + nak.lord + '.' },

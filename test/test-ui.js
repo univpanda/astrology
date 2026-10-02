@@ -7098,7 +7098,7 @@ ok('Graha Vimsopaka uses Dashavarga in every chart tab and follows scoring setti
           row.children[5].textContent === expectedLord &&
           row.children[6].textContent === String(((displayed.sign - firstSign) % 12 + 12) % 12 + 1) &&
           row.children[7].textContent === (owned.length ? owned.join(', ') : '–') &&
-          row.children[8].textContent === GrahaView.shortNakshatra(nakshatra.name) + ' - ' + nakshatra.pada &&
+          row.children[8].textContent === GrahaView.shortNakshatra(nakshatra.name) + ' ' + nakshatra.pada &&
           row.children[12].textContent === expectedAge &&
           lordCellsMatch &&
           karakaCell.textContent === (karaka ? GrahaView.karakaShort(karaka) : '–') &&
@@ -7155,7 +7155,7 @@ ok('Nakshtra, NLord and SLord have individual single-row headings', (function ()
   return ["label: 'Nakshtra'", "label: 'NLord'", "label: 'SLord'"]
     .every(function (label) {
       return block.indexOf(label) >= 0;
-    }) && /\{ text: GrahaView\.shortNakshatra\(nak\.name\) \+ ' - ' \+ nak\.pada,/
+    }) && /\{ text: GrahaView\.shortNakshatra\(nak\.name\) \+ ' ' \+ nak\.pada,/
       .test(appSrc);
 })());
 ok('and long nakshatra names wrap between their words', (function () {
