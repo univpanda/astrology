@@ -1016,8 +1016,11 @@ var Shadbala = (function () {
       ? LUMINARY_RULE.BORROWED : LUMINARY_RULE.KENDRA;
     var luminaryCheshta = (options && options.luminaryCheshta) === LUMINARY_CHESHTA.COUNTED
       ? LUMINARY_CHESHTA.COUNTED : LUMINARY_CHESHTA.OMITTED;
-    var mercuryNature = (options && options.mercuryNature) === 'benefic'
-      ? 'benefic' : 'qualified';
+    var mercuryNature = (options && options.mercuryNature) || chart.mercuryNature;
+    if (mercuryNature !== Astro.MERCURY_NATURE.BENEFIC &&
+        mercuryNature !== Astro.MERCURY_NATURE.ASSOCIATED) {
+      mercuryNature = Astro.MERCURY_NATURE.QUALIFIED;
+    }
     var kranti = (options && options.kranti) === KRANTI.TRUE
       ? KRANTI.TRUE : KRANTI.LONGITUDE;
     var ayanaConstant = (options && options.ayanaConstant) === AYANA_CONSTANT.PARASHARA.key

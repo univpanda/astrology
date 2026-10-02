@@ -5911,7 +5911,9 @@
     render(lastChart);
     status.textContent = always
       ? 'Mercury is now read a benefic whatever company he keeps.'
-      : 'Mercury is now read a malefic when combust or joined to one.';
+      : this.value === 'associated'
+        ? 'Mercury is now read a malefic when sharing a sign with any malefic, including the Sun.'
+        : 'Mercury is now read a malefic when combust or sharing a sign with another malefic.';
   });
 
   document.getElementById('ayana-constant').addEventListener('change', function () {

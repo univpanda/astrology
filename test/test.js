@@ -247,6 +247,66 @@ console.log('\nMercury\u2019s nature, with its qualifier and without');
   }));
 })();
 
+console.log('\nMercury association and Tony Blair\u2019s Paksha Bala');
+(function () {
+  var place = { latitude: 55.9521, longitude: -3.1965, tzOffsetMinutes: 60 };
+  var chart = A.chart({ jdUT: A.julianDay(1953, 5, 6, 5 + 10 / 60),
+    latitude: place.latitude, longitude: place.longitude,
+    tzOffsetMinutes: place.tzOffsetMinutes, ayanamsa: 'lahiri', trueNode: false });
+  var normal = Shadbala.compute(chart, place);
+  var associated = Shadbala.compute(chart, place, { mercuryNature: 'associated' });
+  check('Blair Mercury: existing default retains benefic Paksha',
+    normal.grahas.Mercury.kala.paksha, 31.294226276489024, 1e-8);
+  check('Blair Mercury: same-sign association gives the malefic complement',
+    associated.grahas.Mercury.kala.paksha, 28.705773723510976, 1e-8);
+  ok('the association reading rounds to Star Jyotish\u2019s reported 29',
+    Math.round(associated.grahas.Mercury.kala.paksha) === 29 &&
+    associated.grahas.Mercury.benefic === false);
+  ok('other planets keep their own Paksha and all Saptavargaja scores stay unchanged',
+    Shadbala.GRAHAS.every(function (g) {
+      return (g === 'Mercury' || normal.grahas[g].kala.paksha === associated.grahas[g].kala.paksha) &&
+        normal.grahas[g].sthana.saptavargaja === associated.grahas[g].sthana.saptavargaja;
+    }));
+  chart.mercuryNature = 'associated';
+  ok('the chart-carried choice reaches both classification and Shadbala',
+    A.naturalBenefics(chart).Mercury === false &&
+    Shadbala.compute(chart, place).grahas.Mercury.kala.paksha === associated.grahas.Mercury.kala.paksha);
+  ok('an explicit qualified setting still overrides the chart-carried choice',
+    Shadbala.compute(chart, place, { mercuryNature: 'qualified' }).grahas.Mercury.benefic === true);
+  ok('always-benefic and unknown-setting fallback retain their existing behaviour',
+    Shadbala.compute(chart, place, { mercuryNature: 'benefic' }).grahas.Mercury.benefic === true &&
+    Shadbala.compute(chart, place, { mercuryNature: 'unknown' }).grahas.Mercury.benefic === true);
+  var synthetic = function (changes) {
+    var pos = { Sun: 0, Moon: 140, Mercury: 20, Mars: 50, Jupiter: 80, Venus: 180,
+      Saturn: 240, Rahu: 20, Ketu: 200 };
+    Object.keys(changes || {}).forEach(function (g) { pos[g] = changes[g]; });
+    return { planets: Object.keys(pos).map(function (g) {
+      return { name: g, longitude: pos[g], sign: Math.floor(pos[g] / 30), retrograde: false };
+    }) };
+  };
+  var nature = function (c, rule) { return A.naturalBenefics(c, { mercuryNature: rule }).Mercury; };
+  ok('same sign without combustion differs under the two rules',
+    nature(synthetic(), 'qualified') && !nature(synthetic(), 'associated'));
+  ok('cross-sign combustion is separate from same-sign association',
+    !nature(synthetic({ Sun: 29, Mercury: 31, Mars: 70 }), 'qualified') &&
+    nature(synthetic({ Sun: 29, Mercury: 31, Mars: 70 }), 'associated'));
+  ok('both rules count Mars and Saturn as same-sign malefics',
+    ['qualified', 'associated'].every(function (rule) {
+      return !nature(synthetic({ Sun: 100, Mars: 22 }), rule) &&
+        !nature(synthetic({ Sun: 100, Saturn: 22 }), rule);
+    }));
+  ok('the Moon is judged by its nature, not simply by sharing a sign',
+    !nature(synthetic({ Sun: 40, Moon: 22 }), 'associated') &&
+    nature(synthetic({ Sun: 160, Moon: 22 }), 'associated'));
+  ok('benefics and nodes do not become malefic company under the new rule',
+    nature(synthetic({ Sun: 100, Jupiter: 22, Venus: 25 }), 'associated'));
+  ok('missing Mercury remains safe under either association rule',
+    ['qualified', 'associated'].every(function (rule) {
+      var c = synthetic(); c.planets = c.planets.filter(function (p) { return p.name !== 'Mercury'; });
+      return nature(c, rule);
+    }));
+})();
+
 console.log('\nThe Moon reaches her moolatrikona, which is not her own sign');
 /*
  * Six of the seven have their moolatrikona inside a sign they own, so testing

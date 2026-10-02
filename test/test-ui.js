@@ -10915,6 +10915,31 @@ console.log('\nEach preset reaches the figures it is named for');
   };
 
 
+  ok('the Mercury association option is saved, editable and reaches Paksha Bala', (function () {
+    out.applyPreset('page');
+    var state = function () { return stateFor({ jdUT: Astro.julianDay(1953, 5, 6, 5 + 10 / 60),
+      latitude: 55.9521, longitude: -3.1965, tzOffsetMinutes: 60, ayanamsa: 'lahiri' }); };
+    var select = out.byId('mercury-nature');
+    var before = out.strengthsFor(state()).grahas.Mercury.kala.paksha;
+    select.value = 'associated';
+    select.fire('change', { target: select });
+    var saved = out.readMySettings();
+    var after = out.strengthsFor(state()).grahas.Mercury.kala.paksha;
+    out.byId('preset-create').fire('click', {});
+    var editor = editorFields()['mercury-nature'];
+    var result = select.options.some(function (o) { return o.value === 'associated'; }) &&
+      saved && saved['mercury-nature'] === 'associated' && editor.value === 'associated' &&
+      near(before, 31.294226276489024, 1e-8) && near(after, 28.705773723510976, 1e-8);
+    editor.value = 'qualified';
+    editor.fire('change', { target: editor });
+    result = result && select.value === 'qualified' &&
+      near(out.strengthsFor(state()).grahas.Mercury.kala.paksha, before, 1e-8);
+    out.byId('preset-forget').fire('click', {});
+    out.byId('preset-back').fire('click', {});
+    out.applyPreset('page');
+    return result;
+  })());
+
   /* Raman: Example 51's cheshta balas, on his own chart and his own ayanamsa. */
   ok('B. V. Raman reaches the cheshta balas of his Example 51', (function () {
     out.applyPreset('raman');

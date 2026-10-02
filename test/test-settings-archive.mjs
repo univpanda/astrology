@@ -30,6 +30,11 @@ check('fallbacks cannot masquerade as documented source choices', () => {
   assert.equal(choice('star', 'hora-mercury').basis, 'fallback');
   assert.equal(choice('star', 'mercury-nature').basis, 'fallback');
 });
+check('all Mercury nature rules are archived without changing the default', () => {
+  const s = c.settings.find(s => s.id === 'mercury-nature');
+  assert.equal(s.defaultValue, 'qualified');
+  assert.deepEqual(s.options.map(o => o.value), ['qualified', 'associated', 'benefic']);
+});
 check('Blair figures retain their source, uncertainty and exact reported values', () => {
   const o = c.observations.find(o => o.id === 'star-tony-blair-mercury-2026-10-02');
   assert.equal(o.source, 'Star Jyotish');

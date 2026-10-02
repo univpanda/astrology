@@ -1791,10 +1791,10 @@ var Astro = (function () {
    * second copy would drift from it.
    */
   /*
-   * Whether Mercury's benefic nature is read with its qualifier or without.
+   * Three readings of Mercury's association with malefics.
    *
-   * 'qualified' is Parashara's verse plus the authorities' gloss on it, and is
-   * what this reads by default. Raman's footnote to his drik bala table:
+   * 'qualified' preserves this page's combustion-based reading of the Sun's
+   * association, and remains the default. Raman's drik bala footnote says:
    * "Mercury is a malefic as he is very closely associated with Sun or
    * combusted." K. S. Charak: "well-associated Mercury" is a natural benefic
    * and "afflicted Mercury" a natural malefic, since Mercury "behaves as a
@@ -1803,6 +1803,11 @@ var Astro = (function () {
    * with two malefics Sun and Ketu", and says of combustion generally that
    * planets so placed "become evil".
    *
+   * 'associated' interprets joining a malefic as sharing its sign, including
+   * the Sun. This is an explicit implementation of association, not a claim
+   * that the quoted verse itself defines association in terms of signs.
+   * Combustion is separate and does not cross a sign boundary under this rule.
+   *
    * 'benefic' is the same authors' unqualified opening list - Charak's "Natural
    * benefics: Moon, Mercury, Jupiter, Venus", Rao's "Natural Benefics: Jupiter,
    * Venus, Mercury and Moon" - taken without the sentence that follows it.
@@ -1810,7 +1815,7 @@ var Astro = (function () {
    * Panchang reads Mercury benefic on a chart where he sits 10 degrees from the
    * Sun in the same sign.
    */
-  var MERCURY_NATURE = { QUALIFIED: 'qualified', BENEFIC: 'benefic' };
+  var MERCURY_NATURE = { QUALIFIED: 'qualified', ASSOCIATED: 'associated', BENEFIC: 'benefic' };
 
   function naturalBenefics(chart, options) {
     var positions = {};
@@ -1850,15 +1855,10 @@ var Astro = (function () {
      * Mercury's sign may be either and the Moon's own nature no longer depends
      * on Mercury.
      *
-     * The Sun is judged by combustion and every other malefic by the sign. That
-     * asymmetry is Raman's, in the footnote to his drik bala table: "Mercury is
-     * a malefic as he is very closely associated with Sun or combusted." It has
-     * to be asymmetric, because Mercury is never more than about 28 degrees
-     * from the Sun and shares its sign in 44% of charts - a rule that made
-     * Mercury malefic every time it stood in the Sun's sign would be reporting
-     * Mercury's orbit rather than its company. The two tests disagree in 41% of
-     * charts, in both directions: same sign but far enough to keep its rays, or
-     * combust across a sign boundary.
+     * The qualified rule uses combustion for the Sun and sharing a sign for
+     * other malefics. The associated rule uses sharing a sign for all of them.
+     * They can disagree in either direction: same sign but not combust, or
+     * combust across a sign boundary. Do not silently combine the two rules.
      *
      * The nodes are not counted. Raman lists them among the malefics, so an
      * argument for counting them exists, but it is a separate question from the
@@ -1872,11 +1872,12 @@ var Astro = (function () {
      * charts respectively.
      */
     var mercury = positions.Mercury;
+    var nature = (options && options.mercuryNature) || chart.mercuryNature;
     var badCompany = function () {
-      if (positions.Sun && isCombust('Mercury', mercury.longitude,
+      if (nature !== MERCURY_NATURE.ASSOCIATED && positions.Sun && isCombust('Mercury', mercury.longitude,
           positions.Sun.longitude, mercury.retrograde)) return true;
       return Object.keys(benefics).some(function (g) {
-        if (g === 'Sun' || g === 'Mercury') return false;
+        if (g === 'Mercury' || (g === 'Sun' && nature !== MERCURY_NATURE.ASSOCIATED)) return false;
         if (benefics[g] === true) return false;          // a benefic is good company
         return positions[g] && positions[g].sign === mercury.sign;
       });
@@ -1888,7 +1889,6 @@ var Astro = (function () {
      * setting that reached only one of them would have the same chart calling
      * him benefic on one tab and malefic on another.
      */
-    var nature = (options && options.mercuryNature) || chart.mercuryNature;
     benefics.Mercury = nature === MERCURY_NATURE.BENEFIC
       ? true : (!mercury || !badCompany());
     return benefics;

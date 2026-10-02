@@ -21,6 +21,11 @@
       "Mercury and Sun share Aries about 18.987 degrees apart. A same-sign solar association rule could explain the classification, but this is an inference, not a verified Star Jyotish rule."
     ],
     "changesToDocumentedPreset": [],
+    "availableReproductionOption": {
+      "settingId": "mercury-nature",
+      "value": "associated",
+      "effect": "Treats Mercury as malefic when sharing a sign with any of the seven grahas classified as malefic, including the Sun. Gives Paksha 28.705773723510976 for the reproduction chart; does not establish Star Jyotish's general rule."
+    },
     "note": "Preserve the reported figures as evidence; do not promote inferred rules to documented preset choices. The original Star Jyotish screenshot and full configuration have not been supplied."
   }
 ]
