@@ -1210,10 +1210,32 @@ function stripHtml(label) {
   ok('only the first panel starts visible',
      /id="panel-shadbala"[^>]*hidden/.test(html) && /id="panel-vargas"[^>]*hidden/.test(html) &&
      !/id="panel-grahas"[^>]*hidden/.test(html));
+  /*
+   * The balas read outward: Vimsopaka over the sixteen divisions, then the
+   * twelve bhavas, then the six shares of a graha. Grahas open the strip and
+   * the readings follow it.
+   *
+   * The strip, the panels and the arrow keys are three lists of the same
+   * order, and nothing but a test keeps them one. Reading them off the markup
+   * rather than naming them means a reorder has to agree with itself.
+   */
+  ok('the strip, the panels and the keyboard agree on one order', (function () {
+    var strip = stripHtml('Graha tables');
+    var tabs = (strip.match(/id="tab-([a-z]+)"/g) || [])
+      .map(function (m) { return m.slice('id="tab-'.length, -1); });
+    var panels = (html.match(/id="panel-([a-z]+)"/g) || [])
+      .map(function (m) { return m.slice('id="panel-'.length, -1); })
+      .filter(function (n) { return tabs.indexOf(n) >= 0; });
+    var keys = ((appSrc.match(/setupTabs\(\['grahas'[^\]]*\]/) || [''])[0]
+      .match(/'([a-z]+)'/g) || []).map(function (m) { return m.slice(1, -1); });
+    return tabs.join(',') === 'grahas,vargas,bhavas,shadbala,yogas,aspects' &&
+      panels.join(',') === tabs.join(',') &&
+      keys.join(',') === tabs.join(',');
+  })());
   ok('one tab implementation still serves every strip',
      (appSrc.match(/function setupTabs/g) || []).length === 1 &&
      (appSrc.match(/setupTabs\(/g) || []).length === 4 &&
-     /setupTabs\(\['grahas', 'shadbala', 'bhavas', 'vargas', 'yogas', 'aspects'\]/
+     /setupTabs\(\['grahas', 'vargas', 'bhavas', 'shadbala', 'yogas', 'aspects'\]/
        .test(appSrc));
   // Two chart slots, and one table reading both of them plus the rashi.
   ok('there are two chart slots, each with two selects', ['a', 'b'].every(function (slot) {
@@ -6859,8 +6881,12 @@ ok('and the ascendant row says plainly which sign that lord rules',
  * directions, and that is what is checked here.
  */
 ok('the panel carries no note under the table', (function () {
+  // To whichever panel comes next, rather than to a named one: this slice
+  // read to panel-shadbala and so swallowed two more panels the day the
+  // strip was reordered, picking up their notes as if they were this one's.
   var at = html.indexOf('id="panel-grahas"');
-  var panel = html.slice(at, html.indexOf('id="panel-shadbala"'));
+  var next = html.indexOf('id="panel-', at + 10);
+  var panel = html.slice(at, next);
   return !/varga-note/.test(panel) && /id="graha-tables"/.test(panel);
 })());
 ok('so the dispositor hover carries the direction, and both directions',

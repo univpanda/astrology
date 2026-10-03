@@ -321,12 +321,12 @@
       <div class="tabs subtabs" role="tablist" aria-label="Graha tables">
         <button type="button" class="tab" role="tab" id="tab-grahas"
                 aria-controls="panel-grahas" aria-selected="true">Grahas</button>
-        <button type="button" class="tab" role="tab" id="tab-shadbala"
-                aria-controls="panel-shadbala" aria-selected="false" tabindex="-1">Shadbala</button>
-        <button type="button" class="tab" role="tab" id="tab-bhavas"
-                aria-controls="panel-bhavas" aria-selected="false" tabindex="-1">Bhava Bala</button>
         <button type="button" class="tab" role="tab" id="tab-vargas"
                 aria-controls="panel-vargas" aria-selected="false" tabindex="-1">Vimsopaka Bala</button>
+        <button type="button" class="tab" role="tab" id="tab-bhavas"
+                aria-controls="panel-bhavas" aria-selected="false" tabindex="-1">Bhava Bala</button>
+        <button type="button" class="tab" role="tab" id="tab-shadbala"
+                aria-controls="panel-shadbala" aria-selected="false" tabindex="-1">Shadbala</button>
         <button type="button" class="tab" role="tab" id="tab-yogas"
                 aria-controls="panel-yogas" aria-selected="false" tabindex="-1">Yogas</button>
         <button type="button" class="tab" role="tab" id="tab-aspects"
@@ -342,51 +342,6 @@
         <div class="tabs subtabs graha-charts" id="graha-chart-tabs" role="tablist"
              aria-label="Which chart the graha table reads"></div>
         <div id="graha-tables"></div>
-      </div>
-
-      <div id="panel-shadbala" role="tabpanel" aria-labelledby="tab-shadbala" hidden>
-        <div class="varga-scheme-row">
-          <div class="view-switch" role="group" aria-label="How to show the strengths">
-            <button type="button" class="view-option" id="shadbala-as-table"
-                    aria-pressed="true">Table</button>
-            <button type="button" class="view-option" id="shadbala-as-chart"
-                    aria-pressed="false">Chart</button>
-          </div>
-        </div>
-        <!-- One chart for all seven, built in app.js: each graha's total as a
-             share of the minimum it is asked for, which is the one figure in
-             the table that compares across grahas. -->
-        <div id="shadbala-chart" hidden></div>
-        <!-- The four lords of the birth, filled in app.js. Each is worth all of
-             its bala to one graha and nothing to the other six, so the four
-             rows below say which graha has them only by being the one cell in
-             the row that is not zero. -->
-        <p class="lords-strip" id="shadbala-lords"></p>
-        <div class="table-scroll" id="shadbala-table-scroll">
-          <!-- Built in app.js: the columns are whichever grahas Shadbala reckons,
-               so the header is the chart's own list rather than a fixed seven. -->
-          <table id="shadbala-table">
-            <thead><tr></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        <p class="varga-note" id="shadbala-note"></p>
-      </div>
-
-      <!--
-        The strength of a house rather than of a graha. It is read on the
-        chalit, so it needs cusps, and where the angles degenerate there are
-        none and the panel says so instead of printing figures.
-      -->
-      <div id="panel-bhavas" role="tabpanel" aria-labelledby="tab-bhavas" hidden>
-        <div class="table-scroll" id="bhava-table-scroll">
-          <!-- Built in app.js: twelve rows, one per bhava. -->
-          <table id="bhava-table">
-            <thead><tr></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        <p class="varga-note" id="bhava-note"></p>
       </div>
 
       <div id="panel-vargas" role="tabpanel" aria-labelledby="tab-vargas" hidden>
@@ -420,6 +375,51 @@
           <span class="flag flag-c">[C]</span> Combust,
           <span class="flag flag-d">[D]</span> Debilitated. Additional conditions, separate from the score.
         </p>
+      </div>
+
+      <!--
+        The strength of a house rather than of a graha. It is read on the
+        chalit, so it needs cusps, and where the angles degenerate there are
+        none and the panel says so instead of printing figures.
+      -->
+      <div id="panel-bhavas" role="tabpanel" aria-labelledby="tab-bhavas" hidden>
+        <div class="table-scroll" id="bhava-table-scroll">
+          <!-- Built in app.js: twelve rows, one per bhava. -->
+          <table id="bhava-table">
+            <thead><tr></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="varga-note" id="bhava-note"></p>
+      </div>
+
+      <div id="panel-shadbala" role="tabpanel" aria-labelledby="tab-shadbala" hidden>
+        <div class="varga-scheme-row">
+          <div class="view-switch" role="group" aria-label="How to show the strengths">
+            <button type="button" class="view-option" id="shadbala-as-table"
+                    aria-pressed="true">Table</button>
+            <button type="button" class="view-option" id="shadbala-as-chart"
+                    aria-pressed="false">Chart</button>
+          </div>
+        </div>
+        <!-- One chart for all seven, built in app.js: each graha's total as a
+             share of the minimum it is asked for, which is the one figure in
+             the table that compares across grahas. -->
+        <div id="shadbala-chart" hidden></div>
+        <!-- The four lords of the birth, filled in app.js. Each is worth all of
+             its bala to one graha and nothing to the other six, so the four
+             rows below say which graha has them only by being the one cell in
+             the row that is not zero. -->
+        <p class="lords-strip" id="shadbala-lords"></p>
+        <div class="table-scroll" id="shadbala-table-scroll">
+          <!-- Built in app.js: the columns are whichever grahas Shadbala reckons,
+               so the header is the chart's own list rather than a fixed seven. -->
+          <table id="shadbala-table">
+            <thead><tr></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="varga-note" id="shadbala-note"></p>
       </div>
 
       <div id="panel-yogas" role="tabpanel" aria-labelledby="tab-yogas" hidden>

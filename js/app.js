@@ -6118,7 +6118,7 @@
   setupTabs(['mine', 'figures'],
     document.querySelector('#panel-saved .subtabs'), {});
 
-  var tableTabs = setupTabs(['grahas', 'shadbala', 'bhavas', 'vargas', 'yogas', 'aspects'],
+  var tableTabs = setupTabs(['grahas', 'vargas', 'bhavas', 'shadbala', 'yogas', 'aspects'],
     document.querySelector('.tabs.subtabs:not(.graha-charts)'));
   wireGrahaChartKeys();
   wireSettingHelp();
