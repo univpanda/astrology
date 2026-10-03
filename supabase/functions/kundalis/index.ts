@@ -53,9 +53,18 @@ function clean(entry: Record<string, unknown>, token: string, touch = false) {
     zone: text(entry.zone, 64) || 'UTC',
     birth_date: text(entry.date, 10),
     birth_time: text(entry.time, 8),
-    time_standard: entry.standard === 'lmt' ? 'lmt' : 'zone',
-    ayanamsa: text(entry.ayanamsa, 32) || 'lahiri',
-    true_node: entry.trueNode === true,
+    /*
+     * No ayanamsa, no node, no time standard. A record is the birth: who,
+     * when and where. How it is read is whichever reading the reader has
+     * chosen when they open it, so storing one here was storing a promise the
+     * page had stopped keeping - and writing it on every save would have gone
+     * on resetting a column nothing reads.
+     *
+     * The columns are left in place and left alone. An insert takes their
+     * defaults; a patch does not mention them, so what is already there
+     * stays, and dropping them is a migration to make deliberately rather
+     * than as a side effect of this.
+     */
     // Whitelisted rather than passed through: an unknown value would fail the
     // check constraint and lose the whole save.
     gender: ['female', 'male', 'other'].includes(String(entry.gender)) ? String(entry.gender) : 'unstated',
@@ -76,8 +85,8 @@ Deno.serve(async (req) => {
     if (token.length < 16 || token.length > 128) return json({ error: 'a valid owner token is required' }, 400);
 
     const query = `?owner_token=eq.${encodeURIComponent(token)}` +
-      '&select=id,name,place_label,latitude,longitude,zone,birth_date,birth_time,time_standard,' +
-      'ayanamsa,true_node,gender,celebrity,flagged,note,opened_at' +
+      '&select=id,name,place_label,latitude,longitude,zone,birth_date,birth_time,' +
+      'gender,celebrity,flagged,note,opened_at' +
       /*
        * Last read first. updated_at is when the record was last written, which
        * is a different question and the wrong one for a list that is read far

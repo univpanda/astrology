@@ -1638,9 +1638,14 @@ ok('deleting the chart on screen forgets the row', (function () {
   return /currentEntry = null;/.test(body) &&
          /removed\.id \? removed\.id === currentEntry\.id/.test(body);
 })());
-ok('the ayanamsa a chart was cast with survives an edit',
+/*
+ * A chart is cast with the ayanamsa in force, and editing it does not reach
+ * back for an older one: there is none to reach for, the reckoning having
+ * stopped travelling with a record.
+ */
+ok('a chart is cast with the ayanamsa in force, and nothing restores another',
    /ayanamsa: params\.ayanamsa, trueNode: params\.trueNode/.test(appSrc) &&
-   /document\.getElementById\('ayanamsa'\)\.value = state\.ayanamsa;/.test(appSrc));
+   !/value = state\.ayanamsa/.test(appSrc));
 
 // Each saved row carries an edit and a delete, and delete asks first.
 // Yogas and the lesson library.
@@ -4038,6 +4043,7 @@ ok('every script the page loads parses', (function () {
     '  __out.saveCurrent = saveCurrent; __out.setLastChart = function (v) { lastChart = v; };\n' +
     '  __out.savedNote = savedNote;\n' +
     '  __out.readSaved = readSaved; __out.writeSaved = writeSaved;\n' +
+    '  __out.fromRow = fromRow; __out.applyEntryToForm = applyEntryToForm;\n' +
     '  __out.savedList = savedList; __out.STORAGE_KEY = STORAGE_KEY;\n' +
     '  __out.figuresList = document.getElementById("figures-list");\n' +
     '  __out.byId = function (id) { return document.getElementById(id); };\n' +
@@ -6245,11 +6251,18 @@ ok('and changing it recomputes the open chart', (function () {
  * ayanamsa it was cast with, and opening one still puts the select where that
  * chart put it, or the settings panel would lie about what is on screen.
  */
-ok('and a saved chart still carries and restores its own', (function () {
+/*
+ * And a saved chart does not. It used to carry its own ayanamsa, node and
+ * clock and put them back on opening, which made a record a claim about how
+ * to read it as well as about a birth. The reading is whichever one is chosen
+ * now, so none of the three is written back from a row or from the chart on
+ * screen.
+ */
+ok('and a saved chart does not restore a reckoning of its own', (function () {
   return /ayanamsa: params\.ayanamsa, trueNode: params\.trueNode/.test(appSrc) &&
-    /document\.getElementById\('ayanamsa'\)\.value = entry\.ayanamsa \|\| 'lahiri';/
-      .test(appSrc) &&
-    /document\.getElementById\('ayanamsa'\)\.value = state\.ayanamsa;/.test(appSrc);
+    !/value = entry\.ayanamsa/.test(appSrc) &&
+    !/value = entry\.trueNode/.test(appSrc) &&
+    !/value = state\.ayanamsa/.test(appSrc);
 })());
 /*
  * That the Shadbala tab runs Raman's arithmetic on positions he did not use is
@@ -8736,7 +8749,13 @@ ok('the flag is stored and synced beside the rest of the record',
    /flagged: row\.flagged === true,/.test(appSrc) &&
    /flagged: state\.flagged === true,/.test(appSrc) &&
    /flagged: entry\.flagged === true,/.test(fnSrc) &&
-   /ayanamsa,true_node,gender,celebrity,flagged,note/.test(fnSrc));
+   /gender,celebrity,flagged,note/.test(fnSrc) &&
+   /*
+    * And the reckoning is not among what a record is made of. Checked on the
+    * row it builds rather than on the whole file, the comment saying why it
+    * is absent naming the three it leaves out.
+    */
+   !/ayanamsa:|true_node:|time_standard:/.test(fnSrc));
 
 /*
  * It did not. The renderer empties its container on every draw and the card
@@ -11701,6 +11720,56 @@ console.log('\nEach preset reaches the figures it is named for');
     });
     return out.readDefaultChoice() === 'parashara' && off.length === 0 &&
       out.readMySettings() === null;
+  })());
+
+  /*
+   * A record is the birth: who, when and where. How it is read is the reading
+   * chosen now, so none of the three that decide a reckoning travels with a
+   * chart, and opening one years later gives the chart as the reader reads
+   * today rather than as they read then.
+   *
+   * Nothing caught this when the behaviour changed underneath it: the rows
+   * went on carrying an ayanamsa and a node while the page had stopped
+   * applying them, and the suite stayed green. Of this reader's own 77 rows,
+   * 19 were kept on the mean node, and every one of them computed Rahu
+   * differently from the value stored beside it.
+   */
+  ok('a saved chart carries the birth and not the reckoning', (function () {
+    var row = { id: 'r1', name: 'Kept', place_label: 'Delhi, India',
+      latitude: 28.61, longitude: 77.21, zone: 'Asia/Kolkata',
+      birth_date: '1977-11-15', birth_time: '03:00:00',
+      time_standard: 'lmt', ayanamsa: 'raman', true_node: false,
+      gender: 'male', celebrity: false, flagged: false, note: '' };
+    var entry = out.fromRow(row);
+    var carried = ['standard', 'ayanamsa', 'trueNode'].filter(function (k) {
+      return entry[k] !== undefined;
+    });
+    // And opening it leaves the reader's own choices where they were.
+    out.applyPreset('parashara');
+    var before = {
+      ayanamsa: out.byId('ayanamsa').value,
+      node: out.byId('node-type').value,
+      standard: out.byId('time-standard').value
+    };
+    out.applyEntryToForm(entry);
+    var after = {
+      ayanamsa: out.byId('ayanamsa').value,
+      node: out.byId('node-type').value,
+      standard: out.byId('time-standard').value
+    };
+    return carried.length === 0 &&
+      JSON.stringify(before) === JSON.stringify(after) &&
+      // The birth itself does travel, or the record would be no record.
+      entry.date === '1977-11-15' && entry.zone === 'Asia/Kolkata' &&
+      entry.latitude === 28.61;
+  })());
+  /* And nothing of the reckoning is sent back when one is saved. */
+  ok('and saving one sends the birth alone', (function () {
+    var at = appSrc.indexOf('function saveCurrent');
+    var block = appSrc.slice(at, appSrc.indexOf('openedAt:', at));
+    return !/ayanamsa:|trueNode:|standard:/.test(block) &&
+      // What a record is made of is still sent.
+      /latitude: state\.place\.lat/.test(block) && /zone: state\.place\.zone/.test(block);
   })());
 
   var labelFor = function () {

@@ -4203,9 +4203,12 @@
       zone: row.zone,
       date: row.birth_date,
       time: String(row.birth_time).slice(0, 8),
-      standard: row.time_standard,
-      ayanamsa: row.ayanamsa,
-      trueNode: row.true_node,
+      /*
+       * No ayanamsa, no node, no time standard. A record is the birth: who,
+       * when and where. How it is read is the reading chosen now, so a chart
+       * saved years ago opens under whatever is in force today rather than
+       * carrying a reckoning the reader has since moved away from.
+       */
       gender: row.gender || 'unstated',
       celebrity: row.celebrity === true,
       flagged: row.flagged === true,
@@ -4646,9 +4649,7 @@
       latitude: state.place.lat,
       longitude: state.place.lon,
       zone: state.place.zone,
-      standard: state.standard,
-      ayanamsa: state.ayanamsa,
-      trueNode: state.trueNode,
+      // The reckoning is not part of the record; see fromRow above.
       gender: state.gender,
       celebrity: state.celebrity,
       flagged: state.flagged === true,
@@ -4775,9 +4776,12 @@
     writeDate(entry.date);
     var t = entry.time.split(':').map(Number);
     writeTime(t[0], t[1] || 0, t[2] || 0);
-    document.getElementById('ayanamsa').value = entry.ayanamsa || 'lahiri';
-    document.getElementById('node-type').value = entry.trueNode ? 'true' : 'mean';
-    document.getElementById('time-standard').value = entry.standard === 'lmt' ? 'lmt' : 'zone';
+    /*
+     * The three that decide a reckoning are not touched. A record is the
+     * birth, and how it is read is whatever the reader has chosen now, so
+     * opening one leaves their ayanamsa, their node and their clock where
+     * they are rather than reaching back for the ones it was cast under.
+     */
     document.getElementById('gender').value =
       (!entry.gender || entry.gender === 'unstated') ? '' : entry.gender;
     document.getElementById('celebrity').checked = entry.celebrity === true;
@@ -6102,9 +6106,12 @@
     writeDate(state.y + '-' + String(state.mo).padStart(2, '0') + '-' +
       String(state.d).padStart(2, '0'));
     writeTime(state.h, state.mi, state.time.second);
-    document.getElementById('time-standard').value = state.standard === 'lmt' ? 'lmt' : 'zone';
-    document.getElementById('ayanamsa').value = state.ayanamsa;
-    document.getElementById('node-type').value = state.trueNode ? 'true' : 'mean';
+    /*
+     * Not the reckoning. This puts the chart on screen back into the form so
+     * it can be corrected, and that chart was cast with the settings in force
+     * now, so writing them back is at best a no-op and at worst a way for a
+     * stale copy to overwrite a live choice.
+     */
     document.getElementById('gender').value =
       (!state.gender || state.gender === 'unstated') ? '' : state.gender;
     document.getElementById('celebrity').checked = state.celebrity === true;
