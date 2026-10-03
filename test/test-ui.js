@@ -1192,7 +1192,7 @@ function stripHtml(label) {
   ok('the graha tab is one tab, holding a strip of chart tabs',
      /id="tab-grahas"/.test(html) && !/tab-table-/.test(appSrc) &&
      /id="graha-chart-tabs"/.test(html) && /id="graha-tables"/.test(html) &&
-     /table\.id = view\.chalit \? 'graha-table-chalit' : 'graha-table-d' \+ view\.division;/.test(appSrc));
+     /table\.id = view\.chalit \? 'graha-table-' \+ grahaViewKey\(view\) : 'graha-table-d' \+ view\.division;/.test(appSrc));
   ok('shadbala shares the table strip rather than a card of its own',
      /id="tab-shadbala"[\s\S]{0,140}aria-controls="panel-shadbala"/.test(html) &&
      html.indexOf('id="panel-shadbala"') > html.indexOf('id="panel-table-b"') &&
@@ -12222,7 +12222,7 @@ console.log('\nChalit draws the bhavas, not the signs');
     };
     ['Ascendant','Moon'].forEach(function (reference) {
       var ref=out.byId('ref-a');ref.value=reference;ref.fire('change',{});
-      var table=find(out.byId('graha-tables'),function(n){return n.id==='graha-table-chalit';});
+      var table=find(out.byId('graha-tables'),function(n){return n.id==='graha-table-chalit-'+reference.toLowerCase();});
       var d1=find(out.byId('graha-tables'),function(n){return n.id==='graha-table-d1';});
       correct = correct && !!table && !!d1;
       if (!table) return;
@@ -12237,6 +12237,54 @@ console.log('\nChalit draws the bhavas, not the signs');
       });
     });
     choice.value='1';out.byId('ref-a').value='Ascendant';out.setLastChart(null);
+    return correct;
+  })());
+  ok('two Chalit references have separate tables and working table tabs', (function () {
+    var out=global.appExports;
+    var find=function(node,predicate){
+      if(predicate(node))return node;
+      for(var i=0;i<node.children.length;i++){var hit=find(node.children[i],predicate);if(hit)return hit;}
+    };
+    var choose=function(id,value){var n=out.byId(id);n.value=value;n.fire('change',{});};
+    var table=function(reference){return find(out.byId('graha-tables'),function(n){return n.id==='graha-table-chalit-'+reference;});};
+    var moonHouse=function(t){return t.children.filter(function(n){return n.tag==='tbody';})[0].children
+      .filter(function(n){return n.children[0].textContent==='Moon';})[0].children[6].textContent;};
+    var click=function(label){out.byId('graha-chart-tabs').children.filter(function(n){return n.textContent===label;})[0].fire('click',{});};
+    out.setLastChart(null);out.applyPreset('rao');
+    out.loadSaved({name:'Two Chalit references',date:'1980-09-21',time:'08:39:00',
+      latitude:19.0728,longitude:72.8826,zone:'Asia/Kolkata',placeLabel:'Mumbai',gender:'male'});
+    choose('varga-a','chalit');choose('ref-a','Ascendant');
+    choose('varga-b','chalit');choose('ref-b','Moon');
+    var correct=!!table('ascendant') && !!table('moon') && moonHouse(table('ascendant'))==='4' && moonHouse(table('moon'))==='1';
+    click('Chalit · Moon');
+    correct=correct && !table('moon').parentNode.hidden && table('ascendant').parentNode.hidden;
+    click('Chalit · Ascendant');
+    correct=correct && !table('ascendant').parentNode.hidden && table('moon').parentNode.hidden;
+    choose('ref-b','Ascendant');
+    correct=correct && !table('moon') && out.byId('graha-chart-tabs').children.length===2;
+    choose('varga-b','9');click('D9');
+    var d9=find(out.byId('graha-tables'),function(n){return n.id==='graha-table-d9';});
+    correct=correct && !d9.parentNode.hidden;
+    choose('varga-a','1');out.setLastChart(null);
+    return correct;
+  })());
+  ok('unavailable polar Chalit clears stale charts and tables, then recovers', (function () {
+    var out=global.appExports;
+    var choose=function(id,value){var n=out.byId(id);n.value=value;n.fire('change',{});};
+    var hasSvg=function(slot){return out.byId('chart-'+slot).children.some(function(n){return n.tag==='svg';});};
+    out.setLastChart(null);out.applyPreset('rao');
+    var birth={name:'Polar regression',date:'2000-01-01',time:'11:00:00',
+      latitude:67,longitude:0,zone:'UTC',placeLabel:'67 north',gender:'male'};
+    out.loadSaved(birth);choose('varga-a','chalit');choose('varga-b','chalit');
+    var correct=!hasSvg('a') && !hasSvg('b') && /unavailable/.test(out.byId('chart-a').children[0].textContent) &&
+      out.byId('graha-chart-tabs').children.length===1;
+    choose('varga-a','1');correct=correct && hasSvg('a');
+    choose('varga-a','chalit');
+    out.loadSaved(Object.assign({},birth,{latitude:30}));
+    correct=correct && hasSvg('a') && hasSvg('b') && out.byId('graha-chart-tabs').children.length===2;
+    out.loadSaved(birth);
+    correct=correct && !hasSvg('a') && !hasSvg('b') && out.byId('graha-chart-tabs').children.length===1;
+    choose('varga-a','1');choose('varga-b','9');out.setLastChart(null);
     return correct;
   })());
   /* Rotating a chalit counts from the bhava the anchor is in. */

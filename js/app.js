@@ -1769,10 +1769,22 @@
   }
 
   /** Draw one slot: its chart, its caption and its table. */
+  var CHALIT_UNAVAILABLE = 'Chalit is unavailable for this birth time and location: ' +
+    'the angles do not define separate Sripati houses. Choose D1 or another chart.';
+
   function drawSlot(slot) {
     var state = lastChart;
     var set = slotSettings(slot);
     var varga = Astro.VARGAS.filter(function (v) { return v.division === set.division; })[0];
+    var cusps = set.chalit ? Astro.bhavaCusps(state.chart.ascendant.longitude,
+      state.chart.midheaven && state.chart.midheaven.longitude) : null;
+    if (set.chalit && !cusps) {
+      var container = document.getElementById('chart-' + slot);
+      container.innerHTML = '';
+      container.appendChild(el('p', 'field-note', CHALIT_UNAVAILABLE));
+      document.getElementById('caption-' + slot).textContent = 'Bhava Chalit · unavailable';
+      return;
+    }
 
     Charts.render(document.getElementById('chart-' + slot), {
       style: styleSelect.value,
@@ -1785,10 +1797,7 @@
        * has them: a varga lagna is a mapped point and there is no varga
        * midheaven, so there is no quadrant to divide.
        */
-      cusps: set.chalit
-        ? Astro.bhavaCusps(state.chart.ascendant.longitude,
-            state.chart.midheaven.longitude)
-        : null,
+      cusps: cusps,
       yogas: yogasByGraha(state, set.division, set.reference),
       dignities: GrahaView.dignitiesByGraha(state, set.division, tatkalikaSetting(), horaSetting(),
         horaMercurySetting()),
@@ -1879,13 +1888,17 @@
    * showing D1 that slot's rotation is used rather than a second D1 row being
    * added, so two charts on D7 and D1 give two rows, not three.
    */
+  function grahaViewKey(view) {
+    return view.chalit ? 'chalit-' + (view.reference || 'Ascendant').toLowerCase() : view.division;
+  }
+
   function grahaViews() {
     var settings = SLOTS.map(slotSettings);
     var onD1 = settings.filter(function (s) { return s.division === 1 && !s.chalit; })[0];
     var views = [onD1 || { division: 1, reference: 'Ascendant' }];
     var seen = { 1: true };
     settings.forEach(function (set) {
-      var key = set.chalit ? 'chalit' : set.division;
+      var key = grahaViewKey(set);
       if (seen[key]) return;
       seen[key] = true;
       views.push(set);
@@ -1924,22 +1937,26 @@
   function renderGrahaTable(state) {
     var c = state.chart;
     var views = grahaViews();
+    if (views.some(function (view) { return view.chalit; }) &&
+        !Astro.bhavaCusps(c.ascendant.longitude, c.midheaven && c.midheaven.longitude)) {
+      views = views.filter(function (view) { return !view.chalit; });
+    }
     var strip = document.getElementById('graha-chart-tabs');
     var host = document.getElementById('graha-tables');
     strip.innerHTML = '';
     host.innerHTML = '';
 
-    var divisions = views.map(function (view) { return view.chalit ? 'chalit' : view.division; });
+    var divisions = views.map(grahaViewKey);
     if (divisions.indexOf(grahaChart) < 0) grahaChart = 1;
 
     views.forEach(function (view) {
       var varga = Astro.VARGAS.filter(function (x) {
         return x.division === view.division;
       })[0];
-      var key = view.chalit ? 'chalit' : view.division;
-      var selected = key === grahaChart;
+      var viewKey = grahaViewKey(view);
+      var selected = viewKey === grahaChart;
 
-      var tab = el('button', 'tab', view.chalit ? 'Chalit' : 'D' + view.division);
+      var tab = el('button', 'tab', view.chalit ? 'Chalit · ' + view.reference : 'D' + view.division);
       tab.type = 'button';
       tab.setAttribute('role', 'tab');
       tab.setAttribute('aria-selected', String(selected));
@@ -1948,7 +1965,7 @@
         'Houses counted from ' +
         (view.reference === 'Ascendant' ? 'the ascendant' : view.reference) + '.';
       tab.addEventListener('click', function () {
-        grahaChart = key;
+        grahaChart = viewKey;
         renderGrahaTable(state);
       });
       strip.appendChild(tab);
@@ -2047,6 +2064,8 @@
    */
   function grahaTableFor(state, view) {
     var c = state.chart;
+    var cusps = view.chalit ? Astro.bhavaCusps(c.ascendant.longitude, c.midheaven && c.midheaven.longitude) : null;
+    if (view.chalit && !cusps) return el('p', 'field-note', CHALIT_UNAVAILABLE);
     var positionsD1 = {};
     c.planets.forEach(function (p) { positionsD1[p.name] = p; });
     var sun = positionsD1.Sun;
@@ -2062,7 +2081,6 @@
     };
     var sunBurn = sun ? burnAt(sun.longitude) : null;
 
-    var cusps = view.chalit ? Astro.bhavaCusps(c.ascendant.longitude, c.midheaven.longitude) : null;
     var firstBhava = 1;
     // House 1 for this chart: the ascendant, or the graha it is turned onto.
     var firstSign = Astro.vargaPosition(c.ascendant.longitude, view.division).sign;
@@ -2223,7 +2241,7 @@
     });
 
     var table = el('table', 'graha-table');
-    table.id = view.chalit ? 'graha-table-chalit' : 'graha-table-d' + view.division;
+    table.id = view.chalit ? 'graha-table-' + grahaViewKey(view) : 'graha-table-d' + view.division;
 
     var thead = el('thead');
     var headRow = el('tr');

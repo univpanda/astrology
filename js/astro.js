@@ -2079,7 +2079,13 @@ var Astro = (function () {
    * its own lagna.
    */
   function bhavaCusps(ascendant, midheaven) {
+    if (!Number.isFinite(ascendant) || !Number.isFinite(midheaven)) return null;
     var asc = norm360(ascendant), mc = norm360(midheaven);
+    // At some polar moments the angles reverse their zodiacal order. Dividing
+    // those forward arcs would wrap the zodiac three times, not form houses.
+    // Coincident angles also fail to define twelve distinct bhavas.
+    var quadrant = norm360(asc - mc);
+    if (quadrant <= 1e-9 || quadrant >= 180 - 1e-9) return null;
     var madhya = [];
     [[asc, norm360(mc + 180), 0], [norm360(mc + 180), norm360(asc + 180), 3],
      [norm360(asc + 180), mc, 6], [mc, asc, 9]].forEach(function (q) {
@@ -2106,15 +2112,18 @@ var Astro = (function () {
    * Which bhava a longitude falls in, 1-12, by the cusps rather than by sign.
    */
   function bhavaOf(longitude, cusps) {
+    if (!Number.isFinite(longitude) || !cusps) return null;
     var lon = norm360(longitude);
+    var found = null;
     for (var i = 0; i < cusps.length; i++) {
       // Measured forward from the opening sandhi, so the bhava that wraps past
       // Aries is found by the same arithmetic as every other.
       if (norm360(lon - cusps[i].start) < norm360(cusps[i].end - cusps[i].start)) {
-        return cusps[i].bhava;
+        if (found !== null) return null;
+        found = cusps[i].bhava;
       }
     }
-    return 1;
+    return found;
   }
 
   function vargaPosition(longitude, division) {
