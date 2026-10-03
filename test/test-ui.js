@@ -1192,7 +1192,7 @@ function stripHtml(label) {
   ok('the graha tab is one tab, holding a strip of chart tabs',
      /id="tab-grahas"/.test(html) && !/tab-table-/.test(appSrc) &&
      /id="graha-chart-tabs"/.test(html) && /id="graha-tables"/.test(html) &&
-     /table\.id = 'graha-table-d' \+ view\.division;/.test(appSrc));
+     /table\.id = view\.chalit \? 'graha-table-chalit' : 'graha-table-d' \+ view\.division;/.test(appSrc));
   ok('shadbala shares the table strip rather than a card of its own',
      /id="tab-shadbala"[\s\S]{0,140}aria-controls="panel-shadbala"/.test(html) &&
      html.indexOf('id="panel-shadbala"') > html.indexOf('id="panel-table-b"') &&
@@ -6884,8 +6884,8 @@ ok('the rashi is always a row, however the charts are set',
    /var views = \[onD1 \|\| \{ division: 1, reference: 'Ascendant' \}\];/.test(appSrc) &&
    /var seen = \{ 1: true \};/.test(appSrc));
 ok('and a chart already on D1 gives two rows, not three',
-   /var onD1 = settings\.filter\(function \(s\) \{ return s\.division === 1; \}\)\[0\];/.test(appSrc) &&
-   /if \(seen\[set\.division\]\) return;/.test(appSrc));
+   /var onD1 = settings\.filter\(function \(s\) \{ return s\.division === 1 && !s\.chalit; \}\)\[0\];/.test(appSrc) &&
+   /if \(seen\[key\]\) return;/.test(appSrc));
 ok('a chart on D1 lends its own rotation to that row, rather than a second row appearing',
    /onD1 \|\| \{ division: 1, reference: 'Ascendant' \}/.test(appSrc));
 /*
@@ -7333,7 +7333,7 @@ ok('lordship comes from the shared helper, not a column-specific one',
 ok('each tab says which chart it is and what its houses are counted from',
    /'Houses counted from ' \+/.test(appSrc) &&
    /view\.reference === 'Ascendant' \? 'the ascendant' : view\.reference/.test(appSrc) &&
-   /tab\.title = \(varga \? varga\.label \+ ', ' \+ varga\.about \+ '\. ' : ''\) \+/.test(appSrc));
+   /tab\.title = \(view\.chalit \? 'Sripati bhavas\. ' : varga \? varga\.label \+ ', ' \+ varga\.about \+ '\. ' : ''\) \+/.test(appSrc));
 
 /*
  * Where a graha sits and what it owns are the two halves of reading it, and the
@@ -12111,6 +12111,145 @@ console.log('\nEach preset reaches the figures it is named for');
   out.byId('preset-forget').fire('click', {});
 })();
 
+
+console.log('\nChalit draws the bhavas, not the signs');
+/*
+ * A chalit is the rashi cut into houses at Sripati's madhyas. A graha sits in
+ * the bhava whose span holds it, which is often not the house its sign would
+ * give it, and each box is labelled with the sign its own madhya falls in.
+ *
+ * Driven against the same chart drawn both ways, because the whole claim is
+ * that the two differ: a chalit that agreed with the rashi everywhere would be
+ * a chalit in name only.
+ */
+(function () {
+  var chart = Astro.chart({ jdUT: Astro.julianDay(1980, 9, 21, 8 + 39 / 60 - 5.5),
+    latitude: 19.0728, longitude: 72.8826, tzOffsetMinutes: 330 });
+  var cusps = Astro.bhavaCusps(chart.ascendant.longitude, chart.midheaven.longitude);
+  var base = { style: 'north', planets: chart.planets,
+    ascendant: chart.ascendant.longitude, division: 1, reference: 'Ascendant',
+    yogas: {}, dignities: {}, ruling: {}, karakas: {} };
+  var read = function (opts) {
+    var box = makeNode('div');
+    Charts.render(box, opts);
+    var out = {};
+    (function walk(n) {
+      if (n.tag === 'text' && n.attrs['data-graha']) {
+        out[n.attrs['data-graha']] = n.attrs;
+      }
+      (n.children || []).forEach(walk);
+    })(box);
+    return out;
+  };
+  var rashi = read(base);
+  var chalit = read({ style: 'north', planets: chart.planets,
+    ascendant: chart.ascendant.longitude, division: 1, reference: 'Ascendant',
+    yogas: {}, dignities: {}, ruling: {}, karakas: {}, cusps: cusps });
+
+  ok('a chalit puts grahas in other houses than the signs do', (function () {
+    var moved = Object.keys(rashi).filter(function (g) {
+      return rashi[g]['data-house'] !== chalit[g]['data-house'];
+    });
+    return moved.length >= 3 && moved.indexOf('Mercury') >= 0;
+  })());
+  /*
+   * And every graha keeps its own sign. The box it is drawn in is a bhava, so
+   * the sign on that box is the bhava's and not the graha's, and a card taking
+   * the box's sign would report the wrong dispositor and the wrong nakshatra
+   * lord for every graha that moved.
+   */
+  ok('and every graha keeps the sign it actually stands in', (function () {
+    return Object.keys(rashi).every(function (g) {
+      return rashi[g]['data-sign'] === chalit[g]['data-sign'] &&
+        rashi[g]['data-degree'] === chalit[g]['data-degree'];
+    });
+  })());
+  /*
+   * The twelve boxes carry the signs of their own madhyas, in order, so a sign
+   * may be shown twice and another not at all. That is what a chart indexed by
+   * sign cannot draw.
+   */
+  ok('the boxes are labelled from the madhyas, repeats and all', (function () {
+    var labels = cusps.map(function (c) { return c.sign; });
+    // Read the sign numbers the renderer wrote, in house order.
+    var drawn = [];
+    (function walk(n) {
+      if (n.attrs && n.attrs.class === 'sign-num' && n.textContent) {
+        drawn.push(Number(n.textContent) - 1);
+      }
+      (n.children || []).forEach(walk);
+    })((function () { var b = makeNode('div');
+      Charts.render(b, { style: 'north', planets: chart.planets,
+        ascendant: chart.ascendant.longitude, division: 1, reference: 'Ascendant',
+        yogas: {}, dignities: {}, ruling: {}, karakas: {}, cusps: cusps });
+      return b; })());
+    return drawn.join(',') === labels.join(',');
+  })());
+  ok('South and North keep repeated-sign bhavas separate, including rotated charts', (function () {
+    var repeated = Astro.bhavaCusps(267.07, 192.43);
+    var planets = chart.planets.map(function (p) {
+      return Object.assign({}, p, {longitude:p.name === 'Moon' ? repeated[5].madhya
+        : p.name === 'Sun' ? repeated[6].madhya : p.longitude});
+    });
+    return ['Ascendant', 'Moon', 'Sun'].every(function (reference) {
+      var opts = {planets:planets,ascendant:267.07,division:1,reference:reference,cusps:repeated};
+      var north = read(Object.assign({style:'north'},opts));
+      var south = read(Object.assign({style:'south'},opts));
+      return south.Moon['data-house'] !== south.Sun['data-house'] &&
+        Object.keys(north).every(function (name) {
+          return ['data-house','data-sign','data-degree'].every(function (field) {
+            return north[name][field] === south[name][field];
+          });
+        });
+    });
+  })());
+  ok('the chart dropdown draws Chalit and its table with matching houses', (function () {
+    var out = global.appExports;
+    out.setLastChart(null);
+    out.applyPreset('rao');
+    out.loadSaved({name:'Chalit regression',date:'1980-09-21',time:'08:39:00',
+      latitude:19.0728,longitude:72.8826,zone:'Asia/Kolkata',placeLabel:'Mumbai',gender:'male'});
+    var choice = out.byId('varga-a');
+    var offered = choice.options.some(function (o) { return o.value === 'chalit'; });
+    choice.value = 'chalit';choice.fire('change',{});
+    var correct = offered && /Bhava Chalit/.test(out.byId('caption-a').textContent);
+    if (!correct) console.log('       Chalit dropdown:', offered, out.byId('caption-a').textContent, out.byId('form-error').textContent);
+    var find = function (node, predicate) {
+      if (predicate(node)) return node;
+      for (var i=0;i<node.children.length;i++) {
+        var hit=find(node.children[i],predicate);if(hit)return hit;
+      }
+    };
+    ['Ascendant','Moon'].forEach(function (reference) {
+      var ref=out.byId('ref-a');ref.value=reference;ref.fire('change',{});
+      var table=find(out.byId('graha-tables'),function(n){return n.id==='graha-table-chalit';});
+      var d1=find(out.byId('graha-tables'),function(n){return n.id==='graha-table-d1';});
+      correct = correct && !!table && !!d1;
+      if (!table) return;
+      var body=table.children.filter(function(n){return n.tag==='tbody';})[0];
+      body.children.forEach(function(row){
+        var name=row.children[0].textContent;
+        var target=find(out.byId('chart-a'),function(n){return n.attrs['data-graha']===name;});
+        var match = !!target && (name === 'Ascendant' || target.attrs['data-house']==='House '+row.children[6].textContent) &&
+          target.attrs['data-sign']===row.children[3].textContent;
+        if (!match) console.log('       Chalit row:', reference, name, target && target.attrs['data-house'], row.children[6].textContent, target && target.attrs['data-sign'],row.children[3].textContent);
+        correct = correct && match;
+      });
+    });
+    choice.value='1';out.byId('ref-a').value='Ascendant';out.setLastChart(null);
+    return correct;
+  })());
+  /* Rotating a chalit counts from the bhava the anchor is in. */
+  ok('and rotating one counts houses from the anchor\u2019s own bhava', (function () {
+    var moon = chart.planets.filter(function (p) { return p.name === 'Moon'; })[0];
+    var fromMoon = read({ style: 'north', planets: chart.planets,
+      ascendant: chart.ascendant.longitude, division: 1, reference: 'Moon',
+      yogas: {}, dignities: {}, ruling: {}, karakas: {}, cusps: cusps });
+    return fromMoon.Moon['data-house'] === 'House 1' &&
+      Astro.bhavaOf(moon.longitude, cusps) === Number(
+        (chalit.Moon['data-house'] || '').replace('House ', ''));
+  })());
+})();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

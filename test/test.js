@@ -8656,5 +8656,102 @@ console.log('\nThe hora read as chapter 7 reads it');
   }));
 })();
 
+console.log('\nThe bhavas, cut where Sripati cuts them');
+/*
+ * Reconciled against the worked chart the K. N. Rao textbook carries through
+ * its bhava bala chapters: chapter 11 prints the twelve madhyas and chapter 13
+ * the sandhis a bhava runs between, so both ends of the scheme are checked
+ * against figures somebody published rather than against this file's own
+ * arithmetic.
+ *
+ * Its ascendant is 267.07 and its midheaven 192.43, which is all the scheme
+ * takes. The quadrants come out 105.36 and 74.64, so the houses either side of
+ * the meridian differ by more than a third - the asymmetry whole signs cannot
+ * show and the reason for drawing a chalit chart at all.
+ */
+(function () {
+  var cusps = A.bhavaCusps(267.07, 192.43);
+  /* Chapter 11, the madhyas it works the bhavadhipati bala from. */
+  var PRINTED = [267.07, 302.18, 337.30, 12.43, 37.30, 62.18,
+                 87.07, 122.18, 157.30, 192.43, 217.30, 242.18];
+  var worst = 0;
+  cusps.forEach(function (b, i) {
+    worst = Math.max(worst, Math.abs(((b.madhya - PRINTED[i] + 180) % 360) - 180));
+  });
+  ok('every madhya is the one the book prints', worst < 0.02,
+    'worst ' + worst.toFixed(3) + ' degrees');
+
+  /*
+   * Chapter 13, page 142, which prints where each bhava begins and ends. A
+   * bhava runs from halfway back to the madhya before it to halfway on to the
+   * one after, so the end of each is the start of the next and the twelve
+   * close the circle with nothing over.
+   */
+  var deg = function (sign, d, m, sec) { return sign * 30 + d + m / 60 + (sec || 0) / 3600; };
+  var SANDHIS = {
+    6: [deg(1, 19, 45), deg(2, 14, 37, 40)],
+    7: [deg(2, 14, 37, 40), deg(3, 14, 37, 40)],
+    8: [deg(3, 14, 37, 40), deg(4, 19, 45)],
+    9: [deg(4, 19, 45), deg(5, 24, 52, 20)],
+    10: [deg(5, 24, 52, 20), deg(6, 24, 52, 20)],
+    11: [deg(6, 24, 52, 20), deg(7, 19, 45)],
+    12: [deg(7, 19, 45), deg(8, 14, 37, 40)]
+  };
+  var offBy = 0;
+  Object.keys(SANDHIS).forEach(function (n) {
+    var b = cusps[Number(n) - 1];
+    offBy = Math.max(offBy,
+      Math.abs(((b.start - SANDHIS[n][0] + 180) % 360) - 180),
+      Math.abs(((b.end - SANDHIS[n][1] + 180) % 360) - 180));
+  });
+  ok('and every sandhi the book prints, to the arcminute', offBy < 0.02,
+    'worst ' + (offBy * 60).toFixed(1) + ' arcminutes');
+
+  ok('the bhavas close the circle, each ending where the next begins',
+    cusps.every(function (b, i) {
+      return Math.abs(b.end - cusps[(i + 1) % 12].start) < 1e-9;
+    }) && Math.abs(cusps.reduce(function (sum, b) {
+      return sum + A.norm360(b.end - b.start);
+    }, 0) - 360) < 1e-9);
+
+  /*
+   * And the asymmetry is real rather than an artefact: three houses one side
+   * of the meridian span a third more ecliptic than three on the other.
+   */
+  ok('the quadrants are unequal, which is what chalit is for', (function () {
+    var one = A.norm360(cusps[3].madhya - cusps[0].madhya);
+    var two = A.norm360(cusps[6].madhya - cusps[3].madhya);
+    return Math.abs(one - 105.36) < 0.05 && Math.abs(two - 74.64) < 0.05;
+  })());
+
+  /*
+   * A graha is in the bhava whose span holds it, which is not always the one
+   * its sign would put it in. The book's own chart shows it: bhavas VI and VII
+   * are both Gemini, so a sign cannot name a bhava on its own.
+   */
+  ok('a bhava is found by its span, and two may share a sign', (function () {
+    var signs = cusps.map(function (b) { return b.sign; });
+    var shared = signs.filter(function (sg, i) { return signs.indexOf(sg) !== i; });
+    return shared.length > 0 &&
+      A.bhavaOf(cusps[5].madhya, cusps) === 6 &&
+      A.bhavaOf(cusps[6].madhya, cusps) === 7 &&
+      // and a point just inside a sandhi belongs to the bhava it opens
+      A.bhavaOf(A.norm360(cusps[8].start + 0.01), cusps) === 9 &&
+      A.bhavaOf(A.norm360(cusps[8].start - 0.01), cusps) === 8;
+  })());
+
+  /* Every longitude lands in exactly one bhava, including across Aries. */
+  ok('every longitude falls in one bhava and only one', (function () {
+    for (var lon = 0; lon < 360; lon += 0.25) {
+      var held = cusps.filter(function (b) {
+        return A.norm360(lon - b.start) < A.norm360(b.end - b.start);
+      });
+      if (held.length !== 1) return false;
+      if (held[0].bhava !== A.bhavaOf(lon, cusps)) return false;
+    }
+    return true;
+  })());
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

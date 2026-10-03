@@ -2053,6 +2053,70 @@ var Astro = (function () {
    * every widely used panchang follows, and it reproduces their divisional
    * degrees to the arcsecond.
    */
+  /*
+   * The twelve bhava madhyas, and the sandhis a bhava runs between.
+   *
+   * Sripati's scheme, which is the one the Rao textbook works its bhava balas
+   * on: the ascendant, the nadir, the descendant and the midheaven cut the
+   * ecliptic into four quadrants, and each quadrant is divided into three
+   * equal parts. The cut points are the madhyas, the mid-point of a bhava
+   * rather than its edge, and a bhava runs from halfway back to the madhya
+   * before it to halfway on to the madhya after - Raman's arambha sandhi and
+   * virama sandhi, with the madhya at full strength between them.
+   *
+   * The quadrants are unequal, which is the whole point of it: the ascendant
+   * and the midheaven are ninety degrees apart only at the equator and at two
+   * instants of the day, so three houses on one side of the meridian can span
+   * a third more ecliptic than three on the other. Whole signs ignore that and
+   * chalit does not, which is why a graha can sit in one house by sign and the
+   * next by cusp.
+   *
+   * There is no divisional version of this and there cannot be one built the
+   * same way. A quadrant is an arc of the sky between two astronomical points;
+   * a varga is a mapping that cuts the zodiac into pieces and scatters them,
+   * so the image of that arc is a different arc of a different length, with
+   * nothing continuous left to divide in three. A varga keeps whole signs from
+   * its own lagna.
+   */
+  function bhavaCusps(ascendant, midheaven) {
+    var asc = norm360(ascendant), mc = norm360(midheaven);
+    var madhya = [];
+    [[asc, norm360(mc + 180), 0], [norm360(mc + 180), norm360(asc + 180), 3],
+     [norm360(asc + 180), mc, 6], [mc, asc, 9]].forEach(function (q) {
+      var step = norm360(q[1] - q[0]) / 3;
+      for (var k = 0; k < 3; k++) madhya[(q[2] + k) % 12] = norm360(q[0] + step * k);
+    });
+    var sandhi = madhya.map(function (m, i) {
+      var before = madhya[(i + 11) % 12];
+      return norm360(before + norm360(m - before) / 2);
+    });
+    return madhya.map(function (m, i) {
+      return {
+        bhava: i + 1,
+        madhya: m,
+        sign: signOf(m),
+        degreeInSign: m - signOf(m) * 30,
+        start: sandhi[i],
+        end: sandhi[(i + 1) % 12]
+      };
+    });
+  }
+
+  /**
+   * Which bhava a longitude falls in, 1-12, by the cusps rather than by sign.
+   */
+  function bhavaOf(longitude, cusps) {
+    var lon = norm360(longitude);
+    for (var i = 0; i < cusps.length; i++) {
+      // Measured forward from the opening sandhi, so the bhava that wraps past
+      // Aries is found by the same arithmetic as every other.
+      if (norm360(lon - cusps[i].start) < norm360(cusps[i].end - cusps[i].start)) {
+        return cusps[i].bhava;
+      }
+    }
+    return 1;
+  }
+
   function vargaPosition(longitude, division) {
     var varga = VARGA_BY_DIVISION[division];
     if (!varga) return null;
@@ -2447,6 +2511,8 @@ var Astro = (function () {
     DIGNITY: DIGNITY,
     NODES: NODES,
     signOf: signOf,
+    bhavaCusps: bhavaCusps,
+    bhavaOf: bhavaOf,
     norm360: norm360,
     SIGNS: SIGNS,
     SIGNS_SA: SIGNS_SA,

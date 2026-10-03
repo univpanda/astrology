@@ -971,6 +971,14 @@
         varga.appendChild(opt);
       });
       // The rashi chart beside the navamsa is the pairing people reach for.
+      /*
+       * After the sixteen, because it is not one of them: a reader looking for
+       * D9 should not have to pass it, and a reader looking for the houses
+       * knows it is not a division.
+       */
+      var chalitOption = el('option', null, 'Chalit \u00b7 the bhavas');
+      chalitOption.value = 'chalit';
+      varga.appendChild(chalitOption);
       varga.value = i === 0 ? '1' : '9';
       ref.addEventListener('change', function () {
         if (!lastChart) return;
@@ -1071,10 +1079,19 @@
     return names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1];
   }
 
+  /*
+   * Chalit is offered beside the divisions and is not one. A varga is a map of
+   * longitudes onto signs; a chalit is the rashi cut into houses at the
+   * madhyas, so it answers a different question with the same longitudes. It
+   * is carried as a flag beside the division, which stays D1, rather than as a
+   * division number nothing could compute a varga for.
+   */
   function slotSettings(slot) {
+    var chosen = document.getElementById('varga-' + slot).value;
     return {
       reference: document.getElementById('ref-' + slot).value,
-      division: +document.getElementById('varga-' + slot).value
+      chalit: chosen === 'chalit',
+      division: chosen === 'chalit' ? 1 : +chosen
     };
   }
 
@@ -1763,6 +1780,15 @@
       ascendant: state.chart.ascendant.longitude,
       division: set.division,
       reference: set.reference,
+      /*
+       * Cut from the ascendant and the midheaven of this chart. Only the rashi
+       * has them: a varga lagna is a mapped point and there is no varga
+       * midheaven, so there is no quadrant to divide.
+       */
+      cusps: set.chalit
+        ? Astro.bhavaCusps(state.chart.ascendant.longitude,
+            state.chart.midheaven.longitude)
+        : null,
       yogas: yogasByGraha(state, set.division, set.reference),
       dignities: GrahaView.dignitiesByGraha(state, set.division, tatkalikaSetting(), horaSetting(),
         horaMercurySetting()),
@@ -1780,7 +1806,8 @@
     var from = set.reference === 'Ascendant' ? 'from the ascendant'
       : 'from ' + set.reference;
     document.getElementById('caption-' + slot).textContent =
-      varga.name + ' \u00b7 ' + varga.label + ': ' + varga.about + ', ' + from;
+      set.chalit ? 'Bhava Chalit · Sripati houses, ' + from + '. Signs and longitudes are unchanged.'
+        : varga.name + ' \u00b7 ' + varga.label + ': ' + varga.about + ', ' + from;
   }
 
   /*
@@ -1854,12 +1881,13 @@
    */
   function grahaViews() {
     var settings = SLOTS.map(slotSettings);
-    var onD1 = settings.filter(function (s) { return s.division === 1; })[0];
+    var onD1 = settings.filter(function (s) { return s.division === 1 && !s.chalit; })[0];
     var views = [onD1 || { division: 1, reference: 'Ascendant' }];
     var seen = { 1: true };
     settings.forEach(function (set) {
-      if (seen[set.division]) return;
-      seen[set.division] = true;
+      var key = set.chalit ? 'chalit' : set.division;
+      if (seen[key]) return;
+      seen[key] = true;
       views.push(set);
     });
     return views;
@@ -1901,25 +1929,26 @@
     strip.innerHTML = '';
     host.innerHTML = '';
 
-    var divisions = views.map(function (view) { return view.division; });
+    var divisions = views.map(function (view) { return view.chalit ? 'chalit' : view.division; });
     if (divisions.indexOf(grahaChart) < 0) grahaChart = 1;
 
     views.forEach(function (view) {
       var varga = Astro.VARGAS.filter(function (x) {
         return x.division === view.division;
       })[0];
-      var selected = view.division === grahaChart;
+      var key = view.chalit ? 'chalit' : view.division;
+      var selected = key === grahaChart;
 
-      var tab = el('button', 'tab', 'D' + view.division);
+      var tab = el('button', 'tab', view.chalit ? 'Chalit' : 'D' + view.division);
       tab.type = 'button';
       tab.setAttribute('role', 'tab');
       tab.setAttribute('aria-selected', String(selected));
       tab.tabIndex = selected ? 0 : -1;
-      tab.title = (varga ? varga.label + ', ' + varga.about + '. ' : '') +
+      tab.title = (view.chalit ? 'Sripati bhavas. ' : varga ? varga.label + ', ' + varga.about + '. ' : '') +
         'Houses counted from ' +
         (view.reference === 'Ascendant' ? 'the ascendant' : view.reference) + '.';
       tab.addEventListener('click', function () {
-        grahaChart = view.division;
+        grahaChart = key;
         renderGrahaTable(state);
       });
       strip.appendChild(tab);
@@ -2033,13 +2062,18 @@
     };
     var sunBurn = sun ? burnAt(sun.longitude) : null;
 
+    var cusps = view.chalit ? Astro.bhavaCusps(c.ascendant.longitude, c.midheaven.longitude) : null;
+    var firstBhava = 1;
     // House 1 for this chart: the ascendant, or the graha it is turned onto.
     var firstSign = Astro.vargaPosition(c.ascendant.longitude, view.division).sign;
     if (view.reference && view.reference !== 'Ascendant') {
       var anchor = c.planets.filter(function (p) {
         return p.name === view.reference;
       })[0];
-      if (anchor) firstSign = Astro.vargaPosition(anchor.longitude, view.division).sign;
+      if (anchor) {
+        firstSign = Astro.vargaPosition(anchor.longitude, view.division).sign;
+        if (cusps) firstBhava = Astro.bhavaOf(anchor.longitude, cusps);
+      }
     }
 
     /*
@@ -2075,7 +2109,8 @@
     var columns = entities.map(function (r) {
       var v = Astro.vargaPosition(r.longitude, view.division);
       var nak = Astro.nakshatraOf(v.longitude);
-      var house = ((v.sign - firstSign) % 12 + 12) % 12 + 1;
+      var house = cusps ? (Astro.bhavaOf(r.longitude, cusps) - firstBhava + 12) % 12 + 1
+        : ((v.sign - firstSign) % 12 + 12) % 12 + 1;
       var owned = r.isAscendant ? [] : Astro.housesOwned(r.name, firstSign);
       var dispositor = r.isAscendant ? Astro.grahaAbbr(Astro.SIGN_LORDS[v.sign])
         : GrahaView.dispositorOf(v.sign);
@@ -2188,7 +2223,7 @@
     });
 
     var table = el('table', 'graha-table');
-    table.id = 'graha-table-d' + view.division;
+    table.id = view.chalit ? 'graha-table-chalit' : 'graha-table-d' + view.division;
 
     var thead = el('thead');
     var headRow = el('tr');
@@ -2199,6 +2234,10 @@
       var th = el('th', column.groupEnd ? 'graha-group-end' : null, column.label);
       th.setAttribute('scope', 'col');
       th.title = column.says;
+      if (view.chalit && column.label === 'Rules') {
+        th.textContent = 'Rules (D1)';
+        th.title = 'Sign lordships in the rashi chart, from the selected reference. Chalit changes placement, not signs.';
+      }
       headRow.appendChild(th);
     });
     thead.appendChild(headRow);

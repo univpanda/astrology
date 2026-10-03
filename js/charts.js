@@ -364,7 +364,10 @@ var Charts = (function () {
         ? ctx.dignities[p.name].formal : '';
       drawPlanetText(t, p, dignity);
       if (ctx) {
-        var d = describeOccupant(p, ctx.sign, ctx.house, ctx.yogas,
+        // Its own sign where it has one: on a chalit the box is a bhava and
+        // the sign it is labelled with is not the graha's.
+        var d = describeOccupant(p, p.sign === undefined ? ctx.sign : p.sign,
+          ctx.house, ctx.yogas,
           ctx.division, ctx.dignities, ctx.ruling, ctx.karakas);
         setCardData(t, d);
       }
@@ -381,7 +384,16 @@ var Charts = (function () {
    * from the Moon or from any other graha, and it is the sign in the chosen
    * division that counts, not the one in D1.
    */
-  function occupantsBySign(planets, ascLongitude, division, reference, combustion) {
+  /*
+   * `cusps`, when given, draws the chart as a chalit: the twelve boxes are
+   * bhavas cut at Sripati's madhyas rather than signs, a graha sits in the
+   * bhava whose span holds it, and each box is labelled with the sign its own
+   * madhya falls in. Two bhavas may then carry the same sign and one sign may
+   * carry none, which is the whole difference between the two readings and
+   * cannot be shown on a chart indexed by sign.
+   */
+  function occupantsBySign(planets, ascLongitude, division, reference, combustion,
+                           cusps) {
     var bySign = [];
     for (var i = 0; i < 12; i++) bySign.push([]);
     var signOfBody = function (longitude) {
@@ -446,6 +458,12 @@ var Charts = (function () {
       bySign[signOfBody(p.longitude)].push({
         name: p.name, retrograde: p.retrograde, longitude: p.longitude,
         /*
+         * Its own sign, carried on the graha rather than taken from the box it
+         * is drawn in. On a chalit the two part, and the card has to say where
+         * the graha actually stands.
+         */
+        sign: signOfBody(p.longitude),
+        /*
          * Owning both an angle and a trine, counted from whatever house 1 is in
          * this chart rather than fixed to the rashi lagna.
          *
@@ -471,15 +489,38 @@ var Charts = (function () {
     // The lagna is a point, not a graha, so it owns nothing and is never one.
     bySign[ascSign].unshift({
       name: 'Ascendant', retrograde: false, longitude: ascLongitude,
+      sign: ascSign,
       vargottama: repeatsRashi(ascLongitude), yogakaraka: false, combust: false
     });
 
-    return { bySign: bySign, ascSign: ascSign, firstSign: firstSign };
+    var out = { bySign: bySign, ascSign: ascSign, firstSign: firstSign };
+    if (cusps) {
+      var byHouse = [];
+      for (var b = 0; b < 12; b++) byHouse.push([]);
+      bySign.forEach(function (list) {
+        list.forEach(function (p) {
+          byHouse[Astro.bhavaOf(p.longitude, cusps) - 1].push(p);
+        });
+      });
+      out.byHouse = byHouse;
+      out.signOfHouse = cusps.map(function (c) { return c.sign; });
+      /*
+       * Rotation counts from the bhava the anchor sits in, the ascendant's
+       * being bhava 1 by construction.
+       */
+      out.firstHouse = 1;
+      if (reference && reference !== 'Ascendant') {
+        var onto = planets.filter(function (p) { return p.name === reference; })[0];
+        if (onto) out.firstHouse = Astro.bhavaOf(onto.longitude, cusps);
+      }
+    }
+    return out;
   }
 
   function renderNorth(container, planets, ascLongitude, division, reference, yogas,
-                       dignities, ruling, combustion, karakas) {
-    var data = occupantsBySign(planets, ascLongitude, division, reference, combustion);
+                       dignities, ruling, combustion, karakas, cusps) {
+    var data = occupantsBySign(planets, ascLongitude, division, reference,
+      combustion, cusps);
     var svg = svgRoot('north');
     var m = 4, s = SIZE - 2 * m;
     var P = function (fx, fy) { return (m + fx * s).toFixed(1) + ',' + (m + fy * s).toFixed(1); };
@@ -508,11 +549,17 @@ var Charts = (function () {
     svg.appendChild(el('path', { d: d + ' Z', class: 'frame frame-inner' }));
 
     for (var h = 0; h < 12; h++) {
-      var sign = (data.firstSign + h) % 12;
+      /*
+       * A chalit numbers its boxes by bhava and labels each with the sign its
+       * own madhya falls in, so two boxes may show the same sign. A rashi
+       * chart walks the signs from house 1 instead.
+       */
+      var bhava = data.byHouse ? ((data.firstHouse - 1 + h) % 12) : -1;
+      var sign = data.byHouse ? data.signOfHouse[bhava] : (data.firstSign + h) % 12;
       var a = NORTH_ANCHORS[h];
       var cx = m + a[0] * s, cy = m + a[1] * s;
       var g = el('g', { class: 'house' + (h === 0 ? ' first-house' : '') });
-      var occ = data.bySign[sign];
+      var occ = data.byHouse ? data.byHouse[bhava] : data.bySign[sign];
       drawOccupants(g, occ, cx, cy, [NORTH_FIT[h][0] * s, NORTH_FIT[h][1] * s],
         { sign: sign, house: h + 1, yogas: yogas,
           division: division,
@@ -532,19 +579,25 @@ var Charts = (function () {
   }
 
   function renderSouth(container, planets, ascLongitude, division, reference, yogas,
-                       dignities, ruling, combustion, karakas) {
-    var data = occupantsBySign(planets, ascLongitude, division, reference, combustion);
+                       dignities, ruling, combustion, karakas, cusps) {
+    var data = occupantsBySign(planets, ascLongitude, division, reference,
+      combustion, cusps);
+    // Chalit keeps twelve distinct bhava cells, anchored at the lagna's
+    // usual position. Repeated cusp signs must never merge two houses.
     var svg = svgRoot('south');
     var m = 4, cell = (SIZE - 2 * m) / 4;
 
     for (var i = 0; i < 12; i++) {
       var pos = SOUTH_CELLS[i];
       var x = m + pos[0] * cell, y = m + pos[1] * cell;
-      var house = ((i - data.firstSign) % 12 + 12) % 12 + 1;
-      var g = el('g', { class: 'house' + (i === data.firstSign ? ' first-house' : '') });
+      var bhava = (i - data.ascSign + 12) % 12;
+      var sign = data.byHouse ? data.signOfHouse[bhava] : i;
+      var house = data.byHouse ? (bhava - data.firstHouse + 13) % 12 + 1
+        : ((i - data.firstSign) % 12 + 12) % 12 + 1;
+      var g = el('g', { class: 'house' + (house === 1 ? ' first-house' : '') });
       g.appendChild(el('rect', {
         x: x, y: y, width: cell, height: cell,
-        rx: i === data.firstSign ? 8 : 0, class: 'cell'
+        rx: house === 1 ? 8 : 0, class: 'cell'
       }));
       /*
        * No diagonal across the ascendant's corner. It is the traditional mark
@@ -558,14 +611,14 @@ var Charts = (function () {
        * and parts from the ascendant the moment a chart is read from a graha.
        */
       g.appendChild(el('text', { x: x + cell - 6, y: y + 14, class: 'sign-num', 'text-anchor': 'end' },
-        Astro.SIGN_ABBR[i] + ' · ' + house));
+        Astro.SIGN_ABBR[sign] + ' · ' + house));
       /*
        * The reach is the cell less the strip the sign number holds at the top
        * and a margin at the foot. Nothing is gained by shrinking here: a cell
        * is square, so it is no wider in the middle than at the ends.
        */
-      drawOccupants(g, data.bySign[i], x + cell / 2, y + cell / 2 + 2, [cell - 32, 0],
-        { sign: i, house: house, yogas: yogas,
+      drawOccupants(g, data.byHouse ? data.byHouse[bhava] : data.bySign[i], x + cell / 2, y + cell / 2 + 2, [cell - 32, 0],
+        { sign: sign, house: house, yogas: yogas,
           division: division,
           dignities: dignities,
           karakas: karakas,
@@ -582,7 +635,7 @@ var Charts = (function () {
     var fn = opts.style === 'south' ? renderSouth : renderNorth;
     fn(container, opts.planets, opts.ascendant, opts.division || 1, opts.reference,
        opts.yogas, opts.dignities, opts.ruling, opts.combustion,
-       opts.karakas);
+       opts.karakas, opts.cusps);
   }
 
   function decorateCardTarget(target, opts, name) {
