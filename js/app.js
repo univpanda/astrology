@@ -4856,11 +4856,11 @@
    */
   var SETTING_GROUPS = [
     { title: 'Chart settings',
-      ids: ['chart-style', 'time-standard', 'ayanamsa', 'node-type',
-        'combustion', 'tatkalika', 'hora-dignity', 'hora-mercury',
-        'mercury-nature'] },
+      ids: ['chart-style', 'ayanamsa', 'time-standard', 'node-type',
+        'hora-mercury', 'mercury-nature'] },
     { title: 'Test settings',
-      ids: ['budha-floor', 'nat-clock', 'saptavargaja-ladder', 'moon-paksha',
+      ids: ['combustion', 'tatkalika', 'hora-dignity',
+        'budha-floor', 'nat-clock', 'saptavargaja-ladder', 'moon-paksha',
         'paksha-doubled', 'hora-length', 'ayana-constant', 'kranti',
         'ayana-doubled', 'cheshta-method', 'kendra-method', 'mean-source',
         'luminary-rule', 'luminary-cheshta', 'ishta-kashta'] }

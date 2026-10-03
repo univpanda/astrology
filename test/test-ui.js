@@ -10709,8 +10709,14 @@ console.log('\nThe settings run from the chart outward');
    * opens the tab; then which clock the birth time was read off, then where
    * the zodiac is measured from, then where the nodes are.
    */
+  /*
+   * Drawing first, the moment it is drawn for second. The zodiac now comes
+   * before the clock: where a longitude is measured from decides every figure
+   * on the page, where the clock only decides which instant is being read, and
+   * the instant is the rarer thing for a reader to question.
+   */
   ok('the chart-wide choices come first, and open the first tab',
-    idsIn(chartPanel).slice(0, 4).join(',') === 'chart-style,time-standard,ayanamsa,node-type',
+    idsIn(chartPanel).slice(0, 4).join(',') === 'chart-style,ayanamsa,time-standard,node-type',
     idsIn(chartPanel).join(', '));
 
   /*
@@ -10718,13 +10724,19 @@ console.log('\nThe settings run from the chart outward');
    * the chart, against the shadbala variants. A setting in the wrong tab is
    * the failure worth catching, so both lists are named in full.
    */
+  /*
+   * Combustion, tatkalika and the hora's reading left this tab. Each is a
+   * question about how a division is read rather than about the chart a
+   * reader is looking at, and each shows up only inside the strength tables
+   * and the vimsopaka grid.
+   */
   ok('Chart settings holds the readings that change the chart',
     idsIn(chartPanel).join(',') ===
-      'chart-style,time-standard,ayanamsa,node-type,combustion,tatkalika,' +
-      'hora-dignity,hora-mercury,mercury-nature',
+      'chart-style,ayanamsa,time-standard,node-type,hora-mercury,mercury-nature',
     idsIn(chartPanel).join(', '));
-  ok('Test settings opens with Budha-Aditya, followed by the strength variants',
+  ok('Test settings opens with the divisional readings, then the variants',
     idsIn(testPanel).join(',') ===
+      'combustion,tatkalika,hora-dignity,' +
       'budha-floor,nat-clock,saptavargaja-ladder,moon-paksha,paksha-doubled,' +
       'hora-length,ayana-constant,' +
       'kranti,ayana-doubled,cheshta-method,kendra-method,mean-source,luminary-rule,' +
