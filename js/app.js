@@ -5380,10 +5380,17 @@
        * Without it the faintness is decoration; with it the table is honest
        * about how much of itself is recorded.
        */
-      editor.appendChild(el('p', 'field-note preset-key',
+      /*
+       * Written into a paragraph the markup already places, outside the
+       * table's own box. That box scrolls sideways when the columns will not
+       * fit, so a key inside it is a key that can be pushed off the screen,
+       * and when it does overflow the browser reserves a scrollbar along the
+       * bottom of it, which left a band of empty card under the key.
+       */
+      document.getElementById('preset-key').textContent =
         'Green values differ from yours. "Sources differ" marks disagreement ' +
         'between documented choices. ! means not recorded: the value shown ' +
-        'is the page fallback, not a documented choice from that source.'));
+        'is the page fallback, not a documented choice from that source.';
     };
 
     var fillEditor = function (values) {

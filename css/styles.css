@@ -936,7 +936,16 @@ button.preset-cell:hover { border-color: var(--ink-soft); }
 /* Missing documentation is neither a choice nor a disagreement. */
 .preset-cell-unrecorded { display: block; cursor: default; }
 .preset-unrecorded-mark { color: var(--ink-soft); text-decoration: none; cursor: help; }
-.preset-key { margin: 0.9rem 0 0; max-width: 46rem; }
+/*
+ * The key, and the line that reports a save, both sit under the table rather
+ * than inside its scrolling box. Neither reserves a line while it is empty:
+ * .field-note holds one open so a status appearing does not shove the page
+ * down, which is right where a line comes and goes and wrong at the foot of a
+ * card, where it reads as the card having nothing to say.
+ */
+.preset-key { margin: 0.9rem 0 0; max-width: 46rem; min-height: 0; }
+#preset-editor-status { min-height: 0; }
+#preset-editor-status[hidden] { display: none; }
 /*
  * A tint and nothing else. It also carried a border and a deeper green on the
  * words, which drew three marks around one fact and made every highlighted

@@ -11230,11 +11230,13 @@ console.log('\nEach preset reaches the figures it is named for');
   })());
   /* And the table says what the faintness means, or it is only decoration. */
   ok('and the table says what each of its marks means', (function () {
-    var key = null;
-    (function walk(n) {
-      if (!key && /preset-key/.test(n.className || '')) key = n;
-      n.children.forEach(walk);
-    })(out.byId('preset-editor'));
+    /*
+     * Beside the table rather than inside it, the table's box being one that
+     * scrolls sideways: a key within it can be pushed out of sight, and the
+     * scrollbar that box reserves when it overflows sat between the key and
+     * the foot of the card.
+     */
+    var key = out.byId('preset-key');
     var said = key ? textOf(key) : '';
     return /! means not recorded/.test(said) && /page fallback/.test(said) &&
       /Green values differ from yours/.test(said) &&
