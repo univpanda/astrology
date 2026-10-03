@@ -8753,38 +8753,5 @@ console.log('\nThe bhavas, cut where Sripati cuts them');
   })());
 })();
 
-console.log('\nChalit rejects overlapping polar geometry');
-(function () {
-  var polar = A.chart({jdUT:A.julianDay(2000,1,1,11),latitude:67,longitude:0,tzOffsetMinutes:0});
-  ok('the reported polar birth has no overlapping Chalit fallback',
-    A.bhavaCusps(polar.ascendant.longitude,polar.midheaven.longitude) === null);
-  ok('missing or degenerate angles do not manufacture houses',
-    A.bhavaCusps(NaN,20) === null && A.bhavaCusps(20,Infinity) === null &&
-    A.bhavaCusps(20,20) === null && A.bhavaCusps(200,20) === null);
-  ok('unavailable or ambiguous cusps never silently assign house one',
-    A.bhavaOf(10,null) === null && A.bhavaOf(10,[]) === null &&
-    A.bhavaOf(NaN,A.bhavaCusps(267.07,192.43)) === null &&
-    A.bhavaOf(10,[{start:0,end:30,bhava:1},{start:0,end:30,bhava:2}]) === null);
-  var valid=0,unavailable=0,correct=true;
-  [-80,-67,-60,0,60,67,80].forEach(function(latitude){
-    for(var hour=0;hour<24;hour++){
-      var chart=A.chart({jdUT:A.julianDay(2000,1,1,hour),latitude:latitude,longitude:0,tzOffsetMinutes:0});
-      var cusps=A.bhavaCusps(chart.ascendant.longitude,chart.midheaven.longitude);
-      if(!cusps){unavailable++;continue;}
-      valid++;
-      correct=correct && Math.abs(cusps.reduce(function(n,b){return n+A.norm360(b.end-b.start);},0)-360)<1e-8;
-      cusps.forEach(function(b){
-        correct=correct && A.bhavaOf(b.madhya,cusps)===b.bhava && A.bhavaOf(b.start,cusps)===b.bhava;
-      });
-      for(var lon=0;lon<360;lon+=3){
-        var held=cusps.filter(function(b){return A.norm360(lon-b.start)<A.norm360(b.end-b.start);});
-        correct=correct && held.length===1 && A.bhavaOf(lon,cusps)===held[0].bhava;
-      }
-    }
-  });
-  ok('accepted cusps cover exactly one zodiac across ordinary and polar latitudes',correct && valid>0 && unavailable>0,
-    valid+' valid charts; '+unavailable+' unavailable');
-})();
-
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

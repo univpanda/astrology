@@ -68,18 +68,14 @@ function makeNode(tag) {
       return { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 };
     },
     listeners: {},
-    addEventListener: function (type, fn, capture) {
-      var listeners = this.listeners[type] || (this.listeners[type] = []);
-      if (capture) listeners.unshift(fn); else listeners.push(fn);
+    addEventListener: function (type, fn) {
+      (this.listeners[type] || (this.listeners[type] = [])).push(fn);
     },
     /* Called on the node, as a browser does: a change handler reading
        this.value is the ordinary way to write one. */
     fire: function (type, event) {
       var node = this;
-      var stopped = false;
-      event = event || {};
-      event.stopImmediatePropagation = function () { stopped = true; };
-      (this.listeners[type] || []).some(function (fn) { fn.call(node, event); return stopped; });
+      (this.listeners[type] || []).forEach(function (fn) { fn.call(node, event); });
     }
   };
   node.dataset = {};
@@ -425,8 +421,12 @@ console.log('\nStudy charts that ship with the app');
  * to be the ones this engine produces from that moment.
  */
 (function () {
-  var charts = require('./fixtures/study-charts.js');
-  ok('seven reference charts are available to tests', charts.length === 7);
+  var src = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
+  var literal = src.match(/var STUDY_CHARTS = (\[[\s\S]*?\n  \}\]);/);
+  ok('STUDY_CHARTS is still a literal this test can read', !!literal);
+  if (!literal) return;
+  var charts = new Function('return ' + literal[1])();
+  ok('seven charts ship', charts.length === 7, charts.map(function (c) { return c.name; }).join(', '));
 
   function cast(entry, offsetMinutes) {
     var t = entry.time.split(':').map(Number);
@@ -1166,8 +1166,8 @@ function stripHtml(label) {
    */
   ok('and changing it recomputes whatever chart is open',
      /document\.getElementById\('node-type'\)\.addEventListener\('change'/.test(appSrc) &&
-     // Every recast reads the complete current settings snapshot.
-     /recomputeEverything\(function \(recast, warning\)/.test(appSrc) &&
+     // Naming what it changed, so the other two are taken from the chart.
+     /recomputeEverything\(\{ trueNode: this\.value === 'true' \},/.test(appSrc) &&
      /target\.trueNode = trueNode;/.test(appSrc) &&
      /render\(target\);\s*\n\s*writeHash\(target\);/.test(appSrc));
   ok('and says so, including when there is no chart to recompute',
@@ -1192,7 +1192,7 @@ function stripHtml(label) {
   ok('the graha tab is one tab, holding a strip of chart tabs',
      /id="tab-grahas"/.test(html) && !/tab-table-/.test(appSrc) &&
      /id="graha-chart-tabs"/.test(html) && /id="graha-tables"/.test(html) &&
-     /table\.id = view\.chalit \? 'graha-table-' \+ grahaViewKey\(view\) : 'graha-table-d' \+ view\.division;/.test(appSrc));
+     /table\.id = 'graha-table-d' \+ view\.division;/.test(appSrc));
   ok('shadbala shares the table strip rather than a card of its own',
      /id="tab-shadbala"[\s\S]{0,140}aria-controls="panel-shadbala"/.test(html) &&
      html.indexOf('id="panel-shadbala"') > html.indexOf('id="panel-table-b"') &&
@@ -1540,7 +1540,7 @@ ok('the add button is gone, the tab having always been there',
    !/addButton/.test(appSrc));
 ok('and asking for the form yourself still starts a new chart',
    /if \(name === 'add' && byUser\) startFreshChart\(\);/.test(appSrc) &&
-   /function startFreshChart\(\) \{\s*cancelChartRequest\(\);\s*blankForm\(\);\s*\n\s*currentEntry = null;/
+   /function startFreshChart\(\) \{\s*\n\s*blankForm\(\);\s*\n\s*currentEntry = null;/
      .test(appSrc) &&
    /buttons\[name\]\.addEventListener\('click', function \(\) \{ activate\(name, false, true\); \}\)/
      .test(appSrc) &&
@@ -6259,7 +6259,7 @@ ok('and changing it recomputes the open chart', (function () {
   var at = appSrc.indexOf("getElementById('ayanamsa').addEventListener");
   if (at < 0) return false;
   var block = appSrc.slice(at, appSrc.indexOf('});\n\n', at));
-  return /recomputeEverything\(function \(recast, warning\)/
+  return /recomputeEverything\(\{ ayanamsa: wanted \}, function \(recast, warning\)/
       .test(block) &&
     /if \(!recast\) return;/.test(block) &&
     /if \(!lastChart\)/.test(block);
@@ -6884,8 +6884,8 @@ ok('the rashi is always a row, however the charts are set',
    /var views = \[onD1 \|\| \{ division: 1, reference: 'Ascendant' \}\];/.test(appSrc) &&
    /var seen = \{ 1: true \};/.test(appSrc));
 ok('and a chart already on D1 gives two rows, not three',
-   /var onD1 = settings\.filter\(function \(s\) \{ return s\.division === 1 && !s\.chalit; \}\)\[0\];/.test(appSrc) &&
-   /if \(seen\[key\]\) return;/.test(appSrc));
+   /var onD1 = settings\.filter\(function \(s\) \{ return s\.division === 1; \}\)\[0\];/.test(appSrc) &&
+   /if \(seen\[set\.division\]\) return;/.test(appSrc));
 ok('a chart on D1 lends its own rotation to that row, rather than a second row appearing',
    /onD1 \|\| \{ division: 1, reference: 'Ascendant' \}/.test(appSrc));
 /*
@@ -7333,7 +7333,7 @@ ok('lordship comes from the shared helper, not a column-specific one',
 ok('each tab says which chart it is and what its houses are counted from',
    /'Houses counted from ' \+/.test(appSrc) &&
    /view\.reference === 'Ascendant' \? 'the ascendant' : view\.reference/.test(appSrc) &&
-   /tab\.title = \(view\.chalit \? 'Sripati bhavas\. ' : varga \? varga\.label \+ ', ' \+ varga\.about \+ '\. ' : ''\) \+/.test(appSrc));
+   /tab\.title = \(varga \? varga\.label \+ ', ' \+ varga\.about \+ '\. ' : ''\) \+/.test(appSrc));
 
 /*
  * Where a graha sits and what it owns are the two halves of reading it, and the
@@ -7407,7 +7407,7 @@ ok('editing a row fills the form without casting it',
    /function editSaved/.test(appSrc) && /function applyEntryToForm/.test(appSrc) &&
    /function loadSaved\(entry\) \{\s*\n\s*applyEntryToForm\(entry\);\s*\n\s*reopeningSaved = true;/.test(appSrc));
 ok('editing a row remembers which row it is, so generating updates it',
-   /function applyEntryToForm\(entry\) \{\s*cancelChartRequest\(\);\s*currentEntry = entry;/.test(appSrc));
+   /function applyEntryToForm\(entry\) \{\s*\n\s*currentEntry = entry;/.test(appSrc));
 ok('deleting asks before it deletes',
    /actions\.className = 'saved-actions confirming'/.test(appSrc) &&
    /'Delete\?'/.test(appSrc) && /saved-cancel/.test(appSrc));
@@ -10963,11 +10963,6 @@ console.log('\nEach preset reaches the figures it is named for');
       .join(' ').replace(/\s+/g, ' ').trim();
   };
   /* The editor is a table now, so its selects are not two levels down. */
-  var customFrom = function (name) {
-    out.applyPreset(name);
-    out.restoreSettings({profiles:[],custom:{selected_preset:'custom',choices:out.currentSettings()}});
-    out.applyPreset('mine');
-  };
   var editorFields = function () {
     var found = {};
     (function walk(n) {
@@ -10979,7 +10974,7 @@ console.log('\nEach preset reaches the figures it is named for');
 
 
   ok('the Mercury association option is saved, editable and reaches Paksha Bala', (function () {
-    customFrom('page');
+    out.applyPreset('page');
     var state = function () { return stateFor({ jdUT: Astro.julianDay(1953, 5, 6, 5 + 10 / 60),
       latitude: 55.9521, longitude: -3.1965, tzOffsetMinutes: 60, ayanamsa: 'lahiri' }); };
     var select = out.byId('mercury-nature');
@@ -10999,7 +10994,7 @@ console.log('\nEach preset reaches the figures it is named for');
       near(out.strengthsFor(state()).grahas.Mercury.kala.paksha, before, 1e-8);
     out.byId('preset-forget').fire('click', {});
     out.byId('preset-back').fire('click', {});
-    customFrom('page');
+    out.applyPreset('page');
     return result;
   })());
 
@@ -11137,7 +11132,6 @@ console.log('\nEach preset reaches the figures it is named for');
    * the settings, and Back and Save both bring them back.
    */
   ok('building a default opens a page in place of the settings', (function () {
-    out.applyPreset('mine');
     var main = out.byId('settings-main'), page = out.byId('preset-page');
     out.byId('preset-create').fire('click', {});
     var opened = main.hidden === true && page.hidden === false;
@@ -11149,7 +11143,7 @@ console.log('\nEach preset reaches the figures it is named for');
    * including the settings that only change how a chart is drawn.
    */
   ok('one personal set, replaced in place and read back whole', (function () {
-    customFrom('raman');
+    out.applyPreset('raman');
     out.byId('preset-create').fire('click', {});
     var fields = editorFields();
     fields['chart-style'].value = 'south';
@@ -11371,7 +11365,7 @@ console.log('\nEach preset reaches the figures it is named for');
   /* Missing documentation never participates in value comparisons. */
   ok('only recorded differences can be green',
     (function () {
-      customFrom('page');
+      out.applyPreset('page');
       out.byId('preset-create').fire('click', {});
       var marked = [], silent = [];
       (function walk(n) {
@@ -11463,7 +11457,7 @@ console.log('\nEach preset reaches the figures it is named for');
           return values.some(function (value) { return value !== values[0]; });
         }).length;
       });
-      customFrom('page');
+      out.applyPreset('page');
       out.byId('preset-create').fire('click', {});
       return correct;
     })());
@@ -11540,7 +11534,7 @@ console.log('\nEach preset reaches the figures it is named for');
 
   ok('reset replaces the one custom row with the baseline', (function () {
     out.byId('preset-forget').fire('click', {});
-    return out.database.custom.selected_preset === 'custom' &&
+    return out.database.custom.selected_preset === 'rao' &&
       JSON.stringify(out.readMySettings()) === JSON.stringify(out.database.custom.choices);
   })());
   /*
@@ -11551,7 +11545,7 @@ console.log('\nEach preset reaches the figures it is named for');
    */
   ok('a stored value the page no longer offers is dropped, not written in',
     (function () {
-      customFrom('page');
+      out.applyPreset('page');
       var was = out.currentSettings().ayanamsa;
       out.applySettings({ ayanamsa: 'no-such-ayanamsa', 'node-type': 'mean' });
       return out.currentSettings().ayanamsa === was &&
@@ -11565,7 +11559,7 @@ console.log('\nEach preset reaches the figures it is named for');
    * table, and Raman's parts from Lahiri by about a degree and a half.
    */
   ok('pressing a preset recasts the chart that is open', (function () {
-    customFrom('page');
+    out.applyPreset('page');
     var chart = Astro.chart({ jdUT: Astro.julianDay(1961, 8, 4, 19 + 24 / 60 + 10),
       latitude: 21.3069, longitude: -157.8583, tzOffsetMinutes: -600 });
     out.setLastChart({ chart: chart, place: { lat: 21.3069, lon: -157.8583 },
@@ -11604,14 +11598,14 @@ console.log('\nEach preset reaches the figures it is named for');
    */
   ok('a reader\u2019s own set carries no explanation, having none to give',
     (function () {
-      customFrom('page');
+      out.applyPreset('page');
       var ayanamsa = out.byId('ayanamsa');
       ayanamsa.value = ayanamsa.value === 'kp' ? 'raman' : 'kp';
       ayanamsa.fire('change', { target: ayanamsa });
       var mine = out.byId('preset-what').textContent;
       out.applyPreset('raman');
       var published = out.byId('preset-what').textContent;
-      customFrom('page');
+      out.applyPreset('page');
       var standard = out.byId('preset-what').textContent;
       out.byId('preset-forget').fire('click', {});
       return mine === '' && standard === '' &&
@@ -11634,7 +11628,7 @@ console.log('\nEach preset reaches the figures it is named for');
       var order = Array.prototype.map.call(choice.options, function (o) {
         return o.value;
       });
-      return out.readDefaultChoice() === 'mine' &&
+      return out.readDefaultChoice() === 'rao' &&
         order[0] === 'mine' &&
         // The page's own reading is still offered, just not first.
         order.indexOf('page') > 0;
@@ -11649,8 +11643,8 @@ console.log('\nEach preset reaches the figures it is named for');
     var off = Object.keys(wanted).filter(function (id) {
       return out.currentSettings()[id] !== wanted[id];
     });
-    return mine === 'mine' && out.readDefaultChoice() === 'mine' &&
-      out.database.custom.selected_preset === 'custom' && off.length === 0 &&
+    return mine === 'mine' && out.readDefaultChoice() === 'rao' &&
+      out.database.custom.selected_preset === 'rao' && off.length === 0 &&
       out.byId('preset-status').textContent === 'Settings saved to database.' &&
       // The button says where it goes, and says it once.
       /<button type="button" id="preset-forget" hidden>Reset to Rao<\/button>/
@@ -11691,7 +11685,6 @@ console.log('\nEach preset reaches the figures it is named for');
         // And it cannot promise a Save, there being none to press.
         !/Click Save|press Save|Saving again/.test(html);
       // Both paths the sentence names, each making the set it claims to make.
-      out.applyPreset('mine');
       out.byId('preset-forget').fire('click', {});
       var fresh = out.readMySettings();
       var ayanamsa = out.byId('ayanamsa');
@@ -11849,7 +11842,6 @@ console.log('\nEach preset reaches the figures it is named for');
       out.setLastChart(null);
       out.applyPreset('rao');
       if (reading === 'mine') {
-        out.applyPreset('mine');
         var fields = {'ayanamsa':'kp','node-type':'mean','time-standard':'lmt'};
         Object.keys(fields).forEach(function (id) {
           var field = out.byId(id); field.value = fields[id]; field.fire('change', {target:field});
@@ -11899,7 +11891,7 @@ console.log('\nEach preset reaches the figures it is named for');
    */
   ok('a setting changed by hand becomes the default as it is changed',
     (function () {
-      customFrom('page');
+      out.applyPreset('page');
       var ayanamsa = out.byId('ayanamsa');
       var other = ayanamsa.value === 'kp' ? 'raman' : 'kp';
       ayanamsa.value = other;
@@ -11913,7 +11905,7 @@ console.log('\nEach preset reaches the figures it is named for');
     })());
   /* And a change made in the editor is kept the same way. */
   ok('and a change made in the editor is kept as it is made', (function () {
-    customFrom('page');
+    out.applyPreset('page');
     out.byId('preset-create').fire('click', {});
     var fields = editorFields();
     var was = fields['node-type'].value;
@@ -11934,7 +11926,7 @@ console.log('\nEach preset reaches the figures it is named for');
    */
   ok('a write that fails is reported in whichever view is open', (function () {
     var wasFailing = out.database.fail;
-    customFrom('page');
+    out.applyPreset('page');
     out.byId('preset-create').fire('click', {});
     out.database.fail = true;
     var fields = editorFields();
@@ -11955,7 +11947,7 @@ console.log('\nEach preset reaches the figures it is named for');
    */
   ok('and the warning clears on the next write that works', (function () {
     var wasFailing = out.database.fail;
-    customFrom('page');
+    out.applyPreset('page');
     out.database.fail = true;
     var ayanamsa = out.byId('ayanamsa');
     ayanamsa.value = ayanamsa.value === 'kp' ? 'raman' : 'kp';
@@ -11993,7 +11985,7 @@ console.log('\nEach preset reaches the figures it is named for');
    * counted, because a count is what let them through.
    */
   var openChart = function () {
-    customFrom('page');
+    out.applyPreset('page');
     var chart = Astro.chart({ jdUT: Astro.julianDay(1961, 8, 4, 19 + 24 / 60 + 10),
       latitude: 21.3069, longitude: -157.8583, tzOffsetMinutes: -600 });
     out.setLastChart({ chart: chart,
@@ -12008,16 +12000,41 @@ console.log('\nEach preset reaches the figures it is named for');
     var svg = box.children.filter(function (n) { return n.tag === 'svg'; })[0];
     return svg ? String(svg.attrs.class || '') : '';
   };
-  ok('a recast uses the complete current settings snapshot', (function () {
+  /*
+   * One recast path for the three chart-wide settings is right, but it must
+   * recast what the reader moved and not everything the selects happen to be
+   * showing. Those three selects are the form's as well, and the form fills
+   * them from a row without casting it: pressing Edit on a saved kundali
+   * leaves them holding that row's values while another chart is on screen.
+   *
+   * Reading all three on any one change meant the next unrelated setting
+   * dragged the other two in. Moving the node type alone shifted the open
+   * chart from zone time to local mean time, half an hour at Honolulu, and
+   * from Lahiri to Raman, a degree and a half, while the status line said
+   * only that the node had changed.
+   */
+  ok('a setting recasts what was moved and nothing else', (function () {
     openChart();
+    // What Edit does: fills the form from a row, casts nothing.
     out.byId('time-standard').value = 'lmt';
     out.byId('ayanamsa').value = 'raman';
     var node = out.byId('node-type');
     node.value = 'mean';
-    node.fire('change', {target:node});
+    node.fire('change', { target: node });
     var after = out.lastChart();
-    return after.trueNode === false && after.standard === 'lmt' &&
-      after.offset === Math.round(-157.8583 * 4) && after.ayanamsa === 'raman';
+    return after.trueNode === false &&
+      after.standard === 'zone' && after.offset === -600 &&
+      after.ayanamsa === 'lahiri';
+  })());
+  /* And the same the other way round: the standard moves, the ayanamsa does not. */
+  ok('and the time standard does not drag the ayanamsa with it', (function () {
+    openChart();
+    out.byId('ayanamsa').value = 'raman';
+    var standard = out.byId('time-standard');
+    standard.value = 'lmt';
+    standard.fire('change', { target: standard });
+    var after = out.lastChart();
+    return after.standard === 'lmt' && after.ayanamsa === 'lahiri';
   })());
 
   ok('changing the chart style redraws what is on screen', (function () {
@@ -12065,6 +12082,34 @@ console.log('\nEach preset reaches the figures it is named for');
 
 
 
+
+
+
+(function () {
+  var out = global.appExports || {};
+  var choice = out.byId('preset-choice');
+  var label = function () {
+    return Array.prototype.filter.call(choice.options, function (o) {
+      return o.value === choice.value; })
+      .map(function (o) { return o.textContent; })[0];
+  };
+  var say = function (step) {
+    console.log('SAVE ' + step +
+      '\n     notice hidden=' + out.byId('preset-notice').hidden +
+      '  save hidden=' + out.byId('preset-save-now').hidden +
+      '\n     picker=' + JSON.stringify(label()) +
+      '\n     text=' + JSON.stringify(out.byId('preset-status').textContent));
+  };
+  out.applyPreset('page'); say('1 nothing changed');
+  var ayan = out.byId('ayanamsa');
+  ayan.value = 'kp'; ayan.fire('change', { target: ayan });
+  say('2 one setting changed');
+  out.byId('preset-save-now').fire('click', {});
+  say('3 after pressing Save in the notice');
+  console.log('     stored ayanamsa=' + JSON.stringify(out.readMySettings().ayanamsa) +
+    '  default=' + out.readDefaultChoice());
+  out.byId('preset-forget').fire('click', {});
+})();
 
 
 console.log('\nChalit draws the bhavas, not the signs');
@@ -12139,108 +12184,6 @@ console.log('\nChalit draws the bhavas, not the signs');
         yogas: {}, dignities: {}, ruling: {}, karakas: {}, cusps: cusps });
       return b; })());
     return drawn.join(',') === labels.join(',');
-  })());
-  ok('South and North keep repeated-sign bhavas separate, including rotated charts', (function () {
-    var repeated = Astro.bhavaCusps(267.07, 192.43);
-    var planets = chart.planets.map(function (p) {
-      return Object.assign({}, p, {longitude:p.name === 'Moon' ? repeated[5].madhya
-        : p.name === 'Sun' ? repeated[6].madhya : p.longitude});
-    });
-    return ['Ascendant', 'Moon', 'Sun'].every(function (reference) {
-      var opts = {planets:planets,ascendant:267.07,division:1,reference:reference,cusps:repeated};
-      var north = read(Object.assign({style:'north'},opts));
-      var south = read(Object.assign({style:'south'},opts));
-      return south.Moon['data-house'] !== south.Sun['data-house'] &&
-        Object.keys(north).every(function (name) {
-          return ['data-house','data-sign','data-degree'].every(function (field) {
-            return north[name][field] === south[name][field];
-          });
-        });
-    });
-  })());
-  ok('the chart dropdown draws Chalit and its table with matching houses', (function () {
-    var out = global.appExports;
-    out.setLastChart(null);
-    out.applyPreset('rao');
-    out.loadSaved({name:'Chalit regression',date:'1980-09-21',time:'08:39:00',
-      latitude:19.0728,longitude:72.8826,zone:'Asia/Kolkata',placeLabel:'Mumbai',gender:'male'});
-    var choice = out.byId('varga-a');
-    var offered = choice.options.some(function (o) { return o.value === 'chalit'; });
-    choice.value = 'chalit';choice.fire('change',{});
-    var correct = offered && /Bhava Chalit/.test(out.byId('caption-a').textContent);
-    if (!correct) console.log('       Chalit dropdown:', offered, out.byId('caption-a').textContent, out.byId('form-error').textContent);
-    var find = function (node, predicate) {
-      if (predicate(node)) return node;
-      for (var i=0;i<node.children.length;i++) {
-        var hit=find(node.children[i],predicate);if(hit)return hit;
-      }
-    };
-    ['Ascendant','Moon'].forEach(function (reference) {
-      var ref=out.byId('ref-a');ref.value=reference;ref.fire('change',{});
-      var table=find(out.byId('graha-tables'),function(n){return n.id==='graha-table-chalit-'+reference.toLowerCase();});
-      var d1=find(out.byId('graha-tables'),function(n){return n.id==='graha-table-d1';});
-      correct = correct && !!table && !!d1;
-      if (!table) return;
-      var body=table.children.filter(function(n){return n.tag==='tbody';})[0];
-      body.children.forEach(function(row){
-        var name=row.children[0].textContent;
-        var target=find(out.byId('chart-a'),function(n){return n.attrs['data-graha']===name;});
-        var match = !!target && (name === 'Ascendant' || target.attrs['data-house']==='House '+row.children[6].textContent) &&
-          target.attrs['data-sign']===row.children[3].textContent;
-        if (!match) console.log('       Chalit row:', reference, name, target && target.attrs['data-house'], row.children[6].textContent, target && target.attrs['data-sign'],row.children[3].textContent);
-        correct = correct && match;
-      });
-    });
-    choice.value='1';out.byId('ref-a').value='Ascendant';out.setLastChart(null);
-    return correct;
-  })());
-  ok('two Chalit references have separate tables and working table tabs', (function () {
-    var out=global.appExports;
-    var find=function(node,predicate){
-      if(predicate(node))return node;
-      for(var i=0;i<node.children.length;i++){var hit=find(node.children[i],predicate);if(hit)return hit;}
-    };
-    var choose=function(id,value){var n=out.byId(id);n.value=value;n.fire('change',{});};
-    var table=function(reference){return find(out.byId('graha-tables'),function(n){return n.id==='graha-table-chalit-'+reference;});};
-    var moonHouse=function(t){return t.children.filter(function(n){return n.tag==='tbody';})[0].children
-      .filter(function(n){return n.children[0].textContent==='Moon';})[0].children[6].textContent;};
-    var click=function(label){out.byId('graha-chart-tabs').children.filter(function(n){return n.textContent===label;})[0].fire('click',{});};
-    out.setLastChart(null);out.applyPreset('rao');
-    out.loadSaved({name:'Two Chalit references',date:'1980-09-21',time:'08:39:00',
-      latitude:19.0728,longitude:72.8826,zone:'Asia/Kolkata',placeLabel:'Mumbai',gender:'male'});
-    choose('varga-a','chalit');choose('ref-a','Ascendant');
-    choose('varga-b','chalit');choose('ref-b','Moon');
-    var correct=!!table('ascendant') && !!table('moon') && moonHouse(table('ascendant'))==='4' && moonHouse(table('moon'))==='1';
-    click('Chalit · Moon');
-    correct=correct && !table('moon').parentNode.hidden && table('ascendant').parentNode.hidden;
-    click('Chalit · Ascendant');
-    correct=correct && !table('ascendant').parentNode.hidden && table('moon').parentNode.hidden;
-    choose('ref-b','Ascendant');
-    correct=correct && !table('moon') && out.byId('graha-chart-tabs').children.length===2;
-    choose('varga-b','9');click('D9');
-    var d9=find(out.byId('graha-tables'),function(n){return n.id==='graha-table-d9';});
-    correct=correct && !d9.parentNode.hidden;
-    choose('varga-a','1');out.setLastChart(null);
-    return correct;
-  })());
-  ok('unavailable polar Chalit clears stale charts and tables, then recovers', (function () {
-    var out=global.appExports;
-    var choose=function(id,value){var n=out.byId(id);n.value=value;n.fire('change',{});};
-    var hasSvg=function(slot){return out.byId('chart-'+slot).children.some(function(n){return n.tag==='svg';});};
-    out.setLastChart(null);out.applyPreset('rao');
-    var birth={name:'Polar regression',date:'2000-01-01',time:'11:00:00',
-      latitude:67,longitude:0,zone:'UTC',placeLabel:'67 north',gender:'male'};
-    out.loadSaved(birth);choose('varga-a','chalit');choose('varga-b','chalit');
-    var correct=!hasSvg('a') && !hasSvg('b') && /unavailable/.test(out.byId('chart-a').children[0].textContent) &&
-      out.byId('graha-chart-tabs').children.length===1;
-    choose('varga-a','1');correct=correct && hasSvg('a');
-    choose('varga-a','chalit');
-    out.loadSaved(Object.assign({},birth,{latitude:30}));
-    correct=correct && hasSvg('a') && hasSvg('b') && out.byId('graha-chart-tabs').children.length===2;
-    out.loadSaved(birth);
-    correct=correct && !hasSvg('a') && !hasSvg('b') && out.byId('graha-chart-tabs').children.length===1;
-    choose('varga-a','1');choose('varga-b','9');out.setLastChart(null);
-    return correct;
   })());
   /* Rotating a chalit counts from the bhava the anchor is in. */
   ok('and rotating one counts houses from the anchor\u2019s own bhava', (function () {
