@@ -8912,6 +8912,79 @@ console.log('\nBhava bala, against the worked chart it is taken from');
     ADHIPATI[5] === ADHIPATI[6]);
 })();
 
+console.log('\nResidential strength, how much of a bhava a graha gets');
+/*
+ * Not one of the six, and not a bhava bala either: it measures a graha against
+ * the house it stands in. Raman gives the shape of it at his article 14 - the
+ * influence begins at the arambha sandhi, reaches its highest at the madhya,
+ * and falls away to nothing at the virama sandhi, the figure between to be
+ * found by rule of three. The textbook works five grahas of its first chart.
+ *
+ * Both halves are exercised, which is the point of taking all five: the Sun,
+ * the Moon and Mars stand before their madhya and are read forward from the
+ * opening sandhi, while Mercury and Jupiter stand after theirs and are read
+ * back from the closing one.
+ */
+(function () {
+  var cusps = A.bhavaCusps(267.07, 192.43);
+  var at = function (sign, d, m, sec) {
+    return sign * 30 + d + m / 60 + (sec || 0) / 3600;
+  };
+  var WORKED = {
+    Sun: [at(5, 4, 49), 51.49, 9, 'first'],
+    Moon: [at(4, 0, 2), 52.65, 8, 'first'],
+    Mars: [at(5, 4, 54), 51.77, 9, 'first'],
+    Mercury: [at(4, 18, 16), 5.06, 8, 'latter'],
+    Jupiter: [at(5, 15, 47), 31.05, 9, 'latter']
+  };
+  var wrong = [];
+  Object.keys(WORKED).forEach(function (graha) {
+    var want = WORKED[graha];
+    var got = Shadbala.residentialStrength(want[0], cusps);
+    if (Math.abs(got.value - want[1]) > 0.03 || got.bhava !== want[2]) {
+      wrong.push(graha + ' ' + got.value.toFixed(2) + ' in ' + got.bhava +
+        ' for ' + want[1] + ' in ' + want[2]);
+    }
+  });
+  ok('every one the book works comes out, in both halves of a bhava',
+    wrong.length === 0, wrong.join('; ') || 'five of five');
+
+  /*
+   * And the shape holds between the worked points: nothing at either sandhi,
+   * the whole sixty at the madhya, and never outside that range anywhere.
+   */
+  ok('nothing at a sandhi, sixty at the madhya, and nothing outside',
+    (function () {
+      var c = cusps[4];
+      var atStart = Shadbala.residentialStrength(
+        A.norm360(c.start + 1e-9), cusps).value;
+      var atMadhya = Shadbala.residentialStrength(c.madhya, cusps).value;
+      if (atStart > 0.001 || Math.abs(atMadhya - 60) > 0.001) return false;
+      for (var lon = 0; lon < 360; lon += 0.37) {
+        var v = Shadbala.residentialStrength(lon, cusps).value;
+        if (v < -1e-9 || v > 60 + 1e-9) return false;
+      }
+      return true;
+    })());
+
+  /*
+   * The two halves of a bhava are not the same length, the quadrants being
+   * unequal, so each is measured against its own. Reading both against the
+   * first would put a graha late in a short second half past sixty.
+   */
+  ok('each half is measured against its own length', (function () {
+    var wide = cusps.filter(function (c) {
+      return Math.abs(A.norm360(c.madhya - c.start) -
+        A.norm360(c.end - c.madhya)) > 1;
+    });
+    if (!wide.length) return false;
+    var c = wide[0];
+    var justBefore = Shadbala.residentialStrength(
+      A.norm360(c.end - 1e-6), cusps).value;
+    return justBefore < 0.01;
+  })());
+})();
+
 console.log('\nA published horoscope, read five ways');
 /*
  * The K. N. Rao textbook ends on a set of worked horoscopes, each printed as a

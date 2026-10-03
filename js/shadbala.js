@@ -1438,8 +1438,57 @@ var Shadbala = (function () {
     });
   }
 
+  /* ------------------------------------------------ residential strength */
+
+  /*
+   * How much of a bhava a graha standing in it actually gets.
+   *
+   * Not one of the six, and not a bhava bala either: it measures a graha
+   * against the house it occupies. Raman states the shape of it at his article
+   * 14 - the influence "begins at the Arambha Sandhi", "reaches the highest
+   * limit in the Bhavamadhya", and falls away again to nothing at the Virama
+   * sandhi, the figure in between to be found "by rule of three". So it is a
+   * straight interpolation: nothing at either sandhi, the whole sixty at the
+   * madhya.
+   *
+   * The two halves of a bhava are not the same length, the quadrants being
+   * unequal, so each is measured against its own: a graha before the madhya is
+   * read from the opening sandhi forward, one after it from the closing sandhi
+   * back.
+   */
+  function residentialStrength(longitude, cusps) {
+    if (!cusps) return null;
+    var bhava = Astro.bhavaOf(longitude, cusps);
+    var cusp = cusps[bhava - 1];
+    var intoBhava = Astro.norm360(longitude - cusp.start);
+    var toMadhya = Astro.norm360(cusp.madhya - cusp.start);
+    var arc, half;
+    if (intoBhava <= toMadhya) {
+      arc = intoBhava;
+      half = toMadhya;
+    } else {
+      arc = Astro.norm360(cusp.end - longitude);
+      half = Astro.norm360(cusp.end - cusp.madhya);
+    }
+    return { bhava: bhava, arc: arc, half: half,
+             value: half ? (arc / half) * 60 : 0 };
+  }
+
+  /** Each graha's residential strength, keyed by name. */
+  function residentialStrengths(chart, cusps) {
+    if (!cusps) return null;
+    var out = {};
+    chart.planets.forEach(function (p) {
+      if (GRAHAS.indexOf(p.name) < 0) return;
+      out[p.name] = residentialStrength(p.longitude, cusps);
+    });
+    return out;
+  }
+
   return {
     compute: compute,
+    residentialStrength: residentialStrength,
+    residentialStrengths: residentialStrengths,
     bhavaBala: bhavaBala,
     // The three shares are exported as well as the sum, so each can be run
     // against the book's own intermediate tables rather than only the total,
