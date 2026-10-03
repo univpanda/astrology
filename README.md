@@ -145,6 +145,9 @@ Saved charts and shared links carry birth details only. Opening either uses the
 currently selected reading for every calculation, including ayanamsa, nodes and
 time standard; legacy chart settings are ignored. Settings load once when the
 page opens, and chart calculation waits for that initial load to finish.
+Published presets are read-only. Select Custom Choice to edit any setting;
+switching to a preset preserves the custom values. Editing stays disabled until
+the database settings load successfully, with a retry button on failure.
 
 Settings are not written to localStorage and there is no tab-close save handler.
 An existing browser custom choice is imported once if no database choice exists.
@@ -152,6 +155,7 @@ The browser retains only its existing private owner token for accessing its save
 charts and settings; another browser has a different identity. Direct public
 access to the settings table is disabled. Failed saves are reported on the page;
 the pending choice can retry on the next edit or when the connection returns.
+Stalled saves are aborted after eight seconds so newer edits can proceed.
 
 ```sh
 npm run store:settings                   # upsert reference profiles; verify read-back
@@ -290,6 +294,7 @@ that ever matters, the city table is the thing to shrink.
 ```
 node test/test.js      # ephemeris, ayanamsa, ascendant, panchang, dasha
 node test/test-ui.js   # place search, timezones, chart rendering, DOM contract
+npm run test:browser   # isolated browser state/race tests (Python Playwright + Chromium)
 DATABASE_URL=... node test/test-db.js   # the stored ephemeris and the API
 ```
 
@@ -301,6 +306,12 @@ the reference values are baked in.
 `test-ui.js` runs the real `charts.js` against a small DOM stub and serialises the
 SVG, and it cross-checks every element id `app.js` reaches for against
 `index.html`, so a renamed id fails a test rather than breaking silently.
+
+`test-browser-state.py` serves the app locally and mocks every API call. It checks
+preset locking, preservation of Custom Choice, startup retries, reordered chart
+and save responses, and rapid settings edits without touching production data.
+Install its dependencies with `python3 -m pip install playwright` and
+`python3 -m playwright install chromium`.
 
 `test-db.js` needs a database and skips without one. It compares three
 implementations: the analytic engine, the JavaScript interpolator in

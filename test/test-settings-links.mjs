@@ -7,12 +7,12 @@ const deferred=()=>{let resolve;return {promise:new Promise(r=>{resolve=r;}),res
 function launch() {
   const reply=deferred(),order=[],listeners={};
   const env={location:{hash:'#d=1961-08-04&ay=lahiri&node=mean'},lastChart:null,
-    settingsStartupPending:false,settingsStartupTouched:false,submitAfterSettings:false,
+    settingsStartupPending:false,presetUpdateLocks:null,settingsStartupTouched:false,submitAfterSettings:false,
     form:{requestSubmit:()=>order.push('submitted chart')},
     applySettings:()=>order.push('template'),settingsForPreset:()=>({}),readDefaultChoice:()=> 'mine',
     presetRestore:()=>order.push('custom'),presetMarkDrift:()=>order.push('drift'),
     readHash:()=>order.push('chart'),ownerToken:()=> 'test-owner',
-    document:{addEventListener:(type,fn)=>{listeners[type]=fn;},removeEventListener:type=>{delete listeners[type];}},
+    document:{getElementById:()=>({addEventListener:()=>{}}),addEventListener:(type,fn)=>{listeners[type]=fn;},removeEventListener:type=>{delete listeners[type];}},
     window:{fetch:()=>{},addEventListener:()=>{},SettingsStore:{create:()=>({
       load:apply=>reply.promise.then(body=>{if(body)apply(body);}),flush:()=>{}
     })}}

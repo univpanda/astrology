@@ -5,11 +5,11 @@
   function create(o) {
     var pending=null, running=false, generation=0;
     var status=function(s){if(o.status)o.status(s);};
-    var call=function(body){
+    var call=function(body,signal){
       body.ownerToken=o.token;
       return Promise.resolve().then(function(){
         return o.fetch(o.url,{method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify(body),keepalive:true});
+          body:JSON.stringify(body),keepalive:true,signal:signal});
       }).then(function(res){if(!res.ok)throw new Error('Settings request failed');return res.json();});
     };
     var flush=function(){
@@ -17,12 +17,25 @@
       running=true;
       var job=pending; pending=null;
       status('Saving settings to database…');
-      return call({action:'save',choices:job.choices,selectedPreset:job.selectedPreset}).then(function(res){
+      var controller=typeof AbortController!=='undefined' ? new AbortController() : null;
+      var timer;
+      // Abort stalled requests and release the queue. A late response cannot
+      // clear a newer job or report it as saved.
+      var request=new Promise(function(resolve,reject){
+        timer=setTimeout(function(){
+          if(controller)controller.abort();
+          reject(new Error('Settings save timed out'));
+        },o.saveTimeoutMs || 8000);
+        call({action:'save',choices:job.choices,selectedPreset:job.selectedPreset},
+          controller && controller.signal).then(resolve,reject);
+      });
+      return request.then(function(res){
         if(!res.saved)throw new Error('Save unconfirmed');
         if(!pending)status('Settings saved to database.');
       }).catch(function(){
         if(!pending){pending=job;status('Settings could not be saved. Check your connection and try again.');}
       }).then(function(){
+        clearTimeout(timer);
         running=false;
         // A failed current write waits for a new edit or an online event.
         if(pending && pending!==job)return flush();

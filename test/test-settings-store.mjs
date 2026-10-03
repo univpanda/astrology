@@ -99,4 +99,28 @@ let fromServer;
 await client.load(body=>{fromServer=body;});
 assert.deepEqual(fromServer.custom.choices,changed);
 console.log('  ok   a new client loads current settings directly from the database API');
-console.log('\n6 settings storage checks passed.');
+// A hung write is aborted; the newest queued edit proceeds and late success
+// from the old transport cannot clear or requeue it.
+const hung=deferred();let signals=[],sent=[];
+const bounded=create({token,url:'https://api.test/settings',saveTimeoutMs:10,
+  status:s=>statuses.push(s),fetch:(_,opts)=>{
+    signals.push(opts.signal);sent.push(JSON.parse(opts.body));
+    return sent.length===1 ? hung.promise : Promise.resolve(Response.json({saved:true}));
+  }});
+const drain=bounded.save(choices,'custom');await tick();
+bounded.save(changed,'custom');await drain;
+assert.equal(sent.length,2);assert(signals[0].aborted);
+assert.deepEqual(sent[1].choices,changed);
+hung.resolve(Response.json({saved:true}));await tick();await bounded.flush();
+assert.equal(sent.length,2);
+assert.equal(statuses.at(-1),'Settings saved to database.');
+console.log('  ok   a timed-out write releases the queue without applying a late response');
+
+let retryAttempts=0;
+const retryTimed=create({token,url:'https://api.test/settings',saveTimeoutMs:5,
+  status:s=>statuses.push(s),fetch:()=>++retryAttempts===1 ? new Promise(()=>{}) : Promise.resolve(Response.json({saved:true}))});
+await retryTimed.save(changed,'custom');assert.match(statuses.at(-1),/could not be saved/);
+await retryTimed.flush();assert.equal(retryAttempts,2);
+assert.equal(statuses.at(-1),'Settings saved to database.');
+console.log('  ok   a single timed-out write remains available for retry');
+console.log('\n8 settings storage checks passed.');

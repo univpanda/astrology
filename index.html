@@ -511,6 +511,7 @@
             <option value="page">Standard default</option>
           </select>
           <button type="button" id="preset-create">Update Custom Settings</button>
+          <button type="button" id="settings-retry" hidden>Retry loading settings</button>
         </div>
         <!-- What the chosen reading is, and where it cannot reach. It was
              folded behind a "Why?" toggle, which asked a reader to go looking
@@ -518,6 +519,7 @@
              line of its own instead, and is not drawn until a reading has been
              chosen to describe. -->
         <p class="field-note preset-what" id="preset-what"></p>
+        <p class="field-note" id="preset-lock-note" role="status"></p>
         <!-- Automatic-save feedback; hidden until there is a message. -->
         <div class="preset-notice" id="preset-notice" hidden>
           <p class="field-note preset-status" id="preset-status" role="status"></p>
@@ -695,7 +697,7 @@
            role="region" aria-label="Custom settings" tabindex="-1">
         <div class="preset-page-head">
           <div>
-            <p class="field-note" id="preset-page-note">Changing any setting, here or on the Settings
+            <p class="field-note" id="preset-page-note">With Custom Choice selected, changing any setting, here or on the Settings
               tab, becomes your custom settings at once: there is no Save to
               press.</p>
           </div>

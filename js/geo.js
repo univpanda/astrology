@@ -28,11 +28,11 @@ var Geo = (function () {
     var script = document.createElement('script');
     script.src = 'data/cities.js';
     script.onload = function () {
-      var queue = loading; loading = [];
+      var queue = loading; loading = null;
       queue.forEach(function (cb) { cb(null); });
     };
     script.onerror = function () {
-      var queue = loading; loading = [];
+      var queue = loading; loading = null;
       queue.forEach(function (cb) { cb(new Error('Could not load data/cities.js')); });
     };
     document.head.appendChild(script);

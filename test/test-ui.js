@@ -68,14 +68,18 @@ function makeNode(tag) {
       return { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 };
     },
     listeners: {},
-    addEventListener: function (type, fn) {
-      (this.listeners[type] || (this.listeners[type] = [])).push(fn);
+    addEventListener: function (type, fn, capture) {
+      var listeners = this.listeners[type] || (this.listeners[type] = []);
+      if (capture) listeners.unshift(fn); else listeners.push(fn);
     },
     /* Called on the node, as a browser does: a change handler reading
        this.value is the ordinary way to write one. */
     fire: function (type, event) {
       var node = this;
-      (this.listeners[type] || []).forEach(function (fn) { fn.call(node, event); });
+      var stopped = false;
+      event = event || {};
+      event.stopImmediatePropagation = function () { stopped = true; };
+      (this.listeners[type] || []).some(function (fn) { fn.call(node, event); return stopped; });
     }
   };
   node.dataset = {};
@@ -421,12 +425,8 @@ console.log('\nStudy charts that ship with the app');
  * to be the ones this engine produces from that moment.
  */
 (function () {
-  var src = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
-  var literal = src.match(/var STUDY_CHARTS = (\[[\s\S]*?\n  \}\]);/);
-  ok('STUDY_CHARTS is still a literal this test can read', !!literal);
-  if (!literal) return;
-  var charts = new Function('return ' + literal[1])();
-  ok('seven charts ship', charts.length === 7, charts.map(function (c) { return c.name; }).join(', '));
+  var charts = require('./fixtures/study-charts.js');
+  ok('seven reference charts are available to tests', charts.length === 7);
 
   function cast(entry, offsetMinutes) {
     var t = entry.time.split(':').map(Number);
@@ -1166,8 +1166,8 @@ function stripHtml(label) {
    */
   ok('and changing it recomputes whatever chart is open',
      /document\.getElementById\('node-type'\)\.addEventListener\('change'/.test(appSrc) &&
-     // Naming what it changed, so the other two are taken from the chart.
-     /recomputeEverything\(\{ trueNode: this\.value === 'true' \},/.test(appSrc) &&
+     // Every recast reads the complete current settings snapshot.
+     /recomputeEverything\(function \(recast, warning\)/.test(appSrc) &&
      /target\.trueNode = trueNode;/.test(appSrc) &&
      /render\(target\);\s*\n\s*writeHash\(target\);/.test(appSrc));
   ok('and says so, including when there is no chart to recompute',
@@ -1540,7 +1540,7 @@ ok('the add button is gone, the tab having always been there',
    !/addButton/.test(appSrc));
 ok('and asking for the form yourself still starts a new chart',
    /if \(name === 'add' && byUser\) startFreshChart\(\);/.test(appSrc) &&
-   /function startFreshChart\(\) \{\s*\n\s*blankForm\(\);\s*\n\s*currentEntry = null;/
+   /function startFreshChart\(\) \{\s*cancelChartRequest\(\);\s*blankForm\(\);\s*\n\s*currentEntry = null;/
      .test(appSrc) &&
    /buttons\[name\]\.addEventListener\('click', function \(\) \{ activate\(name, false, true\); \}\)/
      .test(appSrc) &&
@@ -6259,7 +6259,7 @@ ok('and changing it recomputes the open chart', (function () {
   var at = appSrc.indexOf("getElementById('ayanamsa').addEventListener");
   if (at < 0) return false;
   var block = appSrc.slice(at, appSrc.indexOf('});\n\n', at));
-  return /recomputeEverything\(\{ ayanamsa: wanted \}, function \(recast, warning\)/
+  return /recomputeEverything\(function \(recast, warning\)/
       .test(block) &&
     /if \(!recast\) return;/.test(block) &&
     /if \(!lastChart\)/.test(block);
@@ -7407,7 +7407,7 @@ ok('editing a row fills the form without casting it',
    /function editSaved/.test(appSrc) && /function applyEntryToForm/.test(appSrc) &&
    /function loadSaved\(entry\) \{\s*\n\s*applyEntryToForm\(entry\);\s*\n\s*reopeningSaved = true;/.test(appSrc));
 ok('editing a row remembers which row it is, so generating updates it',
-   /function applyEntryToForm\(entry\) \{\s*\n\s*currentEntry = entry;/.test(appSrc));
+   /function applyEntryToForm\(entry\) \{\s*cancelChartRequest\(\);\s*currentEntry = entry;/.test(appSrc));
 ok('deleting asks before it deletes',
    /actions\.className = 'saved-actions confirming'/.test(appSrc) &&
    /'Delete\?'/.test(appSrc) && /saved-cancel/.test(appSrc));
@@ -10963,6 +10963,11 @@ console.log('\nEach preset reaches the figures it is named for');
       .join(' ').replace(/\s+/g, ' ').trim();
   };
   /* The editor is a table now, so its selects are not two levels down. */
+  var customFrom = function (name) {
+    out.applyPreset(name);
+    out.restoreSettings({profiles:[],custom:{selected_preset:'custom',choices:out.currentSettings()}});
+    out.applyPreset('mine');
+  };
   var editorFields = function () {
     var found = {};
     (function walk(n) {
@@ -10974,7 +10979,7 @@ console.log('\nEach preset reaches the figures it is named for');
 
 
   ok('the Mercury association option is saved, editable and reaches Paksha Bala', (function () {
-    out.applyPreset('page');
+    customFrom('page');
     var state = function () { return stateFor({ jdUT: Astro.julianDay(1953, 5, 6, 5 + 10 / 60),
       latitude: 55.9521, longitude: -3.1965, tzOffsetMinutes: 60, ayanamsa: 'lahiri' }); };
     var select = out.byId('mercury-nature');
@@ -10994,7 +10999,7 @@ console.log('\nEach preset reaches the figures it is named for');
       near(out.strengthsFor(state()).grahas.Mercury.kala.paksha, before, 1e-8);
     out.byId('preset-forget').fire('click', {});
     out.byId('preset-back').fire('click', {});
-    out.applyPreset('page');
+    customFrom('page');
     return result;
   })());
 
@@ -11132,6 +11137,7 @@ console.log('\nEach preset reaches the figures it is named for');
    * the settings, and Back and Save both bring them back.
    */
   ok('building a default opens a page in place of the settings', (function () {
+    out.applyPreset('mine');
     var main = out.byId('settings-main'), page = out.byId('preset-page');
     out.byId('preset-create').fire('click', {});
     var opened = main.hidden === true && page.hidden === false;
@@ -11143,7 +11149,7 @@ console.log('\nEach preset reaches the figures it is named for');
    * including the settings that only change how a chart is drawn.
    */
   ok('one personal set, replaced in place and read back whole', (function () {
-    out.applyPreset('raman');
+    customFrom('raman');
     out.byId('preset-create').fire('click', {});
     var fields = editorFields();
     fields['chart-style'].value = 'south';
@@ -11365,7 +11371,7 @@ console.log('\nEach preset reaches the figures it is named for');
   /* Missing documentation never participates in value comparisons. */
   ok('only recorded differences can be green',
     (function () {
-      out.applyPreset('page');
+      customFrom('page');
       out.byId('preset-create').fire('click', {});
       var marked = [], silent = [];
       (function walk(n) {
@@ -11457,7 +11463,7 @@ console.log('\nEach preset reaches the figures it is named for');
           return values.some(function (value) { return value !== values[0]; });
         }).length;
       });
-      out.applyPreset('page');
+      customFrom('page');
       out.byId('preset-create').fire('click', {});
       return correct;
     })());
@@ -11534,7 +11540,7 @@ console.log('\nEach preset reaches the figures it is named for');
 
   ok('reset replaces the one custom row with the baseline', (function () {
     out.byId('preset-forget').fire('click', {});
-    return out.database.custom.selected_preset === 'rao' &&
+    return out.database.custom.selected_preset === 'custom' &&
       JSON.stringify(out.readMySettings()) === JSON.stringify(out.database.custom.choices);
   })());
   /*
@@ -11545,7 +11551,7 @@ console.log('\nEach preset reaches the figures it is named for');
    */
   ok('a stored value the page no longer offers is dropped, not written in',
     (function () {
-      out.applyPreset('page');
+      customFrom('page');
       var was = out.currentSettings().ayanamsa;
       out.applySettings({ ayanamsa: 'no-such-ayanamsa', 'node-type': 'mean' });
       return out.currentSettings().ayanamsa === was &&
@@ -11559,7 +11565,7 @@ console.log('\nEach preset reaches the figures it is named for');
    * table, and Raman's parts from Lahiri by about a degree and a half.
    */
   ok('pressing a preset recasts the chart that is open', (function () {
-    out.applyPreset('page');
+    customFrom('page');
     var chart = Astro.chart({ jdUT: Astro.julianDay(1961, 8, 4, 19 + 24 / 60 + 10),
       latitude: 21.3069, longitude: -157.8583, tzOffsetMinutes: -600 });
     out.setLastChart({ chart: chart, place: { lat: 21.3069, lon: -157.8583 },
@@ -11598,14 +11604,14 @@ console.log('\nEach preset reaches the figures it is named for');
    */
   ok('a reader\u2019s own set carries no explanation, having none to give',
     (function () {
-      out.applyPreset('page');
+      customFrom('page');
       var ayanamsa = out.byId('ayanamsa');
       ayanamsa.value = ayanamsa.value === 'kp' ? 'raman' : 'kp';
       ayanamsa.fire('change', { target: ayanamsa });
       var mine = out.byId('preset-what').textContent;
       out.applyPreset('raman');
       var published = out.byId('preset-what').textContent;
-      out.applyPreset('page');
+      customFrom('page');
       var standard = out.byId('preset-what').textContent;
       out.byId('preset-forget').fire('click', {});
       return mine === '' && standard === '' &&
@@ -11628,7 +11634,7 @@ console.log('\nEach preset reaches the figures it is named for');
       var order = Array.prototype.map.call(choice.options, function (o) {
         return o.value;
       });
-      return out.readDefaultChoice() === 'rao' &&
+      return out.readDefaultChoice() === 'mine' &&
         order[0] === 'mine' &&
         // The page's own reading is still offered, just not first.
         order.indexOf('page') > 0;
@@ -11643,8 +11649,8 @@ console.log('\nEach preset reaches the figures it is named for');
     var off = Object.keys(wanted).filter(function (id) {
       return out.currentSettings()[id] !== wanted[id];
     });
-    return mine === 'mine' && out.readDefaultChoice() === 'rao' &&
-      out.database.custom.selected_preset === 'rao' && off.length === 0 &&
+    return mine === 'mine' && out.readDefaultChoice() === 'mine' &&
+      out.database.custom.selected_preset === 'custom' && off.length === 0 &&
       out.byId('preset-status').textContent === 'Settings saved to database.' &&
       // The button says where it goes, and says it once.
       /<button type="button" id="preset-forget" hidden>Reset to Rao<\/button>/
@@ -11685,6 +11691,7 @@ console.log('\nEach preset reaches the figures it is named for');
         // And it cannot promise a Save, there being none to press.
         !/Click Save|press Save|Saving again/.test(html);
       // Both paths the sentence names, each making the set it claims to make.
+      out.applyPreset('mine');
       out.byId('preset-forget').fire('click', {});
       var fresh = out.readMySettings();
       var ayanamsa = out.byId('ayanamsa');
@@ -11842,6 +11849,7 @@ console.log('\nEach preset reaches the figures it is named for');
       out.setLastChart(null);
       out.applyPreset('rao');
       if (reading === 'mine') {
+        out.applyPreset('mine');
         var fields = {'ayanamsa':'kp','node-type':'mean','time-standard':'lmt'};
         Object.keys(fields).forEach(function (id) {
           var field = out.byId(id); field.value = fields[id]; field.fire('change', {target:field});
@@ -11891,7 +11899,7 @@ console.log('\nEach preset reaches the figures it is named for');
    */
   ok('a setting changed by hand becomes the default as it is changed',
     (function () {
-      out.applyPreset('page');
+      customFrom('page');
       var ayanamsa = out.byId('ayanamsa');
       var other = ayanamsa.value === 'kp' ? 'raman' : 'kp';
       ayanamsa.value = other;
@@ -11905,7 +11913,7 @@ console.log('\nEach preset reaches the figures it is named for');
     })());
   /* And a change made in the editor is kept the same way. */
   ok('and a change made in the editor is kept as it is made', (function () {
-    out.applyPreset('page');
+    customFrom('page');
     out.byId('preset-create').fire('click', {});
     var fields = editorFields();
     var was = fields['node-type'].value;
@@ -11926,7 +11934,7 @@ console.log('\nEach preset reaches the figures it is named for');
    */
   ok('a write that fails is reported in whichever view is open', (function () {
     var wasFailing = out.database.fail;
-    out.applyPreset('page');
+    customFrom('page');
     out.byId('preset-create').fire('click', {});
     out.database.fail = true;
     var fields = editorFields();
@@ -11947,7 +11955,7 @@ console.log('\nEach preset reaches the figures it is named for');
    */
   ok('and the warning clears on the next write that works', (function () {
     var wasFailing = out.database.fail;
-    out.applyPreset('page');
+    customFrom('page');
     out.database.fail = true;
     var ayanamsa = out.byId('ayanamsa');
     ayanamsa.value = ayanamsa.value === 'kp' ? 'raman' : 'kp';
@@ -11985,7 +11993,7 @@ console.log('\nEach preset reaches the figures it is named for');
    * counted, because a count is what let them through.
    */
   var openChart = function () {
-    out.applyPreset('page');
+    customFrom('page');
     var chart = Astro.chart({ jdUT: Astro.julianDay(1961, 8, 4, 19 + 24 / 60 + 10),
       latitude: 21.3069, longitude: -157.8583, tzOffsetMinutes: -600 });
     out.setLastChart({ chart: chart,
@@ -12000,41 +12008,16 @@ console.log('\nEach preset reaches the figures it is named for');
     var svg = box.children.filter(function (n) { return n.tag === 'svg'; })[0];
     return svg ? String(svg.attrs.class || '') : '';
   };
-  /*
-   * One recast path for the three chart-wide settings is right, but it must
-   * recast what the reader moved and not everything the selects happen to be
-   * showing. Those three selects are the form's as well, and the form fills
-   * them from a row without casting it: pressing Edit on a saved kundali
-   * leaves them holding that row's values while another chart is on screen.
-   *
-   * Reading all three on any one change meant the next unrelated setting
-   * dragged the other two in. Moving the node type alone shifted the open
-   * chart from zone time to local mean time, half an hour at Honolulu, and
-   * from Lahiri to Raman, a degree and a half, while the status line said
-   * only that the node had changed.
-   */
-  ok('a setting recasts what was moved and nothing else', (function () {
+  ok('a recast uses the complete current settings snapshot', (function () {
     openChart();
-    // What Edit does: fills the form from a row, casts nothing.
     out.byId('time-standard').value = 'lmt';
     out.byId('ayanamsa').value = 'raman';
     var node = out.byId('node-type');
     node.value = 'mean';
-    node.fire('change', { target: node });
+    node.fire('change', {target:node});
     var after = out.lastChart();
-    return after.trueNode === false &&
-      after.standard === 'zone' && after.offset === -600 &&
-      after.ayanamsa === 'lahiri';
-  })());
-  /* And the same the other way round: the standard moves, the ayanamsa does not. */
-  ok('and the time standard does not drag the ayanamsa with it', (function () {
-    openChart();
-    out.byId('ayanamsa').value = 'raman';
-    var standard = out.byId('time-standard');
-    standard.value = 'lmt';
-    standard.fire('change', { target: standard });
-    var after = out.lastChart();
-    return after.standard === 'lmt' && after.ayanamsa === 'lahiri';
+    return after.trueNode === false && after.standard === 'lmt' &&
+      after.offset === Math.round(-157.8583 * 4) && after.ayanamsa === 'raman';
   })());
 
   ok('changing the chart style redraws what is on screen', (function () {
@@ -12082,34 +12065,6 @@ console.log('\nEach preset reaches the figures it is named for');
 
 
 
-
-
-
-(function () {
-  var out = global.appExports || {};
-  var choice = out.byId('preset-choice');
-  var label = function () {
-    return Array.prototype.filter.call(choice.options, function (o) {
-      return o.value === choice.value; })
-      .map(function (o) { return o.textContent; })[0];
-  };
-  var say = function (step) {
-    console.log('SAVE ' + step +
-      '\n     notice hidden=' + out.byId('preset-notice').hidden +
-      '  save hidden=' + out.byId('preset-save-now').hidden +
-      '\n     picker=' + JSON.stringify(label()) +
-      '\n     text=' + JSON.stringify(out.byId('preset-status').textContent));
-  };
-  out.applyPreset('page'); say('1 nothing changed');
-  var ayan = out.byId('ayanamsa');
-  ayan.value = 'kp'; ayan.fire('change', { target: ayan });
-  say('2 one setting changed');
-  out.byId('preset-save-now').fire('click', {});
-  say('3 after pressing Save in the notice');
-  console.log('     stored ayanamsa=' + JSON.stringify(out.readMySettings().ayanamsa) +
-    '  default=' + out.readDefaultChoice());
-  out.byId('preset-forget').fire('click', {});
-})();
 
 
 console.log('\nChalit draws the bhavas, not the signs');

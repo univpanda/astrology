@@ -1,8 +1,8 @@
 /*
  * app.js - form handling, the place combobox, and rendering the result.
  *
- * Everything runs locally: nothing about the birth data is sent anywhere, and
- * the only network request the page ever makes is for its own city table.
+ * Charts use the ephemeris API with a browser calculation fallback. Birth
+ * records and personal settings are saved through their database APIs.
  */
 (function () {
   'use strict';
@@ -51,6 +51,12 @@
    * behind and adding a second, nearly identical entry to the list.
    */
   var currentEntry = null;
+  var chartRequest = 0;
+
+  function cancelChartRequest() {
+    ++chartRequest;
+    form.querySelector('button.primary').disabled = false;
+  }
 
   /* ------------------------------------------------------------ formatting */
 
@@ -771,18 +777,34 @@
       tzOffsetMinutes: offset
     };
 
+    var request = ++chartRequest;
+    var entryAtSubmit = currentEntry;
+    var celebrity = document.getElementById('celebrity').checked;
+    var note = document.getElementById('person-note').value.trim();
     var button = form.querySelector('button.primary');
     button.disabled = true;
     computeChart(params, function (chart, source) {
+      if (request !== chartRequest) return;
+      // A setting changed while this birth was being calculated. Recast the
+      // still-filled form using all current choices before displaying it.
+      if (params.ayanamsa !== document.getElementById('ayanamsa').value ||
+          params.trueNode !== (document.getElementById('node-type').value === 'true') ||
+          standard !== document.getElementById('time-standard').value) {
+        reopeningSaved = reopening;
+        pendingFlagged = flagged;
+        form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit'));
+        return;
+      }
+      currentEntry = entryAtSubmit;
       button.disabled = false;
       lastChart = {
         chart: chart, place: place, offset: offset,
         name: nameValue, standard: standard, time: time, source: source,
         ayanamsa: params.ayanamsa, trueNode: params.trueNode,
         gender: genderValue,
-        celebrity: document.getElementById('celebrity').checked,
+        celebrity: celebrity,
         flagged: flagged,
-        note: document.getElementById('person-note').value.trim(),
+        note: note,
         y: y, mo: mo, d: d, h: h, mi: mi
       };
       render(lastChart);
@@ -2975,10 +2997,6 @@
     document.getElementById('vargas-as-table').setAttribute('aria-pressed', String(!asCharts));
   }
 
-  function vargaViewIsCharts() {
-    return document.getElementById('vargas-as-charts').getAttribute('aria-pressed') === 'true';
-  }
-
   /*
    * The same switch for Shadbala, and for the same reason: the table is fifteen
    * rows of figures to look things up in, and the chart answers one question
@@ -4064,163 +4082,6 @@
   var saveFeedback = document.getElementById('save-feedback');
   var editButton = document.getElementById('edit-button');
 
-  /*
-   * Seven public reference charts live here for the engine checks and for
-   * provisioning the database deliberately. They are not inserted into a new
-   * browser's Saved tab: that list now mirrors its database rows exactly.
-   * All seven are picked for being checkable rather than for being famous, and
-   * between them they show the three things that
-   * decide whether a chart can be trusted: the time, the clock it is read on,
-   * and the place. The last of them is here for what it asks of the drawing
-   * rather than of the data.
-   *
-   * Donald Trump's time is on a public birth certificate, so the chart can be
-   * reproduced in any other ephemeris, and its Jupiter mahadasha begins in
-   * November 2016, on a date every reader already knows. Kareem Abdul-Jabbar's
-   * is a time given from memory rather than from a record, on a date that falls
-   * in the gap before daylight saving began that year, which is where the
-   * reading of a clock time decides the ascendant. Ava Gardner's is an AA time
-   * from a birth certificate, but she was born in Grabtown, which no gazetteer
-   * of towns above five thousand people carries, so the place is Smithfield
-   * eight kilometres away. That is close enough to leave the lagna at 7 Cancer
-   * and not close enough to leave the tropical ascendant where the references
-   * print it: they give 0 Leo from Boon Hill, and Smithfield gives 29 Cancer.
-   * Nothing this app shows moves, which is the point worth knowing about how
-   * much precision a birthplace actually needs.
-   *
-   * Barack Obama's is the chart with none of those doubts in it. The hour is on
-   * the long form the White House published in 2011, the hospital is named on
-   * it, and Hawaii is the one state that has never kept daylight saving, so
-   * there is no second reading of the clock to argue about. What is left is the
-   * dasha: Jupiter from July 1996 to July 2012, which opens months before the
-   * Illinois senate seat and closes between the two presidential terms.
-   *
-   * Pope Benedict XVI's answers the question Ava Gardner's raises. Joseph
-   * Ratzinger was born in Marktl am Inn, about two and a half thousand people
-   * and so under the gazetteer's floor as well, but this entry keeps the real
-   * coordinates and the real name instead of standing at the nearest town. Typing a place the
-   * combobox does not carry is a supported way to use this app, not a
-   * workaround, and a chart kept for checking against published ones should be
-   * cast from where the person was actually born. It costs nothing: the tropical
-   * ascendant comes out at 19 Pisces 10, and the references print 19 Pisces 12.
-   * His dasha is the one that needs no astrology to notice. Ketu, the graha of
-   * letting go, runs from November 2005 to November 2012, and the pontificate
-   * runs from April 2005 to February 2013.
-   *
-   * Richard Nixon's is the one that exercises the picture. The Sun, Mars,
-   * Mercury and Jupiter all stand in Sagittarius, so one house has to hold four
-   * grahas, which is the case the two-column stacking in charts.js exists for
-   * and the case a chart with a graha or two to a house never reaches. The time
-   * is AA from the birth certificate, and its dasha turns where the biography
-   * does: Mercury, one of the four, opens in November 1970, and both the
-   * break-in and the resignation fall inside it.
-   *
-   * Tony Blair's is Kareem Abdul-Jabbar's lesson from the other side, and the
-   * sharper of the two. That birth falls in the gap before summer time started;
-   * this one falls inside it, so the clock reads +01:00 and an hour taken off it
-   * moves the lagna from 11 Taurus to 0 Gemini 02. Not a sign out, but two
-   * arcminutes into the next sign, which is the state a chart is in when an hour
-   * of doubt decides every house in it.
-   */
-  var STUDY_CHARTS = [{
-    name: 'Donald Trump',
-    placeLabel: 'Jamaica, New York, United States',
-    latitude: 40.6915,
-    longitude: -73.8057,
-    zone: 'America/New_York',
-    date: '1946-06-14',
-    time: '10:54:00',
-    standard: 'zone',
-    ayanamsa: 'lahiri',
-    trueNode: true,
-    gender: 'male',
-    celebrity: true,
-    note: '10:54 am EDT at Jamaica Hospital, Queens, the time on the birth ' +
-      'certificate he posted himself, which astrologers rate AA. Older references ' +
-      'print 9:51 am from Lois Rodden, and sidereally that one rises at 24 Cancer ' +
-      'rather than 6 Leo, so every house moves and the grahas do not. Leo ' +
-      'ascendant in Magha, ' +
-      'Moon debilitated in Scorpio with Ketu on a full moon, Sun with Rahu in Taurus, ' +
-      'and Jupiter dasha from November 2016.'
-  }, {
-    name: 'Kareem Abdul-Jabbar',
-    placeLabel: 'Harlem, New York, United States',
-    latitude: 40.8079,
-    longitude: -73.9454,
-    zone: 'America/New_York',
-    date: '1947-04-16',
-    time: '18:30:00',
-    standard: 'zone',
-    ayanamsa: 'lahiri',
-    trueNode: true,
-    gender: 'male',
-    celebrity: true
-  }, {
-    name: 'Ava Gardner',
-    placeLabel: 'Smithfield, North Carolina, United States',
-    latitude: 35.5085,
-    longitude: -78.3394,
-    zone: 'America/New_York',
-    date: '1922-12-24',
-    time: '19:10:00',
-    standard: 'zone',
-    ayanamsa: 'lahiri',
-    trueNode: true,
-    gender: 'female',
-    celebrity: true
-  }, {
-    name: 'Barack Obama',
-    placeLabel: 'Honolulu, Hawaii, United States',
-    latitude: 21.3069,
-    longitude: -157.8583,
-    zone: 'Pacific/Honolulu',
-    date: '1961-08-04',
-    time: '19:24:00',
-    standard: 'zone',
-    ayanamsa: 'lahiri',
-    trueNode: true,
-    gender: 'male',
-    celebrity: true
-  }, {
-    name: 'Pope Benedict XVI',
-    placeLabel: 'Marktl am Inn, Bavaria, Germany',
-    latitude: 48.2556,
-    longitude: 12.8447,
-    zone: 'Europe/Berlin',
-    date: '1927-04-16',
-    time: '04:15:00',
-    standard: 'zone',
-    ayanamsa: 'lahiri',
-    trueNode: false,
-    gender: 'male',
-    celebrity: true
-  }, {
-    name: 'Richard Nixon',
-    placeLabel: 'Yorba Linda, California, United States',
-    latitude: 33.8886,
-    longitude: -117.8131,
-    zone: 'America/Los_Angeles',
-    date: '1913-01-09',
-    time: '21:35:00',
-    standard: 'zone',
-    ayanamsa: 'lahiri',
-    trueNode: false,
-    gender: 'male',
-    celebrity: true
-  }, {
-    name: 'Tony Blair',
-    placeLabel: 'Edinburgh, Scotland, United Kingdom',
-    latitude: 55.9521,
-    longitude: -3.1965,
-    zone: 'Europe/London',
-    date: '1953-05-06',
-    time: '06:10:00',
-    standard: 'zone',
-    ayanamsa: 'lahiri',
-    trueNode: false,
-    gender: 'male',
-    celebrity: true
-  }];
 
   /*
    * There are no accounts, so ownership is a capability: a random token minted
@@ -4701,6 +4562,7 @@
   function saveCurrent(quiet) {
     if (!lastChart) return;
     var state = lastChart;
+    var saveRequest = chartRequest;
     var entry = {
       name: state.name,
       placeLabel: placeLabelOf(state.place),
@@ -4770,6 +4632,7 @@
       if (entries) {
         writeSaved(entries.map(fromRow));
         renderSaved();
+        if (lastChart !== state || chartRequest !== saveRequest) return;
         saveFeedback.textContent = at >= 0
           ? 'Updated in your saved kundalis'
           : 'Saved to your kundalis';
@@ -4796,6 +4659,7 @@
         }
         writeSaved(current);
         renderSaved();
+        if (lastChart !== state || chartRequest !== saveRequest) return;
         saveFeedback.textContent = 'Save not confirmed.';
         savedNote.textContent = previous
           ? 'The changes could not be confirmed. Check your connection and try again.'
@@ -4804,7 +4668,9 @@
         currentEntry = previous;
       }
     });
-    if (!quiet) setTimeout(function () { saveFeedback.textContent = ''; }, 4000);
+    if (!quiet) setTimeout(function () {
+      if (lastChart === state && chartRequest === saveRequest) saveFeedback.textContent = '';
+    }, 4000);
   }
 
   /*
@@ -4832,6 +4698,7 @@
 
   /** Put a saved chart's details into the form, without casting it. */
   function applyEntryToForm(entry) {
+    cancelChartRequest();
     currentEntry = entry;
     submitAfterSettings = false;
     document.getElementById('name').value = entry.name;
@@ -5076,6 +4943,8 @@
   var serverProfiles = {};
   var settingsStore = null;
   var settingsStartupPending = false;
+  var settingsLoaded = true;
+  var presetUpdateLocks = null;
   var settingsStartupTouched = false;
   var submitAfterSettings = false;
   var presetRestore = null;
@@ -5157,27 +5026,15 @@
    * replace the ephemeris answer one request order: an older response may not
    * overwrite a newer selection merely because the network returned it last.
    */
-  /*
-   * `changes` names what the reader actually moved. Anything it does not name
-   * is taken from the chart rather than from the select showing it, because
-   * the three selects are also the form's, and the form fills them from a row
-   * without casting it: pressing Edit on a saved kundali leaves them holding
-   * that row's values while another chart is still on screen. Reading all
-   * three on any change made the next unrelated setting drag the other two in,
-   * so moving the node type alone could shift the open chart half an hour and
-   * a degree and a half and say only that the node had changed.
-   */
-  function recomputeEverything(changes, done) {
+  function recomputeEverything(done) {
     if (!lastChart || !lastChart.chart) return done(false, '');
     var target = lastChart;
     var request = ++settingsRecast;
-    var has = function (key) {
-      return Object.prototype.hasOwnProperty.call(changes || {}, key);
-    };
-    var ayanamsa = has('ayanamsa') ? changes.ayanamsa : target.ayanamsa;
-    var trueNode = has('trueNode') ? changes.trueNode : target.trueNode;
+    var birthRequest = chartRequest;
+    var ayanamsa = document.getElementById('ayanamsa').value;
+    var trueNode = document.getElementById('node-type').value === 'true';
     var standardSelect = document.getElementById('time-standard');
-    var standard = has('standard') ? changes.standard : (target.standard || 'zone');
+    var standard = standardSelect.value === 'lmt' ? 'lmt' : 'zone';
     var offset = target.offset;
     var jdUT = target.chart.julianDay;
     var warning = '';
@@ -5204,11 +5061,15 @@
 
     computeChart({
       jdUT: jdUT,
+      date: target.y + '-' + String(target.mo).padStart(2, '0') + '-' + String(target.d).padStart(2, '0'),
+      time: String(target.h).padStart(2, '0') + ':' + String(target.mi).padStart(2, '0') +
+        ':' + String(target.time && target.time.second || 0).padStart(2, '0'),
       latitude: target.place.lat, longitude: target.place.lon,
       tzOffsetMinutes: offset,
       ayanamsa: ayanamsa, trueNode: trueNode
     }, function (chart, source) {
       if (request !== settingsRecast || lastChart !== target) return;
+      if (birthRequest !== chartRequest) return;
       target.chart = chart;
       target.offset = offset;
       target.standard = standard;
@@ -5234,6 +5095,22 @@
     var editorStatus = document.getElementById('preset-editor-status');
     var persistenceStatus = '';
     var settingsRevision = 0;
+    var canEdit = function () { return settingsLoaded && !settingsStartupPending && choice.value === 'mine'; };
+    var updateLocks = function () {
+      var locked = !canEdit();
+      choice.disabled = !settingsLoaded || settingsStartupPending;
+      RECKONING_IDS.forEach(function (id) { document.getElementById(id).disabled = locked; });
+      document.getElementById('preset-create').disabled = locked;
+      forget.disabled = locked;
+      Object.keys(editorSelects || {}).forEach(function (id) { editorSelects[id].disabled = locked; });
+      editorCells.forEach(function (cell) { cell.node.disabled = locked; });
+      document.getElementById('preset-lock-note').textContent = settingsStartupPending
+        ? 'Loading your settings…' : !settingsLoaded
+          ? 'Your saved settings could not be loaded. Retry to edit them.'
+          : locked ? 'This preset is fixed. Select Custom Choice to edit settings.' : '';
+      document.getElementById('settings-retry').hidden = settingsLoaded || settingsStartupPending;
+    };
+    presetUpdateLocks = updateLocks;
 
     var showMine = function () {
       var mine = readMyDefault();
@@ -5320,6 +5197,7 @@
         take.setAttribute('type', 'button');
         take.setAttribute('title', 'Take every setting from ' + PRESETS[name].label);
         take.addEventListener('click', function () {
+          if (!canEdit()) return;
           var wanted = settingsForPreset(name);
           Object.keys(editorSelects).forEach(function (id) {
             if (wanted && wanted[id] !== undefined) editorSelects[id].value = wanted[id];
@@ -5423,6 +5301,7 @@
               button.setAttribute('title', 'Inferred from worked examples; see the profile explanation for the limits of this choice.');
             }
             button.addEventListener('click', function () {
+              if (!canEdit()) return;
               select.value = entry.value;
               markDifferences();
               updateFromEditor();
@@ -5461,6 +5340,7 @@
         if (values && values[id] !== undefined) editorSelects[id].value = values[id];
       });
       markDifferences();
+      updateLocks();
     };
 
     /*
@@ -5519,14 +5399,10 @@
       if (optionLabels[name] !== undefined) choice.value = name;
       markDrift();
       explain(name);
+      updateLocks();
       sayStatus('Recomputing\u2026');
       // Applying a complete preset may move all three chart-wide settings.
-      recomputeEverything({
-        ayanamsa: document.getElementById('ayanamsa').value,
-        trueNode: document.getElementById('node-type').value === 'true',
-        standard: document.getElementById('time-standard').value === 'lmt'
-          ? 'lmt' : 'zone'
-      }, function (recast, warning) {
+      recomputeEverything(function (recast, warning) {
         if (revision !== settingsRevision) return;
         sayStatus((recast
           ? 'The chart on screen now uses ' + label + '.'
@@ -5595,8 +5471,12 @@
 
     choice.addEventListener('change', function () {
       var name = this.value;
+      if (!settingsLoaded || settingsStartupPending) return;
       apply(name);
-      storeAsDefault(currentSettings(), name);
+      selectedDefault = name;
+      // Selecting a reading never replaces the personal settings row.
+      if (settingsStore) settingsStore.save(readMySettings() || settingsForPreset('mine'),
+        name === 'mine' ? 'custom' : name);
     });
 
     /*
@@ -5609,11 +5489,16 @@
     RECKONING_IDS.forEach(function (id) {
       var select = document.getElementById(id);
       if (!select) return;
-      select.addEventListener('change', function () { storeAsDefault(currentSettings()); });
+      select.addEventListener('change', function (event) {
+        if (canEdit()) return;
+        applySettings(settingsForPreset(choice.value));
+        event.stopImmediatePropagation();
+      }, true);
+      select.addEventListener('change', function () { if (canEdit()) storeAsDefault(currentSettings()); });
     });
 
     document.getElementById('preset-create').addEventListener('click', function () {
-      // Opening the editor must neither restore old values nor save a shared link.
+      if (!canEdit()) return;
       fillEditor(currentSettings());
       showPage();
     });
@@ -5621,17 +5506,18 @@
     document.getElementById('preset-back').addEventListener('click', closePage);
 
     var SAVE_FAILED = 'Applied for this session, but the database settings could not be saved.';
-    var storeAsDefault = function (values, selected) {
-      if (settingsStartupPending) settingsStartupTouched = true;
+    var storeAsDefault = function (values) {
+      if (!canEdit()) return false;
       ++settingsRevision;
       savedCustom = {name: 'Custom Choice', values: JSON.parse(JSON.stringify(values))};
-      selectedDefault = selected || 'mine';
+      selectedDefault = 'mine';
       showMine();
       choice.value = selectedDefault;
+      updateLocks();
       persistenceStatus = settingsStore ? 'Saving settings to database…' : SAVE_FAILED;
       what.textContent = '';
       sayStatus('');
-      if (settingsStore) settingsStore.save(values, selectedDefault === 'mine' ? 'custom' : selectedDefault);
+      if (settingsStore) settingsStore.save(values, 'custom');
       return !!settingsStore;
     };
 
@@ -5688,6 +5574,9 @@
         applySettings(custom ? custom.choices : settingsForPreset(readDefaultChoice()));
         explain(choice.value);
       }
+      settingsLoaded = true;
+      if (lastChart) apply(choice.value);
+      updateLocks();
       markDrift();
     };
     var databaseStatus = function (text) {
@@ -5699,29 +5588,29 @@
     presetRestore.status = databaseStatus;
 
     var updateFromEditor = function () {
+      if (!canEdit()) return;
       var values = {};
       Object.keys(editorSelects).forEach(function (id) { values[id] = editorSelects[id].value; });
       applySettings(values);
       storeAsDefault(currentSettings());
       var revision = settingsRevision;
       // One recalculation for a whole column, even if many settings changed.
-      recomputeEverything({
-        ayanamsa: values.ayanamsa,
-        trueNode: values['node-type'] === 'true',
-        standard: values['time-standard'] === 'lmt' ? 'lmt' : 'zone'
-      }, function () {
+      recomputeEverything(function () {
         if (revision === settingsRevision) sayStatus('');
       });
     };
 
     forget.addEventListener('click', function () {
+      if (!canEdit()) return;
       closePage();
-      apply(BASE_CHOICE);
-      storeAsDefault(currentSettings(), BASE_CHOICE);
+      applySettings(settingsForPreset(BASE_CHOICE));
+      storeAsDefault(currentSettings());
+      recomputeEverything(function () { sayStatus(''); });
     });
     showMine();
     choice.value = readDefaultChoice();
     explain(choice.value);
+    updateLocks();
   }
 
   function statusFor(select) {
@@ -5855,8 +5744,7 @@
       return;
     }
     status.textContent = 'Recomputing\u2026';
-    recomputeEverything({ standard: this.value === 'lmt' ? 'lmt' : 'zone' },
-      function (recast, warning) {
+    recomputeEverything(function (recast, warning) {
       if (!recast) return;
       status.textContent = (lastChart.standard === 'lmt'
         ? 'Recomputed from local mean time at the birthplace\u2019s own meridian.'
@@ -5872,8 +5760,7 @@
       return;
     }
     status.textContent = 'Recomputing\u2026';
-    recomputeEverything({ trueNode: this.value === 'true' },
-      function (recast, warning) {
+    recomputeEverything(function (recast, warning) {
       if (!recast) return;
       var wanted = lastChart.trueNode;
       status.textContent = (lastChart.name
@@ -6114,7 +6001,7 @@
       return;
     }
     status.textContent = 'Recomputing\u2026';
-    recomputeEverything({ ayanamsa: wanted }, function (recast, warning) {
+    recomputeEverything(function (recast, warning) {
       if (!recast) return;
       status.textContent = (lastChart.name
         ? 'Recomputed ' + lastChart.name + '\u2019s chart against ' + label + '.'
@@ -6155,6 +6042,7 @@
    * for the Add tab yourself.
    */
   function startFreshChart() {
+    cancelChartRequest();
     blankForm();
     currentEntry = null;
     document.getElementById('name').focus();
@@ -6215,6 +6103,7 @@
   }
 
   function showForm(blank) {
+    cancelChartRequest();
     if (blank) {
       blankForm();
       currentEntry = null;   // a fresh form means a new chart, not an edit
@@ -6341,6 +6230,7 @@
   };
   var finishSettingsStartup = function () {
     settingsStartupPending = false;
+    if (presetUpdateLocks) presetUpdateLocks();
     ['input', 'change', 'submit'].forEach(function (type) {
       if (document.removeEventListener) document.removeEventListener(type, noteStartupInteraction, true);
     });
@@ -6359,13 +6249,23 @@
         fetch: window.fetch.bind(window),
         status: function (text) { if (presetRestore) presetRestore.status(text); }
       });
-      settingsStartupPending = true;
-      ['input', 'change', 'submit'].forEach(function (type) {
-        document.addEventListener(type, noteStartupInteraction, true);
+      var loadSettings = function () {
+        if (settingsStartupPending) return;
+        settingsLoaded = false;
+        settingsStartupPending = true;
+        if (presetUpdateLocks) presetUpdateLocks();
+        ['input', 'change', 'submit'].forEach(function (type) {
+          document.addEventListener(type, noteStartupInteraction, true);
+        });
+        return settingsStore.load(function (body) { if (presetRestore) presetRestore(body); })
+          .then(finishSettingsStartup);
+      };
+      document.getElementById('settings-retry').addEventListener('click', loadSettings);
+      loadSettings();
+      window.addEventListener('online', function () {
+        if (!settingsLoaded) loadSettings();
+        else settingsStore.flush();
       });
-      settingsStore.load(function (body) { if (presetRestore) presetRestore(body); })
-        .then(finishSettingsStartup);
-      window.addEventListener('online', function () { settingsStore.flush(); });
     }
   }
   if (!settingsStartupPending) finishSettingsStartup();
