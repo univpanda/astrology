@@ -929,16 +929,35 @@
     noteLine.hidden = !state.note;
 
     var placeLabel = placeLabelOf(place);
-    document.getElementById('result-birth').textContent =
+    var birthLine = document.getElementById('result-birth');
+    birthLine.textContent =
       state.d + ' ' + MONTHS_LONG[state.mo - 1] + ' ' + state.y + ', ' +
       state.time.hour12 + ':' + String(state.time.minute).padStart(2, '0') +
       (state.time.second ? ':' + String(state.time.second).padStart(2, '0') : '') + ' ' +
       state.time.meridiem.toUpperCase() +
-      ' (' + (state.standard === 'lmt' ? 'LMT ' : 'UTC') + Geo.formatOffset(state.offset) + ')  ·  ' +
+      ' (' + (state.standard === 'lmt' ? 'LMT ' : 'UTC') + Geo.formatOffset(state.offset) + ')';
+    var timeNote = document.getElementById('result-time-note');
+    timeNote.hidden = true;
+    timeNote.textContent = state.standard === 'lmt' ? '' :
+      Geo.offsetNote(place.zone, state.y, state.mo, state.d, state.h, state.mi, state.offset);
+    if (timeNote.textContent) {
+      var timeHelp = el('button', 'time-offset-help', 'ⓘ');
+      timeHelp.type = 'button';
+      timeHelp.title = timeNote.textContent;
+      timeHelp.setAttribute('aria-label', 'About this time offset');
+      timeHelp.setAttribute('aria-controls', 'result-time-note');
+      timeHelp.setAttribute('aria-expanded', 'false');
+      timeHelp.addEventListener('click', function () {
+        timeNote.hidden = !timeNote.hidden;
+        timeHelp.setAttribute('aria-expanded', String(!timeNote.hidden));
+      });
+      birthLine.appendChild(timeHelp);
+    }
+    birthLine.appendChild(document.createTextNode('  ·  ' +
       placeLabel + '  ·  ' +
       Geo.formatDMS(place.lat, 'N', 'S') + ' ' + Geo.formatDMS(place.lon, 'E', 'W') +
       (state.gender && state.gender !== 'unstated'
-        ? '  \u00b7  ' + state.gender.charAt(0).toUpperCase() + state.gender.slice(1) : '');
+        ? '  \u00b7  ' + state.gender.charAt(0).toUpperCase() + state.gender.slice(1) : '')));
 
     /*
      * No summary tiles here any more. The lagna, both rashis and the janma

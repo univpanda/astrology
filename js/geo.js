@@ -234,6 +234,57 @@ var Geo = (function () {
       (sec ? ':' + String(sec).padStart(2, '0') : '');
   }
 
+  /** Explain the offset already used by the chart; never change the calculation. */
+  function offsetNote(zone, y, month, day, hour, minute, offset, now) {
+    var current;
+    try {
+      now = now || new Date();
+      // Read today's actual offset at this instant, including seasonal time.
+      var parts = {};
+      new Intl.DateTimeFormat('en-US', {
+        timeZone: zone, hourCycle: 'h23', year: 'numeric', month: 'numeric',
+        day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric'
+      }).formatToParts(now).forEach(function (p) { parts[p.type] = p.value; });
+      current = (Date.UTC(+parts.year, +parts.month - 1, +parts.day,
+        +parts.hour % 24, +parts.minute, +parts.second) -
+        Math.floor(now.getTime() / 1000) * 1000) / 60000;
+    } catch (e) { return ''; }
+
+    var reason = '';
+    var india = zone === 'Asia/Kolkata' || zone === 'Asia/Calcutta';
+    var instant = Date.UTC(y, month - 1, day, hour, minute) - offset * 60000;
+    // Named explanations follow tzdb, and also require the matching resolved
+    // offset so a browser without historical data cannot claim a correction.
+    // Sources: https://github.com/eggert/tz/blob/main/asia (Asia/Kolkata)
+    //          https://github.com/eggert/tz/blob/main/europe (Europe/London)
+    if (india && y >= 1941 && y <= 1945 && offset === 390) {
+      reason = 'War time: the timezone data uses UTC+06:30 for this date in India, ' +
+        'one hour ahead of IST (UTC+05:30).';
+    } else if (zone === 'Europe/London' && offset === 60 &&
+        instant >= Date.UTC(1968, 9, 27) && instant < Date.UTC(1971, 9, 31, 2)) {
+      reason = 'Year-round summer time: Britain kept UTC+01:00 during the ' +
+        '1968–71 British Standard Time experiment.';
+    } else if (india && y < 1906 &&
+        [21208, 21200, 19270].indexOf(Math.round(offset * 60)) !== -1) {
+      reason = 'Pre-standard local mean time: the timezone data uses an older ' +
+        'regional clock offset, before IST. This is the zone’s historical ' +
+        'reference clock, not local mean time calculated from the birth longitude.';
+    } else if (zone === 'Europe/London' && offset === -1.25 &&
+        instant < Date.UTC(1847, 11, 1, 0, 1, 15)) {
+      reason = 'Pre-standard local mean time: London’s reference clock was ' +
+        'UTC-00:01:15 before it adopted GMT.';
+    }
+    if (!reason && Math.abs(offset - current) < 1 / 120) return '';
+    if (!reason) reason = 'The timezone’s historical or seasonal clock rules ' +
+      'give UTC' + formatOffset(offset) + ' on this birth date.';
+    if (Math.abs(offset - current) >= 1 / 120) {
+      reason += ' Today this zone uses UTC' + formatOffset(current) + '.';
+    }
+    return reason + ' The entered birth time is treated as the local clock time ' +
+      'on that date. If your source already converted it to another time ' +
+      'standard, that conversion must be accounted for; an hour can change the lagna.';
+  }
+
   /** Does this environment actually know historical timezone rules? */
   function historicalZonesSupported() {
     try {
@@ -278,6 +329,7 @@ var Geo = (function () {
     nearest: nearest,
     offsetMinutes: offsetMinutes,
     formatOffset: formatOffset,
+    offsetNote: offsetNote,
     to24Hour: to24Hour,
     from24Hour: from24Hour,
     formatDMS: formatDMS,
