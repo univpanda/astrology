@@ -230,6 +230,20 @@ var Astro = (function () {
   var AYANAMSA = {
     lahiri: { label: 'Lahiri (Chitrapaksha)', j2000: 23.857092, rate: -0.294 },
     trueCitra: { label: 'True Chitra Paksha', j2000: 23.840003, rate: -4.958 },
+    pushya: {
+      label: 'Pushya Paksha', model: 'delta-cancri', siderealLongitude: 106,
+      // ICRS catalogue position and proper motion; RA motion includes cos(dec).
+      star: { ra: 131.17124670833333, dec: 18.1543065,
+        pmRaMasPerYear: -17.67, pmDecMasPerYear: -229.26 },
+      validation: { reference: 'Swiss Ephemeris 2.10.03 SIDM_TRUE_PUSHYA',
+        startYear: 1800, endYear: 2100, dailySamples: 109938,
+        maxErrorArcseconds: 3.321, toleranceArcseconds: 4 },
+      sources: [
+        'https://www.vedicastrologer.org/articles/pp_ayanamsa.pdf',
+        'https://www.astro.com/swisseph/swisseph.htm',
+        'https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/sefstars.txt'
+      ]
+    },
     kp: { label: 'Krishnamurti (KP)', j2000: 23.760239, rate: -0.294 },
     raman: { label: 'B. V. Raman', j2000: 22.410790, rate: -0.294 },
     fagan: { label: 'Fagan-Bradley', j2000: 24.740299, rate: -0.294 }
@@ -238,7 +252,34 @@ var Astro = (function () {
   /** Ayanamsa from the mean equinox of date, degrees. */
   function ayanamsa(T, system) {
     var base = AYANAMSA[system] || AYANAMSA.lahiri;
+    if (base.model === 'delta-cancri') return pushyaAyanamsa(T, base);
     return base.j2000 + precessionSinceJ2000(T) + base.rate * T / 3600;
+  }
+
+  /*
+   * P. V. R. Narasimha Rao's definition: Delta Cancri at 16 Cancer (106 deg).
+   * Propagate its catalogue proper motion, rotate from equatorial J2000 to
+   * ecliptic J2000, apply annual aberration, then precess to the mean equinox
+   * of date. No nutation: assembleChart already handles the equinox conversion.
+   * This is a stellar model, not a fixed offset from Lahiri or a linear fit.
+   * The small parallax, frame bias and solar light deflection are omitted.
+   * Daily checks over 1800-2100 against Swiss Ephemeris 2.10.03 gave a maximum
+   * residual of 3.321 arcseconds; this is an approximation, not Swiss itself.
+   * test/test-pushya.mjs keeps seasonal, birth-chart and worst-case fixtures.
+   */
+  function pushyaAyanamsa(T, base) {
+    var star = base.star, years = T * 100;
+    var ra = star.ra + star.pmRaMasPerYear * years / (3600000 * cos(star.dec));
+    var dec = star.dec + star.pmDecMasPerYear * years / 3600000;
+    var eps = meanObliquity(0);
+    var x = cos(dec) * cos(ra), ye = cos(dec) * sin(ra), ze = sin(dec);
+    var velocity = earthVelocity(T);
+    var ax = x + velocity.x / C_AUD;
+    var ay = ye * cos(eps) + ze * sin(eps) + velocity.y / C_AUD;
+    var az = -ye * sin(eps) + ze * cos(eps) + velocity.z / C_AUD;
+    var lon = atan2d(ay, ax);
+    var lat = asind(az / Math.sqrt(ax * ax + ay * ay + az * az));
+    return norm360(precessFromJ2000(lon, lat, T).lon - base.siderealLongitude);
   }
 
   /* ----------------------------------------------------------------- moon */
@@ -1796,7 +1837,10 @@ var Astro = (function () {
    * 'qualified' preserves this page's combustion-based reading of the Sun's
    * association, and remains the default. Raman's drik bala footnote says:
    * "Mercury is a malefic as he is very closely associated with Sun or
-   * combusted." K. S. Charak: "well-associated Mercury" is a natural benefic
+   * combusted." That disjunction does not prescribe our combustion-only test
+   * for the Sun or our same-sign test for other malefics. The combination is
+   * an implementation interpretation, not a rule established by the footnote.
+   * K. S. Charak: "well-associated Mercury" is a natural benefic
    * and "afflicted Mercury" a natural malefic, since Mercury "behaves as a
    * benefic under benefic influence and as a malefic under malefic influence".
    * K. N. Rao makes Mercury a malefic in a worked chart "as he is associated
@@ -1806,7 +1850,8 @@ var Astro = (function () {
    * 'associated' interprets joining a malefic as sharing its sign, including
    * the Sun. This is an explicit implementation of association, not a claim
    * that the quoted verse itself defines association in terms of signs.
-   * Combustion is separate and does not cross a sign boundary under this rule.
+   * Under this rule, combustion alone does not classify Mercury as malefic
+   * across a sign boundary; combustion itself can still cross that boundary.
    *
    * 'benefic' is the same authors' unqualified opening list - Charak's "Natural
    * benefics: Moon, Mercury, Jupiter, Venus", Rao's "Natural Benefics: Jupiter,

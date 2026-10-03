@@ -125,39 +125,49 @@ In rough order of size:
 - **The time actually used.** Zone time vs local mean time for pre-1900 births
   moves the ascendant by up to a degree per four minutes of difference.
 
-## Settings catalogue archive
+## Current settings in the database
 
-`public.astro_settings_archive` in the linked Supabase project keeps immutable,
-content-addressed snapshots of all settings and options, their labels and
-explanations, page fallback defaults, and the Raman, Parashara and Star Jyotish
-readings. Each choice explicitly records whether it is documented or a fallback.
-The application's startup reading is stored separately from the fallback defaults.
-Source-definition notes are preserved alongside the catalogue.
+`public.astro_settings_profiles` stores the current Shri Jyoti Star, Raman,
+K. N. Rao school, Parashara and page-default profiles, plus a Custom Choice
+for each browser owner. Custom Choice is the default selection. A new Custom Choice copies Rao’s values; missing or unsupported
+values in a saved choice are filled from Rao without replacing valid saved values.
+The completed choice is saved to the same row. Each setting includes its available options and marks
+source choices as documented, inferred or fallback. Reported comparison figures
+are retained in `data/settings-observations.json` and the reference profiles.
+Rao source references and unresolved choices are in `data/settings-rao-sources.json`
+and the Rao database profile.
 
-Reported comparison figures live in `data/settings-observations.json` and are
-included in each snapshot. A reported result is evidence, not automatically a
-documented rule. Personal browser settings are **not** uploaded by this archive;
-the application still reads its checked-in catalogue and works without this table.
+Changing a setting or selecting a profile immediately saves the complete current
+choice through the `settings` Edge Function. Saves replace the same Custom Choice
+row; there are no previous choices or revisions. Writes are serialized so rapid
+edits finish with the newest values. The page loads that row on the next visit.
+Saved charts and shared links carry birth details only. Opening either uses the
+currently selected reading for every calculation, including ayanamsa, nodes and
+time standard; legacy chart settings are ignored. Settings load once when the
+page opens, and chart calculation waits for that initial load to finish.
+
+Settings are not written to localStorage and there is no tab-close save handler.
+An existing browser custom choice is imported once if no database choice exists.
+The browser retains only its existing private owner token for accessing its saved
+charts and settings; another browser has a different identity. Direct public
+access to the settings table is disabled. Failed saves are reported on the page;
+the pending choice can retry on the next edit or when the connection returns.
 
 ```sh
-node scripts/archive-settings.mjs --print  # inspect the complete catalogue offline
-npm run archive:settings                  # append to Supabase and read back to verify
-node test/test-settings-archive.mjs       # offline catalogue/option/evidence checks
+npm run store:settings                   # upsert reference profiles; verify read-back
+node test/test-settings-store.mjs        # storage, isolation and ordering checks
+node scripts/archive-settings.mjs --print # inspect the source catalogue offline
 ```
 
-Archiving uses `DATABASE_URL` or a temporary connection from the logged-in,
-linked Supabase CLI, with credentials kept out of command arguments and output.
-It applies only its own additive schema, never the project's other migrations.
-The Amplify deployment script archives before uploading and stops if verification
-fails. Identical content is deduplicated; changed options create a new snapshot,
-leaving all previous revisions recoverable. Anonymous and authenticated clients
-can read reference snapshots but cannot write them. Updates, deletes and truncation
-are blocked by an immutability trigger.
+The Amplify deployment script updates reference profiles before uploading and
+stops if verification fails. This never changes private Custom Choice rows.
+Database access uses `DATABASE_URL` or a temporary connection from the linked
+Supabase CLI, with credentials kept out of command arguments and output. Only
+this table's additive schema is applied, not unrelated project migrations.
 
-To recover a revision, select its `catalogue` from `astro_settings_archive` by
-`content_hash`; settings include every option and its default, and readings include
-every effective value and its provenance. Review and restore those definitions in
-the application source rather than blindly applying an old catalogue to new code.
+The older `astro_settings_archive` table and its manual `archive:settings`
+command remain available for existing reference snapshots. Deployment no longer
+creates archive revisions, and personal choices are never archived there.
 
 ## The stored ephemeris
 
@@ -378,3 +388,11 @@ of the Major Planets*.
 
 MIT licensed. Astrological interpretation is not offered, implied or endorsed: the
 arithmetic is the deliverable.
+
+### Reproducible releases
+
+Both deploy scripts require a clean, committed working tree. Hosting packages
+files from `git archive HEAD` and publishes `release.json` with the commit and
+SHA-256 of each served file. Edge Functions deploy from a temporary checkout of
+the same commit. Commit and push before deploying. To roll back, check out the
+release's recorded commit in a clean worktree and run its deploy scripts.

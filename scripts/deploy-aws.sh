@@ -4,8 +4,8 @@
 #
 # This is a manual (zip) deployment rather than Amplify's GitHub integration, so
 # it needs no OAuth app installed on the repo and no build minutes: the site has
-# no build step, so there is nothing for Amplify to build. Run it after pushing,
-# or on its own; what gets deployed is the working tree, not the remote.
+# no build step, so there is nothing for Amplify to build. Commit and push first:
+# the bundle comes from HEAD and release.json identifies its revision and bytes.
 #
 #   ./scripts/deploy-aws.sh
 #
@@ -17,16 +17,25 @@ BRANCH="${AMPLIFY_BRANCH:-main}"
 REGION="${AWS_REGION:-us-east-1}"
 
 cd "$(dirname "$0")/.."
+if [[ -n "$(git status --porcelain)" ]]; then
+  echo "Commit the release before deploying; the working tree is not clean." >&2
+  exit 1
+fi
+REVISION="$(git rev-parse HEAD)"
 
-# Preserve every option and source choice before releasing this revision.
-# A failed backup stops deployment; identical catalogues reuse their snapshot.
-node scripts/archive-settings.mjs --save
+# Update the current reference profiles before release; private choices stay intact.
+# Stop deployment if the database write or read-back verification fails.
+node scripts/store-settings-profiles.mjs
+if [[ -n "$(git status --porcelain)" ]] || [[ "$(git rev-parse HEAD)" != "$REVISION" ]]; then
+  echo "Source changed while preparing the release; deployment stopped." >&2
+  exit 1
+fi
 
 # Only what the site actually serves. Tests, generator scripts and the git
 # history stay out of the bundle.
 STAGE="$(mktemp -d)/site"
 mkdir -p "$STAGE"
-cp -R index.html terms.html css js data "$STAGE/"
+git archive "$REVISION" index.html terms.html css js data | tar -x -C "$STAGE"
 
 # Amplify serves these with cache-control: public, max-age=604800 - a week -
 # and nothing here revalidates, so a returning browser does not even ask
@@ -64,8 +73,16 @@ STAMPER
 )
 echo "cache-busted: $STAMP asset references"
 
+python3 - "$STAGE" "$REVISION" <<'MANIFEST'
+import hashlib, json, pathlib, sys
+stage = pathlib.Path(sys.argv[1])
+files = {p.relative_to(stage).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+         for p in sorted(stage.rglob('*')) if p.is_file()}
+(stage / 'release.json').write_text(json.dumps({'revision': sys.argv[2], 'files': files}, indent=2) + '\n')
+MANIFEST
+
 BUNDLE="$(mktemp -d)/site.zip"
-(cd "$STAGE" && zip -q -r "$BUNDLE" index.html terms.html css js data -x '*.DS_Store')
+(cd "$STAGE" && zip -q -r "$BUNDLE" index.html terms.html release.json css js data -x '*.DS_Store')
 echo "bundle: $(du -h "$BUNDLE" | cut -f1)"
 
 read -r JOB_ID UPLOAD_URL < <(aws amplify create-deployment \
@@ -84,7 +101,7 @@ for _ in $(seq 1 40); do
   STATUS=$(aws amplify get-job --app-id "$APP_ID" --branch-name "$BRANCH" \
     --job-id "$JOB_ID" --region "$REGION" --query 'job.summary.status' --output text)
   case "$STATUS" in
-    SUCCEED) echo "deployed: https://${BRANCH}.${APP_ID}.amplifyapp.com"; exit 0 ;;
+    SUCCEED) echo "deployed: https://${BRANCH}.${APP_ID}.amplifyapp.com (revision $REVISION, job $JOB_ID)"; exit 0 ;;
     FAILED|CANCELLED) echo "deployment $STATUS (job $JOB_ID)" >&2; exit 1 ;;
   esac
   sleep 5

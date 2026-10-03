@@ -1567,15 +1567,12 @@ ok('a thin Moon is not rescued by the company it keeps', (function () {
  * malefic if he joins a malefic."
  */
 /*
- * The Sun is judged by combustion and every other malefic by the sign. Raman's
- * footnote to his drik bala table is where the asymmetry comes from: "Mercury
- * is a malefic as he is very closely associated with Sun or combusted."
- *
- * It has to be asymmetric. Mercury is never more than about 28 degrees from the
- * Sun and shares its sign in 44% of charts, so a same-sign test against the Sun
- * reports Mercury's orbit rather than its company. The two tests disagree in
- * 41% of charts and in both directions - same sign but far enough to keep its
- * rays, and combust across a sign boundary.
+ * The qualified option judges the Sun by combustion and other malefics by
+ * sharing a sign. This is our implementation interpretation. Raman's footnote
+ * says "very closely associated with Sun or combusted"; it neither restricts
+ * the Sun's association to combustion nor prescribes this asymmetric rule.
+ * These tests preserve the selected convention, not prove textual authority.
+ * The same-sign option is tested separately, including cross-sign combustion.
  */
 ok('Mercury is judged against the Sun by combustion, not by the sign',
    (function () {
@@ -3070,6 +3067,26 @@ console.log('\nShadbala');
        return Math.abs(b.Sun.cheshta - b.Sun.kala.ayana / 2) < 1e-9 &&
          Math.abs(b.Moon.cheshta - b.Moon.kala.paksha / 2) < 1e-9;
      })());
+
+  // The reported Shri Jyoti Star rows support this Sun/Moon combination.
+  // Keep Moon's separate kala rule intact, particularly for Obama's thin Moon.
+  [
+    {name:'Obama', date:[1961,8,4,29.4], lat:21.3069, lon:-157.8583, tz:-600, want:[52,23]},
+    {name:'Trump', date:[1946,6,14,14.9], lat:40.6915, lon:-73.8057, tz:-240, want:[60,59]}
+  ].forEach(function (sample) {
+    var p = {latitude:sample.lat, longitude:sample.lon, tzOffsetMinutes:sample.tz};
+    var c = Astro.chart(Object.assign({jdUT:Astro.julianDay.apply(null,sample.date)},p));
+    var base = Shadbala.compute(c,p,{kranti:'longitude'}).grahas;
+    var mixed = Shadbala.compute(c,p,{kranti:'longitude',luminaryRule:'sun-ayana'}).grahas;
+    ok(sample.name + ' Sun/Moon cheshta matches the reported Star integers',
+      Math.round(mixed.Sun.cheshta) === sample.want[0] &&
+      Math.round(mixed.Moon.cheshta) === sample.want[1]);
+    ok(sample.name + ' mixed luminary rule preserves kala and other five cheshta values',
+      Shadbala.GRAHAS.every(function (g) {
+        return JSON.stringify(mixed[g].kala) === JSON.stringify(base[g].kala) &&
+          (g === 'Sun' || mixed[g].cheshta === base[g].cheshta);
+      }));
+  });
 
   // Ceilings, each from its own definition.
   ok('no component exceeds its maximum', Shadbala.GRAHAS.every(function (g) {

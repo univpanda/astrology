@@ -503,13 +503,12 @@
                say what it is, and "Use" above them said it twice. -->
           <label for="preset-choice" class="visually-hidden">Use</label>
           <select id="preset-choice">
-            <!-- Parashara first, being where a reader starts and where
-                 resetting returns them. -->
+            <option value="mine" id="preset-mine-option">Custom Choice</option>
+            <option value="rao">K. N. Rao school</option>
             <option value="parashara">Parashara</option>
             <option value="raman">B. V. Raman</option>
-            <option value="star">Star Jyotish</option>
+            <option value="star">Shri Jyoti Star</option>
             <option value="page">Standard default</option>
-            <option value="mine" id="preset-mine-option" hidden disabled>My custom settings</option>
           </select>
           <button type="button" id="preset-create">Update Custom Settings</button>
         </div>
@@ -556,7 +555,11 @@
           answer: the schools differ by more than a degree and a half, which moves a
           graha into another sign in about one reading in eleven and into another
           nakshatra or pada in four out of ten. Lahiri, or Chitrapaksha, is the one most
-          Indian practice uses, and the default here.</p>
+          Indian practice uses, and the default here. Pushya Paksha follows
+          P. V. R. Narasimha Rao&rsquo;s definition: Delta Cancri at 16&deg; Cancer.
+          Its stellar calculation includes proper motion, precession and annual
+          aberration; the approximation here agrees within four arcseconds with
+          Swiss Ephemeris True Pushya in daily checks from 1800 through 2100.</p>
         </div>
       </div>
       <div class="field">
@@ -590,30 +593,13 @@
           <option value="true" selected>True node</option>
         </select>
         <div class="field-why" id="why-node-type">
-          <p class="field-note">The nodes are where the Moon&rsquo;s orbit crosses the
-          ecliptic, and there is no single answer to where that is. The mean node
-          regresses smoothly, a little over three arcminutes a day, every day. The true
-          node is where the orbit actually crosses at that instant: it oscillates around
-          the mean by up to about 1.9&deg;, on a cycle of some 132 days, and it goes
-          forward about a quarter of the time. The two part by about a degree on average,
-          1.9&deg; at most.
+          <p class="field-note">Mean node smooths the nodes&rsquo; motion and always
+          moves retrograde. True node follows the Moon&rsquo;s changing orbital plane
+          and can briefly move direct. When comparing charts, use the same setting.
           <br><br>
-          The practical ground for the mean node is that it is what Indian
-          panchangs and the Lahiri ephemeris publish for Rahu and Ketu, so a
-          chart read against one of those will agree. The true node is the
-          default here because it is where the orbit actually crosses at the
-          moment asked about.
-          <br><br>
-          What that moves, measured over 4,800 charts: a chara karaka is reassigned in
-          21% of them, the nodes taking part in that reckoning; Rahu and Ketu fall in
-          another nakshatra in 7%, another sign in 3% and another house in 3%; whether some
-          graha is hemmed by benefics or by malefics changes in 2%, the nodes counting
-          among the malefics that hem; and the list of yogas found changes in 1%.
-          <br><br>
-          What it does not move: any Shadbala figure, including drik bala and the
-          ranking. The six balas are reckoned for the seven grahas, and a node neither
-          takes a figure nor casts an aspect that counts toward one. Nor the Vimshottari
-          dasha, which runs off the Moon.</p>
+          This choice can change Rahu and Ketu&rsquo;s signs, houses and nakshatras,
+          along with chara karakas and some yogas. It does not affect Shadbala or
+          Vimshottari dasha.</p>
         </div>
       </div>
       <div class="field">
@@ -670,11 +656,13 @@
           itself define association by a sign or an orb.
           <br><br>
           The existing default uses combustion for the Sun and sharing a sign
-          for other malefics. It is this page&rsquo;s reading of Raman&rsquo;s
-          footnote, not an explicit combustion test in Parashara&rsquo;s clause.
-          Raman, footnoting his drik bala
-          table: &ldquo;Mercury is a malefic as he is very closely associated
-          with Sun or combusted.&rdquo;
+          for other malefics. This is an implementation interpretation, not a
+          rule explicitly prescribed by either quotation. Raman&rsquo;s footnote
+          to the drik bala table in <em>Graha and Bhava Balas</em> says:
+          &ldquo;Mercury is a malefic as he is very closely associated with Sun
+          or combusted.&rdquo; His &ldquo;or&rdquo; mentions close association
+          as well as combustion; it does not establish our different tests for
+          the Sun and other malefics.
           K. N. Rao calls Mercury a malefic in a worked chart &ldquo;as he is
           associated with two malefics Sun and Ketu&rdquo;, and says combust
           planets &ldquo;become evil&rdquo;.
@@ -704,33 +692,15 @@
         settings themselves have; changes apply immediately and Back returns here.
       -->
       <div class="card preset-page" id="preset-page" hidden
-           aria-labelledby="preset-page-title">
+           role="region" aria-label="Custom settings" tabindex="-1">
         <div class="preset-page-head">
           <div>
-            <h3 id="preset-page-title" tabindex="-1">Custom settings</h3>
-            <!-- It has to say what a change becomes, which is the one thing
-                 a reader cannot see: that moving any setting, here or on the
-                 Settings tab, is itself the act of making a custom set. An
-                 earlier wording said only that a change was "remembered",
-                 which left it open whether the custom set had been touched at
-                 all.
-
-                 The last clause says what happens rather than where the thing
-                 is held. It read "kept in this browser rather than in an
-                 account", which answers a question nobody here has: this page
-                 has never had accounts, so naming one points at a thing the
-                 reader has not met. What they can act on is that opening the
-                 page somewhere else starts from the baseline again. -->
-            <p class="field-note">Changing any setting, here or on the Settings
+            <p class="field-note" id="preset-page-note">Changing any setting, here or on the Settings
               tab, becomes your custom settings at once: there is no Save to
-              press, and your next chart and next visit start there. They live
-              in this browser only: open the page on another browser or another
-              device and it starts from Parashara again.</p>
+              press.</p>
           </div>
-          <!-- Reset before Back: it belongs with the heading it undoes rather
-               than at the foot of a table it is not about, and the way out is
-               the last thing on the row. -->
-          <button type="button" id="preset-forget" hidden>Reset to Parashara</button>
+          <!-- Reset and Back stay above the table, with the way out last. -->
+          <button type="button" id="preset-forget" hidden>Reset to Rao</button>
           <button type="button" id="preset-back">Back to settings</button>
         </div>
         <!--
@@ -1230,6 +1200,7 @@
         <select id="luminary-rule" aria-describedby="why-luminary-rule">
           <option value="kendra" selected>Their own cheshta kendras</option>
           <option value="borrowed">Their ayana and paksha bala</option>
+          <option value="sun-ayana">Sun: ayana; Moon: cheshta kendra</option>
         </select>
         <div class="field-why" id="why-luminary-rule">
           <p class="field-note">Neither luminary retrogrades, so neither has an
@@ -1250,7 +1221,11 @@
           way at Example 60 of <em>Graha and Bhava Balas</em>, reaching 22.66
           where the ayana bala on that chart gives 18.95. For the Moon the two
           rules agree while she is read as a benefic, and are complements of
-          sixty under the group reading.</p>
+          sixty under the group reading.
+          <br><br>
+          The mixed choice uses the Sun&rsquo;s undoubled ayana bala and the
+          Moon&rsquo;s own kendra. It leaves her paksha bala unchanged and
+          combines the two chapters rather than following either pair alone.</p>
         </div>
       </div>
       <div class="field">
@@ -1325,6 +1300,7 @@
 <script src="js/shadbala.js"></script>
 <script src="js/yogas.js"></script>
 <script src="data/frequencies.js"></script>
+<script src="js/settings-store.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

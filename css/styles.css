@@ -791,7 +791,6 @@ input::placeholder { color: #a9bdb2; }
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--line-soft);
 }
-.preset-page-head h3 { margin: 0; }
 .preset-page-head p { margin: 0.2rem 0 0; }
 #preset-back {
   font: inherit;

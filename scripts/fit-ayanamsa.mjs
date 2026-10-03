@@ -31,6 +31,7 @@ const reference = JSON.parse(readFileSync(process.argv[2] || 'ayan-all.json', 'u
 for (const [mode, rows] of Object.entries(reference)) {
   const entry = Astro.AYANAMSA[mode];
   if (!entry) { console.log(`${mode}: not in AYANAMSA, skipping`); continue; }
+  if (entry.model) { console.log(`${mode}: stellar model, not a precession fit; skipping`); continue; }
   // Residual against the current constants, which we then re-fit.
   const points = rows.map(([jd, swiss]) => {
     const T = (jd + Astro.deltaT(jd) / 86400 - 2451545.0) / 36525;

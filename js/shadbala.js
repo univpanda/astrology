@@ -380,7 +380,7 @@ var Shadbala = (function () {
    * reading, where a waning Moon takes sixty minus it, and there they are
    * complements.
    */
-  var LUMINARY_RULE = { KENDRA: 'kendra', BORROWED: 'borrowed' };
+  var LUMINARY_RULE = { KENDRA: 'kendra', BORROWED: 'borrowed', SUN_AYANA: 'sun-ayana' };
 
   /*
    * Whether the luminaries' cheshta bala is added to the shadbala total.
@@ -638,7 +638,7 @@ var Shadbala = (function () {
   function cheshtaBala(graha, longitude, o) {
     // The luminaries never retrograde, so neither has an arc of retrogression.
     if (graha === 'Sun') {
-      return o.luminaryRule === LUMINARY_RULE.BORROWED ? o.ayana
+      return o.luminaryRule === LUMINARY_RULE.BORROWED || o.luminaryRule === LUMINARY_RULE.SUN_AYANA ? o.ayana
         : reducedKendra(o.longitude + o.ayanamsa + 90) / 3;
     }
     if (graha === 'Moon') {
@@ -1013,7 +1013,8 @@ var Shadbala = (function () {
     var meanSource = (options && options.meanSource) === MEAN_SOURCE.MODERN
       ? MEAN_SOURCE.MODERN : MEAN_SOURCE.CLASSICAL;
     var luminaryRule = (options && options.luminaryRule) === LUMINARY_RULE.BORROWED
-      ? LUMINARY_RULE.BORROWED : LUMINARY_RULE.KENDRA;
+      ? LUMINARY_RULE.BORROWED : (options && options.luminaryRule) === LUMINARY_RULE.SUN_AYANA
+        ? LUMINARY_RULE.SUN_AYANA : LUMINARY_RULE.KENDRA;
     var luminaryCheshta = (options && options.luminaryCheshta) === LUMINARY_CHESHTA.COUNTED
       ? LUMINARY_CHESHTA.COUNTED : LUMINARY_CHESHTA.OMITTED;
     var mercuryNature = (options && options.mercuryNature) || chart.mercuryNature;

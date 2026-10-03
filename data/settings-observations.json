@@ -6,11 +6,21 @@
     "reportedOn": "2026-10-02",
     "subject": "Tony Blair",
     "graha": "Mercury",
-    "referenceValues": { "saptavargaja": 72, "paksha": 29 },
-    "pageValuesReported": { "saptavargaja": 67, "paksha": 31.3 },
+    "referenceValues": {
+      "saptavargaja": 72,
+      "paksha": 29
+    },
+    "pageValuesReported": {
+      "saptavargaja": 67,
+      "paksha": 31.3
+    },
     "reproductionBirthDetails": {
-      "date": "1953-05-06", "time": "06:10:00", "zone": "Europe/London",
-      "tzOffsetMinutes": 60, "latitude": 55.9521, "longitude": -3.1965,
+      "date": "1953-05-06",
+      "time": "06:10:00",
+      "zone": "Europe/London",
+      "tzOffsetMinutes": 60,
+      "latitude": 55.9521,
+      "longitude": -3.1965,
       "ayanamsa": "lahiri"
     },
     "referenceBirthDetailsVerified": false,
@@ -27,5 +37,115 @@
       "effect": "Treats Mercury as malefic when sharing a sign with any of the seven grahas classified as malefic, including the Sun. Gives Paksha 28.705773723510976 for the reproduction chart; does not establish Star Jyotish's general rule."
     },
     "note": "Preserve the reported figures as evidence; do not promote inferred rules to documented preset choices. The original Star Jyotish screenshot and full configuration have not been supplied."
+  },
+  {
+    "id": "star-obama-cheshta-2026-10-03",
+    "source": "Shri Jyoti Star",
+    "status": "user_reported",
+    "reportedOn": "2026-10-03",
+    "subject": "Obama",
+    "grahaOrder": [
+      "Sun",
+      "Moon",
+      "Mars",
+      "Mercury",
+      "Jupiter",
+      "Venus",
+      "Saturn"
+    ],
+    "referenceValues": {
+      "cheshta": [
+        52,
+        23,
+        30,
+        5,
+        57,
+        27,
+        54
+      ]
+    },
+    "pageValuesComputed": {
+      "cheshta": [
+        45.8,
+        23.1,
+        20.9,
+        15.3,
+        56.5,
+        35.6,
+        54.5
+      ]
+    },
+    "reproductionBirthDetails": {
+      "date": "1961-08-04",
+      "time": "19:24:00",
+      "zone": "Pacific/Honolulu",
+      "tzOffsetMinutes": -600,
+      "latitude": 21.3069,
+      "longitude": -157.8583,
+      "ayanamsa": "lahiri"
+    },
+    "referenceBirthDetailsVerified": false,
+    "findings": [
+      "Sun using undoubled Ayana Bala and Moon using her angular kendra reproduce the two reported luminary integers.",
+      "The general luminary rule is inferred from two charts. The other five Cheshta figures and whether luminary Cheshta counts in the total remain unverified."
+    ],
+    "inferredPresetChoices": {
+      "luminary-rule": "sun-ayana"
+    }
+  },
+  {
+    "id": "star-trump-cheshta-2026-10-03",
+    "source": "Shri Jyoti Star",
+    "status": "user_reported",
+    "reportedOn": "2026-10-03",
+    "subject": "Trump",
+    "grahaOrder": [
+      "Sun",
+      "Moon",
+      "Mars",
+      "Mercury",
+      "Jupiter",
+      "Venus",
+      "Saturn"
+    ],
+    "referenceValues": {
+      "cheshta": [
+        60,
+        59,
+        44,
+        7,
+        48,
+        21,
+        20
+      ]
+    },
+    "pageValuesComputed": {
+      "cheshta": [
+        57.64,
+        59.43,
+        32.68,
+        22.95,
+        41.64,
+        27.62,
+        11.61
+      ]
+    },
+    "reproductionBirthDetails": {
+      "date": "1946-06-14",
+      "time": "10:54:00",
+      "zone": "America/New_York",
+      "tzOffsetMinutes": -240,
+      "latitude": 40.6915,
+      "longitude": -73.8057,
+      "ayanamsa": "lahiri"
+    },
+    "referenceBirthDetailsVerified": false,
+    "findings": [
+      "Sun using undoubled Ayana Bala and Moon using her angular kendra reproduce the two reported luminary integers.",
+      "The general luminary rule is inferred from two charts. The other five Cheshta figures and whether luminary Cheshta counts in the total remain unverified."
+    ],
+    "inferredPresetChoices": {
+      "luminary-rule": "sun-ayana"
+    }
   }
 ]

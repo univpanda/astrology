@@ -10,14 +10,21 @@ function check(name, test) { test(); passed++; console.log('  ok   ' + name); }
 
 check('all 24 settings and every reading are preserved', () => {
   assert.equal(c.settings.length, 24);
-  assert.deepEqual(c.readings.map(r => r.id), ['page', 'raman', 'parashara', 'star']);
+  assert.deepEqual(c.readings.map(r => r.id), ['page', 'raman', 'parashara', 'rao', 'star']);
   c.readings.forEach(r => assert.equal(r.choices.length, c.settings.length));
-  assert.equal(c.startupReading, 'parashara');
+  assert.equal(c.startupReading, 'custom');
+  assert.equal(c.customBaseReading, 'rao');
 });
 check('dynamic ayanamsas and all four Mercury hora options survive', () => {
   assert.equal(c.settings.find(s => s.id === 'budha-floor').group, 'Test settings');
   assert.equal(c.settings.find(s => s.id === 'hora-mercury').group, 'Chart settings');
-  assert.equal(c.settings.find(s => s.id === 'ayanamsa').options.length, 5);
+  const ayanamsa = c.settings.find(s => s.id === 'ayanamsa');
+  assert.equal(ayanamsa.options.length, 6);
+  assert.equal(ayanamsa.defaultValue, 'lahiri');
+  const pushya = ayanamsa.options.find(o => o.value === 'pushya');
+  assert.equal(pushya.label, 'Pushya Paksha');
+  assert.equal(pushya.definition.siderealLongitude, 106);
+  assert(pushya.definition.sources.includes('https://www.vedicastrologer.org/articles/pp_ayanamsa.pdf'));
   assert.deepEqual(c.settings.find(s => s.id === 'hora-mercury').options.map(o => o.value),
     ['friend', 'solar', 'ordinary', 'both']);
   assert(c.settings.every(s => s.label && s.explanation && s.options.some(o => o.value === s.defaultValue)));
@@ -30,6 +37,18 @@ check('fallbacks cannot masquerade as documented source choices', () => {
   assert.equal(choice('page', 'ayanamsa').basis, 'page_default');
   assert.equal(choice('star', 'hora-mercury').basis, 'fallback');
   assert.equal(choice('star', 'mercury-nature').basis, 'fallback');
+  assert.deepEqual(choice('star', 'luminary-rule'), {settingId:'luminary-rule',value:'sun-ayana',basis:'inferred'});
+  assert.equal(choice('rao', 'kendra-method').value, 'averaged');
+  assert.equal(choice('rao', 'mean-source').value, 'classical');
+});
+check('Rao evidence covers every setting and keeps unresolved choices explicit', () => {
+  const r = c.readings.find(r => r.id === 'rao');
+  assert.deepEqual(r.evidence.flatMap(e => e.settings).sort(), c.settings.map(s => s.id).sort());
+  assert.deepEqual(r.choices.filter(s => s.basis === 'fallback').map(s => s.settingId).sort(),
+    ['chart-style','node-type','combustion','hora-mercury'].sort());
+  for (const e of r.evidence) for (const id of e.settings) {
+    assert.equal(r.choices.find(s => s.settingId === id).basis, e.basis);
+  }
 });
 check('all Mercury nature rules are archived without changing the default', () => {
   const s = c.settings.find(s => s.id === 'mercury-nature');
@@ -59,10 +78,10 @@ check('unknown settings and removed preset options fail loudly', () => {
 check('unknown HTML entities fail rather than silently losing option labels', () => {
   assert.throws(() => buildCatalogue(html.replace('Full in either hora', 'Full &unknown; hora')), /Unrecognised HTML entity/);
 });
-check('deployment archives before packaging and upload', () => {
+check('deployment stores current profiles before packaging and upload', () => {
   const script = read('scripts/deploy-aws.sh');
   assert(script.includes('set -euo pipefail'));
-  assert(script.indexOf('node scripts/archive-settings.mjs --save') < script.indexOf('STAGE='));
+  assert(script.indexOf('node scripts/store-settings-profiles.mjs') < script.indexOf('STAGE='));
 });
 check('database writes append rather than update historical snapshots', () => {
   const script = read('scripts/archive-settings.mjs');

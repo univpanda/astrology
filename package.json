@@ -5,11 +5,12 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "test": "node scripts/build-edge-module.mjs && node test/test.js && node test/test-ui.js && node test/test-settings-archive.mjs && node test/test-db.js",
+    "test": "node scripts/build-edge-module.mjs && node test/test-pushya.mjs && node test/test.js && node test/test-ui.js && node test/test-settings-archive.mjs && node test/test-settings-store.mjs && node test/test-settings-links.mjs && node test/test-db.js",
     "serve": "python3 -m http.server 8000",
     "deploy": "./scripts/deploy-aws.sh",
     "deploy:api": "./scripts/deploy-edge.sh",
     "seed": "./scripts/seed-readings.sh",
-    "archive:settings": "node scripts/archive-settings.mjs --save"
+    "archive:settings": "node scripts/archive-settings.mjs --save",
+    "store:settings": "node scripts/store-settings-profiles.mjs"
   }
 }

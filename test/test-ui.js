@@ -437,7 +437,8 @@ console.log('\nStudy charts that ship with the app');
     return Astro.chart({
       jdUT: Astro.julianDay(date[0], date[1], date[2], (t[0] * 60 + t[1] + (t[2] || 0) / 60 - off) / 60),
       latitude: entry.latitude, longitude: entry.longitude,
-      tzOffsetMinutes: off, trueNode: entry.trueNode
+      // These reference notes are checked under one explicit calculation convention.
+      tzOffsetMinutes: off, ayanamsa: 'lahiri', trueNode: true
     });
   }
   function dashaStart(chart, lord) {
@@ -1638,14 +1639,9 @@ ok('deleting the chart on screen forgets the row', (function () {
   return /currentEntry = null;/.test(body) &&
          /removed\.id \? removed\.id === currentEntry\.id/.test(body);
 })());
-/*
- * A chart is cast with the ayanamsa in force, and editing it does not reach
- * back for an older one: there is none to reach for, the reckoning having
- * stopped travelling with a record.
- */
-ok('a chart is cast with the ayanamsa in force, and nothing restores another',
+ok('calculation metadata is recorded without replacing Custom Choice on edit',
    /ayanamsa: params\.ayanamsa, trueNode: params\.trueNode/.test(appSrc) &&
-   !/value = state\.ayanamsa/.test(appSrc));
+   !/document\.getElementById\('ayanamsa'\)\.value = state\.ayanamsa;/.test(appSrc));
 
 // Each saved row carries an edit and a delete, and delete asks first.
 // Yogas and the lesson library.
@@ -3993,6 +3989,7 @@ ok('every script the page loads parses', (function () {
       documentElement: loose('html')
     },
     window: {
+      scrollTo: function () {},
       localStorage: (function () {
         var store = {};
         return {
@@ -4023,10 +4020,18 @@ ok('every script the page loads parses', (function () {
     '  __out.currentSettings = currentSettings; __out.pageDefaults = pageDefaults;\n' +
     '  __out.readMySettings = readMySettings; __out.readDefaultChoice = readDefaultChoice;\n' +
     '  __out.readMyDefault = readMyDefault;\n' +
+    '  __out.database = { custom: null, fail: false, writes: 0 };\n' +
+    '  settingsStore = { save: function (values, selected) {\n' +
+    '    if (__out.database.fail) { presetRestore.status("Settings could not be saved. Check your connection and try again."); return; }\n' +
+    '    __out.database.custom = { choices: JSON.parse(JSON.stringify(values)), selected_preset: selected };\n' +
+    '    __out.database.writes++; presetRestore.status("Settings saved to database.");\n' +
+    '  } };\n' +
+    '  __out.restoreSettings = presetRestore;\n' +
     '  __out.markDrift = function () { return presetMarkDrift(); };\n' +
     '  __out.storage = window.localStorage;\n' +
     '  __out.startUp = function () {\n' +
-    '    applySettings(settingsForPreset(readDefaultChoice()) || {});\n' +
+    '    savedCustom = null; selectedDefault = null; lastChart = null;\n' +
+    '    presetRestore({profiles:[],custom:__out.database.custom});\n' +
     '    if (presetMarkDrift) presetMarkDrift();\n' +
     '  };\n' +
     '  __out.sayStatus = function (t) { return presetSayStatus(t); };\n' +
@@ -4044,6 +4049,8 @@ ok('every script the page loads parses', (function () {
     '  __out.savedNote = savedNote;\n' +
     '  __out.readSaved = readSaved; __out.writeSaved = writeSaved;\n' +
     '  __out.fromRow = fromRow; __out.applyEntryToForm = applyEntryToForm;\n' +
+    '  __out.loadSaved = loadSaved; __out.readHash = readHash; __out.location = location;\n' +
+    '  form.requestSubmit = function () { form.fire("submit", {preventDefault:function(){}}); };\n' +
     '  __out.savedList = savedList; __out.STORAGE_KEY = STORAGE_KEY;\n' +
     '  __out.figuresList = document.getElementById("figures-list");\n' +
     '  __out.byId = function (id) { return document.getElementById(id); };\n' +
@@ -5422,13 +5429,24 @@ ok('the API deploy command ships every function the page calls', (function () {
   fs.writeFileSync(stub, '#!/bin/sh\nprintf \'%s\\n\' "$*" >> "$DEPLOY_CALLS"\n');
   fs.chmodSync(stub, 0o755);
   try {
-    childProcess.execFileSync('bash', [path.join(root, 'scripts/deploy-edge.sh')], {
+    var repo = path.join(tmp, 'repo');
+    fs.mkdirSync(repo);
+    ['scripts/deploy-edge.sh', 'scripts/build-edge-module.mjs', 'js/astro.js',
+      'js/ephemeris.js', 'supabase/functions/chart/index.ts'].forEach(function (file) {
+      fs.mkdirSync(path.dirname(path.join(repo, file)), {recursive:true});
+      fs.copyFileSync(path.join(root, file), path.join(repo, file));
+    });
+    childProcess.execFileSync('git', ['init', '-q', repo]);
+    childProcess.execFileSync('git', ['add', '.'], {cwd:repo});
+    childProcess.execFileSync('git', ['-c','user.name=Test','-c','user.email=test@example.test',
+      'commit','-qm','Deploy fixture'], {cwd:repo});
+    childProcess.execFileSync('bash', [path.join(repo, 'scripts/deploy-edge.sh')], {
       cwd: os.tmpdir(),
       env: Object.assign({}, process.env, { PATH: tmp + path.delimiter + process.env.PATH,
         DEPLOY_CALLS: calls, SUPABASE_PROJECT_REF: 'test-project' })
     });
     var invoked = fs.readFileSync(calls, 'utf8').trim().split('\n');
-    return ['chart', 'readings', 'kundalis'].every(function (name) {
+    return ['chart', 'readings', 'kundalis', 'settings'].every(function (name) {
       return invoked.some(function (line) {
         return line.indexOf('functions deploy ' + name + ' ') === 0 &&
           /--project-ref test-project --no-verify-jwt$/.test(line);
@@ -6246,23 +6264,13 @@ ok('and changing it recomputes the open chart', (function () {
     /if \(!recast\) return;/.test(block) &&
     /if \(!lastChart\)/.test(block);
 })());
-/*
- * Moving it must not cost the per-chart record. A saved chart still carries the
- * ayanamsa it was cast with, and opening one still puts the select where that
- * chart put it, or the settings panel would lie about what is on screen.
- */
-/*
- * And a saved chart does not. It used to carry its own ayanamsa, node and
- * clock and put them back on opening, which made a record a claim about how
- * to read it as well as about a birth. The reading is whichever one is chosen
- * now, so none of the three is written back from a row or from the chart on
- * screen.
- */
-ok('and a saved chart does not restore a reckoning of its own', (function () {
-  return /ayanamsa: params\.ayanamsa, trueNode: params\.trueNode/.test(appSrc) &&
-    !/value = entry\.ayanamsa/.test(appSrc) &&
-    !/value = entry\.trueNode/.test(appSrc) &&
-    !/value = state\.ayanamsa/.test(appSrc);
+// Stored calculation metadata must never replace the reader's current choices.
+ok('saved and edited charts keep the current Custom Choice', (function () {
+  var saved = appSrc.slice(appSrc.indexOf('function applyEntryToForm'), appSrc.indexOf('function loadSaved'));
+  var edited = appSrc.slice(appSrc.indexOf('function fillForm'), appSrc.indexOf('function showForm'));
+  return [saved, edited].every(function (block) {
+    return !/getElementById\('(ayanamsa|node-type|time-standard)'\)/.test(block);
+  });
 })());
 /*
  * That the Shadbala tab runs Raman's arithmetic on positions he did not use is
@@ -7985,12 +7993,13 @@ ok('deriving runs whenever a coordinate box changes', (function () {
 })());
 
 console.log('\nShareable chart URLs');
-ok('a shared chart carries every input that changes its calculation or readings',
-   /'ay=' \+ encodeURIComponent\(state\.ayanamsa\)/.test(appSrc) &&
-   /'node=' \+ \(state\.trueNode \? 'true' : 'mean'\)/.test(appSrc) &&
+ok('shared charts carry birth details without personal calculation settings',
+   !/'ay=' \+ encodeURIComponent\(state\.ayanamsa\)/.test(appSrc) &&
+   !/'node=' \+ \(state\.trueNode/.test(appSrc) &&
+   !/parts\.push\('std=lmt'\)/.test(appSrc) &&
    /'g=' \+ encodeURIComponent\(state\.gender \|\| 'unstated'\)/.test(appSrc) &&
    /'public=' \+ \(state\.celebrity \? 'true' : 'false'\)/.test(appSrc));
-ok('and a written URL restores those choices before it submits', (function () {
+ok('old URL settings cannot override Custom Choice before calculation', (function () {
   var share = appSrc.slice(appSrc.indexOf('function writeHash'),
                            appSrc.indexOf('/* ------------------------------------------------------------------ init'));
   var fields = {
@@ -8019,13 +8028,14 @@ ok('and a written URL restores those choices before it submits', (function () {
     standard: 'lmt', name: 'Donald Trump', ayanamsa: 'raman', trueNode: false,
     gender: 'female', celebrity: true });
   fields.ayanamsa.value = 'lahiri'; fields['node-type'].value = 'true'; fields.gender.value = '';
+  location.hash += '&ay=raman&node=mean&std=lmt';
   mod.readHash();
   var result = mod.result();
   return submitted === 1 && result.restoredDate === '1946-06-14' &&
-    result.restoredTime.join(':') === '10:54:12' && fields.ayanamsa.value === 'raman' &&
-    fields['node-type'].value === 'mean' && fields.gender.value === 'female' &&
+    result.restoredTime.join(':') === '10:54:12' && fields.ayanamsa.value === 'lahiri' &&
+    fields['node-type'].value === 'true' && fields.gender.value === 'female' &&
     fields.celebrity.checked === true &&
-    fields['time-standard'].value === 'lmt' && result.selectedCity.zone === 'America/New_York';
+    fields['time-standard'].value === 'zone' && result.selectedCity.zone === 'America/New_York';
 })());
 ok('an old link cannot demote an existing public figure while a deliberate edit can',
    /if \(at >= 0 && !currentEntry\) entry\.celebrity = list\[at\]\.celebrity === true;/.test(appSrc) &&
@@ -10156,19 +10166,24 @@ console.log('\nThe node setting says what it moves, and what it does not');
  * left a reader with no idea what the setting does change. Swept instead: the
  * chart is built both ways and everything the page shows is compared.
  *
- * The claims are held to the code here, because a note giving figures is worth
- * less than no note if the figures drift.
+ * Keep the note brief; the behavioural checks below still verify its claims
+ * without requiring the old survey percentages in the reader-facing copy.
  */
 (function () {
   var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  var flat = page.replace(/\s+/g, ' ');
+  var note = page.match(/id="why-node-type"[\s\S]*?<p[^>]*>([\s\S]*?)<\/p>/)[1];
+  var flat = note.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
   var place = { latitude: 28.61, longitude: 77.21, tzOffsetMinutes: 330 };
 
   ok('the note now says what changes as well as what does not',
-    /a chara karaka is reassigned in 21% of them/.test(flat) &&
-    /another nakshatra in 7%, another sign in 3% and another house in 3%/.test(flat) &&
-    /whether some graha is hemmed by benefics or by malefics changes in 2%/.test(flat) &&
-    /the list of yogas found changes in 1%/.test(flat));
+    /signs, houses and nakshatras/.test(flat) &&
+    /chara karakas and some yogas/.test(flat) &&
+    /does not affect Shadbala or Vimshottari dasha/.test(flat));
+  ok('the short note explains both choices without survey statistics',
+    /Mean node.*always moves retrograde/.test(flat) &&
+    /True node.*can briefly move direct/.test(flat) &&
+    /When comparing charts, use the same setting/.test(flat) &&
+    flat.split(/\s+/).length <= 80 && !/%/.test(flat));
 
   /*
    * The strong claim is the negative one, and it is the one worth testing
@@ -10212,6 +10227,20 @@ console.log('\nThe node setting says what it moves, and what it does not');
       fs.readFileSync(path.join(root, 'js/astro.js'), 'utf8')));
 })();
 
+
+console.log('\nMercury association distinguishes quotation from implementation');
+(function () {
+  var page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  var note = page.match(/id="why-mercury-nature"[\s\S]*?<p[^>]*>([\s\S]*?)<\/p>/)[1]
+    .replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+  ok('the note preserves Raman\u2019s or without attributing our precise tests to him',
+    /very closely associated with Sun or combusted/.test(note) &&
+    /implementation interpretation/.test(note) &&
+    /not a rule explicitly prescribed by either quotation/.test(note) &&
+    /does not establish our different tests/.test(note) &&
+    /same-sign option interprets/.test(note) &&
+    /does not itself define association by a sign or an orb/.test(note));
+})();
 
 console.log('\nEvery citation in the settings names its book');
 /*
@@ -10482,8 +10511,8 @@ console.log('\nThe default-settings row is one line');
    * first of them, Back having carried it before: with it there the reset
    * would have stayed against the heading while only Back moved right.
    */
-  ok('reset then Back follow the heading, both to the right',
-    html.indexOf('id="preset-forget"') > html.indexOf('id="preset-page-title"') &&
+  ok('reset then Back follow the short note, both to the right',
+    html.indexOf('id="preset-forget"') > html.indexOf('id="preset-page-note"') &&
     html.indexOf('id="preset-back"') > html.indexOf('id="preset-forget"') &&
     // Both above the table, not in a strip under it. Measured against the
     // editor rather than the head's own close, there being a div inside the
@@ -10523,16 +10552,19 @@ console.log('\nThe default-settings row is one line');
     />Update Custom Settings</.test(html) &&
     /textContent =\s*'Update Custom Settings';/.test(appSrc) &&
     !/Create my custom|Edit my custom/.test(html + appSrc) &&
-    // The page it opens is named for the same thing the button is.
-    />Custom settings</.test(html) &&
+    // The page retains an accessible name without a visible title.
+    /role="region" aria-label="Custom settings" tabindex="-1"/.test(html) &&
+    !/preset-page-title/.test(html + appSrc) &&
+    /if \(page.focus\) page.focus\(\)/.test(appSrc) &&
     // And the three lines that report on it.
-    /'Custom settings updated\.'/.test(appSrc) &&
+    /Saving settings to database/.test(appSrc) &&
     /differ from your saved custom settings/.test(appSrc) &&
-    /couldn\u2019t save your custom settings/.test(appSrc) &&
+    /database settings could not be saved/.test(appSrc) &&
     // Nothing left calling the reader's own set a default.
     !/your saved default|save your default|Default settings updated/.test(appSrc) &&
     // Saved and in force in one step, which is what the page already did.
-    /window\.localStorage\.setItem\(DEFAULT_SETTINGS_KEY, 'mine'\)/.test(appSrc));
+    /settingsStore.save\(values/.test(appSrc) &&
+    !/localStorage\.setItem\((MY_SETTINGS_KEY|DEFAULT_SETTINGS_KEY)/.test(appSrc));
   /*
    * Read from the left, where it used to sit right-aligned under the controls.
    * There is no Save beside it to name any more: a change is kept as it is
@@ -10589,7 +10621,7 @@ console.log('\nThe settings notes do not argue from what software does');
     notes.length > 4000 && /No classical text asks for it/.test(notes.replace(/\s+/g, ' ')));
   ok('no settings note justifies an option by what other programs do',
     !/software/i.test(notes) && !/Drik Panchang/.test(notes) &&
-    !/Star Jyotish/.test(notes));
+    !/Shri Jyoti Star/.test(notes));
   /*
    * And the presets are the one place a program may be named. Two of the four
    * are books rather than programs, which is the better kind of preset: a
@@ -10598,8 +10630,8 @@ console.log('\nThe settings notes do not argue from what software does');
   ok('the presets name the reckonings they reproduce',
     /<option value="raman">B\. V\. Raman<\/option>/.test(panel) &&
     /<option value="parashara">Parashara<\/option>/.test(panel) &&
-    /<option value="star">Star Jyotish<\/option>/.test(panel) &&
-    /Star Jyotish/.test(panel));
+    /<option value="star">Shri Jyoti Star<\/option>/.test(panel) &&
+    /Shri Jyoti Star/.test(panel));
   /*
    * But the warning itself stays. A reader is owed the fact that a reading has
    * no text behind it; that is the part of the sentence worth keeping.
@@ -11038,8 +11070,20 @@ console.log('\nEach preset reaches the figures it is named for');
       /nought to sixty/.test(out.PRESETS.parashara.says);
   })());
 
-  /* Star Jyotish: all seven of its printed ayana integers on one chart. */
-  ok('Star Jyotish reaches all seven of its printed ayana figures', (function () {
+  ok('Rao preset reproduces the textbook Moon, Mercury and Sun temporal choices', (function () {
+    out.applyPreset('rao');
+    var state = stateFor({jdUT:Astro.julianDay(1957,9,21,8.5),
+      latitude:25.86,longitude:85 + 50/60,tzOffsetMinutes:330});
+    var r = out.strengthsFor(state).grahas;
+    return near(r.Moon.kala.paksha,23.18,0.1) &&
+      near(r.Mercury.kala.paksha,48.41,0.1) &&
+      near(r.Sun.kala.ayana,61.94,0.3) && r.Sun.cheshtaCounted &&
+      out.currentSettings()['budha-floor'] === 'none' &&
+      out.currentSettings()['ishta-kashta'] === 'sripati';
+  })());
+
+  /* Shri Jyoti Star: all seven of its printed ayana integers on one chart. */
+  ok('Shri Jyoti Star reaches all seven of its printed ayana figures', (function () {
     out.applyPreset('star');
     var r = out.strengthsFor(obama()).grahas;
     var WANT = { Sun: 52, Moon: 3, Mars: 34, Mercury: 55, Jupiter: 4, Venus: 60,
@@ -11116,7 +11160,7 @@ console.log('\nEach preset reaches the figures it is named for');
     return first['chart-style'] === 'south' && second['chart-style'] === 'north' &&
       first.ayanamsa === 'raman' && same &&
       // One set, not two: the store holds the latest and nothing beside it.
-      out.readMyDefault() === null;
+      JSON.stringify(out.database.custom.choices) === JSON.stringify(out.currentSettings());
   })());
   /* And Back returns to the settings, there being nothing to confirm. */
   ok('and Back returns to the settings', (function () {
@@ -11160,7 +11204,7 @@ console.log('\nEach preset reaches the figures it is named for');
    * presets really compute with - a table of plausible-looking words would be
    * worse than no table.
    */
-  ok('every setting is shown against all three readings at once', (function () {
+  ok('every setting is shown against all four readings at once', (function () {
     out.byId('preset-create').fire('click', {});
     var rows = {};
     (function walk(n) {
@@ -11175,7 +11219,7 @@ console.log('\nEach preset reaches the figures it is named for');
     // One row per setting, and five columns: the name, yours, and the three.
     // The group headings have no td of their own, so they are not counted.
     return names.length === out.RECKONING_IDS.length &&
-      names.every(function (name) { return rows[name].length === 4; });
+      names.every(function (name) { return rows[name].length === 5; });
   })());
   ok('and each column really holds what that reading computes with', (function () {
     var cells = [];
@@ -11201,22 +11245,22 @@ console.log('\nEach preset reaches the figures it is named for');
     })(out.byId('preset-editor'));
     var words = row.slice(1).map(textOf);
     // The fallback stays visible, but ! distinguishes it from a source choice.
-    return cells.length === out.RECKONING_IDS.length * 3 &&
-      words.length === 3 &&
+    return cells.length === out.RECKONING_IDS.length * 4 &&
+      words.length === 4 &&
       /Raman/.test(words[0]) &&
-      /Lahiri.*!$/.test(words[1]) && /Lahiri.*!$/.test(words[2]) &&
+      /Lahiri/.test(words[1]) && !/!/.test(words[1]) && /Lahiri.*!$/.test(words[2]) &&
       // And what it would leave is still said, where it cannot be taken for
       // the reading's own position.
       // Set with setAttribute, which this stub keeps in attrs rather than
       // on the property, as a browser keeps both.
-      /Lahiri/.test(row[2].children[0].attrs.title || '');
+      /Lahiri/.test(row[3].children[0].attrs.title || '');
   })());
   /*
    * And a cell says whether it is that reading's own position or this page
    * standing in for one. A preset names the settings it is pinned on and takes
    * the rest from here, so the two looked identical and the table claimed four
    * opinions where it had one: nothing is recorded about where Drik Panchang
-   * or Star Jyotish put Budha-Aditya's floor, and the row read as though all
+   * or Shri Jyoti Star put Budha-Aditya's floor, and the row read as though all
    * four had settled it.
    */
   ok('a cell says whether that reading has a position at all', (function () {
@@ -11244,8 +11288,8 @@ console.log('\nEach preset reaches the figures it is named for');
     var ayan = rowFor('ayanamsa').map(function (c) {
       return /preset-cell-unrecorded/.test(c.className);
     });
-    return floor.join(',') === 'false,true,true' &&
-      ayan.join(',') === 'false,true,true';
+    return floor.join(',') === 'false,false,true,true' &&
+      ayan.join(',') === 'false,false,true,true';
   })());
   /* And the table says what the faintness means, or it is only decoration. */
   ok('and the table says what each of its marks means', (function () {
@@ -11259,7 +11303,8 @@ console.log('\nEach preset reaches the figures it is named for');
     var said = key ? textOf(key) : '';
     return /! means not recorded/.test(said) && /page fallback/.test(said) &&
       /Green values differ from yours/.test(said) &&
-      /Sources differ/.test(said) && /documented choices/.test(said) &&
+      /Sources differ/.test(said) && /recorded choices/.test(said) &&
+      /inferred choices are labelled/.test(said) &&
       !/in bold/.test(said);
   })());
 
@@ -11287,7 +11332,7 @@ console.log('\nEach preset reaches the figures it is named for');
       // Each group opens with its own name, spanning the whole table.
       var spans = bodies.every(function (b) {
         var cell = b.children[0].children[0];
-        return cell.tag === 'th' && cell.attrs.colspan === '5' &&
+        return cell.tag === 'th' && cell.attrs.colspan === '6' &&
           cell.attrs.scope === 'colgroup';
       });
       return opens.join(' | ') === 'Chart settings | Test settings' && spans;
@@ -11353,12 +11398,12 @@ console.log('\nEach preset reaches the figures it is named for');
     var words = row.slice(1).map(textOf);
     out.byId('preset-back').fire('click', {});
     // None of the three gives a rule for the node.
-    return words.length === 3 && words.every(function (word) { return /True node.*!$/.test(word); });
+    return words.length === 4 && words.every(function (word) { return /True node.*!$/.test(word); });
   })());
 
   ok('green follows yours while source disagreement only follows documented choices',
     (function () {
-      var columns = ['raman', 'parashara', 'star'];
+      var columns = ['raman', 'rao', 'parashara', 'star'];
       var correct = columns.every(function (preset) {
         out.applyPreset(preset);
         out.byId('preset-create').fire('click', {});
@@ -11366,7 +11411,7 @@ console.log('\nEach preset reaches the figures it is named for');
         (function walk(n) {
           if (n.tag === 'tr') {
             var cells = n.children.filter(function (c) { return c.tag === 'td'; });
-            if (cells.length === 4) {
+            if (cells.length === 5) {
               var setting = Object.keys(fields).filter(function (id) {
                 return cells[0].children.indexOf(fields[id]) >= 0;
               })[0];
@@ -11406,7 +11451,11 @@ console.log('\nEach preset reaches the figures it is named for');
           }
           n.children.forEach(walk);
         })(out.byId('preset-editor'));
-        return valid && checked === out.RECKONING_IDS.length && disagreements === 5;
+        return valid && checked === out.RECKONING_IDS.length && disagreements === out.RECKONING_IDS.filter(function (id) {
+          var values = columns.filter(function (name) { return Object.prototype.hasOwnProperty.call(out.PRESETS[name].of, id); })
+            .map(function (name) { return out.PRESETS[name].of[id]; });
+          return values.some(function (value) { return value !== values[0]; });
+        }).length;
       });
       out.applyPreset('page');
       out.byId('preset-create').fire('click', {});
@@ -11457,7 +11506,7 @@ console.log('\nEach preset reaches the figures it is named for');
     })(out.byId('preset-editor'));
     take[0].fire('click', {});   // B. V. Raman, now the first column
     var fields = editorFields(), wanted = out.PRESETS.raman.of;
-    return take.length === 3 &&
+    return take.length === 4 &&
       Object.keys(wanted).every(function (id) {
         return fields[id] && fields[id].value === wanted[id];
       });
@@ -11468,8 +11517,8 @@ console.log('\nEach preset reaches the figures it is named for');
     out.byId('preset-save').fire('click', {});
     var mine = out.readMyDefault();
     return !/preset-name|nameBox/.test(html + appSrc + cssSrc) &&
-      mine && mine.name === 'My custom settings' &&
-      out.byId('preset-mine-option').textContent === 'My custom settings' &&
+      mine && mine.name === 'Custom Choice' &&
+      out.byId('preset-mine-option').textContent === 'Custom Choice' &&
       // And the values are still read back by everything that wants them.
       // Compared by content: each read parses the store afresh.
       JSON.stringify(out.readMySettings()) === JSON.stringify(mine.values);
@@ -11477,14 +11526,16 @@ console.log('\nEach preset reaches the figures it is named for');
   /* A set stored before names existed is read, not thrown away. */
   ok('a set saved before names had been thought of still opens', (function () {
     out.storeRaw(JSON.stringify({ ayanamsa: 'kp', 'chart-style': 'south' }));
+    out.restoreSettings({profiles:[],custom:null});
     var mine = out.readMyDefault();
-    return mine && mine.name === 'My custom settings' &&
+    return mine && mine.name === 'Custom Choice' &&
       mine.values.ayanamsa === 'kp';
   })());
 
-  ok('and forgetting it leaves nothing behind', (function () {
+  ok('reset replaces the one custom row with the baseline', (function () {
     out.byId('preset-forget').fire('click', {});
-    return out.readMySettings() === null;
+    return out.database.custom.selected_preset === 'rao' &&
+      JSON.stringify(out.readMySettings()) === JSON.stringify(out.database.custom.choices);
   })());
   /*
    * Only what the page still offers. A stored setting outlives the markup, and
@@ -11564,39 +11615,39 @@ console.log('\nEach preset reaches the figures it is named for');
 
   /*
    * Where a reader starts and where resetting returns them: the Brihat
-   * Parashara Hora Shastra's own readings, first in the list and the choice a
+   * Rao-school readings, first in the list and the choice a
    * page with nothing stored opens on.
    *
    * It is one name in the source, so the opening choice and the reset cannot
    * come to name different readings, and this drives both ends of it rather
    * than reading that name twice.
    */
-  ok('a page with nothing stored opens on Parashara, first in the list',
+  ok('Custom Choice is first in the list',
     (function () {
       var choice = out.byId('preset-choice');
       var order = Array.prototype.map.call(choice.options, function (o) {
         return o.value;
       });
-      return out.readDefaultChoice() === 'parashara' &&
-        order[0] === 'parashara' &&
+      return out.readDefaultChoice() === 'rao' &&
+        order[0] === 'mine' &&
         // The page's own reading is still offered, just not first.
         order.indexOf('page') > 0;
     })());
-  ok('and resetting returns there, saying so and keeping nothing', (function () {
+  ok('and resetting returns there, saving the Rao baseline', (function () {
     var ayanamsa = out.byId('ayanamsa');
     ayanamsa.value = ayanamsa.value === 'kp' ? 'raman' : 'kp';
     ayanamsa.fire('change', { target: ayanamsa });
     var mine = out.readDefaultChoice();
     out.byId('preset-forget').fire('click', {});
-    var wanted = out.PRESETS.parashara.of;
+    var wanted = out.PRESETS.rao.of;
     var off = Object.keys(wanted).filter(function (id) {
       return out.currentSettings()[id] !== wanted[id];
     });
-    return mine === 'mine' && out.readDefaultChoice() === 'parashara' &&
-      out.readMySettings() === null && off.length === 0 &&
-      out.byId('preset-status').textContent === 'Reset to Parashara.' &&
+    return mine === 'mine' && out.readDefaultChoice() === 'rao' &&
+      out.database.custom.selected_preset === 'rao' && off.length === 0 &&
+      out.byId('preset-status').textContent === 'Settings saved to database.' &&
       // The button says where it goes, and says it once.
-      /<button type="button" id="preset-forget" hidden>Reset to Parashara<\/button>/
+      /<button type="button" id="preset-forget" hidden>Reset to Rao<\/button>/
         .test(html);
   })());
   /*
@@ -11625,14 +11676,12 @@ console.log('\nEach preset reaches the figures it is named for');
   ok('the page says what a change becomes, and that is what it does',
     (function () {
       var note = (html.replace(/\s+/g, ' ')
-        .match(/<h3 id="preset-page-title"[\s\S]*?<p class="field-note">(.*?)<\/p>/) ||
+        .match(/<p class="field-note" id="preset-page-note">(.*?)<\/p>/) ||
         ['', ''])[1];
       var says = /becomes your custom settings at once/.test(note) &&
         /here or on the Settings tab/.test(note) &&
         /no Save to press/.test(note) &&
-        /next visit/.test(note) &&
-        /live in this browser only/.test(note) &&
-        /starts from Parashara again/.test(note) &&
+        !/next visit|database|private access key|Missing choices/.test(note) &&
         // And it cannot promise a Save, there being none to press.
         !/Click Save|press Save|Saving again/.test(html);
       // Both paths the sentence names, each making the set it claims to make.
@@ -11651,7 +11700,7 @@ console.log('\nEach preset reaches the figures it is named for');
       var fromPage = out.readMySettings();
       out.byId('preset-back').fire('click', {});
       out.byId('preset-forget').fire('click', {});
-      return says && fresh === null &&
+      return says && fresh && out.database.custom &&
         fromPanel.ayanamsa === other && fromPage['node-type'] === node &&
         // One set, carried forward, not two.
         fromPage.ayanamsa === other;
@@ -11710,17 +11759,38 @@ console.log('\nEach preset reaches the figures it is named for');
    * on whatever the markup happens to ship, which is the other half of the
    * same question: nothing of somebody else's visit reaches this one.
    */
-  ok('and a browser that has kept nothing opens on Parashara', (function () {
+  ok('a new browser opens its own Custom Choice copied from Rao', (function () {
     out.byId('preset-forget').fire('click', {});
-    try { out.storage.removeItem('jyotisha.default-settings.v1'); } catch (e) { /* none */ }
+    out.database.custom = null;
+    out.storage.removeItem('jyotisha.settings.v1');
     out.startUp();
-    var wanted = out.PRESETS.parashara.of;
+    var wanted = out.PRESETS.rao.of;
     var off = Object.keys(wanted).filter(function (id) {
       return out.currentSettings()[id] !== wanted[id];
     });
-    return out.readDefaultChoice() === 'parashara' && off.length === 0 &&
-      out.readMySettings() === null;
+    return out.readDefaultChoice() === 'mine' && off.length === 0 &&
+      out.database.custom.selected_preset === 'custom' && !!out.readMySettings();
   })());
+
+  ok('reload selects Custom Choice without changing saved values or writing the row', (function () {
+    var saved = Object.assign({}, out.currentSettings(), {ayanamsa:'kp', 'moon-paksha':'group'});
+    var writes = out.database.writes;
+    out.restoreSettings({profiles:[],custom:{selected_preset:'rao',choices:saved}});
+    return out.readDefaultChoice() === 'mine' && out.byId('preset-choice').value === 'mine' &&
+      JSON.stringify(out.readMySettings()) === JSON.stringify(saved) && out.database.writes === writes;
+  })());
+
+  ok('missing saved choices fill from Rao while explicit choices survive', (function () {
+    out.restoreSettings({profiles:[],custom:{selected_preset:'custom',choices:{
+      ayanamsa:'kp','moon-paksha':'group','chart-style':'south'}}});
+    var current = out.readMySettings();
+    return current.ayanamsa === 'kp' && current['moon-paksha'] === 'group' &&
+      current['chart-style'] === 'south' && current['paksha-doubled'] === 'doubled' &&
+      current['ayana-doubled'] === 'doubled' && current['kendra-method'] === 'averaged' &&
+      Object.keys(out.database.custom.choices).length === out.RECKONING_IDS.length &&
+      out.database.custom.selected_preset === 'custom';
+  })());
+  out.byId('preset-forget').fire('click', {});
 
   /*
    * A record is the birth: who, when and where. How it is read is the reading
@@ -11763,6 +11833,41 @@ console.log('\nEach preset reaches the figures it is named for');
       entry.date === '1977-11-15' && entry.zone === 'Asia/Kolkata' &&
       entry.latitude === 28.61;
   })());
+  ok('opening a saved chart calculates Rahu using the selected reading', (function () {
+    var entry = {name:'Node regression',date:'1961-08-04',time:'19:24:00',
+      latitude:21.3069,longitude:-157.8583,zone:'Pacific/Honolulu',
+      placeLabel:'Honolulu',gender:'male',ayanamsa:'raman',trueNode:false,standard:'lmt'};
+    var correct = true;
+    ['rao', 'mine'].forEach(function (reading) {
+      out.setLastChart(null);
+      out.applyPreset('rao');
+      if (reading === 'mine') {
+        var fields = {'ayanamsa':'kp','node-type':'mean','time-standard':'lmt'};
+        Object.keys(fields).forEach(function (id) {
+          var field = out.byId(id); field.value = fields[id]; field.fire('change', {target:field});
+        });
+        out.applyPreset('mine');
+      }
+      var selected = out.currentSettings(), writes = out.database.writes;
+      // Deliberately conflicting metadata from a legacy cached record.
+      entry.ayanamsa = selected.ayanamsa === 'raman' ? 'lahiri' : 'raman';
+      entry.trueNode = selected['node-type'] !== 'true';
+      entry.standard = selected['time-standard'] === 'lmt' ? 'zone' : 'lmt';
+      out.loadSaved(entry);
+      var state = out.lastChart();
+      var offset = selected['time-standard'] === 'lmt' ? Math.round(entry.longitude * 4) : -600;
+      var expected = Astro.chart({jdUT:Astro.julianDay(1961,8,4,19+24/60-offset/60),
+        latitude:entry.latitude,longitude:entry.longitude,tzOffsetMinutes:offset,
+        ayanamsa:selected.ayanamsa,trueNode:selected['node-type'] === 'true'});
+      var rahu = function (c) { return c.planets.filter(function (p) { return p.name === 'Rahu'; })[0].longitude; };
+      correct = correct && !!state && state.ayanamsa === selected.ayanamsa &&
+        state.trueNode === (selected['node-type'] === 'true') &&
+        state.standard === selected['time-standard'] &&
+        Math.abs(rahu(state.chart)-rahu(expected)) < 1e-9 && out.database.writes === writes;
+    });
+    out.setLastChart(null);
+    return correct;
+  })());
   /* And nothing of the reckoning is sent back when one is saved. */
   ok('and saving one sends the birth alone', (function () {
     var at = appSrc.indexOf('function saveCurrent');
@@ -11796,7 +11901,7 @@ console.log('\nEach preset reaches the figures it is named for');
       var said = out.byId('preset-status').textContent;
       out.byId('preset-forget').fire('click', {});
       return kept === other && chosen === 'mine' &&
-        said === 'Custom settings updated.';
+        said === 'Settings saved to database.';
     })());
   /* And a change made in the editor is kept the same way. */
   ok('and a change made in the editor is kept as it is made', (function () {
@@ -11820,57 +11925,56 @@ console.log('\nEach preset reaches the figures it is named for');
    * have been told nothing at all.
    */
   ok('a write that fails is reported in whichever view is open', (function () {
-    var realSet = out.storage.setItem;
+    var wasFailing = out.database.fail;
     out.applyPreset('page');
     out.byId('preset-create').fire('click', {});
-    out.storage.setItem = function () { throw new Error('quota'); };
+    out.database.fail = true;
     var fields = editorFields();
     fields['node-type'].value = fields['node-type'].value === 'true' ? 'mean' : 'true';
     fields['node-type'].fire('change', { target: fields['node-type'] });
     var inEditor = out.byId('preset-editor-status');
     var toldThere = inEditor.hidden === false &&
-      /couldn\u2019t save your custom settings/.test(inEditor.textContent);
-    out.storage.setItem = realSet;
+      /Settings could not be saved/.test(inEditor.textContent);
+    out.database.fail = wasFailing;
     out.byId('preset-back').fire('click', {});
     return toldThere &&
       // And the setting still took effect for the session.
-      /Applied for this session/.test(inEditor.textContent);
+      out.readMySettings()['node-type'] === fields['node-type'].value;
   })());
   /*
    * And the next write that succeeds clears it. A failure that stays on screen
    * after the thing it reports has stopped being true is its own fault.
    */
   ok('and the warning clears on the next write that works', (function () {
-    var realSet = out.storage.setItem;
+    var wasFailing = out.database.fail;
     out.applyPreset('page');
-    out.storage.setItem = function () { throw new Error('quota'); };
+    out.database.fail = true;
     var ayanamsa = out.byId('ayanamsa');
     ayanamsa.value = ayanamsa.value === 'kp' ? 'raman' : 'kp';
     ayanamsa.fire('change', { target: ayanamsa });
-    var warned = /couldn\u2019t save/.test(out.byId('preset-status').textContent);
-    out.storage.setItem = realSet;
+    var warned = /could not be saved/.test(out.byId('preset-status').textContent);
+    out.database.fail = wasFailing;
     ayanamsa.value = ayanamsa.value === 'kp' ? 'raman' : 'kp';
     ayanamsa.fire('change', { target: ayanamsa });
-    var cleared = out.byId('preset-status').textContent === 'Custom settings updated.';
+    var cleared = out.byId('preset-status').textContent === 'Settings saved to database.';
     out.byId('preset-forget').fire('click', {});
     return warned && cleared;
   })());
-  /*
-   * A shared link carries the settings its chart was cast with and must not
-   * become the reader's default: following somebody else's link would
-   * otherwise rewrite their own. The link moves the selects directly, which
-   * is exactly why nothing on that path writes.
-   */
-  ok('a shared link moves the settings without keeping them', (function () {
-    out.applyPreset('page');
-    var before = out.readMySettings();
-    // What readHash does: the value, with no change event.
-    out.byId('ayanamsa').value = 'kp';
-    out.markDrift();
-    var after = out.readMySettings();
-    var marked = labelFor() === 'Standard default, changed';
-    out.applyPreset('page');
-    return before === null && after === null && marked;
+  // Opening a legacy link uses the selected reading without saving settings.
+  ok('a shared link calculates with the selected settings without saving them', (function () {
+    out.setLastChart(null);
+    out.applyPreset('rao');
+    var before = JSON.stringify(out.readMySettings()), writes = out.database.writes;
+    out.location.hash = '#d=1961-08-04&t=19:24&lat=21.3069&lon=-157.8583' +
+      '&tz=Pacific%2FHonolulu&n=Barack%20Obama&g=male&ay=raman&node=mean&std=lmt';
+    out.readHash();
+    var state = out.lastChart();
+    var correct = state && state.ayanamsa === 'lahiri' && state.trueNode === true &&
+      state.standard === 'zone' && before === JSON.stringify(out.readMySettings()) &&
+      writes === out.database.writes;
+    out.location.hash = '';
+    out.setLastChart(null);
+    return correct;
   })());
   /*
    * The picker stops claiming a reading the page has stopped following.  /*

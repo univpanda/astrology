@@ -54,37 +54,40 @@ export function buildCatalogue(html = read('index.html'), app = read('js/app.js'
     if (id === 'ayanamsa') {
       assert(/if \(key === 'lahiri'\) opt.selected = true/.test(app), 'Review ayanamsa default extraction');
       options = Object.entries(Astro.AYANAMSA).map(([value, item]) =>
-        ({ value, label: item.label, selected: value === 'lahiri' }));
+        ({ value, label: item.label, selected: value === 'lahiri', definition: item }));
     }
     assert(options.length && options.filter(o => o.selected).length <= 1, 'Invalid options: ' + id);
     assert.equal(new Set(options.map(o => o.value)).size, options.length, 'Duplicate option: ' + id);
     return { id, group: groups.find(g => g.ids.includes(id)).title,
       label: words(label[1]), defaultValue: (options.find(o => o.selected) || options[0]).value,
-      options: options.map(({ value, label }) => ({ value, label })), explanation: words(why[1]) };
+      options: options.map(({ value, label, definition }) =>
+        definition ? { value, label, definition } : { value, label }), explanation: words(why[1]) };
   });
   const readings = Object.entries(presets).map(([id, preset]) => {
     for (const key of Object.keys(preset.of)) assert(ids.includes(key), 'Unknown preset setting: ' + key);
     return { id, label: id === 'page' ? 'Page fallback defaults' : preset.label,
-      explanation: preset.says, choices: settings.map(setting => {
+      explanation: preset.says, evidence: id === 'rao' ? JSON.parse(read('data/settings-rao-sources.json')) : [],
+      choices: settings.map(setting => {
         const recorded = id !== 'page' && Object.hasOwn(preset.of, setting.id);
         const value = recorded ? preset.of[setting.id] : setting.defaultValue;
         assert(setting.options.some(o => o.value === value), 'Invalid preset value: ' + id + '/' + setting.id);
         return { settingId: setting.id, value,
-          basis: id === 'page' ? 'page_default' : recorded ? 'documented' : 'fallback' };
+          basis: id === 'page' ? 'page_default' : recorded ? ((preset.inferred || []).includes(setting.id) ? 'inferred' : 'documented') : 'fallback' };
       }) };
   });
-  const startupReading = app.match(/var BASE_CHOICE = '([^']+)'/)[1];
-  assert(readings.some(r => r.id === startupReading), 'Unknown startup reading');
+  const startupReading = 'custom';
+  const customBaseReading = app.match(/var BASE_CHOICE = '([^']+)'/)[1];
+  assert(readings.some(r => r.id === customBaseReading), 'Unknown custom starting profile');
   assert(Array.isArray(observations), 'Observations must be an array');
   assert.equal(new Set(observations.map(o => o.id)).size, observations.length, 'Duplicate observation');
-  return { schemaVersion: 1, startupReading, settings, readings, observations,
+  return { schemaVersion: 1, startupReading, customBaseReading, settings, readings, observations,
     sourceNotes: definitions, scope: 'Application reference catalogue, not personal browser settings' };
 }
 
 export const catalogueHash = catalogue => createHash('sha256').update(JSON.stringify(catalogue)).digest('hex');
 const quote = text => "'" + String(text).replace(/'/g, "''") + "'";
 
-function pgEnvironment() {
+export function pgEnvironment() {
   if (process.env.DATABASE_URL) {
     const u = new URL(process.env.DATABASE_URL);
     return { role: null, env: { ...process.env, PGHOST: u.hostname, PGPORT: u.port || '5432',
@@ -105,7 +108,7 @@ function pgEnvironment() {
   return { env, role: 'postgres' };
 }
 
-function sql(query, { env, role }) {
+export function sql(query, { env, role }) {
   const result = spawnSync('psql', ['-X', '-qAt', '-v', 'ON_ERROR_STOP=1'],
     { input: (role === 'postgres' ? 'set role postgres;\n' : '') + query,
       env, encoding: 'utf8', timeout: 60000, maxBuffer: 8 * 1024 * 1024 });

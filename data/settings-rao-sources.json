@@ -1,0 +1,150 @@
+[
+  {
+    "settings": [
+      "ayanamsa"
+    ],
+    "basis": "documented",
+    "value": "lahiri",
+    "source": {
+      "title": "K. N. Rao — Jaimini Chara Dasha, My Approach 2",
+      "url": "https://www.journalofastrology.com/article.php?article_id=317"
+    },
+    "note": "Rao explicitly specifies Lahiri ayanamsa."
+  },
+  {
+    "settings": [
+      "time-standard"
+    ],
+    "basis": "documented",
+    "source": {
+      "title": "Shadbal and Bhavbal — Anil Singh and Ramesh Kumar, guided by K. N. Rao",
+      "url": "https://www.exoticindiaart.com/book/details/shadbal-and-bhavbal-hbw532/",
+      "note": "Rules checked against the local book-page photographs; the linked page identifies the edition and authors."
+    },
+    "location": "Chapter 5, worked example 1",
+    "note": "The 21 September 1957 Samastipur birth is recorded at 14:00 IST. Zone input follows these civil-time records; it does not reinterpret a birth explicitly supplied in LMT."
+  },
+  {
+    "settings": [
+      "tatkalika",
+      "hora-dignity",
+      "saptavargaja-ladder"
+    ],
+    "basis": "documented",
+    "source": {
+      "title": "Shadbal and Bhavbal — Anil Singh and Ramesh Kumar, guided by K. N. Rao",
+      "url": "https://www.exoticindiaart.com/book/details/shadbal-and-bhavbal-hbw532/",
+      "note": "Rules checked against the local book-page photographs; the linked page identifies the edition and authors."
+    },
+    "location": "Chapter 2, worked Saptavargaja tables",
+    "note": "The existing numerical regression reproduces the tables with rashi friendship, sign-lord hora dignity and the fractional 45/30/22.5/15/7.5/3.75/1.875 ladder."
+  },
+  {
+    "settings": [
+      "nat-clock"
+    ],
+    "basis": "documented",
+    "source": {
+      "title": "Shadbal and Bhavbal — Anil Singh and Ramesh Kumar, guided by K. N. Rao",
+      "url": "https://www.exoticindiaart.com/book/details/shadbal-and-bhavbal-hbw532/",
+      "note": "Rules checked against the local book-page photographs; the linked page identifies the edition and authors."
+    },
+    "location": "p.31, IMG_5978.png",
+    "note": "Midday comes from the midpoint between sunrise and sunset, corresponding to the apparent-time option."
+  },
+  {
+    "settings": [
+      "mercury-nature",
+      "moon-paksha",
+      "paksha-doubled"
+    ],
+    "basis": "documented",
+    "source": {
+      "title": "Shadbal and Bhavbal — Anil Singh and Ramesh Kumar, guided by K. N. Rao",
+      "url": "https://www.exoticindiaart.com/book/details/shadbal-and-bhavbal-hbw532/",
+      "note": "Rules checked against the local book-page photographs; the linked page identifies the edition and authors."
+    },
+    "location": "pp.33–36, IMG_5980.png through IMG_5983.png",
+    "note": "Mercury is malefic with a malefic; example 1 uses the waning Moon conjunction. Moon receives twice the benefic paksha value even when naturally malefic."
+  },
+  {
+    "settings": [
+      "hora-length"
+    ],
+    "basis": "documented",
+    "source": {
+      "title": "Shadbal and Bhavbal — Anil Singh and Ramesh Kumar, guided by K. N. Rao",
+      "url": "https://www.exoticindiaart.com/book/details/shadbal-and-bhavbal-hbw532/",
+      "note": "Rules checked against the local book-page photographs; the linked page identifies the edition and authors."
+    },
+    "location": "pp.44–45, IMG_5991.png and IMG_5992.png",
+    "note": "Day and night lengths are each divided by twelve."
+  },
+  {
+    "settings": [
+      "ayana-constant",
+      "kranti",
+      "ayana-doubled"
+    ],
+    "basis": "documented",
+    "source": {
+      "title": "Shadbal and Bhavbal — Anil Singh and Ramesh Kumar, guided by K. N. Rao",
+      "url": "https://www.exoticindiaart.com/book/details/shadbal-and-bhavbal-hbw532/",
+      "note": "Rules checked against the local book-page photographs; the linked page identifies the edition and authors."
+    },
+    "location": "pp.47–48, IMG_5994.png and IMG_5995.png",
+    "note": "Uses (24 +/- declination) times 60/48, declination from tropical longitude without latitude, and doubles the Sun. The app evaluates the smooth 24-degree curve; the printed six-step interpolation may differ slightly."
+  },
+  {
+    "settings": [
+      "cheshta-method",
+      "kendra-method",
+      "mean-source",
+      "luminary-rule",
+      "luminary-cheshta"
+    ],
+    "basis": "documented",
+    "source": {
+      "title": "Shadbal and Bhavbal — Anil Singh and Ramesh Kumar, guided by K. N. Rao",
+      "url": "https://www.exoticindiaart.com/book/details/shadbal-and-bhavbal-hbw532/",
+      "note": "Rules checked against the local book-page photographs; the linked page identifies the edition and authors."
+    },
+    "location": "Chapter 5, pp.57–64, and total-strength tables",
+    "note": "Classical mean/true averaged kendras; Sun tropical longitude plus 90 degrees and Moon–Sun separation; luminary Cheshta included in totals."
+  },
+  {
+    "settings": [
+      "ishta-kashta"
+    ],
+    "basis": "documented",
+    "source": {
+      "title": "Shadbal and Bhavbal — Anil Singh and Ramesh Kumar, guided by K. N. Rao",
+      "url": "https://www.exoticindiaart.com/book/details/shadbal-and-bhavbal-hbw532/",
+      "note": "Rules checked against the local book-page photographs; the linked page identifies the edition and authors."
+    },
+    "location": "Chapter 9, three worked examples",
+    "note": "Square roots of uchcha times cheshta and of their complements. Known printed arithmetic slips remain identified in the regression suite."
+  },
+  {
+    "settings": [
+      "budha-floor"
+    ],
+    "basis": "inferred",
+    "source": {
+      "title": "K. N. Rao — Advanced Techniques of Astrological Predictions",
+      "url": "https://www.scribd.com/document/692974110/Advanced-Techniques-of-Astrological-Predictions"
+    },
+    "location": "Education, illustration 1, pp.21–22",
+    "note": "Sun 21°03′ and Mercury 14°57′ are called Budhaditya. Their 6°06′ separation excludes a universal ten-degree cutoff; the permissive same-sign option is an inference from this example."
+  },
+  {
+    "settings": [
+      "chart-style",
+      "node-type",
+      "combustion",
+      "hora-mercury"
+    ],
+    "basis": "fallback",
+    "note": "No sufficiently supported Rao-specific choice found. Explicit page fallbacks remain north, true, division and friend respectively; they are not attributed to Rao."
+  }
+]

@@ -698,6 +698,10 @@
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
+    if (settingsStartupPending) {
+      submitAfterSettings = true;
+      return;
+    }
     errorBox.textContent = '';
 
     /*
@@ -4772,16 +4776,11 @@
   /** Put a saved chart's details into the form, without casting it. */
   function applyEntryToForm(entry) {
     currentEntry = entry;
+    submitAfterSettings = false;
     document.getElementById('name').value = entry.name;
     writeDate(entry.date);
     var t = entry.time.split(':').map(Number);
     writeTime(t[0], t[1] || 0, t[2] || 0);
-    /*
-     * The three that decide a reckoning are not touched. A record is the
-     * birth, and how it is read is whatever the reader has chosen now, so
-     * opening one leaves their ayanamsa, their node and their clock where
-     * they are rather than reaching back for the ones it was cast under.
-     */
     document.getElementById('gender').value =
       (!entry.gender || entry.gender === 'unstated') ? '' : entry.gender;
     document.getElementById('celebrity').checked = entry.celebrity === true;
@@ -4972,58 +4971,62 @@
         'goes into his total three times: doubled inside kala bala, and once ' +
         'more as the figure it lent.'
     },
-    /*
-     * Two settings, and only two, because only two are pinned. Its ladder is
-     * Parashara's, checked against its figures for one chart where all seven
-     * grahas come out to the unit; and its ayana bala is the declination read
-     * from longitude alone, which reproduces all seven of its printed integers
-     * on Obama. Nothing else about it is recorded here, so nothing else moves.
-     */
+    rao: {
+      label: 'K. N. Rao school',
+      of: { 'time-standard': 'zone', ayanamsa: 'lahiri',
+        tatkalika: 'rashi', 'hora-dignity': 'lord',
+        'mercury-nature': 'associated', 'budha-floor': 'none',
+        'nat-clock': 'apparent', 'saptavargaja-ladder': 'raman',
+        'moon-paksha': 'benefic', 'paksha-doubled': 'doubled',
+        'hora-length': 'seasonal', 'ayana-constant': 'raman',
+        kranti: 'longitude', 'ayana-doubled': 'doubled',
+        'cheshta-method': 'kendra', 'kendra-method': 'averaged',
+        'mean-source': 'classical', 'luminary-rule': 'kendra',
+        'luminary-cheshta': 'counted', 'ishta-kashta': 'sripati' },
+      inferred: ['budha-floor'],
+      says: 'Lahiri ayanamsa, as K. N. Rao specifies, with the worked method ' +
+        'in Shadbal and Bhavbal by Anil Singh and Ramesh Kumar: seasonal ' +
+        'horas, doubled Moon paksha and Sun ayana, longitude-only declination, ' +
+        'classical averaged cheshta kendras and square-root ishta/kashta. ' +
+        'Mercury takes the nature of a malefic in the same sign. The absence ' +
+        'of a ten-degree Budha-Aditya cutoff is inferred from Rao’s worked ' +
+        'example. Zone time follows the book’s IST birth records. Chart style, ' +
+        'node type, combustion across divisions and Mercury’s separate hora ' +
+        'effect remain unverified and use the labelled page fallbacks.'
+    },
+    /* The Sun/Moon combination reproduces the reported Obama and Trump rows.
+     * It is an inference from two charts, not a published software formula.
+     * Their other five Cheshta values and luminary totals remain unresolved. */
     star: {
-      label: 'Star Jyotish',
-      of: { 'saptavargaja-ladder': 'parashara', kranti: 'longitude' },
-      says: 'Parashara\u2019s saptavargaja ladder and the declination read ' +
-        'from longitude alone, which are the two of its readings this page has ' +
-        'checked against its printed figures. Everything else is left where ' +
-        'this page has it, rather than guessed at.'
+      label: 'Shri Jyoti Star',
+      of: { 'saptavargaja-ladder': 'parashara', kranti: 'longitude',
+        'luminary-rule': 'sun-ayana' },
+      inferred: ['luminary-rule'],
+      says: 'Parashara’s saptavargaja ladder and declination from longitude. ' +
+        'Sun cheshta uses undoubled ayana bala; Moon cheshta uses her angular ' +
+        'distance from the Sun. This combination matches the reported Obama ' +
+        'and Trump figures; its general rule is inferred. The other five ' +
+        'cheshta values and whether the luminaries count in the total remain ' +
+        'unverified. Unrecorded choices use the standard defaults.'
     }
   };
 
-  /*
-   * A reader's own starting point, kept in this browser.
-   *
-   * The individual controls are not remembered between visits. Instead the
-   * reader chooses one named default, and may keep one personal combination.
-   * Saving that combination again replaces it; there is no accumulating list
-   * of anonymous presets to decipher later.
-   */
+  // Legacy keys are read only to import an existing custom choice once when
+  // the database has no saved choice. All new writes go to the settings API.
   var MY_SETTINGS_KEY = 'jyotisha.settings.v1';
-  var DEFAULT_SETTINGS_KEY = 'jyotisha.default-settings.v1';
-  /* Held so the suites can drive a preset the way a click does. */
+  var savedCustom = null;
+  var selectedDefault = null;
+  var serverProfiles = {};
+  var settingsStore = null;
+  var settingsStartupPending = false;
+  var settingsStartupTouched = false;
+  var submitAfterSettings = false;
+  var presetRestore = null;
   var presetApply = null;
   var presetMarkDrift = null;
   var presetSayStatus = null;
 
-  /*
-   * The reader's own set, named. A set saved before names existed is a bare
-   * map of settings with no `values` key, and is read as one rather than
-   * thrown away: somebody who saved one did not ask to lose it.
-   */
-  function readMyDefault() {
-    var saved;
-    try {
-      var raw = window.localStorage.getItem(MY_SETTINGS_KEY);
-      saved = raw ? JSON.parse(raw) : null;
-    } catch (e) {
-      // A browser refusing storage is not a reason to fail to start.
-      return null;
-    }
-    if (!saved || typeof saved !== 'object') return null;
-    if (saved.values && typeof saved.values === 'object') {
-      return { name: String(saved.name || 'My custom settings'), values: saved.values };
-    }
-    return { name: 'My custom settings', values: saved };
-  }
+  function readMyDefault() { return savedCustom; }
 
   function readMySettings() {
     var mine = readMyDefault();
@@ -5061,7 +5064,8 @@
   }
 
   function settingsForPreset(name) {
-    if (name === 'mine') return readMySettings();
+    if (name === 'mine') return readMySettings() || settingsForPreset(BASE_CHOICE);
+    if (serverProfiles[name]) return serverProfiles[name];
     var preset = PRESETS[name];
     if (!preset) return null;
     var wanted = {};
@@ -5073,21 +5077,13 @@
   }
 
   /*
-   * Where a reader starts, and where resetting returns them: the Brihat
-   * Parashara Hora Shastra's own readings. Named once, so the opening choice
-   * and the reset cannot name different readings.
+   * Rao supplies the initial values and the explicit reset. The default
+   * selection itself is always the reader’s Custom Choice.
    */
-  var BASE_CHOICE = 'parashara';
+  var BASE_CHOICE = 'rao';
 
   function readDefaultChoice() {
-    try {
-      var name = window.localStorage.getItem(DEFAULT_SETTINGS_KEY) || BASE_CHOICE;
-      if (name === 'mine' && !readMySettings()) return BASE_CHOICE;
-      return name === 'page' || name === 'raman' || name === 'parashara' ||
-        name === 'star' || name === 'mine' ? name : BASE_CHOICE;
-    } catch (e) {
-      return BASE_CHOICE;
-    }
+    return selectedDefault || 'mine';
   }
 
   /*
@@ -5185,9 +5181,9 @@
     var showMine = function () {
       var mine = readMyDefault();
       var exists = !!mine;
-      mineOption.hidden = !exists;
-      mineOption.disabled = !exists;
-      mineOption.textContent = exists ? mine.name : 'My custom settings';
+      mineOption.hidden = false;
+      mineOption.disabled = false;
+      mineOption.textContent = exists ? mine.name : 'Custom Choice';
       forget.hidden = !exists;
       // The same editor is used before and after a personal default exists.
       document.getElementById('preset-create').textContent =
@@ -5212,7 +5208,7 @@
      * them named after the thing a reader is looking at rather than after a
      * reading they could compare themselves to.
      */
-    var COLUMNS = ['raman', 'parashara', 'star'];
+    var COLUMNS = ['raman', 'rao', 'parashara', 'star'];
     var editorSelects = {};
     var editorCells = [];
 
@@ -5310,6 +5306,7 @@
             var wanted = settingsForPreset(name);
             return {
               value: wanted ? wanted[id] : undefined,
+              inferred: (PRESETS[name].inferred || []).indexOf(id) >= 0,
               own: name === 'page' ||
                 Object.prototype.hasOwnProperty.call(PRESETS[name].of, id)
             };
@@ -5364,6 +5361,10 @@
             }
             var button = el('button', 'preset-cell', wordsFor(id, entry.value));
             button.setAttribute('type', 'button');
+            if (entry.inferred) {
+              button.appendChild(el('span', 'preset-inferred-mark', ' (inferred)'));
+              button.setAttribute('title', 'Inferred from worked examples; see the profile explanation for the limits of this choice.');
+            }
             button.addEventListener('click', function () {
               select.value = entry.value;
               markDifferences();
@@ -5393,7 +5394,7 @@
        */
       document.getElementById('preset-key').textContent =
         'Green values differ from yours. "Sources differ" marks disagreement ' +
-        'between documented choices. ! means not recorded: the value shown ' +
+        'between recorded choices; inferred choices are labelled. ! means not recorded: the value shown ' +
         'is the page fallback, not a documented choice from that source.';
     };
 
@@ -5414,8 +5415,7 @@
       main.hidden = true;
       page.hidden = false;
       if (window.scrollTo) window.scrollTo(0, 0);
-      var heading = document.getElementById('preset-page-title');
-      if (heading.focus) heading.focus();
+      if (page.focus) page.focus();
     };
     var closePage = function () {
       page.hidden = true;
@@ -5450,7 +5450,7 @@
       var revision = ++settingsRevision;
       persistenceStatus = '';
       var preset = PRESETS[name];
-      var label = preset ? preset.label : 'My custom settings';
+      var label = preset ? preset.label : 'Custom Choice';
       applySettings(wanted);
       /*
        * The picker names what was applied. It is set by the reader in the one
@@ -5539,13 +5539,7 @@
     choice.addEventListener('change', function () {
       var name = this.value;
       apply(name);
-      try {
-        window.localStorage.setItem(DEFAULT_SETTINGS_KEY, name);
-        persistenceStatus = 'Custom settings updated.';
-      } catch (e) {
-        persistenceStatus = SAVE_FAILED;
-      }
-      sayStatus('');
+      storeAsDefault(currentSettings(), name);
     });
 
     /*
@@ -5569,37 +5563,83 @@
 
     document.getElementById('preset-back').addEventListener('click', closePage);
 
-    var SAVE_FAILED = 'Applied for this session, but couldn’t save your custom settings.';
-    // Only explicit user edits reach this writer; restoration never does.
-    var storeAsDefault = function (values) {
+    var SAVE_FAILED = 'Applied for this session, but the database settings could not be saved.';
+    var storeAsDefault = function (values, selected) {
+      if (settingsStartupPending) settingsStartupTouched = true;
       ++settingsRevision;
-      var previous, wroteValues = false;
-      try {
-        previous = window.localStorage.getItem(MY_SETTINGS_KEY);
-        window.localStorage.setItem(MY_SETTINGS_KEY,
-          JSON.stringify({ name: 'My custom settings', values: values }));
-        wroteValues = true;
-        window.localStorage.setItem(DEFAULT_SETTINGS_KEY, 'mine');
-      } catch (e) {
-        // Best-effort rollback if selecting the newly written default failed.
-        if (wroteValues) {
-          try {
-            if (previous === null) window.localStorage.removeItem(MY_SETTINGS_KEY);
-            else window.localStorage.setItem(MY_SETTINGS_KEY, previous);
-          } catch (ignored) { /* Storage may have become unavailable entirely. */ }
-        }
-        persistenceStatus = SAVE_FAILED;
-        what.textContent = '';
-        sayStatus('');
-        return false;
-      }
+      savedCustom = {name: 'Custom Choice', values: JSON.parse(JSON.stringify(values))};
+      selectedDefault = selected || 'mine';
       showMine();
-      choice.value = 'mine';
-      persistenceStatus = 'Custom settings updated.';
+      choice.value = selectedDefault;
+      persistenceStatus = settingsStore ? 'Saving settings to database…' : SAVE_FAILED;
       what.textContent = '';
       sayStatus('');
-      return true;
+      if (settingsStore) settingsStore.save(values, selectedDefault === 'mine' ? 'custom' : selectedDefault);
+      return !!settingsStore;
     };
+
+    presetRestore = function (body) {
+      (body.profiles || []).forEach(function (row) {
+        if (!PRESETS[row.profile_key]) return;
+        var valid = RECKONING_IDS.every(function (id) {
+          return Array.prototype.some.call(document.getElementById(id).options,
+            function (o) { return o.value === row.choices[id]; });
+        });
+        if (!valid) return;
+        serverProfiles[row.profile_key] = row.choices;
+      });
+      var custom = body.custom;
+      if (!custom) {
+        // Import old browser choices once; subsequent sessions load the server.
+        try {
+          var old = JSON.parse(window.localStorage.getItem(MY_SETTINGS_KEY) || 'null');
+          if (old) {
+            var values = old.values || old;
+            var complete = Object.assign({}, settingsForPreset(BASE_CHOICE));
+            RECKONING_IDS.forEach(function (id) {
+              if (Array.prototype.some.call(document.getElementById(id).options,
+                function (o) { return o.value === values[id]; })) complete[id] = values[id];
+            });
+            savedCustom = {name:'Custom Choice', values:complete};
+            settingsStore.save(complete, 'custom');
+            custom = {choices:complete,selected_preset:'custom'};
+          }
+        } catch (ignored) { /* An unavailable legacy store is not required. */ }
+      }
+      // New and incomplete custom choices start with Rao; retain every valid
+      // saved value. Save the completed map back to the same database row.
+      var completed = Object.assign({}, settingsForPreset(BASE_CHOICE));
+      var prior = custom && custom.choices || {};
+      RECKONING_IDS.forEach(function (id) {
+        if (Array.prototype.some.call(document.getElementById(id).options,
+          function (o) { return o.value === prior[id]; })) completed[id] = prior[id];
+      });
+      var needsSave = !custom || RECKONING_IDS.some(function (id) {
+        return completed[id] !== prior[id];
+      }) || Object.keys(prior).length !== RECKONING_IDS.length;
+      var selected = custom ? custom.selected_preset : 'custom';
+      if (selected !== 'custom' && !PRESETS[selected]) selected = 'custom';
+      custom = {choices:completed, selected_preset:selected};
+      savedCustom = {name:'Custom Choice', values:completed};
+      selectedDefault = 'mine';
+      showMine();
+      if (needsSave && settingsStore) settingsStore.save(completed, selected);
+      // Birth details never override personal choices. SettingsStore discards
+      // an old load response if the reader has already changed their choices.
+      if (!lastChart) {
+        choice.value = readDefaultChoice();
+        applySettings(custom ? custom.choices : settingsForPreset(readDefaultChoice()));
+        explain(choice.value);
+      }
+      markDrift();
+    };
+    var databaseStatus = function (text) {
+      persistenceStatus = text;
+      sayStatus('');
+    };
+    // Set after the page is initialized, where ownerToken and settings controls
+    // are ready. Tests can substitute the same interface without a network.
+    presetRestore.status = databaseStatus;
 
     var updateFromEditor = function () {
       var values = {};
@@ -5618,18 +5658,9 @@
     };
 
     forget.addEventListener('click', function () {
-      var failed = false;
-      try {
-        window.localStorage.setItem(DEFAULT_SETTINGS_KEY, BASE_CHOICE);
-        window.localStorage.removeItem(MY_SETTINGS_KEY);
-      } catch (e) { failed = true; }
-      choice.value = BASE_CHOICE;
       closePage();
-      showMine();
       apply(BASE_CHOICE);
-      persistenceStatus = failed ? SAVE_FAILED
-        : 'Reset to ' + PRESETS[BASE_CHOICE].label + '.';
-      sayStatus('');
+      storeAsDefault(currentSettings(), BASE_CHOICE);
     });
     showMine();
     choice.value = readDefaultChoice();
@@ -5822,7 +5853,8 @@
    ['mean-source', { classical: 'Cheshta kendras now read the classical mean longitudes.',
                      modern: 'Cheshta kendras now read the modern mean longitudes.' }],
    ['luminary-rule', { kendra: 'The Sun and Moon now take their own cheshta kendras.',
-                       borrowed: 'The Sun and Moon now borrow their ayana and paksha bala.' }],
+                       borrowed: 'The Sun and Moon now borrow their ayana and paksha bala.',
+                       'sun-ayana': 'The Sun now uses ayana bala and the Moon her cheshta kendra.' }],
    ['luminary-cheshta', { counted: 'The Sun\u2019s and Moon\u2019s cheshta bala now counts in the total.',
                           omitted: 'The Sun\u2019s and Moon\u2019s cheshta bala is shown but not counted.' }],
    ['ishta-kashta', { sripati: 'Ishta and kashta are the square roots Sripatipaddhati asks for.',
@@ -6073,6 +6105,7 @@
 
   /** Empty the form so the next chart starts from nothing. */
   function blankForm() {
+    submitAfterSettings = false;
     document.getElementById('name').value = '';
     writeDate('');
     hourInput.value = ''; minuteInput.value = ''; secondInput.value = '';
@@ -6106,12 +6139,6 @@
     writeDate(state.y + '-' + String(state.mo).padStart(2, '0') + '-' +
       String(state.d).padStart(2, '0'));
     writeTime(state.h, state.mi, state.time.second);
-    /*
-     * Not the reckoning. This puts the chart on screen back into the form so
-     * it can be corrected, and that chart was cast with the settings in force
-     * now, so writing them back is at best a no-op and at worst a way for a
-     * stale copy to overwrite a live choice.
-     */
     document.getElementById('gender').value =
       (!state.gender || state.gender === 'unstated') ? '' : state.gender;
     document.getElementById('celebrity').checked = state.celebrity === true;
@@ -6167,17 +6194,14 @@
         (state.time.second ? ':' + String(state.time.second).padStart(2, '0') : ''),
       'lat=' + p.lat.toFixed(4), 'lon=' + p.lon.toFixed(4), 'tz=' + encodeURIComponent(p.zone),
       'place=' + encodeURIComponent(placeLabelOf(p)),
-      'ay=' + encodeURIComponent(state.ayanamsa),
-      'node=' + (state.trueNode ? 'true' : 'mean'),
       'g=' + encodeURIComponent(state.gender || 'unstated'),
       'public=' + (state.celebrity ? 'true' : 'false')
     ];
-    if (state.standard === 'lmt') parts.push('std=lmt');
     parts.push('n=' + encodeURIComponent(state.name));
     history.replaceState(null, '', '#' + parts.join('&'));
   }
 
-  /** Restore a chart from the URL, so a generated chart can be bookmarked. */
+  /** Restore birth details; even older links use the current Custom Choice. */
   function readHash() {
     if (!location.hash || location.hash.length < 2) return;
     var q = {};
@@ -6190,12 +6214,6 @@
     var t = q.t.split(':');
     writeTime(+t[0], +(t[1] || 0), +(t[2] || 0));
     document.getElementById('name').value = q.n || '';
-    document.getElementById('time-standard').value = q.std === 'lmt' ? 'lmt' : 'zone';
-    if (q.ay && Array.prototype.some.call(document.getElementById('ayanamsa').options,
-      function (option) { return option.value === q.ay; })) {
-      document.getElementById('ayanamsa').value = q.ay;
-    }
-    document.getElementById('node-type').value = q.node === 'mean' ? 'mean' : 'true';
     document.getElementById('gender').value =
       q.g === 'female' || q.g === 'male' || q.g === 'other' ? q.g : '';
     document.getElementById('celebrity').checked = q.public === 'true';
@@ -6257,21 +6275,42 @@
     placeNote.textContent = 'This browser lacks historical timezone data, so births before ' +
       '1970 may use a modern offset. Chrome, Safari and Firefox all handle it.';
   }
-  /*
-   * A reader's own default, applied before the hash is read. A shared link
-   * carries the settings its chart was cast with and has to win: the point of
-   * the link is that it opens the same chart for whoever follows it, which a
-   * stranger's stored preference would quietly undo.
-   */
+  // Start with the template, then load the personal choice before casting a
+  // linked or saved chart. Charts supply birth details, never settings.
   applySettings(settingsForPreset(readDefaultChoice()) || {});
+  var initialChartHash = location.hash;
+  var noteStartupInteraction = function () {
+    if (settingsStartupPending) settingsStartupTouched = true;
+  };
+  var finishSettingsStartup = function () {
+    settingsStartupPending = false;
+    ['input', 'change', 'submit'].forEach(function (type) {
+      if (document.removeEventListener) document.removeEventListener(type, noteStartupInteraction, true);
+    });
+    if (submitAfterSettings) {
+      submitAfterSettings = false;
+      form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit'));
+    } else if (!settingsStartupTouched && !lastChart && location.hash === initialChartHash) readHash();
+    if (presetMarkDrift) presetMarkDrift();
+  };
+  if (window.SettingsStore && window.fetch) {
+    var settingsOwner = ownerToken();
+    if (settingsOwner) {
+      settingsStore = window.SettingsStore.create({
+        url: 'https://deiefjnwbfcywsaaqqbs.supabase.co/functions/v1/settings',
+        token: settingsOwner,
+        fetch: window.fetch.bind(window),
+        status: function (text) { if (presetRestore) presetRestore.status(text); }
+      });
+      settingsStartupPending = true;
+      ['input', 'change', 'submit'].forEach(function (type) {
+        document.addEventListener(type, noteStartupInteraction, true);
+      });
+      settingsStore.load(function (body) { if (presetRestore) presetRestore(body); })
+        .then(finishSettingsStartup);
+      window.addEventListener('online', function () { settingsStore.flush(); });
+    }
+  }
+  if (!settingsStartupPending) finishSettingsStartup();
 
-  readHash();
-
-  /*
-   * And the picker is told what the link did. A shared link carries the
-   * settings its chart was cast with and wins over the stored choice, so the
-   * page can open reading one thing while the picker names another: a link
-   * made on KP left it saying "Standard default" with the zodiac moved.
-   */
-  if (presetMarkDrift) presetMarkDrift();
 })();

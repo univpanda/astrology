@@ -8,16 +8,25 @@
 # keeping two hand-maintained versions that could drift.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+if [[ -n "$(git status --porcelain)" ]]; then
+  echo "Commit the release before deploying; the working tree is not clean." >&2
+  exit 1
+fi
+REVISION="$(git rev-parse HEAD)"
+RELEASE_DIR="$(mktemp -d)"
+trap 'rm -rf "$RELEASE_DIR"' EXIT
+git archive "$REVISION" | tar -x -C "$RELEASE_DIR"
+cd "$RELEASE_DIR"
 
 PROJECT_REF="${SUPABASE_PROJECT_REF:-deiefjnwbfcywsaaqqbs}"
 node scripts/build-edge-module.mjs
 
 # These are deliberately reachable without a Supabase JWT. Chart and readings
-# are public; kundalis authorises every operation with its own unguessable owner
+# are public; kundalis and settings authorise operations with an unguessable owner
 # token and reaches its RLS-closed table only through the service role inside the
 # function. Requiring a JWT here would break that account-free capability model.
-for function_name in chart readings kundalis; do
+for function_name in chart readings kundalis settings; do
   supabase functions deploy "$function_name" --project-ref "$PROJECT_REF" --no-verify-jwt
 done
 
-echo "deployed chart, readings and kundalis to https://${PROJECT_REF}.supabase.co/functions/v1/"
+echo "deployed chart, readings, kundalis and settings at revision $REVISION to https://${PROJECT_REF}.supabase.co/functions/v1/"
