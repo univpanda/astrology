@@ -862,7 +862,7 @@ input::placeholder { color: #a9bdb2; }
 }
 .preset-table th:first-child { width: 16%; }
 .preset-table th:nth-child(2) { width: 24%; }
-.preset-table th:nth-child(n + 3) { width: 20%; }
+.preset-table th:nth-child(n + 3) { width: 15%; }
 .preset-table th,
 .preset-table td {
   padding: 0.35rem 0.4rem;
@@ -937,11 +937,14 @@ button.preset-cell:hover { border-color: var(--ink-soft); }
 .preset-cell-unrecorded { display: block; cursor: default; }
 .preset-unrecorded-mark { color: var(--ink-soft); text-decoration: none; cursor: help; }
 .preset-key { margin: 0.9rem 0 0; max-width: 46rem; }
-.preset-cell-differs {
-  color: var(--green-deep);
-  border-color: var(--green);
-  background: var(--green-soft);
-}
+/*
+ * A tint and nothing else. It also carried a border and a deeper green on the
+ * words, which drew three marks around one fact and made every highlighted
+ * cell read as a button pressed rather than as a value that differs. The
+ * transparent border on .preset-cell stays, so nothing shifts when a cell is
+ * hovered and given one.
+ */
+.preset-cell-differs { background: var(--green-soft); }
 /*
  * The name of a group, opening its own tbody. The page keeps these settings in
  * two tabs - the readings that change the chart, and the ones that only move a
