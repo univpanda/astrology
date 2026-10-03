@@ -8786,5 +8786,105 @@ console.log('\nChalit rejects overlapping polar geometry');
     valid+' valid charts; '+unavailable+' unavailable');
 })();
 
+console.log('\nBhava bala, against the worked chart it is taken from');
+/*
+ * The K. N. Rao textbook carries one chart through its three bhava bala
+ * chapters and prints every intermediate table, so each share is checked
+ * against its own figures rather than against a total that could hide two
+ * errors cancelling.
+ *
+ * Its cusps and its planet longitudes are used rather than this engine's
+ * ephemeris, because what is under test is the bala and not the positions.
+ */
+(function () {
+  var cusps = Astro.bhavaCusps(267.07, 192.43);
+  var LON = { Sun: 154.82, Moon: 120.03, Mars: 154.90, Mercury: 138.27,
+    Jupiter: 165.78, Venus: 195.07, Saturn: 225.70 };
+  var positions = {};
+  Object.keys(LON).forEach(function (g) { positions[g] = { longitude: LON[g] }; });
+  /* A waning Moon, 325 degrees of elongation, so she is in the malefic group. */
+  var benefics = { Sun: false, Moon: false, Mars: false, Mercury: true,
+    Jupiter: true, Venus: true, Saturn: false };
+
+  /*
+   * Chapter 11's directional strengths, all twelve. The two Sagittarius
+   * bhavas are the point of it: the first is past fifteen degrees and
+   * quadruped, the twelfth is before it and human, so one sign is two kinds
+   * in one chart and gives 30 in one house and 50 in the other.
+   */
+  var DIG = [30, 50, 50, 0, 10, 10, 0, 40, 20, 30, 20, 50];
+  var wrongDig = cusps.filter(function (c, i) {
+    return Shadbala.bhavaDigBala(c) !== DIG[i];
+  });
+  ok('every directional strength is the one the book prints', wrongDig.length === 0,
+    wrongDig.map(function (c) { return c.bhava; }).join(',') || 'all twelve');
+  ok('and one sign is read as two kinds, split at its middle',
+    Shadbala.bhavaKind(8, 27.07) === 'chatushpada' &&
+    Shadbala.bhavaKind(8, 2.18) === 'nara' &&
+    Shadbala.bhavaKind(9, 2) === 'chatushpada' &&
+    Shadbala.bhavaKind(9, 20) === 'jalachara');
+
+  /*
+   * Chapter 12's aspectual strengths. Nine of the twelve come out to the
+   * hundredth; the three that do not are the book's own, and both causes are
+   * worth recording rather than rounding away.
+   *
+   *   Bhava I: its malefic table gives Mars 33.92 with no special aspect,
+   *   though Mars is 112.17 from that madhya and so aspects it by the fourth.
+   *   Jupiter and Saturn are given both of theirs in the same table, so this
+   *   is a slip and not a rule. Omitting it is worth exactly a quarter of
+   *   fifteen, which is the 3.75 the two differ by.
+   *
+   *   Bhava IX: its kendra table prints the Moon at 33.27, where its own
+   *   longitudes give 157.30 - 120.03 = 37.27. The aspect value it then
+   *   prints, 1.64, is what 33.27 yields, so the slip is carried forward.
+   *
+   * The engine follows the rule in both places, which is also what its drik
+   * bala does for grahas, reconciled there against Raman's Example 54.
+   */
+  var DRISHTI = [48.20, 45.34, 47.19, 62.13, 38.92, 47.85,
+                 3.58, -3.83, -12.71, 3.34, 25.73, 43.47];
+  var SLIPS = { 1: 'Mars’ fourth aspect omitted', 9: 'the Moon’s kendra mistyped' };
+  var got = cusps.map(function (c) {
+    return Shadbala.bhavaDrishtiBala(c, positions, benefics);
+  });
+  var off = cusps.filter(function (c, i) {
+    return !SLIPS[c.bhava] && Math.abs(got[i] - DRISHTI[i]) > 0.03;
+  });
+  ok('every aspectual strength the book gets right, this gets right',
+    off.length === 0,
+    off.map(function (c) { return c.bhava; }).join(',') || 'nine of nine');
+
+  ok('and the two it gets wrong differ by exactly what its slips are worth',
+    Math.abs((got[0] - DRISHTI[0]) + 15 / 4) < 0.02 &&
+    Math.abs(got[8] - (-13.21)) < 0.02,
+    'bhava I out by ' + (got[0] - DRISHTI[0]).toFixed(2) +
+    ', a quarter of Mars’ fifteen');
+
+  /*
+   * And the three shares sum as the book sums them. Checked on the bhavas it
+   * gets right, with the lord's own strength taken from its printed table so
+   * this tests the sum rather than the shadbala underneath it.
+   */
+  var ADHIPATI = [468.83, 433.29, 468.83, 349.76, 301.50, 434.59,
+                  434.59, 482.80, 434.59, 301.50, 349.76, 468.83];
+  var TOTAL = [547.03, 528.63, 566.04, 411.89, 350.42, 492.44,
+               438.17, 518.97, 441.88, 334.84, 395.49, 562.30];
+  var sums = cusps.filter(function (c, i) {
+    return Math.abs(ADHIPATI[i] + DIG[i] + DRISHTI[i] - TOTAL[i]) > 0.02;
+  });
+  ok('the three shares add to the total it prints', sums.length === 0);
+  ok('and a rupa is sixty shashtiamsas',
+    Math.abs(TOTAL[0] / 60 - 9.12) < 0.005 &&
+    Math.abs(TOTAL[11] / 60 - 9.37) < 0.005);
+
+  /* The lord of a bhava is the lord of the sign its madhya falls in, so two
+     bhavas sharing a sign share a lord and a figure. */
+  ok('two bhavas in one sign take one lord and one figure',
+    Astro.SIGN_LORDS[cusps[5].sign] === 'Mercury' &&
+    Astro.SIGN_LORDS[cusps[6].sign] === 'Mercury' &&
+    ADHIPATI[5] === ADHIPATI[6]);
+})();
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
 process.exit(fail ? 1 : 0);

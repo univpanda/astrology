@@ -1330,8 +1330,123 @@ var Shadbala = (function () {
     return CHALDEAN[(from + index) % 7];
   }
 
+  /* ------------------------------------------------------- bhava bala */
+
+  /*
+   * The strength of a house rather than of a graha, in the three shares the
+   * K. N. Rao textbook works it in: the strength of its lord, its directional
+   * strength, and what aspects it.
+   *
+   * It is read on the chalit and not on the signs. The sign of a bhava is the
+   * sign its madhya falls in, so two bhavas can take the same lord and the
+   * same figure - which is why this takes cusps rather than an ascendant.
+   */
+
+  /*
+   * The four kinds of sign, and the bhava each kind is weakest in. Strength
+   * runs from that house: six houses away is the strongest, the house itself
+   * the weakest, ten shashtiamsas a house.
+   *
+   * Sagittarius and Capricorn are of two kinds, split at the middle, so the
+   * kind is read from the madhya's own degree and not from the sign alone. One
+   * sign can therefore be human in one bhava and quadruped in the next, which
+   * the textbook's own example shows: its lagna is Sagittarius past 15 and
+   * quadruped, its twelfth is Sagittarius before 15 and human.
+   */
+  var WEAKEST_IN = { nara: 7, chatushpada: 4, jalachara: 10, keeta: 1 };
+
+  function bhavaKind(sign, degreeInSign) {
+    if (sign === 7) return 'keeta';                               // Scorpio
+    if (sign === 3 || sign === 11) return 'jalachara';            // Cancer, Pisces
+    if (sign === 8) return degreeInSign < 15 ? 'nara' : 'chatushpada';   // Sagittarius
+    if (sign === 9) return degreeInSign < 15 ? 'chatushpada' : 'jalachara'; // Capricorn
+    if (sign === 2 || sign === 5 || sign === 6 || sign === 10) return 'nara';
+    return 'chatushpada';                                         // Aries, Taurus, Leo
+  }
+
+  function bhavaDigBala(cusp) {
+    var weakest = WEAKEST_IN[bhavaKind(cusp.sign, cusp.degreeInSign)];
+    var apart = Math.abs(weakest - cusp.bhava);
+    // Never more than six houses from anywhere, the zodiac being a circle.
+    return (apart > 6 ? 12 - apart : apart) * 10;
+  }
+
+  /*
+   * What aspects the bhava, read exactly as drik bala reads what aspects a
+   * graha, with the kendra measured from the planet to the madhya. Two things
+   * differ, and both are the textbook's:
+   *
+   *   Mercury counts as a benefic here whatever company it keeps. It cites
+   *   Raman's Graha aur Bhava Bala and Vimal Prasad Jain for it.
+   *
+   *   Mercury's and Jupiter's drishti is not quartered. Everything else is.
+   *   Its Example 1 settles it: the first bhava wants 67.31 from the benefics,
+   *   and Mercury 21.20 and Jupiter 39.36 whole with Venus 27.00 quartered is
+   *   67.31 to the hundredth, where quartering all three gives 21.89.
+   */
+  var WHOLE_DRISHTI = { Mercury: true, Jupiter: true };
+
+  function bhavaDrishtiBala(cusp, positions, benefics) {
+    var quartered = 0, whole = 0;
+    GRAHAS.forEach(function (other) {
+      if (!positions[other]) return;
+      var dk = Astro.norm360(cusp.madhya - positions[other].longitude);
+      var value = drishtiValue(dk);
+      var special = VISESHA[other];
+      if (special && special.at.some(function (span) {
+        return dk >= span[0] && dk < span[1];
+      })) value += special.value;
+      if (!value) return;
+      var kind = other === 'Mercury' ? true : benefics[other];
+      var signed = kind ? value : -value;
+      if (WHOLE_DRISHTI[other]) whole += signed; else quartered += signed;
+    });
+    return quartered / 4 + whole;
+  }
+
+  /**
+   * The three shares and their sum, for each of the twelve bhavas.
+   *
+   * `cusps` comes from Astro.bhavaCusps; without them there is no chalit and
+   * so no bhava bala, which is the case at the latitudes where the quadrants
+   * degenerate.
+   */
+  function bhavaBala(chart, place, cusps, options) {
+    if (!cusps) return null;
+    var strengths = compute(chart, place, options);
+    var positions = {};
+    chart.planets.forEach(function (p) { positions[p.name] = p; });
+    var benefics = Astro.naturalBenefics(chart, options);
+    return cusps.map(function (cusp) {
+      var lord = Astro.SIGN_LORDS[cusp.sign];
+      var held = strengths.grahas[lord];
+      var adhipati = held ? held.totalShashtiamsa : 0;
+      var dig = bhavaDigBala(cusp);
+      var drishti = bhavaDrishtiBala(cusp, positions, benefics);
+      var total = adhipati + dig + drishti;
+      return {
+        bhava: cusp.bhava,
+        sign: cusp.sign,
+        kind: bhavaKind(cusp.sign, cusp.degreeInSign),
+        lord: lord,
+        adhipati: adhipati,
+        dig: dig,
+        drishti: drishti,
+        total: total,
+        rupas: total / 60
+      };
+    });
+  }
+
   return {
     compute: compute,
+    bhavaBala: bhavaBala,
+    // The three shares are exported as well as the sum, so each can be run
+    // against the book's own intermediate tables rather than only the total,
+    // which could hide two errors cancelling.
+    bhavaDigBala: bhavaDigBala,
+    bhavaDrishtiBala: bhavaDrishtiBala,
+    bhavaKind: bhavaKind,
     // Exported only so Raman's Example 33 can be checked against it directly.
     // The constants in it were wrong for a long time and nothing caught it,
     // because every test went through a total that the error was too small to
