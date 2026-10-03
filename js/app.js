@@ -948,6 +948,7 @@
      */
     drawCharts();
     renderShadbala(state);
+    renderBhavaBala(state);
     renderVargas(state);
     renderYogas(state);
     renderAspects(state);
@@ -2317,13 +2318,13 @@
    * strong, which is the same reading the Shadbala tab prints; computing it twice
    * would let the two drift apart over a rounding change.
    */
-  function strengthsFor(state) {
-    if (!state.shadbala) {
-      state.shadbala = Shadbala.compute(state.chart, {
-        latitude: state.place.lat,
-        longitude: state.place.lon,
-        tzOffsetMinutes: state.offset
-      }, { moonPaksha: document.getElementById('moon-paksha').value,
+  /*
+   * Every reading the strength module takes, read off the controls in one
+   * place. The bhava balas rest on the same shadbala, so a second copy of this
+   * list would have let the two tables answer to different settings.
+   */
+  function shadbalaOptions() {
+    return { moonPaksha: document.getElementById('moon-paksha').value,
            natClock: document.getElementById('nat-clock').value,
            horaLength: document.getElementById('hora-length').value,
            kranti: document.getElementById('kranti').value,
@@ -2338,7 +2339,16 @@
            tatkalika: tatkalikaSetting(),
            horaDignity: horaSetting(),
            horaMercury: horaMercurySetting(),
-           saptavargajaLadder: ladderSetting() });
+           saptavargajaLadder: ladderSetting() };
+  }
+
+  function strengthsFor(state) {
+    if (!state.shadbala) {
+      state.shadbala = Shadbala.compute(state.chart, {
+        latitude: state.place.lat,
+        longitude: state.place.lon,
+        tzOffsetMinutes: state.offset
+      }, shadbalaOptions());
     }
     return state.shadbala;
   }
@@ -3012,6 +3022,87 @@
     document.getElementById('shadbala-table-scroll').hidden = asChart;
     document.getElementById('shadbala-as-chart').setAttribute('aria-pressed', String(asChart));
     document.getElementById('shadbala-as-table').setAttribute('aria-pressed', String(!asChart));
+  }
+
+  /*
+   * The strength of a house rather than of a graha, in the three shares the
+   * K. N. Rao textbook gives it: the strength of the lord of the sign its
+   * madhya falls in, its directional strength, and what aspects the madhya.
+   *
+   * Read on the chalit, so two bhavas falling in one sign take the same lord
+   * and the same first figure, and the panel says which sign each is rather
+   * than leaving a repeated number looking like a mistake.
+   *
+   * The residential strength of each graha goes beside it. It is not a bhava
+   * bala and is not added in: it says how much of its own house a graha gets,
+   * nothing at a sandhi and the whole sixty at a madhya, so it belongs with
+   * the houses rather than with the six.
+   */
+  function renderBhavaBala(state) {
+    var table = document.getElementById('bhava-table');
+    var head = table.querySelector('thead tr');
+    var tbody = table.querySelector('tbody');
+    var note = document.getElementById('bhava-note');
+    head.innerHTML = '';
+    tbody.innerHTML = '';
+
+    var cusps = state.chart.midheaven
+      ? Astro.bhavaCusps(state.chart.ascendant.longitude,
+          state.chart.midheaven.longitude)
+      : null;
+    var rows = cusps ? Shadbala.bhavaBala(state.chart, {
+      latitude: state.place.lat, longitude: state.place.lon,
+      tzOffsetMinutes: state.offset
+    }, cusps, shadbalaOptions()) : null;
+    if (!rows) {
+      note.textContent = CHALIT_UNAVAILABLE;
+      return;
+    }
+
+    [['Bhava', 'Counted from the ascendant, which is the first.'],
+     ['Sign', 'The sign the bhava’s madhya falls in. Two bhavas may share one.'],
+     ['Lord', 'The lord of that sign, whose own shadbala is the first share.'],
+     ['Lord’s strength', 'Its shadbala total, in shashtiamsas.'],
+     ['Directional', 'Ten shashtiamsas a house from the one its kind of sign is weakest in.'],
+     ['Aspectual', 'What aspects the madhya, benefics less malefics.'],
+     ['Total', 'The three added.'],
+     ['Rupas', 'The total over sixty.']].forEach(function (col) {
+      var th = el('th', null, col[0]);
+      th.setAttribute('scope', 'col');
+      th.title = col[1];
+      head.appendChild(th);
+    });
+
+    var strongest = rows.reduce(function (best, r) {
+      return r.total > best.total ? r : best;
+    }, rows[0]);
+    var n = function (v) { return v.toFixed(2); };
+    rows.forEach(function (r) {
+      var tr = el('tr', r === strongest ? 'bhava-strongest' : '');
+      var name = el('th', null, Yogas.ordinal(r.bhava));
+      name.setAttribute('scope', 'row');
+      tr.appendChild(name);
+      [Astro.SIGNS[r.sign], Astro.grahaAbbr(r.lord), n(r.adhipati),
+       String(r.dig), n(r.drishti), n(r.total), n(r.rupas)]
+        .forEach(function (cell, i) {
+          var td = el('td', i >= 2 ? 'numeric' : '', cell);
+          tr.appendChild(td);
+        });
+      tbody.appendChild(tr);
+    });
+
+    /*
+     * Beside the table rather than in it: a residential strength belongs to a
+     * graha and the rows are bhavas, so putting it in a column would have
+     * asked which graha a house's residence was.
+     */
+    var living = Shadbala.residentialStrengths(state.chart, cusps);
+    var said = Object.keys(living).map(function (graha) {
+      return Astro.grahaAbbr(graha) + ' ' + living[graha].value.toFixed(1) +
+        ' in the ' + Yogas.ordinal(living[graha].bhava);
+    }).join(', ');
+    note.textContent = 'Residential strength, how much of its own bhava each ' +
+      'graha gets: nothing at a sandhi, sixty at a madhya. ' + said + '.';
   }
 
   function renderVargas(state) {
@@ -6027,7 +6118,7 @@
   setupTabs(['mine', 'figures'],
     document.querySelector('#panel-saved .subtabs'), {});
 
-  var tableTabs = setupTabs(['grahas', 'shadbala', 'vargas', 'yogas', 'aspects'],
+  var tableTabs = setupTabs(['grahas', 'shadbala', 'bhavas', 'vargas', 'yogas', 'aspects'],
     document.querySelector('.tabs.subtabs:not(.graha-charts)'));
   wireGrahaChartKeys();
   wireSettingHelp();

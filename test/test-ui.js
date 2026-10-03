@@ -966,7 +966,8 @@ ok('and every scrolling table really does head its rows with a th', (function ()
   // Seven since the yogas became a table, its rows headed by the yoga's name.
   // Eight since the settings comparison, which is not a scrolling table but is
   // headed the same way: a row is a setting, so the setting names the row.
-  return (appSrc.match(/setAttribute\('scope', 'row'\)/g) || []).length === 8 &&
+  // Nine since bhava bala, whose rows are houses and are named by them.
+  return (appSrc.match(/setAttribute\('scope', 'row'\)/g) || []).length === 9 &&
     !/'rowgroup'/.test(appSrc) &&
     (appSrc.match(/el\(i === 0 \? 'th' : 'td'/g) || []).length === 1;
 })());
@@ -1197,12 +1198,12 @@ function stripHtml(label) {
      /id="tab-shadbala"[\s\S]{0,140}aria-controls="panel-shadbala"/.test(html) &&
      html.indexOf('id="panel-shadbala"') > html.indexOf('id="panel-table-b"') &&
      html.indexOf('id="panel-shadbala"') < html.indexOf('class="two-col"'));
-  ok('the table strip holds five tabs', (function () {
+  ok('the table strip holds six tabs', (function () {
     var strip = stripHtml('Graha tables');
-    return (strip.match(/role="tab"/g) || []).length === 5;
+    return (strip.match(/role="tab"/g) || []).length === 6;
   })());
   ok('the table strip is a real tablist',
-     ['grahas', 'shadbala', 'vargas', 'yogas', 'aspects'].every(function (n) {
+     ['grahas', 'shadbala', 'bhavas', 'vargas', 'yogas', 'aspects'].every(function (n) {
     return new RegExp('id="tab-' + n + '"[\\s\\S]{0,140}aria-controls="panel-' + n + '"').test(html) &&
            new RegExp('id="panel-' + n + '"[^>]*aria-labelledby="tab-' + n + '"').test(html);
   }));
@@ -1212,7 +1213,8 @@ function stripHtml(label) {
   ok('one tab implementation still serves every strip',
      (appSrc.match(/function setupTabs/g) || []).length === 1 &&
      (appSrc.match(/setupTabs\(/g) || []).length === 4 &&
-     /setupTabs\(\['grahas', 'shadbala', 'vargas', 'yogas', 'aspects'\]/.test(appSrc));
+     /setupTabs\(\['grahas', 'shadbala', 'bhavas', 'vargas', 'yogas', 'aspects'\]/
+       .test(appSrc));
   // Two chart slots, and one table reading both of them plus the rashi.
   ok('there are two chart slots, each with two selects', ['a', 'b'].every(function (slot) {
     return new RegExp('id="ref-' + slot + '"').test(html) &&
@@ -4040,6 +4042,7 @@ ok('every script the page loads parses', (function () {
     '  __out.applySettings = applySettings;\n' +
     '  __out.lastChart = function () { return lastChart; };\n' +
     '  __out.renderShadbala = renderShadbala; __out.renderYogas = renderYogas;\n' +
+    '  __out.renderBhavaBala = renderBhavaBala;\n' +
     '  __out.renderAspects = renderAspects;\n' +
     '  __out.rotatedOnto = rotatedOnto;\n' +
     '  __out.yogasByGraha = yogasByGraha;\n' +
@@ -4937,7 +4940,8 @@ ok('and the library is the one naming all four schemes together',
    /Shadvarga, Saptavarga, Dasavarga and Shodasavarga/.test(seeds));
 
 ok('it renders whenever a chart does',
-   /renderShadbala\(state\);\s*\n\s*renderVargas\(state\);/.test(appSrc));
+   /renderShadbala\(state\);\s*\n\s*renderBhavaBala\(state\);\s*\n\s*renderVargas\(state\);/
+     .test(appSrc));
 ok('it reads the division list from the engine rather than repeating it',
    (function () {
      var code = appSrc.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
@@ -12251,6 +12255,82 @@ console.log('\nChalit draws the bhavas, not the signs');
     return fromMoon.Moon['data-house'] === 'House 1' &&
       Astro.bhavaOf(moon.longitude, cusps) === Number(
         (chalit.Moon['data-house'] || '').replace('House ', ''));
+  })());
+})();
+
+console.log('\nThe Bhava Bala tab');
+/*
+ * Twelve rows, one per bhava, each carrying the three shares and their sum.
+ * Driven through the renderer the page calls, so what is checked is what a
+ * reader sees rather than what the engine returns.
+ */
+(function () {
+  var out = global.appExports || {};
+  if (!out.renderBhavaBala) { ok('the bhava panel can be driven', false); return; }
+  var chart = Astro.chart({ jdUT: Astro.julianDay(1980, 9, 21, 8 + 39 / 60 - 5.5),
+    latitude: 19.0728, longitude: 72.8826, tzOffsetMinutes: 330 });
+  out.setLastChart({ chart: chart,
+    place: { lat: 19.0728, lon: 72.8826, zone: 'Asia/Kolkata' }, offset: 330,
+    name: 'T', standard: 'zone', ayanamsa: 'lahiri', trueNode: true,
+    time: { hour12: 8, minute: 39, second: 0, meridiem: 'am' },
+    y: 1980, mo: 9, d: 21, h: 8, mi: 39, shadbala: null });
+  out.renderBhavaBala(out.lastChart());
+
+  var textOf = function (n) {
+    return [n.textContent == null ? '' : n.textContent]
+      .concat(n.children.map(textOf)).filter(function (t) { return t !== ''; })
+      .join(' ').replace(/\s+/g, ' ').trim();
+  };
+  var rows = [];
+  (function walk(n) {
+    if (n.tag === 'tbody') n.children.forEach(function (tr) {
+      if (tr.tag === 'tr') rows.push(tr.children.map(textOf));
+    });
+    n.children.forEach(walk);
+  })(out.byId('bhava-table'));
+
+  ok('twelve bhavas, each with its sign, lord and three shares',
+    rows.length === 12 && rows.every(function (r) { return r.length === 8; }),
+    rows.length + ' rows');
+  ok('and the three shares add to the total it prints', rows.every(function (r) {
+    return Math.abs(Number(r[3]) + Number(r[4]) + Number(r[5]) - Number(r[6])) < 0.02 &&
+      Math.abs(Number(r[6]) / 60 - Number(r[7])) < 0.01;
+  }));
+  /*
+   * Read on the chalit, so two bhavas whose madhyas fall in one sign take the
+   * same lord and the same first figure. On a whole-sign reading that could
+   * never happen, and a reader seeing a repeated number would take it for a
+   * fault rather than for the thing the chalit is showing them.
+   */
+  ok('two bhavas sharing a lord carry the same strength for it', (function () {
+    var byLord = {};
+    rows.forEach(function (r) { (byLord[r[2]] = byLord[r[2]] || []).push(r[3]); });
+    var shared = Object.keys(byLord).filter(function (l) { return byLord[l].length > 1; });
+    return shared.length > 0 && shared.every(function (l) {
+      return byLord[l].every(function (v) { return v === byLord[l][0]; });
+    });
+  })());
+  /* The strongest is marked, so the eye has somewhere to start. */
+  ok('the strongest bhava is marked', (function () {
+    var marked = [];
+    (function walk(n) {
+      if (/bhava-strongest/.test(n.className || '')) marked.push(n);
+      n.children.forEach(walk);
+    })(out.byId('bhava-table'));
+    if (marked.length !== 1) return false;
+    var totals = rows.map(function (r) { return Number(r[6]); });
+    return Math.abs(Math.max.apply(null, totals) -
+      Number(marked[0].children[6].textContent)) < 0.01;
+  })());
+  /*
+   * Residential strength goes beside the table and not in it: it belongs to a
+   * graha where every row is a house, so a column would have had to answer
+   * which graha a house's residence was.
+   */
+  ok('residential strength is named beside it, not in a column', (function () {
+    var said = out.byId('bhava-note').textContent;
+    return /nothing at a sandhi/.test(said) && /in the /.test(said) &&
+      rows.every(function (r) { return r.length === 8; });
   })());
 })();
 

@@ -1839,6 +1839,11 @@ td.vimsopaka-mediocre { color: var(--ink); }
 td.vimsopaka-some { color: var(--ink-soft); }
 td.vimsopaka-poor { color: var(--retro); }
 
+/* The strongest bhava, so the eye has somewhere to start on twelve rows
+   that are otherwise alike. A tint and nothing else, as the settings
+   comparison uses for the same job. */
+tr.bhava-strongest td, tr.bhava-strongest th { background: var(--green-soft); }
+
 /* No hover band here. A row is a division across seven grahas, and lighting the
    whole of it says nothing about the cell under the pointer. The graha table
    keeps its band: a row there is one whole reading across eleven columns. */

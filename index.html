@@ -323,6 +323,8 @@
                 aria-controls="panel-grahas" aria-selected="true">Grahas</button>
         <button type="button" class="tab" role="tab" id="tab-shadbala"
                 aria-controls="panel-shadbala" aria-selected="false" tabindex="-1">Shadbala</button>
+        <button type="button" class="tab" role="tab" id="tab-bhavas"
+                aria-controls="panel-bhavas" aria-selected="false" tabindex="-1">Bhava Bala</button>
         <button type="button" class="tab" role="tab" id="tab-vargas"
                 aria-controls="panel-vargas" aria-selected="false" tabindex="-1">Vimsopaka Bala</button>
         <button type="button" class="tab" role="tab" id="tab-yogas"
@@ -369,6 +371,22 @@
           </table>
         </div>
         <p class="varga-note" id="shadbala-note"></p>
+      </div>
+
+      <!--
+        The strength of a house rather than of a graha. It is read on the
+        chalit, so it needs cusps, and where the angles degenerate there are
+        none and the panel says so instead of printing figures.
+      -->
+      <div id="panel-bhavas" role="tabpanel" aria-labelledby="tab-bhavas" hidden>
+        <div class="table-scroll" id="bhava-table-scroll">
+          <!-- Built in app.js: twelve rows, one per bhava. -->
+          <table id="bhava-table">
+            <thead><tr></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="varga-note" id="bhava-note"></p>
       </div>
 
       <div id="panel-vargas" role="tabpanel" aria-labelledby="tab-vargas" hidden>
