@@ -8825,6 +8825,32 @@ console.log('\nBhava bala, against the worked chart it is taken from');
     Shadbala.bhavaKind(9, 20) === 'jalachara');
 
   /*
+   * And its second worked chart, page 107, which reaches three cases the first
+   * never does: an aquatic sign in the fourth and a keeta in the seventh, both
+   * scoring the whole sixty, and an Aries twelfth whose distance from the
+   * fourth is eight houses and so counts as four the other way round.
+   *
+   * Its eighth and ninth are both Sagittarius and of different kinds, and its
+   * tenth is Capricorn read as aquatic, so the degrees are taken from what the
+   * book calls them rather than from a cusp table it does not print for this
+   * chart.
+   */
+  var SECOND = [
+    [1, 1, 10, 'chatushpada', 30], [2, 2, 10, 'nara', 50],
+    [3, 2, 10, 'nara', 40], [4, 3, 10, 'jalachara', 60],
+    [5, 4, 10, 'chatushpada', 10], [6, 6, 10, 'nara', 10],
+    [7, 7, 10, 'keeta', 60], [8, 8, 5, 'nara', 10],
+    [9, 8, 20, 'chatushpada', 50], [10, 9, 20, 'jalachara', 0],
+    [11, 10, 10, 'nara', 40], [12, 0, 10, 'chatushpada', 40]
+  ];
+  var wrongSecond = SECOND.filter(function (r) {
+    return Shadbala.bhavaKind(r[1], r[2]) !== r[3] ||
+      Shadbala.bhavaDigBala({ bhava: r[0], sign: r[1], degreeInSign: r[2] }) !== r[4];
+  });
+  ok('and every one of its second chart too', wrongSecond.length === 0,
+    wrongSecond.map(function (r) { return r[0]; }).join(',') || 'all twelve');
+
+  /*
    * Chapter 12's aspectual strengths. Nine of the twelve come out to the
    * hundredth; the three that do not are the book's own, and both causes are
    * worth recording rather than rounding away.
@@ -8884,6 +8910,80 @@ console.log('\nBhava bala, against the worked chart it is taken from');
     Astro.SIGN_LORDS[cusps[5].sign] === 'Mercury' &&
     Astro.SIGN_LORDS[cusps[6].sign] === 'Mercury' &&
     ADHIPATI[5] === ADHIPATI[6]);
+})();
+
+console.log('\nA published horoscope, read five ways');
+/*
+ * The K. N. Rao textbook ends on a set of worked horoscopes, each printed as a
+ * rashi chart with four of its divisions. They are an independent check of a
+ * kind the rest of this file does not have: a birth record and the placements
+ * somebody else computed from it, with no intermediate figures to agree on.
+ *
+ * Example Horoscope 4, page 164: 19 November 1917, 23:11, Allahabad. The
+ * nodes are what makes it worth having. Rahu falls at Sagittarius 9.31 by the
+ * true node and 10.57 by the mean, and a dreshkana boundary lies at ten
+ * degrees, so the two readings put it in different signs in D3 and again in
+ * D9. The book's charts are the true node's, which is the default here.
+ */
+(function () {
+  var lat = 25.4358, lon = 81.8463;
+  /* India kept +5:30 from 1906, so the zone is the same one it keeps today. */
+  var off = 330;
+  var c = A.chart({ jdUT: A.julianDay(1917, 11, 19, 23 + 11 / 60 - off / 60),
+    latitude: lat, longitude: lon, tzOffsetMinutes: off, trueNode: true });
+  var at = { Ascendant: c.ascendant.longitude };
+  c.planets.forEach(function (p) { at[p.name] = p.longitude; });
+
+  var BOOK = {
+    1: { Ascendant: 'Cancer', Saturn: 'Cancer', Jupiter: 'Taurus', Ketu: 'Gemini',
+      Mars: 'Leo', Moon: 'Capricorn', Rahu: 'Sagittarius', Venus: 'Sagittarius',
+      Mercury: 'Scorpio', Sun: 'Scorpio' },
+    2: { Mars: 'Cancer', Sun: 'Cancer', Moon: 'Cancer', Venus: 'Cancer',
+      Mercury: 'Cancer', Ascendant: 'Leo', Saturn: 'Leo', Rahu: 'Leo',
+      Ketu: 'Leo', Jupiter: 'Leo' },
+    3: { Saturn: 'Pisces', Ascendant: 'Pisces', Mercury: 'Pisces', Ketu: 'Gemini',
+      Moon: 'Capricorn', Venus: 'Leo', Mars: 'Sagittarius', Rahu: 'Sagittarius',
+      Sun: 'Scorpio', Jupiter: 'Virgo' },
+    7: { Venus: 'Aries', Sun: 'Taurus', Saturn: 'Gemini', Rahu: 'Aquarius',
+      Jupiter: 'Aquarius', Ascendant: 'Cancer', Mercury: 'Leo', Moon: 'Leo',
+      Ketu: 'Leo', Mars: 'Scorpio' },
+    9: { Ascendant: 'Pisces', Jupiter: 'Taurus', Rahu: 'Gemini', Moon: 'Aquarius',
+      Saturn: 'Capricorn', Sun: 'Leo', Mars: 'Leo', Ketu: 'Sagittarius',
+      Venus: 'Libra', Mercury: 'Libra' }
+  };
+  var signIn = function (graha, division) {
+    return division === 1 ? A.SIGNS[A.signOf(at[graha])]
+      : A.SIGNS[A.vargaPosition(at[graha], division).sign];
+  };
+  var wrong = [];
+  Object.keys(BOOK).forEach(function (d) {
+    Object.keys(BOOK[d]).forEach(function (graha) {
+      if (signIn(graha, +d) !== BOOK[d][graha]) {
+        wrong.push('D' + d + ' ' + graha + ' ' + signIn(graha, +d) +
+          ' for ' + BOOK[d][graha]);
+      }
+    });
+  });
+  ok('every placement of its rashi, hora, dreshkana, saptamsa and navamsa',
+    wrong.length === 0, wrong.join('; ') || '50 of 50');
+
+  /* Jupiter is printed retrograde, which the chart has to agree with. */
+  ok('and Jupiter is retrograde, as the chart marks it',
+    c.planets.filter(function (p) { return p.name === 'Jupiter'; })[0].retrograde);
+
+  /*
+   * And the nodes really are the test. On the mean node the same chart puts
+   * Rahu in another sign in two of the five, so a reading that happened to
+   * agree everywhere would not have been evidence of anything.
+   */
+  ok('the mean node would have moved it in two of the five', (function () {
+    var mean = A.chart({ jdUT: A.julianDay(1917, 11, 19, 23 + 11 / 60 - off / 60),
+      latitude: lat, longitude: lon, tzOffsetMinutes: off, trueNode: false });
+    var rahu = mean.planets.filter(function (p) { return p.name === 'Rahu'; })[0];
+    return A.SIGNS[A.vargaPosition(rahu.longitude, 3).sign] !== BOOK[3].Rahu &&
+      A.SIGNS[A.vargaPosition(rahu.longitude, 9).sign] !== BOOK[9].Rahu &&
+      A.SIGNS[A.signOf(rahu.longitude)] === BOOK[1].Rahu;
+  })());
 })();
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed\n');
