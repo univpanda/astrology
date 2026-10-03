@@ -141,6 +141,9 @@ Changing a setting or selecting a profile immediately saves the complete current
 choice through the `settings` Edge Function. Saves replace the same Custom Choice
 row; there are no previous choices or revisions. Writes are serialized so rapid
 edits finish with the newest values. The page loads that row on the next visit.
+Pravrājya / Sannyasa detection follows Brihat Jataka XV.1–4 with its qualifications.
+The [rule notes](docs/pravrajya.md) document the six clauses and strength conventions.
+
 Saved charts and shared links carry birth details only. Opening either uses the
 currently selected reading for every calculation, including ayanamsa, nodes and
 time standard; legacy chart settings are ignored. Settings load once when the

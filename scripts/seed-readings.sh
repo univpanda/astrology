@@ -36,6 +36,7 @@ FILES=(
   supabase/seed/astro_readings.sql
   supabase/seed/astro_readings_strength.sql
   supabase/seed/astro_readings_yogas.sql
+  supabase/seed/astro_readings_pravrajya.sql
 )
 
 for f in "${FILES[@]}"; do

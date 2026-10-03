@@ -3444,7 +3444,7 @@ ok('ordinals read correctly', Yogas.ordinal(1) === '1st' && Yogas.ordinal(2) ===
                    Yogas.gauri, Yogas.bharathi, Yogas.kusuma, Yogas.chapa,
                    Yogas.sreenatha, Yogas.sankha, Yogas.bheri, Yogas.matsya,
                    Yogas.mridanga, Yogas.saraswati, Yogas.mahaRaja,
-                   Yogas.nabhasa, Yogas.dhana, Yogas.daridra];
+                   Yogas.nabhasa, Yogas.dhana, Yogas.daridra, Yogas.pravrajya];
   ok('every detector is covered by this test', detectors.length === Yogas.DETECTOR_COUNT,
      detectors.length + ' named, ' + Yogas.DETECTOR_COUNT + ' in the module');
 
@@ -5388,7 +5388,7 @@ console.log('\nEverything Raman numbers up to 50');
    * saying anything about Raman's fifty at all.
    */
   var NOT_RAMANS = [Yogas.saraswati, Yogas.mahaRaja, Yogas.nabhasa,
-    Yogas.dhana, Yogas.daridra];
+    Yogas.dhana, Yogas.daridra, Yogas.pravrajya];
   var detectors = Yogas.DETECTOR_COUNT - NOT_RAMANS.length;
   ok('the module carries a detector for each of them', detectors === 34,
     detectors + ' from the book, ' + Yogas.DETECTOR_COUNT + ' in all');

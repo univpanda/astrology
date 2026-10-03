@@ -5830,8 +5830,9 @@ console.log('\nEvery finding can explain itself');
  * of all findings by count, the commonest being plain raja yoga.
  */
 (function () {
-  var seeds = fs.readFileSync(path.join(root,
-    'supabase/seed/astro_readings_yogas.sql'), 'utf8');
+  var seeds = fs.readdirSync(path.join(root, 'supabase/seed'))
+    .filter(function (f) { return /^astro_readings.*\.sql$/.test(f); })
+    .map(function (f) { return fs.readFileSync(path.join(root, 'supabase/seed', f), 'utf8'); }).join('\n');
   var keyed = {};
   (seeds.match(/^\('yoga', '([^']+)', '([^']+)',/gm) || []).forEach(function (m) {
     var bits = m.match(/^\('yoga', '([^']+)', '([^']+)',/);

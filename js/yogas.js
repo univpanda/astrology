@@ -1,8 +1,7 @@
 /*
  * yogas.js - combinations found in a chart.
  *
- * One yoga so far, deliberately: the shape here is meant to take more. Each
- * detector returns zero or more findings of the same form, so the page renders
+ * Each detector returns zero or more findings of the same form, so the page renders
  * them without knowing which yoga produced which.
  */
 var Yogas = (function () {
@@ -3390,6 +3389,119 @@ var Yogas = (function () {
        made.amsaLord);
   }
 
+  /* Brihat Jataka XV.1–4, N. Chidambaram Iyer (1885), including his notes.
+   * These are natal rules: do not repeat them on transformed varga positions
+   * or substitute a rotated reference for the birth ascendant. "Powerful" is
+   * operationalised by the selected Shadbala minimum, and comparative power by
+   * ratio to that minimum, as in the app's strength ranking. The verses do not
+   * prescribe that numerical convention. See docs/pravrajya.md. */
+  var PRAVRAJYA_ORDERS = {
+    Sun: 'Vanyasana', Moon: 'Vriddhasravaka', Mars: 'Sakya', Mercury: 'Ajivika',
+    Jupiter: 'Bhikshuka', Venus: 'Chakra', Saturn: 'Nirgrandha'
+  };
+
+  function pravrajya(chart, strengths) {
+    if ((chart.division && chart.division !== 1) || rotated(chart)) return [];
+    var c = lordship(chart), at = c.at;
+    // An incomplete chart cannot establish absence of other aspects.
+    if (GRAHAS.some(function (g) { return !at[g]; })) return [];
+    var bala = strengths && strengths.grahas ? strengths.grahas : strengths;
+    var ratio = function (g) {
+      var x = bala && bala[g];
+      return x && typeof x.ratio === 'number' && isFinite(x.ratio) ? x.ratio : null;
+    };
+    var strong = function (g) { return ratio(g) !== null && ratio(g) >= 1; };
+    var reaches = function (a, b) { return a !== b && aspects(a, at[a].sign, at[b].sign); };
+    var incoming = function (g) {
+      return GRAHAS.filter(function (other) { return reaches(other, g); });
+    };
+    var reasons = [], clauses = [], grahas = [], houses = [], leaders = [];
+    var add = function (key, text, participants, owners) {
+      clauses.push(key);
+      reasons.push(text);
+      participants.forEach(function (g) {
+        if (grahas.indexOf(g) < 0) grahas.push(g);
+        var h = c.houseOf(g);
+        if (houses.indexOf(h) < 0) houses.push(h);
+      });
+      (owners || []).forEach(function (g) { if (leaders.indexOf(g) < 0) leaders.push(g); });
+    };
+    var strongest = function (names) {
+      if (names.some(function (g) { return ratio(g) === null; })) return [];
+      var best = Math.max.apply(null, names.map(ratio));
+      return names.filter(function (g) { return Math.abs(ratio(g) - best) < 1e-9; });
+    };
+
+    // XV.1–2: at least four of the seven grahas in one sign. Iyer's note
+    // excludes the combination when none is powerful; nodes never count.
+    for (var sign = 0; sign < 12; sign++) {
+      var group = GRAHAS.filter(function (g) { return at[g].sign === sign; });
+      if (group.length < 4 || !group.some(strong)) continue;
+      var dominant = strongest(group);
+      if (!dominant.length) continue;
+      var qualifications = dominant.map(function (g) {
+        var defeated = (bala[g].war || []).some(function (war) { return war.won === false; });
+        var combust = g !== 'Sun' && Astro.isCombust(g, at[g].longitude,
+          at.Sun.longitude, at[g].retrograde);
+        var text = g + ' leads the ' + PRAVRAJYA_ORDERS[g] + ' form';
+        if (combust) text += '; combustion qualifies this as attachment to renunciants rather than initiation';
+        if (defeated) text += incoming(g).length
+          ? '; defeat with another planetary aspect indicates desire for initiation rather than initiation'
+          : '; defeat in planetary war qualifies the reading with a return to worldly life';
+        return text;
+      });
+      add('conjunction', group.join(', ') + ' share ' + Astro.SIGNS[sign] +
+        ', with at least one meeting its Shadbala minimum. ' + qualifications.join('. ') +
+        (dominant.length > 1 ? '. Their strength ratios tie, so no single leading order is assigned' : '') + '.',
+        group, dominant);
+    }
+
+    // XV.3: three alternative Moon–Saturn conditions, with the restrictions
+    // in Iyer's notes. An unknown strength is not a weak strength.
+    var moonLord = Astro.SIGN_LORDS[at.Moon.sign];
+    if (reaches(moonLord, 'Saturn') && incoming(moonLord).length === 0) {
+      add('moon-lord-to-saturn', 'The Moon\u2019s sign lord, ' + moonLord +
+        ', aspects Saturn and receives no aspect from another classical graha.',
+        ['Moon', moonLord, 'Saturn'], strongest([moonLord, 'Saturn']));
+    }
+    if (reaches('Saturn', moonLord) && strong('Saturn') &&
+        ratio(moonLord) !== null && ratio(moonLord) < 1) {
+      add('saturn-to-weak-moon-lord', 'Saturn meets its Shadbala minimum and aspects ' +
+        moonLord + ', the Moon\u2019s sign lord, whose strength is below its minimum.',
+        ['Moon', moonLord, 'Saturn'], ['Saturn']);
+    }
+    var d3Lord = Astro.SIGN_LORDS[Astro.vargaPosition(at.Moon.longitude, 3).sign];
+    var d9Lord = Astro.SIGN_LORDS[Astro.vargaPosition(at.Moon.longitude, 9).sign];
+    var moonAspects = incoming('Moon');
+    if (d3Lord === 'Saturn' && (d9Lord === 'Saturn' || d9Lord === 'Mars') &&
+        moonAspects.length === 1 && moonAspects[0] === 'Saturn') {
+      add('moon-divisions', 'The Moon occupies Saturn\u2019s drekkana and ' + d9Lord +
+        '\u2019s navamsa, and Saturn alone aspects the Moon.', ['Moon', 'Saturn'], ['Saturn']);
+    }
+
+    // XV.4 and note (b): report the ascetic configurations themselves.
+    // The additional ruler/author outcomes require a separate Raja-yoga
+    // judgement; this detector does not infer them from these positions alone.
+    if (c.houseOf('Jupiter') === 9 && reaches('Saturn', 'Jupiter') &&
+        reaches('Saturn', 'Moon') && aspects('Saturn', at.Saturn.sign, c.lagna)) {
+      add('jupiter-ninth', 'Jupiter occupies the natal 9th, while Saturn aspects Jupiter, ' +
+        'the Moon and the birth ascendant. The text\u2019s author/ruler outcome additionally requires Raja yoga.',
+        ['Jupiter', 'Moon', 'Saturn'], ['Saturn']);
+    }
+    if (c.houseOf('Saturn') === 9 && incoming('Saturn').length === 0) {
+      add('saturn-ninth', 'Saturn occupies the natal 9th without an aspect from another classical graha. ' +
+        'The text\u2019s ruler-and-ascetic outcome additionally requires Raja yoga.', ['Saturn'], ['Saturn']);
+    }
+    if (!clauses.length) return [];
+    var summary = reasons.join(' ');
+    var result = finding('Pravrajya Yoga', 'Pravrajya yoga', reasons, summary,
+      grahas, houses.sort(function (a, b) { return a - b; }), leaders.length === 1 ? leaders[0] : null)[0];
+    result.family = 'Pravrajya';
+    result.clauses = clauses;
+    result.route = clauses.slice();
+    return [result];
+  }
+
   var DETECTORS = [parivartana, neechaBhanga, vipareeta, lakshmi, mahapurusha, rajaYoga,
     moonCompany, sunCompany, moonFromSun, mahabhagya,
     chatussagara, rajalakshana, malika, parvata, vasumathi,
@@ -3397,7 +3509,7 @@ var Yogas = (function () {
     chapa, sreenatha, sankha, bheri, matsya, mridanga,
     chandraMangala, adhiYoga, sakata, amala, budhaAditya,
                    gajaKesari, kartari, saraswati, mahaRaja, nabhasa,
-                   dhana, daridra];
+                   dhana, daridra, pravrajya];
 
   /**
    * Every yoga this module knows how to look for, in one pass.
@@ -3480,6 +3592,7 @@ var Yogas = (function () {
       'Mridanga yoga', 'Vanchanachorabheethi yoga'] },
     { group: 'Debilitation lifted', names: ['Neecha bhanga'] },
     { group: 'Wealth and want', names: ['Dhana yoga', 'Daridra yoga'] },
+    { group: 'Pravrajya / Sannyasa', names: ['Pravrajya yoga'] },
     { group: 'Nabhasa', names: ['Rajju yoga', 'Musala yoga', 'Nala yoga',
       'Mala yoga', 'Sarpa yoga', 'Gada yoga', 'Sakata yoga (Nabhasa)',
       'Vihaga yoga', 'Sringataka yoga', 'Hala yoga', 'Vajra yoga', 'Yava yoga',
@@ -3527,7 +3640,7 @@ var Yogas = (function () {
 
   return { detect: detect, firstHouse: firstHouse, firstLord: firstLord,
     parivartana: parivartana, neechaBhanga: neechaBhanga,
-    kartari: kartari,
+    kartari: kartari, pravrajya: pravrajya, PRAVRAJYA_ORDERS: PRAVRAJYA_ORDERS,
     moonCompany: moonCompany, chandraMangala: chandraMangala, adhiYoga: adhiYoga,
     sakata: sakata, amala: amala, budhaAditya: budhaAditya,
     BUDHA_ADITYA_FLOOR: BUDHA_ADITYA_FLOOR, BUDHA_FLOOR: BUDHA_FLOOR,

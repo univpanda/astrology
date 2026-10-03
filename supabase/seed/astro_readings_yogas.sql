@@ -846,7 +846,7 @@ update astro_readings set effect = case
                    'Vanchanachorabheethi Yoga') then 'bad'
   when subject = 'Kartari Yoga' and condition = 'papa' then 'bad'
   when subject = 'Kartari Yoga' and condition = 'general' then 'mixed'
-  when subject in ('Chandra Mangala Yoga', 'Sama Yoga', 'Nabhasa Yoga') then 'mixed'
+  when subject in ('Chandra Mangala Yoga', 'Sama Yoga', 'Nabhasa Yoga', 'Pravrajya Yoga') then 'mixed'
   else 'good'
 end
 where topic = 'yoga';
